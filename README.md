@@ -1,4 +1,6 @@
-# Pomodoro Ledger on Cloudflare Workers
+# Pomodoro Ledger
+
+<img width="939" height="1146" alt="image" src="https://github.com/user-attachments/assets/f1f9dc76-a4f3-429e-a7d5-7ac1523409de" />
 
 A task-focused Pomodoro timer served from Cloudflare's edge. The static app lives
 in `public/index.html`; a small Worker in `src/worker.js` powers shared rooms. No
