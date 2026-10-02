@@ -249,11 +249,16 @@ tr:hover .hbar b { background: var(--heat3); }
 .est output { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); min-width: 7ch; }
 
 .tasks { list-style: none; margin: 14px 0 0; padding: 0; display: grid; }
-.task { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 10px 12px 4px; border-radius: 14px; border-bottom: 1px solid var(--line); transition: background .15s; }
+.task { position: relative; display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 10px 12px 4px; border-radius: 14px; border-bottom: 1px solid var(--line); transition: background .15s; }
 .task:last-child { border-bottom-color: transparent; }
 .task:hover { background: var(--surface-2); }
 .task.is-active { background: var(--accent-soft); border-bottom-color: transparent; }
-.task.dragging { position: relative; z-index: 1; background: var(--surface-2); box-shadow: var(--shadow); border-bottom-color: transparent; }
+.task.dragging { position: fixed; z-index: 60; pointer-events: none; margin: 0; grid-template-columns: auto minmax(0, 1fr); padding: 8px 12px; max-height: 90px; overflow: hidden; background: var(--surface); box-shadow: 0 12px 36px rgba(0,0,0,.2); border: 1px solid var(--accent); opacity: .98; transform: scale(1.01); }
+.task.dragging .check, .task.dragging .task-meta, .task.dragging .task-actions, .task.dragging .subplan { display: none; }
+.task-drop { position: relative; display: grid; align-items: end; justify-items: end; padding: 8px 10px; border: 1px dashed var(--accent); border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; }
+.task-drop::before { content: ""; position: absolute; top: -2px; left: 4px; right: 4px; height: 3px; border-radius: 3px; background: var(--accent); }
+.task-start { color: var(--accent); font: 11px var(--f-body); }
+@media (hover: hover) { .task-start { display: none; position: absolute; z-index: 2; top: -10px; right: 12px; padding: 2px 8px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); white-space: nowrap; } .task:hover .task-start, .task:focus-within .task-start { display: inline; } }
 .tasks.sorting { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 .tasks .group { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 14px 10px 6px; font-size: 11.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
 .tasks .group span { font-family: var(--f-mono); font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
@@ -716,10 +721,11 @@ body.zen .working { width: min(100%, 420px); }
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const MIN = 60000;
+  const DEMO = new URLSearchParams(location.search).get("demo") === "1";
   const DEF = { focus: 25, short: 5, long: 15, longEvery: 4, autoBreak: true, autoFocus: false, sound: true, notify: false, goal: 8, ticking: false, tickVolume: 20, tickPace: 2 };
   const ls = {
-    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+    get(k, d) { if (DEMO) return d; try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { if (DEMO) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
   };
 
   // ---------- dates & formatting ----------
@@ -859,7 +865,7 @@ body.zen .working { width: min(100%, 420px); }
     return new Map(list.map((t) => [t.id, t]));
   }
   let SAMPLES = null;
-  const preview = () => !S.started && S.tasks.size === 0;
+  const preview = () => DEMO || (!S.started && S.tasks.size === 0);
   const viewTasks = () => (preview() ? (SAMPLES || (SAMPLES = makeSamples())) : S.tasks);
   function markStarted(silent) {
     if (S.started) return;
@@ -1129,6 +1135,7 @@ body.zen .working { width: min(100%, 420px); }
     const lit = Math.ceil(frac * 60);
     if (lit !== lastLit || force) { lastLit = lit; ticks.forEach((l, i) => l.classList.toggle("lit", i < lit)); }
     renderFloating(txt, frac);
+    renderTaskStarts(force);
     if (!force) return;
     roomPush();
     const every = S.settings.longEvery, idx = Math.min(T.setIndex || 0, every);
@@ -1207,6 +1214,38 @@ body.zen .working { width: min(100%, 420px); }
 
   // ---------- reordering ----------
   let drag = null;
+  function updateDrop(y) {
+    if (!drag) return;
+    const { ul, slot, li } = drag;
+    li.style.top = Math.max(0, Math.min(innerHeight - 40, y - drag.offset)) + "px";
+    const rows = [...ul.children].filter((el) => el !== slot);
+    const heading = rows.find((el) => { const r = el.getBoundingClientRect(); return el.classList.contains("group") && y >= r.top && y <= r.bottom; });
+    let next = heading ? rows[rows.indexOf(heading) + 1] || null : rows.find((el) => { const r = el.getBoundingClientRect(); return y < r.top + r.height / 2; }) || null;
+    if (next === rows[0] && next?.classList.contains("group")) next = rows[1] || null;
+    if (next !== slot.nextElementSibling) ul.insertBefore(slot, next);
+    let group = "Later";
+    for (const el of ul.children) { if (el === slot) break; if (el.classList.contains("group")) group = el.dataset.g === "today" ? "Today" : "Later"; }
+    slot.textContent = "Drop here · " + group;
+  }
+  function dragScroll() {
+    if (!drag) return;
+    const bounds = drag.ul.getBoundingClientRect(), y = drag.y;
+    const step = y < 64 && bounds.top < y ? -Math.ceil((64 - y) / 5) : y > innerHeight - 64 && bounds.bottom > y ? Math.ceil((y - innerHeight + 64) / 5) : 0;
+    if (step) { scrollBy(0, Math.max(-14, Math.min(14, step))); updateDrop(y); }
+    drag.frame = requestAnimationFrame(dragScroll);
+  }
+  function finishDrag(cancel = false) {
+    if (!drag) return;
+    const { ul, li, slot, next, id, frame } = drag, taskId = li.dataset.id;
+    cancelAnimationFrame(frame);
+    ul.insertBefore(li, cancel ? next?.parentNode === ul ? next : null : slot);
+    slot.remove(); li.classList.remove("dragging");
+    for (const name of ["top", "left", "width"]) li.style.removeProperty(name);
+    ul.classList.remove("sorting"); drag = null;
+    try { ul.releasePointerCapture(id); } catch {}
+    if (cancel) renderTasks(); else commitOrder();
+    [...ul.querySelectorAll(".task")].find((el) => el.dataset.id === taskId)?.querySelector(".grip")?.focus({ preventScroll: true });
+  }
   function commitOrder() {
     const changed = [];
     let today = false, i = 0;
@@ -1310,13 +1349,18 @@ body.zen .working { width: min(100%, 420px); }
     if (!floatWindow || floatWindow.closed) return;
     const doc = floatWindow.document, root = doc.documentElement;
     const theme = getComputedStyle(document.body);
-    for (const name of ["--surface", "--surface-2", "--fg", "--muted", "--line", "--accent", "--on-accent"]) {
+    for (const name of ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--accent", "--tomato", "--on-accent", "--shadow", "--glow-o", "--f-display", "--f-body", "--f-mono"]) {
       root.style.setProperty(name, theme.getPropertyValue(name));
     }
     root.style.colorScheme = getComputedStyle(document.documentElement).colorScheme;
     doc.title = txt + " · " + MODE_NAME[T.mode];
-    doc.getElementById("miniTime").textContent = txt;
-    doc.getElementById("miniMode").textContent = MODE_NAME[T.mode] + (T.status === "paused" ? " · Paused" : T.status === "idle" ? " · Ready" : "");
+    const every = S.settings.longEvery, idx = Math.min(T.setIndex || 0, every);
+    doc.getElementById("miniMode").textContent = MODE_NAME[T.mode] + (T.mode === "focus" ? " · " + Math.min(idx + 1, every) + " of " + every : "");
+    const time = doc.getElementById("miniTime");
+    time.innerHTML = [...txt].map((c) => (c === ":" ? '<span class="c">:</span>' : '<span class="d">' + c + "</span>")).join("");
+    const secs = Math.ceil(remNow() / 1000);
+    time.setAttribute("aria-label", Math.floor(secs / 60) + " minutes " + (secs % 60) + " seconds remaining");
+    doc.getElementById("miniSub").textContent = T.status === "running" ? "ends at " + fmtClock(T.endsAt) : T.status === "paused" ? "paused" : (totalNow() / MIN) + " min";
     const task = S.activeId && S.tasks.get(S.activeId);
     const taskEl = doc.getElementById("miniTask");
     taskEl.textContent = task ? task.title : T.mode === "focus" ? "Time to focus" : "Take a breather";
@@ -1337,25 +1381,46 @@ body.zen .working { width: min(100%, 420px); }
     try {
       opened = await window.documentPictureInPicture.requestWindow({ width: 300, height: 184 });
       const doc = opened.document;
+      const fontLink = document.querySelector('link[rel="stylesheet"][href*="fonts.googleapis.com"]');
+      if (fontLink) doc.head.appendChild(fontLink.cloneNode());
       const style = doc.createElement("style");
       style.textContent = `
         * { box-sizing: border-box; }
-        html, body { margin: 0; min-height: 100%; background: var(--surface); color: var(--fg); }
-        body { font: 13px system-ui, sans-serif; }
-        main { min-height: 100vh; padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 4px; border-top: 3px solid var(--line); position: relative; }
-        #miniProgress { position: absolute; left: 0; top: -3px; height: 3px; background: var(--accent); }
-        #miniMode { color: var(--accent); font-size: 11px; font-weight: 650; letter-spacing: .05em; }
-        #miniTask { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #miniTime { font: 650 clamp(40px, 20vw, 64px)/1.1 ui-monospace, monospace; letter-spacing: -.07em; font-variant-numeric: tabular-nums; margin: auto 0; }
-        .actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
-        button { font: inherit; color: var(--fg); background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; min-height: 34px; min-width: 34px; padding: 6px 9px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        button:hover { filter: brightness(.94); }
+        html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); }
+        body { padding: 6px; font: 13px/1.4 var(--f-body); -webkit-font-smoothing: antialiased; }
+        main { position: relative; isolation: isolate; width: 100%; height: 100%; min-height: 0; overflow: hidden; padding: 10px 12px 11px; display: grid; grid-template-rows: auto auto 6px auto 36px; gap: 6px; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); box-shadow: var(--shadow); }
+        .glow { position: absolute; z-index: -1; width: 280px; aspect-ratio: 1; left: 25%; top: 35%; translate: -50% -50%; border-radius: 50%; background: var(--accent); opacity: var(--glow-o); filter: blur(56px); pointer-events: none; }
+        .meta { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        #miniMode { overflow: hidden; color: var(--accent); font-size: 9.5px; font-weight: 650; letter-spacing: .1em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+        #miniSub { flex: none; color: var(--muted); font: 9.5px/1.2 var(--f-mono); white-space: nowrap; }
+        #miniTime { font: 650 clamp(42px, 17vw, 52px)/.9 var(--f-display); letter-spacing: -.02em; font-variation-settings: "opsz" 96; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        #miniTime .d { display: inline-block; width: .6em; text-align: center; }
+        #miniTime .c { display: inline-block; width: .28em; text-align: center; translate: 0 -.06em; }
+        .progress { overflow: hidden; height: 6px; border-radius: 999px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
+        #miniProgress { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .25s linear, background .8s; }
+        .task { min-width: 0; display: flex; align-items: baseline; gap: 7px; }
+        .task-label { flex: none; color: var(--faint); font-size: 8.5px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; }
+        #miniTask { min-width: 0; overflow: hidden; color: var(--fg); font-family: var(--f-display); font-size: 12.5px; font-weight: 650; letter-spacing: -.01em; text-overflow: ellipsis; white-space: nowrap; }
+        .actions { display: grid; grid-template-columns: 36px minmax(92px, 1fr) 36px; align-items: center; gap: 8px; }
+        button { height: 36px; padding: 0; border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); font: 550 12.5px var(--f-body); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: background .15s, color .15s, transform .1s; }
+        .round { border-radius: 50%; }
+        button:hover { background: var(--surface); color: var(--fg); }
+        button:active { transform: scale(.96); }
         button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         button svg { width: 16px; height: 16px; }
-        #miniToggle { background: var(--accent); color: var(--on-accent); border-color: var(--accent); flex: 1; font-weight: 650; }
+        #miniToggle { border: 0; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-family: var(--f-display); font-size: 13.5px; font-weight: 700; box-shadow: 0 8px 18px -10px var(--accent); }
+        #miniToggle:hover { background: var(--accent); color: var(--on-accent); filter: brightness(.96); }
+        @media (max-height: 175px) {
+          body { padding: 4px; }
+          main { padding: 7px 10px 8px; grid-template-rows: auto auto 5px auto 32px; gap: 4px; border-radius: 17px; }
+          #miniTime { font-size: clamp(36px, 15vw, 46px); }
+          .actions { grid-template-columns: 32px minmax(80px, 1fr) 32px; gap: 7px; }
+          button { height: 32px; }
+        }
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
       `;
       doc.head.appendChild(style);
-      doc.body.innerHTML = '<main aria-label="Floating Pomodoro timer"><div id="miniProgress" aria-hidden="true"></div><div id="miniMode"></div><div id="miniTask"></div><div id="miniTime" role="timer" aria-label="Time remaining"></div><div class="actions"><button id="miniReset" type="button" aria-label="Reset timer" title="Reset timer">' + ICON.undo + '</button><button id="miniToggle" type="button"></button><button id="miniSkip" type="button" aria-label="Skip to next phase" title="Skip to next phase">' + $("#skipBtn").innerHTML + '</button></div></main>';
+      doc.body.innerHTML = '<main aria-label="Floating Pomodoro timer"><div class="glow" aria-hidden="true"></div><div class="meta"><div id="miniMode"></div><div id="miniSub"></div></div><div id="miniTime" role="timer" aria-label="Time remaining"></div><div class="progress" aria-hidden="true"><i id="miniProgress"></i></div><div class="task"><span class="task-label">Working on</span><span id="miniTask"></span></div><div class="actions"><button class="round" id="miniReset" type="button" aria-label="Reset timer" title="Reset timer">' + ICON.undo + '</button><button id="miniToggle" type="button"></button><button class="round" id="miniSkip" type="button" aria-label="Skip to next phase" title="Skip to next phase">' + $("#skipBtn").innerHTML + '</button></div></main>';
       doc.getElementById("miniToggle").addEventListener("click", toggle);
       doc.getElementById("miniReset").addEventListener("click", () => { flushPartial(); setMode(T.mode); });
       doc.getElementById("miniSkip").addEventListener("click", skip);
@@ -1597,6 +1662,45 @@ body.zen .working { width: min(100%, 420px); }
       subtasks.map((s) => '<li class="subtask" data-subid="' + esc(s.id) + '" data-done="' + !!s.done + '"><input type="checkbox" data-subdone aria-label="Complete subtask: ' + esc(s.title) + '"' + (s.done ? " checked" : "") + '><input type="text" data-subtitle maxlength="140" aria-label="Subtask title" value="' + esc(s.title) + '"><button class="icon-btn" type="button" data-act="subdelete" aria-label="Delete subtask: ' + esc(s.title) + '" title="Delete subtask">' + ICON.trash + "</button></li>").join("") +
       '</ul><form class="subtask-add" autocomplete="off"><input type="text" maxlength="140" aria-label="New subtask for ' + esc(t.title) + '" placeholder="' + (subtasks.length ? "Add another step" : "Add a step, e.g. Draft the outline") + '" value="' + esc(S.subtaskDrafts.get(t.id) || "") + '"><button class="btn small" type="submit">Add</button></form></div>';
   }
+  let startEstimateMinute = -1;
+  function taskStartPlan() {
+    const today = openOf(viewTasks()).filter((t) => t.today), plan = new Map();
+    const current = T.mode === "focus" && T.status !== "idle" ? today.find((t) => t.id === S.activeId) : null;
+    const sequence = current ? [current, ...today.filter((t) => t !== current)] : today;
+    const remaining = (t) => Math.max(t === current ? 1 : 0, (t.est || 0) - cyclesOf(t));
+    let cursor = Date.now(), index = T.mode === "long" ? 0 : T.setIndex || 0;
+    const nextBreak = () => {
+      if (index >= S.settings.longEvery) { index = 0; return dur("long"); }
+      return dur("short");
+    };
+    if (T.mode !== "focus") cursor += remNow();
+    else if (T.status !== "idle" && !current) { cursor += remNow(); index++; cursor += nextBreak(); }
+    let cyclesLeft = sequence.reduce((n, t) => n + remaining(t), 0);
+    for (const t of sequence) {
+      const cycles = remaining(t);
+      if (!cycles) { plan.set(t.id, { text: "Estimate met", hint: "All estimated cycles for this task are complete. Increase the estimate to plan more time." }); continue; }
+      plan.set(t.id, { text: t === current ? T.status === "running" ? "In progress" : "Resume now" : "Starts ~" + fmtClock(cursor),
+        hint: "Estimated start if you follow every remaining planned cycle and take the short and long breaks in your settings. " + (current ? "Finish the current task first, then follow Today’s order." : "Tasks follow Today’s order; paused timers are assumed to resume now.") });
+      for (let i = 0; i < cycles; i++) {
+        cursor += t === current && i === 0 ? remNow() : dur("focus");
+        index++; cyclesLeft--;
+        if (cyclesLeft) cursor += nextBreak();
+      }
+    }
+    return plan;
+  }
+  function renderTaskStarts(force = false) {
+    if (drag) return;
+    const minute = Math.floor(Date.now() / MIN);
+    if (!force && minute === startEstimateMinute) return;
+    startEstimateMinute = minute;
+    const plan = taskStartPlan();
+    document.querySelectorAll("#taskList .task-start").forEach((el) => {
+      const estimate = plan.get(el.closest(".task").dataset.id);
+      el.textContent = estimate ? estimate.text : "";
+      el.title = estimate ? estimate.hint : "";
+    });
+  }
   function renderTasks() {
     if (drag) return;
     const editInput = $("#editTitle"), editedTitle = editInput && editInput.closest(".task").dataset.id === S.editing ? editInput.value : null;
@@ -1636,7 +1740,7 @@ body.zen .working { width: min(100%, 420px); }
           '<button class="grip" type="button"' + (S.projectFilter ? ' disabled' : '') + ' aria-label="Reorder “' + esc(t.title) + '”: drag, or press the up and down arrow keys" title="' + (S.projectFilter ? "Show all tasks to reorder" : "Drag to reorder") + '">' + ICON.grip + "</button>" +
           '<button class="check" type="button" data-act="done" aria-label="Mark “' + esc(t.title) + '” as finished" title="Mark finished">' + ICON.check + "</button>" +
           '<div class="task-main" data-act="select" title="Work on this task"><div class="task-title">' + esc(t.title) + (active ? '<span class="chip now">Now</span>' : "") + (t.sample ? '<span class="chip">Example</span>' : "") + "</div>" +
-          '<div class="task-meta">' + (projectOf(t) ? projectHTML(t, true) : "") + pipsHTML(t) + "<span>" + metaText(t) + "</span>" + (subsOf(t).length ? subCountHTML(t) : "") + (projectOf(t) ? "" : projectHTML(t, true)) + (subsOf(t).length ? "" : subCountHTML(t)) + "</div></div>" +
+          '<div class="task-meta">' + (projectOf(t) ? projectHTML(t, true) : "") + pipsHTML(t) + "<span>" + metaText(t) + "</span>" + (t.today ? '<span class="task-start"></span>' : "") + (subsOf(t).length ? subCountHTML(t) : "") + (projectOf(t) ? "" : projectHTML(t, true)) + (subsOf(t).length ? "" : subCountHTML(t)) + "</div></div>" +
           '<div class="task-actions">' +
           (del ? '<button class="icon-btn danger" type="button" data-act="del">Delete?</button>' :
             '<button class="icon-btn play" type="button" data-act="focus" aria-label="Start focusing on “' + esc(t.title) + '”" title="Focus on this">' + ICON.play + "</button>" +
@@ -1658,6 +1762,7 @@ body.zen .working { width: min(100%, 420px); }
       ul.innerHTML = html + (mine.length && !split ? later : "");
       $("#taskFoot").innerHTML = doneN ? '<div class="finished-note">' + plural(doneN, "finished task") + ' with cycles and time are in the <a href="#ledger">ledger below</a>.</div>' : "";
     }
+    renderTaskStarts(true);
     if (!labelPop.hidden) {
       const a = labelAnchor();
       if (a) { if (LP.key !== "hash") a.setAttribute("aria-expanded", "true"); placeLabelPop(); } else closeLabelPop();
@@ -1847,8 +1952,12 @@ body.zen .working { width: min(100%, 420px); }
     const p = $("#syncPill");
     const st = preview() ? "preview" : S.storeMode;
     p.dataset.state = st;
-    p.querySelector("span").textContent = st === "preview" ? "Example data" : st === "db" ? "Synced to your account" : "Saved in this browser";
+    p.querySelector("span").textContent = DEMO ? "Demo mode" : st === "preview" ? "Example data" : st === "db" ? "Synced to your account" : "Saved in this browser";
     $("#previewBanner").hidden = !preview();
+    $("#previewBanner span").innerHTML = DEMO
+      ? "<strong>Interactive demo.</strong> Changes reset when you reload and never affect your saved ledger."
+      : "<strong>You're looking at example data.</strong> Add your first task or start the timer, and the examples disappear.";
+    $("#startOwn").textContent = DEMO ? "Exit demo" : "Start my own ledger";
   }
   function renderEstPick() {
     let h = "";
@@ -1878,7 +1987,7 @@ body.zen .working { width: min(100%, 420px); }
   document.addEventListener("pointerleave", () => (tip.hidden = true));
 
   // ---------- events ----------
-  const guardPreview = () => { if (preview()) { toast("These are examples. Add a task to start your own ledger."); return true; } return false; };
+  const guardPreview = () => { if (preview() && !DEMO) { toast("These are examples. Add a task to start your own ledger."); return true; } return false; };
   $("#startBtn").addEventListener("click", toggle);
   $("#resetBtn").addEventListener("click", () => { flushPartial(); setMode(T.mode); });
   $("#skipBtn").addEventListener("click", skip);
@@ -1905,7 +2014,15 @@ body.zen .working { width: min(100%, 420px); }
   pickMenu.addEventListener("pointermove", (e) => { const li = e.target.closest("li"); if (li && +li.dataset.i !== pickIdx) pickMove(+li.dataset.i); });
   pickMenu.addEventListener("click", (e) => { const li = e.target.closest("li"); if (li) pickChoose(+li.dataset.i); });
   document.addEventListener("pointerdown", (e) => { if (pickOpen && !e.target.closest("#pick")) closePick(); });
-  $("#startOwn").addEventListener("click", () => { markStarted(); $("#newTitle").focus(); });
+  $("#startOwn").addEventListener("click", () => {
+    if (DEMO) {
+      const url = new URL(location.href);
+      url.searchParams.delete("demo");
+      location.assign(url.pathname + url.search + url.hash);
+      return;
+    }
+    markStarted(); $("#newTitle").focus();
+  });
   $("#estPick").addEventListener("click", (e) => { const b = e.target.closest("[data-est]"); if (b) { S.newEst = +b.dataset.est; renderEstPick(); } });
   const newTaskForm = $("#addForm"), newTaskOptions = $("#newTaskOptions"), newTitle = $("#newTitle"), newLabel = $("#newLabel");
   const filterLabel = () => (S.projectFilter.startsWith("project:") ? S.projectFilter.slice(8) : "");
@@ -2104,29 +2221,31 @@ body.zen .working { width: min(100%, 420px); }
   });
   $("#taskList").addEventListener("pointerdown", (e) => {
     const g = e.target.closest(".grip");
-    if (!g || e.button > 0) return;
+    if (!g || g.disabled || drag || e.button > 0) return;
     e.preventDefault();
     if (guardPreview()) return;
     const ul = e.currentTarget;
-    drag = { li: g.closest(".task"), id: e.pointerId };
-    drag.li.classList.add("dragging"); ul.classList.add("sorting");
+    const li = g.closest(".task"), r = li.getBoundingClientRect(), slot = document.createElement("li");
+    slot.className = "task-drop"; slot.setAttribute("aria-hidden", "true"); slot.style.height = r.height + "px";
+    drag = { ul, li, slot, next: li.nextElementSibling, id: e.pointerId, offset: e.clientY - r.top, y: e.clientY, frame: null };
     try { ul.setPointerCapture(e.pointerId); } catch {}
+    ul.insertBefore(slot, li); document.body.appendChild(li);
+    li.classList.add("dragging"); ul.classList.add("sorting");
+    li.style.left = r.left + "px"; li.style.width = r.width + "px";
+    updateDrop(e.clientY); drag.frame = requestAnimationFrame(dragScroll);
   });
   $("#taskList").addEventListener("pointermove", (e) => {
     if (!drag || e.pointerId !== drag.id) return;
-    const ul = e.currentTarget, rest = [...ul.children].filter((c) => c !== drag.li);
-    let next = rest.find((c) => { const r = c.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; }) || null;
-    if (next && next === rest[0] && next.classList.contains("group")) next = rest[1] || null;
-    if (next !== drag.li.nextElementSibling) ul.insertBefore(drag.li, next);
+    drag.y = e.clientY; updateDrop(e.clientY);
   });
   const endDrag = (e) => {
     if (!drag || e.pointerId !== drag.id) return;
-    drag.li.classList.remove("dragging"); e.currentTarget.classList.remove("sorting");
-    drag = null;
-    commitOrder();
+    finishDrag(e.type !== "pointerup");
   };
   $("#taskList").addEventListener("pointerup", endDrag);
   $("#taskList").addEventListener("pointercancel", endDrag);
+  $("#taskList").addEventListener("lostpointercapture", endDrag);
+  document.addEventListener("keydown", (e) => { if (drag && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); finishDrag(true); } }, true);
   $("#taskList").addEventListener("keydown", (e) => {
     if (e.target.matches("[data-subtitle]")) {
       if (e.key === "Enter") {
@@ -2304,8 +2423,8 @@ body.zen .working { width: min(100%, 420px); }
 
   // ---------- shared room ----------
   const ss = {
-    get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
-    set(k, v) { try { if (v == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch {} },
+    get(k) { if (DEMO) return null; try { return sessionStorage.getItem(k); } catch { return null; } },
+    set(k, v) { if (DEMO) return; try { if (v == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch {} },
   };
   const RM = { owner: false, ws: null, code: ss.get("pl.room"), id: ss.get("pl.rid"), name: ls.get("pl.name", ""), you: null, members: [], prop: null, live: false, tries: 0, timer: null, ping: null, sent: "", askHTML: "" };
   if (!RM.id) { RM.id = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); ss.set("pl.rid", RM.id); }
@@ -2530,7 +2649,8 @@ body.zen .working { width: min(100%, 420px); }
 
   // ---------- boot ----------
   Store.loadLocal();
-  if (S.tasks.size) S.started = true;
+  if (DEMO) { SAMPLES = makeSamples(); S.tasks = SAMPLES; S.activeId = "x6"; S.started = true; }
+  else if (S.tasks.size) S.started = true;
   if (!["focus", "short", "long"].includes(T.mode)) T.mode = "focus";
   if (!T.saved || typeof T.saved !== "object") T.saved = {};
   if (!T.adj || typeof T.adj !== "object") T.adj = {};
@@ -2548,7 +2668,7 @@ body.zen .working { width: min(100%, 420px); }
   } else if (RM.code) roomConnect();
   renderRoom();
   renderAll();
-  Store.connect().then(renderPill);
+  if (!DEMO) Store.connect().then(renderPill);
 })();
 </script>
 </body>
