@@ -2199,7 +2199,10 @@ body.zen .working { width: min(100%, 420px); }
       if (act === "focus") { if (T.mode !== "focus") setMode("focus", true); if (T.status !== "running") start(); }
     } else if (act === "done") {
       const n = clone(t); n.done = true; n.doneAt = Date.now();
-      if (S.activeId === id && T.status === "idle") { S.activeId = null; saveTimer(); }
+      if (S.activeId === id) {
+        S.activeId = openOf(S.tasks).find((task) => task.id !== id)?.id || null;
+        saveTimer();
+      }
       Store.saveTask(n);
       playSound("task");
       toast("Finished “" + t.title + "” in " + plural(cyclesOf(t), "cycle") + " · " + fmtDur(timeOf(t)) + ".");
