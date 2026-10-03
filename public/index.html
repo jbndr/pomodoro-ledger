@@ -384,7 +384,8 @@ td.barcell { width: 38%; min-width: 120px; }
 .sec-title:focus { outline: none; background: var(--surface-2); }
 .tasks .group.section span { font: 12px var(--f-body); color: var(--faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tasks .group.section span:empty { display: none; }
-.sec-del { width: 26px; height: 26px; flex: none; }
+/* The glyph, not the button box, lines up with the right edge of the time column. */
+.sec-del { width: 26px; height: 26px; flex: none; margin-right: -9px; }
 .tasks .group.section { position: relative; }
 .tasks .group.section:not(:has(.sec-title:focus)) { cursor: grab; }
 /* In the flow, centred with the name, but pulled into the gutter so names still line up with Today. */
