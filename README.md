@@ -2,22 +2,47 @@
 
 <img width="939" height="1146" alt="image" src="https://github.com/user-attachments/assets/f1f9dc76-a4f3-429e-a7d5-7ac1523409de" />
 
-A task-focused Pomodoro timer served from Cloudflare's edge. The static app lives
-in `public/index.html`; a small Worker in `src/worker.js` powers shared rooms. No
-build step is required.
+A task-focused Pomodoro timer served from Cloudflare's edge. The web app in `web/`
+is built with Vite into `dist/`, which Cloudflare serves as static assets; a small
+Worker in `src/` powers shared rooms and account sync.
 
 ## Features
 
-- Tasks, subtasks, cycle estimates, Today/Later planning, and estimated start times
+- Tasks with notes, checklists and cycle estimates, planned into Today, Upcoming days or Later
+- Optional Today sections, a day plan with focus vs. time with breaks, and estimated start times
+- Quick entry that reads days and estimates from the title, a When popover, and keyboard shortcuts (press `?`)
 - Labels, filters, focus history, charts, and finished-task tracking
 - Configurable timers, optional gentle ticking, and a floating Picture-in-Picture timer
 - Installable as an app on phones (PWA) that opens offline, with a full-screen timer page and bottom tabs
 - Optional sign-in to sync tasks, history, settings, and the running timer between devices
 - Temporary shared rooms that sync timer status while keeping tasks and history private
 
+## Project layout
+
+```
+web/                 the app (Vite root)
+  index.html         markup
+  src/app.js         app logic (being split into modules)
+  src/lib/*.ts       pure, tested logic: dates, the When parser, quick entry
+  src/styles/app.css styles
+  public/            copied as-is: service worker, manifest, icons
+src/                 Cloudflare Worker: rooms (worker.js) and sync (sync.js)
+tests/               Worker tests (node:test)
+```
+
+## Develop
+
+```sh
+npm install
+npm run dev      # builds, rebuilds on change, and serves app + Worker on http://localhost:8787
+npm test         # type check, app unit tests (Vitest), Worker tests
+```
+
+`npm run dev` rebuilds on every save; reload the page to see changes.
+
 ## Deploy
 
-You need Node.js 18 or newer and a free Cloudflare account.
+You need Node.js 20 or newer and a free Cloudflare account.
 
 ```sh
 npm install
@@ -25,9 +50,8 @@ npx wrangler login     # opens a browser to authorize, once per machine
 npm run deploy
 ```
 
-Wrangler prints your URL, for example
-`https://pomodoro-ledger.<your-subdomain>.workers.dev`. Run `npm run dev` to
-preview locally at `http://localhost:8787`.
+`npm run deploy` builds the app and deploys it with the Worker. Wrangler prints
+your URL, for example `https://pomodoro-ledger.<your-subdomain>.workers.dev`.
 
 To deploy from CI instead of `wrangler login`, set `CLOUDFLARE_API_TOKEN`
 (template "Edit Cloudflare Workers") and `CLOUDFLARE_ACCOUNT_ID`.
@@ -97,11 +121,7 @@ DEV_USER_EMAIL=you@example.com
 members share timer state, but never tasks or history. Each room uses one Durable
 Object and is deleted ten minutes after the last person leaves.
 
-Run the room and sync checks with:
-
-```sh
-npm test
-```
+The room and sync checks run as part of `npm test`.
 
 ## Custom domain
 

@@ -2,11 +2,18 @@
   "name": "pomodoro-ledger",
   "private": true,
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "test": "node --test tests/room.cjs tests/sync.cjs"
+    "dev": "vite build && concurrently -k -n web,worker -c yellow,cyan \"vite build --watch\" \"wrangler dev\"",
+    "build": "vite build",
+    "deploy": "vite build && wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc --noEmit && vitest run && node --test tests/room.cjs tests/sync.cjs"
   },
   "devDependencies": {
+    "concurrently": "^9.2.4",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.7",
     "wrangler": "^4"
-  }
+  },
+  "type": "module"
 }
