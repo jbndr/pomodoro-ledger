@@ -39,8 +39,54 @@ example data automatically.
 
 ## Data storage
 
-Tasks, history, labels, and settings are stored in the browser's local storage.
-They stay on that browser and device. Clearing site data erases them.
+Tasks, history, labels, and settings are always kept in the browser's local
+storage, so the app works offline. Without sign-in they stay on that device.
+
+## Sync between devices
+
+Signing in syncs tasks, history, labels, and settings across devices. The running
+timer stays on each device. Login is handled by Cloudflare Access, and each
+person's data lives in its own Durable Object (plain SQLite, one `docs` table),
+keyed by email. Conflicts resolve last-write-wins per task. Changes made offline
+merge when the device reconnects. **Settings → Sync → Export** downloads
+everything as JSON.
+
+Sync stays off until Access is configured:
+
+1. In the Cloudflare dashboard, open **Zero Trust**. The free plan covers up to
+   50 users. Pick a team name, which gives you `<team>.cloudflareaccess.com`.
+2. Under **Settings → Authentication**, keep **One-time PIN** or add Google or
+   GitHub as a login method.
+3. Under **Access → Applications → Add an application → Self-hosted**:
+   - Domain: `pomodoro.jbndr.com`, path: `api/sync`
+   - Session duration: something long, for example 1 month
+   - Policy: **Allow**, include **Emails** with the addresses that may sign in
+4. Copy the application's **Audience (AUD) tag**. Put it and your team domain
+   into `wrangler.jsonc`:
+
+   ```jsonc
+   "vars": {
+     "ACCESS_TEAM_DOMAIN": "<team>.cloudflareaccess.com",
+     "ACCESS_AUD": "<aud tag>"
+   }
+   ```
+
+5. Deploy. Then open `https://pomodoro.jbndr.com/api/sync/me` in a private
+   window. It must redirect to the Cloudflare login. If it shows JSON instead,
+   the Access path doesn't cover `/api/sync`.
+
+The Worker verifies the Access token itself (signature, audience, issuer, and
+expiry), so a misconfigured route fails closed rather than exposing data.
+
+For local development, sign in as a fixed address by putting this in `.dev.vars`.
+The dev identity only works while Access is unset, which is why the first two
+lines blank it locally:
+
+```sh
+ACCESS_TEAM_DOMAIN=
+ACCESS_AUD=
+DEV_USER_EMAIL=you@example.com
+```
 
 ## Shared rooms
 
@@ -48,10 +94,10 @@ They stay on that browser and device. Clearing site data erases them.
 members share timer state, but never tasks or history. Each room uses one Durable
 Object and is deleted ten minutes after the last person leaves.
 
-Run the room permission checks with:
+Run the room and sync checks with:
 
 ```sh
-node --test tests/room.cjs
+npm test
 ```
 
 ## Custom domain

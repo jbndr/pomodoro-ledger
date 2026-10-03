@@ -1,4 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
+import { handleSync } from "./sync.js";
+
+export { Ledger } from "./sync.js";
 
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const MODES = ["focus", "short", "long"];
@@ -35,6 +38,7 @@ export default {
       if (origin && new URL(origin).host !== url.host) return json({ error: "forbidden" }, 403);
       return room(env, m[1]).fetch(request);
     }
+    if (url.pathname === "/api/sync" || url.pathname.startsWith("/api/sync/")) return handleSync(request, env, url);
     if (url.pathname.startsWith("/api/")) return json({ error: "not found" }, 404);
     return env.ASSETS.fetch(request);
   },

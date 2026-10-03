@@ -16,8 +16,19 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
-  "durable_objects": {
-    "bindings": [{ "name": "ROOM", "class_name": "Room" }]
+  // Cloudflare Access app protecting /api/sync. See README → Sync between devices.
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "jbndr.cloudflareaccess.com",
+    "ACCESS_AUD": "275da6a82d30e72e003e3052c1b1306fe9d0fcf8ca4bdfbb29a455efd7503c69"
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }]
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOM", "class_name": "Room" },
+      { "name": "LEDGER", "class_name": "Ledger" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Room"] },
+    { "tag": "v2", "new_sqlite_classes": ["Ledger"] }
+  ]
 }
