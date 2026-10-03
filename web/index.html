@@ -53,46 +53,7 @@
 
   <main class="top">
     <section class="timer-card" aria-label="Timer">
-      <div class="glow" aria-hidden="true"></div>
-      <div class="modes" role="tablist" aria-label="Timer mode">
-        <button type="button" role="tab" data-mode="focus" aria-selected="true">Focus</button>
-        <button type="button" role="tab" data-mode="short" aria-selected="false">Short break</button>
-        <button type="button" role="tab" data-mode="long" aria-selected="false">Long break</button>
-      </div>
-      <div class="dial-wrap">
-        <svg class="dial" viewBox="0 0 300 300" aria-hidden="true">
-          <g id="ticks"></g>
-          <circle class="track" cx="150" cy="150" r="112"/>
-          <circle class="arc" id="arc" cx="150" cy="150" r="112" transform="rotate(-90 150 150)"/>
-          <circle class="knob" id="knob" cx="150" cy="38" r="9"/>
-        </svg>
-        <div class="dial-center" aria-live="off">
-          <div class="dial-label" id="modeLabel">Focus</div>
-          <div class="time" id="time" role="timer" aria-label="Time remaining"></div>
-          <div class="dial-sub" id="dialSub"></div>
-        </div>
-        <button class="icon-btn full-btn" type="button" id="fullBtn"></button>
-        <button class="icon-btn float-btn" type="button" id="floatBtn" aria-label="Open floating timer" title="Open floating timer" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><rect x="11" y="11" width="8" height="7" rx="1" fill="currentColor" stroke="none"/></svg></button>
-      </div>
-      <div class="adjust" id="adjust" role="group" aria-label="Adjust this session">
-        <button type="button" data-adj="-1" title="1 minute less (−)">−1 min</button>
-        <button type="button" data-adj="1" title="1 minute more (+)">+1 min</button>
-        <button type="button" data-adj="5" title="5 minutes more">+5 min</button>
-      </div>
-      <div class="set-dots" id="setDots" aria-label="Cycles until long break"></div>
-      <div class="controls">
-        <button class="round" type="button" id="resetBtn" aria-label="Reset timer" title="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg></button>
-        <button class="go" type="button" id="startBtn"></button>
-        <button class="round" type="button" id="skipBtn" aria-label="Skip to next phase" title="Skip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/></svg></button>
-      </div>
-      <div class="working">
-        <span id="pickLabel">Working on</span>
-        <div class="pick" id="pick">
-          <button class="pick-btn" type="button" id="taskPick" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="pickLabel pickValue"><span id="pickValue"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10l4-4 4 4M8 14l4 4 4-4"/></svg></button>
-          <ul class="pick-menu" id="pickMenu" role="listbox" aria-labelledby="pickLabel" hidden></ul>
-        </div>
-        <small id="workingNote"></small>
-      </div>
+      <button class="icon-btn float-btn" type="button" id="floatBtn" aria-label="Open floating timer" title="Open floating timer" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><rect x="11" y="11" width="8" height="7" rx="1" fill="currentColor" stroke="none"/></svg></button>
     </section>
 
     <section class="panel" aria-labelledby="tasksH">

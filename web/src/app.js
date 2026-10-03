@@ -1,4 +1,4 @@
-import { addDays, dayKey, keyTime, nextMonday, pad, sod } from "./lib/dates";
+import { addDays, dayKey, keyTime, nextMonday, sod } from "./lib/dates";
 import { parseWhen } from "./lib/when";
 import { parseTitle } from "./lib/quickEntry";
 import { flushSync, mount } from "svelte";
@@ -6,6 +6,9 @@ import TaskList from "./tasks/TaskList.svelte";
 import { list, progress } from "./lib/redraw.svelte";
 import { cyclesOf, focusTasks, labelHue, matchLabel, matchesLabel, projectNames, projectOf, sessionProject, timeOf } from "./lib/tasks";
 import Progress from "./progress/Progress.svelte";
+import TimerCard from "./timer/TimerCard.svelte";
+import { timerView } from "./timer/state.svelte";
+import { clock, MODE_NAME } from "./lib/timer";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -564,19 +567,6 @@ async function askNotify() {
 function skip() { const run = T.status === "running"; flushPartial(); setMode(T.mode === "focus" ? "short" : "focus"); if (run) start(); }
 
 // ---------- rendering: timer ----------
-const ticksG = $("#ticks"), arc = $("#arc"), knob = $("#knob");
-const R = 112, C = 2 * Math.PI * R;
-arc.setAttribute("stroke-dasharray", C.toFixed(2));
-const ticks = [];
-for (let i = 0; i < 60; i++) {
-  const a = (i / 60) * 2 * Math.PI - Math.PI / 2, major = i % 5 === 0;
-  const r1 = major ? 128 : 132, r2 = 142;
-  const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
-  l.setAttribute("x1", (150 + r1 * Math.cos(a)).toFixed(2)); l.setAttribute("y1", (150 + r1 * Math.sin(a)).toFixed(2));
-  l.setAttribute("x2", (150 + r2 * Math.cos(a)).toFixed(2)); l.setAttribute("y2", (150 + r2 * Math.sin(a)).toFixed(2));
-  l.setAttribute("class", "tick" + (major ? " major" : ""));
-  ticksG.appendChild(l); ticks.push(l);
-}
 const ICON = {
   play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>',
   pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4.5" width="4" height="15" rx="1.2"/><rect x="14" y="4.5" width="4" height="15" rx="1.2"/></svg>',
@@ -598,79 +588,25 @@ const ICON = {
   chev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10l4-4 4 4M8 14l4 4 4-4"/></svg>',
   undo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-5-5 5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
 };
-let lastTxt = "", lastLit = -1, lastBtn = "";
-const MODE_NAME = { focus: "Focus", short: "Short break", long: "Long break" };
-const clock = (secs) => pad(Math.floor(secs / 60)) + ":" + pad(secs % 60);
+let lastTxt = "";
 function renderTimer(force) {
   if (force) syncTicking();
   document.body.dataset.mode = T.mode;
   if (document.body.dataset.status !== T.status) document.body.dataset.status = T.status;
   const total = totalNow(), rem = remNow(), frac = Math.max(0, Math.min(1, rem / total));
-  const secs = Math.ceil(rem / 1000), txt = clock(secs);
+  const txt = clock(Math.ceil(rem / 1000));
   if (txt !== lastTxt || force) {
     lastTxt = txt;
-    $("#time").innerHTML = [...txt].map((c) => (c === ":" ? '<span class="c">:</span>' : '<span class="d">' + c + "</span>")).join("");
-    $("#time").setAttribute("aria-label", Math.floor(secs / 60) + " minutes " + (secs % 60) + " seconds remaining");
     document.title = T.status === "idle" ? "Pomodoro Ledger" : txt + " · " + MODE_NAME[T.mode] + (T.status === "paused" ? " (paused)" : "");
   }
-  arc.setAttribute("stroke-dashoffset", (C * (1 - frac)).toFixed(2));
-  const ang = frac * 2 * Math.PI - Math.PI / 2;
-  knob.setAttribute("cx", (150 + R * Math.cos(ang)).toFixed(2)); knob.setAttribute("cy", (150 + R * Math.sin(ang)).toFixed(2));
-  const lit = Math.ceil(frac * 60);
-  if (lit !== lastLit || force) { lastLit = lit; ticks.forEach((l, i) => l.classList.toggle("lit", i < lit)); }
+  timerView.set(rem, total);
   renderFloating(txt, frac);
   renderTaskStarts(force);
   const tabTime = T.status === "running" ? txt : "Timer";
   if ($("#tabTime").textContent !== tabTime) $("#tabTime").textContent = tabTime;
   if (!force) return;
   roomPush();
-  const every = S.settings.longEvery, idx = Math.min(T.setIndex || 0, every);
-  $("#modeLabel").textContent = MODE_NAME[T.mode] + (T.mode === "focus" ? " · " + (Math.min(idx + 1, every)) + " of " + every : "");
-  $("#dialSub").textContent = T.status === "running" ? "ends at " + fmtClock(T.endsAt) : T.status === "paused" ? "paused" : (total / MIN) + " min";
-  const btn = T.status === "running" ? "pause" : T.status === "paused" ? "resume" : "start";
-  if (btn !== lastBtn) {
-    lastBtn = btn;
-    $("#startBtn").innerHTML = (btn === "pause" ? ICON.pause + "Pause" : ICON.play + (btn === "resume" ? "Resume" : "Start"));
-  }
-  document.querySelectorAll(".modes button").forEach((b) => {
-    const held = T.saved[b.dataset.mode];
-    b.setAttribute("aria-selected", String(b.dataset.mode === T.mode));
-    b.toggleAttribute("data-held", !!held);
-    b.title = held ? "Paused with " + clock(Math.ceil(held.remaining / 1000)) + " left" : "";
-  });
-  let dots = "";
-  for (let i = 0; i < every; i++) {
-    const cls = i < idx ? "on" : i === idx && T.mode === "focus" && T.status === "running" ? "now" : "";
-    dots += '<span class="' + cls + '"></span>';
-  }
-  $("#setDots").innerHTML = dots + "<em>" + (T.mode === "long" ? "long break" : (every - idx) + " to long break") + "</em>";
-}
-
-// ---------- task picker ----------
-const pickBtn = $("#taskPick"), pickMenu = $("#pickMenu");
-let pickOpts = [], pickOpen = false, pickIdx = 0;
-function pickMove(i) {
-  pickIdx = i;
-  [...pickMenu.children].forEach((li, j) => li.classList.toggle("act", j === i));
-  const li = pickMenu.children[i];
-  if (!li) return;
-  pickBtn.setAttribute("aria-activedescendant", li.id);
-  if (li.offsetTop < pickMenu.scrollTop) pickMenu.scrollTop = li.offsetTop - 5;
-  else if (li.offsetTop + li.offsetHeight > pickMenu.scrollTop + pickMenu.clientHeight) pickMenu.scrollTop = li.offsetTop + li.offsetHeight - pickMenu.clientHeight + 5;
-}
-function openPick() {
-  pickOpen = true; pickMenu.hidden = false; pickBtn.setAttribute("aria-expanded", "true");
-  pickMove(Math.max(0, pickOpts.findIndex((o) => o.id === (S.activeId || ""))));
-}
-function closePick() {
-  pickOpen = false; pickMenu.hidden = true; pickBtn.setAttribute("aria-expanded", "false"); pickBtn.removeAttribute("aria-activedescendant");
-}
-function pickChoose(i) {
-  const o = pickOpts[i];
-  closePick();
-  if (!o) return;
-  if (preview()) { markStarted(); return; }
-  S.activeId = o.id || null; saveTimer(); renderTasks();
+  timerView.refresh();
 }
 
 // ---------- floating menu ----------
@@ -748,9 +684,7 @@ function moveItems() {
 function setZen(on) {
   document.body.classList.toggle("zen", on);
   document.querySelectorAll(".bar, .room, .banner, .panel, .progress, .tabbar").forEach((el) => (el.inert = on));
-  const b = $("#fullBtn"), label = on ? "Exit full screen" : "Full screen";
-  b.innerHTML = on ? ICON.shrink : ICON.expand; b.setAttribute("aria-label", label);
-  b.title = on ? label : "Fill the page (F) · Shift-click for browser full screen (Shift+F)";
+  timerView.zen = on;
 }
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
 function browserFull(on) {
@@ -1169,15 +1103,6 @@ function renderTasks() {
     const a = labelAnchor();
     if (a) { if (LP.key !== "hash") a.setAttribute("aria-expanded", "true"); placeLabelPop(); } else closeLabelPop();
   }
-  // task picker
-  const act = S.activeId && vt.get(S.activeId);
-  pickOpts = [{ id: "", title: "Unplanned focus (no task)" }].concat(allOpen.map((t) => ({ id: t.id, title: t.title, meta: (projectOf(t) ? projectOf(t) + " · " : "") + cyclesOf(t) + "/" + (t.est || 0) })));
-  if (act && act.done) pickOpts.push({ id: act.id, title: act.title + " (finished)" });
-  const cur = pickOpts.findIndex((o) => o.id === (act ? act.id : ""));
-  $("#pickValue").textContent = pickOpts[Math.max(0, cur)].title;
-  pickMenu.innerHTML = pickOpts.map((o, i) => '<li role="option" id="pick-' + i + '" data-i="' + i + '" aria-selected="' + (i === Math.max(0, cur)) + '"><span>' + esc(o.title) + "</span>" + (o.meta ? "<em>" + o.meta + "</em>" : "") + ICON.check + "</li>").join("");
-  if (pickOpen) pickMove(Math.min(pickIdx, pickOpts.length - 1));
-  $("#workingNote").textContent = act ? cyclesOf(act) + " of " + plural(act.est || 0, "planned cycle") + " done · " + fmtDur(timeOf(act)) + " focus so far" : "Pick a task so its cycles and time are tracked.";
 }
 
 // ---------- rendering: stats ----------
@@ -1263,32 +1188,6 @@ document.addEventListener("scroll", hideTip, true);
 
 // ---------- events ----------
 const guardPreview = () => { if (preview() && !DEMO) { toast("These are examples. Add a task to start your own ledger."); return true; } return false; };
-$("#startBtn").addEventListener("click", () => { buzz(T.status === "running" ? 8 : 14); toggle(); });
-$("#resetBtn").addEventListener("click", () => { buzz(8); flushPartial(); setMode(T.mode); });
-$("#skipBtn").addEventListener("click", () => { buzz(8); skip(); });
-$("#adjust").addEventListener("click", (e) => { const b = e.target.closest("[data-adj]"); if (b) adjust(+b.dataset.adj); });
-document.querySelectorAll(".modes button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.mode !== T.mode) setMode(b.dataset.mode, true); }));
-$("#fullBtn").addEventListener("click", (e) => toggleZen(e.shiftKey));
-pickBtn.addEventListener("click", () => (pickOpen ? closePick() : openPick()));
-pickBtn.addEventListener("keydown", (e) => {
-  const k = e.key, last = pickOpts.length - 1;
-  if (!pickOpen) { if (k === "ArrowDown" || k === "ArrowUp" || k === " ") { e.preventDefault(); openPick(); } return; }
-  e.stopPropagation();
-  if (k === "Tab") { closePick(); return; }
-  if (k === "Escape") closePick();
-  else if (k === "ArrowDown") pickMove(Math.min(last, pickIdx + 1));
-  else if (k === "ArrowUp") pickMove(Math.max(0, pickIdx - 1));
-  else if (k === "Home") pickMove(0);
-  else if (k === "End") pickMove(last);
-  else if (k === "Enter" || k === " ") pickChoose(pickIdx);
-  else return;
-  e.preventDefault();
-});
-pickBtn.addEventListener("keyup", (e) => { if (e.key === " ") e.preventDefault(); });
-pickMenu.addEventListener("mousedown", (e) => e.preventDefault());
-pickMenu.addEventListener("pointermove", (e) => { const li = e.target.closest("li"); if (li && +li.dataset.i !== pickIdx) pickMove(+li.dataset.i); });
-pickMenu.addEventListener("click", (e) => { const li = e.target.closest("li"); if (li) pickChoose(+li.dataset.i); });
-document.addEventListener("pointerdown", (e) => { if (pickOpen && !e.target.closest("#pick")) closePick(); });
 $("#startOwn").addEventListener("click", () => {
   if (DEMO) {
     const url = new URL(location.href);
@@ -2223,7 +2122,7 @@ function sizeTimer() {
 new ResizeObserver(() => document.documentElement.style.setProperty("--bar-h", $(".bar").offsetHeight + "px")).observe($(".bar"));
 addEventListener("scroll", () => document.body.classList.toggle("scrolled", scrollY > 4), { passive: true });
 const timerLayout = new ResizeObserver(sizeTimer);
-[$(".bar"), $("#roomStrip"), $("#previewBanner"), $(".working")].forEach((el) => timerLayout.observe(el));
+[$(".bar"), $("#roomStrip"), $("#previewBanner")].forEach((el) => timerLayout.observe(el));
 addEventListener("resize", sizeTimer);
 // The observer above doesn't run in background tabs, and web fonts change heights after the first measure.
 if (document.fonts) document.fonts.ready.then(sizeTimer);
@@ -2260,6 +2159,12 @@ mount(Progress, { target: $(".app"), props: { api: {
   S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
   deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask,
 } } });
+mount(TimerCard, { target: $(".timer-card"), props: { api: {
+  get T() { return T; }, S, ICON, floatBtn, fmtClock, fmtDur, plural, viewTasks, openOf,
+  toggle, skip, adjust, setMode, flushPartial, buzz, toggleZen,
+  setActive: (id) => { if (preview()) { markStarted(); return; } S.activeId = id || null; saveTimer(); renderTasks(); },
+} } });
+timerLayout.observe($(".working"));
 taskList = mount(TaskList, { target: $("#taskFoot").parentNode, anchor: $("#taskFoot"), props: { api: {
   S, ICON, completing, calm, guardPreview,
   todayKey, bucketOf, isToday, sections, openOf, viewTasks, inProject, cyclesOf, timeOf, projectOf, labelHue, labelChipName, subsOf,
