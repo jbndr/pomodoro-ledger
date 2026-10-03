@@ -348,6 +348,31 @@ body[data-status="running"] .now-tag i { animation: now-dot 1.6s ease-in-out inf
 .tasks .group.today-head svg { width: 17px; height: 17px; color: #E8A800; }
 .tasks .group.today-head > span { flex-basis: 100%; font: 12.5px var(--f-body); color: var(--muted); }
 .tasks .group.today-head span { font-family: var(--f-body); }
+.day-plan { flex-basis: 100%; display: grid; gap: 6px; margin-top: 6px; font: 12.5px var(--f-body); color: var(--muted); }
+.day-bar { position: relative; display: flex; gap: 2px; height: 8px; }
+.day-bar i { min-width: 2px; border-radius: 3px; }
+.day-bar i.f { background: var(--accent); }
+.day-bar i.o { background: color-mix(in oklab, var(--accent) 45%, transparent); }
+.day-bar i.b { background: color-mix(in oklab, var(--fg) 12%, transparent); }
+.day-bar b { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--warn); }
+.day-stats { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.day-stats strong { color: var(--fg); font-weight: 650; font-variant-numeric: tabular-nums; }
+.day-stats .net strong { color: var(--accent); }
+.day-stats .eta { margin-left: auto; }
+.day-stats span:empty { display: none; }
+.day-count { font-size: 11.5px; color: var(--faint); }
+.add-sec { margin-left: auto; height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: 600 12.5px var(--f-body); letter-spacing: 0; }
+@media (hover: hover) { .add-sec:hover { background: var(--surface-2); color: var(--fg); } }
+.tasks .group.section { padding: 18px 8px 6px; gap: 10px; align-items: center; flex-wrap: nowrap; border-bottom: 1px solid color-mix(in oklab, var(--accent) 30%, var(--line)); text-transform: none; letter-spacing: 0; }
+.sec-title { flex: 1; min-width: 0; border: 0; background: transparent; padding: 2px 0; font: 650 14.5px var(--f-body); color: var(--accent); text-overflow: ellipsis; }
+.sec-title:focus { outline: none; box-shadow: 0 2px 0 var(--accent); }
+.tasks .group.section span { font: 12px var(--f-body); color: var(--faint); white-space: nowrap; }
+.tasks .group.section .sec-time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.sec-del { width: 28px; height: 28px; flex: none; }
+.sec-del svg { width: 14px; height: 14px; }
+@media (hover: hover) { .sec-del { opacity: 0; } .group.section:hover .sec-del, .sec-del:focus-visible { opacity: 1; } }
+.day-fit.over { color: var(--muted); }
+.field .opt { font-size: 11px; color: var(--faint); }
 .task.open.is-active::before { display: none; }
 .card-est { display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; }
 .card-est button { width: 26px; height: 30px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 16px; }
@@ -951,9 +976,9 @@ body.zen .working { width: min(100%, 420px); }
           <div class="fields">
             <label class="field">Long break every<span class="unit"><input type="number" id="sEvery" min="2" max="12" inputmode="numeric"><i>cycles</i></span></label>
             <label class="field">Daily goal<span class="unit"><input type="number" id="sGoal" min="1" max="30" inputmode="numeric"><i>cycles</i></span></label>
-            <label class="field">Workday ends<input type="time" id="sDayEnd" step="900"></label>
+            <label class="field">Workday ends <span class="opt">optional</span><input type="time" id="sDayEnd" step="900"></label>
           </div>
-          <p class="hint">Today's tasks that won't fit before then are flagged, with an option to move them to tomorrow. Clear it to turn this off.</p>
+          <p class="hint">Optional. When set, Today points out tasks that won't finish before then, and after hours offers to move the rest to tomorrow.</p>
         </fieldset>
       </div>
       <div class="set-panel" role="tabpanel" id="setPanel-auto" aria-labelledby="setTab-auto">
@@ -1006,7 +1031,7 @@ body.zen .working { width: min(100%, 420px); }
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const MIN = 60000;
   const DEMO = new URLSearchParams(location.search).get("demo") === "1";
-  const DEF = { focus: 25, short: 5, long: 15, longEvery: 4, autoBreak: true, autoFocus: false, sound: true, notify: false, goal: 8, ticking: false, tickVolume: 20, tickPace: 2, autoFloat: false, dayEnd: "18:00" };
+  const DEF = { focus: 25, short: 5, long: 15, longEvery: 4, autoBreak: true, autoFocus: false, sound: true, notify: false, goal: 8, ticking: false, tickVolume: 20, tickPace: 2, autoFloat: false, workdayEnd: "", sections: [] };
   const ls = {
     get(k, d) { if (DEMO) return d; try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { if (DEMO) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -1284,12 +1309,15 @@ body.zen .working { width: min(100%, 420px); }
   // Planned days that have arrived (or passed) count as today, so nothing has to flip at midnight.
   const bucketOf = (t, tk = todayKey()) => (t.today || (t.plan && t.plan <= tk) ? "today" : t.plan ? "upcoming" : "later");
   const isToday = (t) => bucketOf(t) === "today";
+  // Optional headings inside Today ("Morning", "Admin"…). They persist across days and sync with settings.
+  const sections = () => (Array.isArray(S.settings.sections) ? S.settings.sections : []);
+  const secRank = (t) => { const i = sections().findIndex((x) => x.id === t.section); return i < 0 ? 0 : i + 1; };
   const RANK = { today: 0, upcoming: 1, later: 2 };
   const openOf = (vt) => {
     const tk = todayKey();
     return [...vt.values()].filter((t) => !t.done && !t.system).sort((a, b) => {
       const ba = bucketOf(a, tk), bb = bucketOf(b, tk);
-      return RANK[ba] - RANK[bb] || (ba === "upcoming" ? a.plan.localeCompare(b.plan) : 0) || ord(a) - ord(b);
+      return RANK[ba] - RANK[bb] || (ba === "upcoming" ? a.plan.localeCompare(b.plan) : ba === "today" ? secRank(a) - secRank(b) : 0) || ord(a) - ord(b);
     });
   };
   function dayName(k) {
@@ -1300,14 +1328,17 @@ body.zen .working { width: min(100%, 420px); }
     return fmtDate(keyTime(k), { weekday: "short", day: "numeric", month: "short" });
   }
   const shortDay = (k) => fmtDate(keyTime(k), { weekday: "short" }) + " " + new Date(keyTime(k)).getDate();
-  // g is a list group: "today", "later", or a YYYY-MM-DD day.
+  // g is a list group: "today", "sec:<id>" (a section in Today), "later", or a YYYY-MM-DD day.
   function placed(t, g, order) {
-    const n = { ...clone(t), order, today: g === "today" };
-    if (g === "today" || g === "later") delete n.plan; else n.plan = g;
+    const sec = g.startsWith("sec:") ? g.slice(4) : "";
+    const n = { ...clone(t), order, today: g === "today" || !!sec };
+    if (n.today || g === "later") delete n.plan; else n.plan = g;
+    if (sec) n.section = sec; else delete n.section;
     return n;
   }
-  const inGroup = (t, g) => (g === "today" ? isToday(t) : g === "later" ? bucketOf(t) === "later" : bucketOf(t) === "upcoming" && t.plan === g);
-  const viewOf = (g) => (g === "today" || g === "later" ? g : "upcoming");
+  const inGroup = (t, g) => (g === "today" ? isToday(t) : g.startsWith("sec:") ? isToday(t) && t.section === g.slice(4) : g === "later" ? bucketOf(t) === "later" : bucketOf(t) === "upcoming" && t.plan === g);
+  const groupName = (g) => (g === "today" ? "Today" : g === "later" ? "Later" : g.startsWith("sec:") ? (sections().find((x) => x.id === g.slice(4)) || {}).title || "section" : dayName(g));
+  const viewOf = (g) => (g === "later" ? g : g === "today" || g.startsWith("sec:") ? "today" : "upcoming");
   function leaveRows(ids, done) {
     const rows = [...$("#taskList").querySelectorAll(".task")].filter((li) => ids.includes(li.dataset.id));
     if (!rows.length || calm()) return done();
@@ -1589,6 +1620,7 @@ body.zen .working { width: min(100%, 420px); }
     shrink: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>',
     grip: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>',
     steps: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l2 2 3-3.5M4 16l2 2 3-3.5M13 8h7M13 17h7"/></svg>',
+    x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
     star: '<svg class="ic-today" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>',
     list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 6h10M10 12h10M10 18h10"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>',
     note: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 6h14M5 11h14M5 16h9"/></svg>',
@@ -1730,7 +1762,7 @@ body.zen .working { width: min(100%, 420px); }
     if (next === rows[0] && next?.classList.contains("group")) next = rows[1] || null;
     if (next !== slot.nextElementSibling) moveSlot(next);
     const group = groupBefore(ul, slot);
-    if (group === drag.from) delete li.dataset.move; else li.dataset.move = "Move to " + (group === "today" ? "Today" : group === "later" ? "Later" : dayName(group));
+    if (group === drag.from) delete li.dataset.move; else li.dataset.move = "Move to " + groupName(group);
   }
   function dragScroll() {
     if (!drag || drag.settling) return;
@@ -1774,7 +1806,7 @@ body.zen .working { width: min(100%, 420px); }
       const t = S.tasks.get(el.dataset.id);
       if (!t) continue;
       const n = placed(t, end && t.plan >= g && t.plan <= end ? t.plan : g, i);
-      if (t.order !== i || !!t.today !== n.today || (t.plan || "") !== (n.plan || "")) changed.push(n);
+      if (t.order !== i || !!t.today !== n.today || (t.plan || "") !== (n.plan || "") || (t.section || "") !== (n.section || "")) changed.push(n);
       i++;
     }
     if (changed.length) Store.saveTasks(changed); else renderTasks();
@@ -2242,11 +2274,14 @@ body.zen .working { width: min(100%, 420px); }
       if (index >= S.settings.longEvery) { index = 0; return dur("long"); }
       return dur("short");
     };
-    if (T.mode !== "focus") cursor += remNow();
-    else if (T.status !== "idle" && !current) { cursor += remNow(); index++; cursor += nextBreak(); }
+    plan.segs = [];
+    if (T.mode !== "focus") { cursor += remNow(); plan.segs.push({ k: "b", ms: remNow() }); }
+    else if (T.status !== "idle" && !current) { cursor += remNow(); index++; const b = nextBreak(); cursor += b; plan.segs.push({ k: "o", ms: remNow() }, { k: "b", ms: b }); }
     let cyclesLeft = sequence.reduce((n, t) => n + remaining(t), 0);
-    plan.focus = 0; plan.breaks = 0; plan.late = [];
-    const endAt = S.settings.dayEnd ? sod(Date.now()) + (+S.settings.dayEnd.slice(0, 2)) * 3600000 + (+S.settings.dayEnd.slice(3)) * MIN : Infinity;
+    plan.focus = 0; plan.breaks = 0; plan.late = []; plan.rest = []; plan.start = Date.now();
+    const we = S.settings.workdayEnd, endAt = we ? sod(Date.now()) + (+we.slice(0, 2)) * 3600000 + (+we.slice(3)) * MIN : Infinity;
+    // Once the workday is over every task is "late", so stop flagging and just offer to move what's left.
+    plan.endAt = endAt; plan.over = Date.now() >= endAt;
     for (const t of sequence) {
       const cycles = remaining(t);
       if (!cycles) { plan.set(t.id, { text: "Estimate met", hint: "All estimated cycles for this task are complete. Increase the estimate to plan more time." }); continue; }
@@ -2254,13 +2289,14 @@ body.zen .working { width: min(100%, 420px); }
       let end = cursor;
       for (let i = 0; i < cycles; i++) {
         const focus = t === current && i === 0 ? remNow() : dur("focus");
-        cursor += focus; plan.focus += focus; end = cursor;
+        cursor += focus; plan.focus += focus; end = cursor; plan.segs.push({ k: "f", ms: focus });
         index++; cyclesLeft--;
-        if (cyclesLeft) { const rest = nextBreak(); cursor += rest; plan.breaks += rest; }
+        if (cyclesLeft) { const rest = nextBreak(); cursor += rest; plan.breaks += rest; plan.segs.push({ k: "b", ms: rest }); }
       }
-      const late = t !== current && end > endAt;
+      const late = !plan.over && t !== current && end > endAt;
       if (late) plan.late.push(t.id);
-      plan.set(t.id, { late, text: t === current ? T.status === "running" ? "In progress" : "Resume now" : "Starts ~" + fmtClock(start),
+      if (t !== current) plan.rest.push(t.id);
+      plan.set(t.id, { late, start, end, text: t === current ? T.status === "running" ? "In progress" : "Resume now" : "Starts ~" + fmtClock(start),
         hint: (t === current ? "Estimated to finish ~" + fmtClock(end) : "Estimated ~" + fmtClock(start) + " – " + fmtClock(end)) + ", including the short and long breaks in your settings. " + (current ? "Finish the current task first, then follow Today’s order." : "Tasks follow Today’s order; paused timers are assumed to resume now.") });
     }
     plan.end = cursor;
@@ -2279,16 +2315,27 @@ body.zen .working { width: min(100%, 420px); }
       el.title = estimate ? estimate.hint : "";
       el.classList.toggle("late", !!(estimate && estimate.late));
     });
-    const fit = $("#dayFit");
-    fit.hidden = S.taskView !== "today" || !plan.late.length || preview();
+    const fit = $("#dayFit"), ids = plan.over ? plan.rest : plan.late;
+    fit.hidden = S.taskView !== "today" || !ids.length || preview();
+    fit.classList.toggle("over", plan.over);
     if (!fit.hidden) {
-      fit.dataset.ids = plan.late.join(",");
-      $("#dayFitText").textContent = plural(plan.late.length, "task") + " won't fit before " + fmtClock(sod(Date.now()) + (+S.settings.dayEnd.slice(0, 2)) * 3600000 + (+S.settings.dayEnd.slice(3)) * MIN) + ".";
+      fit.dataset.ids = ids.join(",");
+      $("#dayFitText").textContent = plan.over ? "Your workday ended at " + fmtClock(plan.endAt) + ". Done for today?" : plural(ids.length, "task") + " won't fit before " + fmtClock(plan.endAt) + ".";
+      $("#dayFitMove").textContent = plan.over ? "Move the rest to tomorrow" : "Move to tomorrow";
     }
-    const todayPlan = $("#taskList .today-plan");
-    if (todayPlan) {
-      todayPlan.textContent = fmtDur(plan.focus) + " focus" + (plan.breaks ? " + " + fmtDur(plan.breaks) + " breaks" : "") + " · done ~" + fmtClock(plan.end);
-      todayPlan.title = "Focus is pure work time. Breaks follow your timer settings, so the finish time is when you'd be done if you start now and don't skip any.";
+    document.querySelectorAll("#taskList .group.section").forEach((h) => {
+      const times = [...$("#taskList").querySelectorAll(".task")].filter((li) => groupBefore($("#taskList"), li) === h.dataset.g).map((li) => plan.get(li.dataset.id)).filter((x) => x && x.start);
+      h.querySelector(".sec-time").textContent = times.length ? fmtClock(Math.min(...times.map((x) => x.start))) + " – " + fmtClock(Math.max(...times.map((x) => x.end))) : "";
+    });
+    const day = $("#taskList .day-plan");
+    if (day) {
+      const span = Math.max(1, plan.end - plan.start), mark = plan.endAt > plan.start && plan.endAt < plan.end ? (plan.endAt - plan.start) / span * 100 : -1;
+      day.querySelector(".day-bar").innerHTML = plan.segs.map((x) => '<i class="' + x.k + '" style="flex-grow:' + Math.max(1, Math.round(x.ms / 1000)) + '"></i>').join("") +
+        (mark >= 0 ? '<b style="left:' + mark.toFixed(2) + '%" title="Workday ends ' + fmtClock(plan.endAt) + '"></b>' : "");
+      day.querySelector(".net").innerHTML = "<strong>" + fmtDur(plan.focus) + "</strong> focus";
+      day.querySelector(".gross").innerHTML = plan.breaks ? "<strong>" + fmtDur(plan.focus + plan.breaks) + "</strong> with breaks" : "";
+      day.querySelector(".eta").innerHTML = "done <strong>~" + fmtClock(plan.end) + "</strong>";
+      day.title = "Focus is pure work time. With breaks adds the short and long breaks from your settings; done is when you'd finish if you start now and don't skip any.";
     }
   }
   function renderTasks() {
@@ -2351,9 +2398,11 @@ body.zen .working { width: min(100%, 420px); }
       const left = (list) => list.reduce((a, t) => a + Math.max(0, (t.est || 0) - cyclesOf(t)), 0);
       const shown = byView[S.taskView];
       let html = "";
-      if (S.taskView === "today" && shown.length) {
+      if (S.taskView === "today" && (shown.length || sections().length)) {
         const n = left(shown);
-        html = '<li class="group today-head" data-g="today">' + ICON.star + "Today<span>" + plural(shown.length, "task") + " · " + (n ? plural(n, "cycle") + ' to go · <span class="today-plan"></span>' : "all planned cycles done") + "</span></li>";
+        html = '<li class="group today-head" data-g="today">' + ICON.star + 'Today<button class="add-sec" type="button" data-addsec title="Add a section, like Morning or Admin">+ Section</button>' +
+          (n ? '<div class="day-plan"><div class="day-bar" aria-hidden="true"></div><div class="day-stats"><span class="net"></span><span class="gross"></span><span class="eta"></span></div><div class="day-count">' + plural(shown.length, "task") + " · " + plural(n, "cycle") + " to go</div></div>"
+            : "<span>" + (shown.length ? plural(shown.length, "task") + " · all planned cycles done" : "Nothing planned yet") + "</span>") + "</li>";
       }
       const summary = (list) => (list.length ? plural(list.length, "task") + (left(list) ? " · " + fmtDur(left(list) * dur("focus")) + " focus" : "") : "");
       if (S.taskView === "upcoming") {
@@ -2371,6 +2420,16 @@ body.zen .working { width: min(100%, 420px); }
           const end = dayKey(new Date(y, m, 0).getTime()), name = fmtDate(new Date(y, m - 1, 1).getTime(), y === new Date(base).getFullYear() ? { month: "long" } : { month: "long", year: "numeric" });
           html += '<li class="group month" data-g="' + start + '" data-end="' + end + '">' + esc((start !== ym + "-01" ? "Rest of " : "") + name) + "<span>" + summary(list) + "</span></li>";
           list.forEach((t) => { html += row(t, true); });
+        }
+      } else if (S.taskView === "today") {
+        const known = new Set(sections().map((x) => x.id));
+        shown.filter((t) => !known.has(t.section)).forEach((t) => { html += row(t); });
+        for (const sec of sections()) {
+          const mine = shown.filter((t) => t.section === sec.id);
+          html += '<li class="group section" data-g="sec:' + esc(sec.id) + '"><input class="sec-title" type="text" maxlength="60" value="' + esc(sec.title) + '" aria-label="Section name" data-sec="' + esc(sec.id) + '">' +
+            '<span class="sec-time"></span><span class="sec-sum">' + (mine.length ? plural(mine.length, "task") : "Drag tasks here") + "</span>" +
+            '<button class="icon-btn sec-del" type="button" data-secdel="' + esc(sec.id) + '" aria-label="Remove section ' + esc(sec.title) + '" title="Remove section (its tasks stay in Today)">' + ICON.x + "</button></li>";
+          mine.forEach((t) => { html += row(t); });
         }
       } else shown.forEach((t) => { html += row(t); });
       ul.innerHTML = html;
@@ -2805,8 +2864,32 @@ body.zen .working { width: min(100%, 420px); }
     $('#projectFilter [aria-pressed="true"]')?.focus();
   });
   let delTimer = null;
+  function saveSections(list) { S.settings.sections = list; Store.saveSettings(); renderTasks(); }
+  function renameSection(input) {
+    const list = sections(), sec = list.find((x) => x.id === input.dataset.sec), title = input.value.trim();
+    if (!sec) return;
+    if (!title) { input.value = sec.title; return; }
+    if (title !== sec.title) saveSections(list.map((x) => (x === sec ? { ...x, title } : x)));
+  }
+  $("#taskList").addEventListener("change", (e) => { if (e.target.matches(".sec-title")) renameSection(e.target); });
   $("#taskList").addEventListener("click", (e) => {
     if (dragJustEnded) { dragJustEnded = false; return; }
+    if (e.target.closest("[data-addsec]")) {
+      if (guardPreview()) return;
+      const id = "s" + Date.now().toString(36);
+      saveSections([...sections(), { id, title: "New section" }]);
+      const input = $('#taskList [data-sec="' + id + '"]');
+      if (input) { input.focus(); input.select(); }
+      return;
+    }
+    const del = e.target.closest("[data-secdel]");
+    if (del) {
+      if (guardPreview()) return;
+      const sec = sections().find((x) => x.id === del.dataset.secdel);
+      saveSections(sections().filter((x) => x !== sec));
+      if (sec) toast("Removed “" + sec.title + "”. Its tasks stay in Today.");
+      return;
+    }
     const b = e.target.closest("[data-act],[data-cest]"); if (!b) return;
     const li = b.closest(".task"); const id = li && li.dataset.id;
     const act = b.dataset.act;
@@ -2972,7 +3055,8 @@ body.zen .working { width: min(100%, 420px); }
       if (again) again.querySelector(".grip").focus();
       return;
     }
-    if (e.target.matches('[data-field="title"]') && e.key === "Enter") { e.preventDefault(); e.target.blur(); return; }
+    if (e.target.matches('[data-field="title"], .sec-title') && e.key === "Enter") { e.preventDefault(); e.target.blur(); return; }
+    if (e.target.matches(".sec-title") && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); const sec = sections().find((x) => x.id === e.target.dataset.sec); if (sec) e.target.value = sec.title; e.target.blur(); return; }
     const li = e.target.closest(".task");
     if (li && e.key === "Escape" && li.classList.contains("open")) {
       e.preventDefault(); e.stopPropagation();
@@ -3282,7 +3366,7 @@ body.zen .working { width: min(100%, 420px); }
   function fillSettings() {
     for (const [id, k] of Object.entries(F)) { const el = $("#" + id); if (document.activeElement !== el) el.value = S.settings[k]; }
     for (const [id, k] of Object.entries(B)) $("#" + id).checked = !!S.settings[k];
-    if (document.activeElement !== $("#sDayEnd")) $("#sDayEnd").value = S.settings.dayEnd || "";
+    if (document.activeElement !== $("#sDayEnd")) $("#sDayEnd").value = S.settings.workdayEnd || "";
     fillTicking();
   }
   let modalScroll = null;
@@ -3370,7 +3454,7 @@ body.zen .working { width: min(100%, 420px); }
     } else if (B[id]) S.settings[B[id]] = e.target.checked;
     else if (id === "sTickVolume") S.settings.tickVolume = Math.max(0, Math.min(100, +e.target.value));
     else if (id === "sTickPace") S.settings.tickPace = [1, 2, 4].includes(+e.target.value) ? +e.target.value : 2;
-    else if (id === "sDayEnd") S.settings.dayEnd = /^\d\d:\d\d$/.test(e.target.value) ? e.target.value : "";
+    else if (id === "sDayEnd") S.settings.workdayEnd = /^\d\d:\d\d$/.test(e.target.value) ? e.target.value : "";
     if (["sTicking", "sTickVolume", "sTickPace"].includes(id)) { cancelTickPreview(); fillTicking(); syncTicking(); }
     $("#setNote").textContent = "Saved.";
     Store.saveSettings();
