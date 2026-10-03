@@ -248,18 +248,21 @@ tr:hover .hbar b { background: var(--heat3); }
 .est-pick button:hover i { border-color: var(--tomato); }
 .est output { font-family: var(--f-mono); font-size: 12.5px; color: var(--muted); min-width: 7ch; }
 
-.tasks { list-style: none; margin: 14px 0 0; padding: 0; display: grid; }
+.tasks { position: relative; list-style: none; margin: 14px 0 0; padding: 0; display: grid; }
 .task { position: relative; display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 10px 12px 4px; border-radius: 14px; border-bottom: 1px solid var(--line); transition: background .15s; }
 .task:last-child { border-bottom-color: transparent; }
 .task:hover { background: var(--surface-2); }
 .task.is-active { background: var(--accent-soft); border-bottom-color: transparent; }
-.task.dragging { position: fixed; z-index: 60; pointer-events: none; margin: 0; grid-template-columns: auto minmax(0, 1fr); padding: 8px 12px; max-height: 90px; overflow: hidden; background: var(--surface); box-shadow: 0 12px 36px rgba(0,0,0,.2); border: 1px solid var(--accent); opacity: .98; transform: scale(1.01); }
-.task.dragging .check, .task.dragging .task-meta, .task.dragging .task-actions, .task.dragging .subplan { display: none; }
-.task-drop { position: relative; display: grid; align-items: end; justify-items: end; padding: 8px 10px; border: 1px dashed var(--accent); border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; }
-.task-drop::before { content: ""; position: absolute; top: -2px; left: 4px; right: 4px; height: 3px; border-radius: 3px; background: var(--accent); }
+.task.dragging { position: fixed; z-index: 60; pointer-events: none; margin: 0; background: var(--surface); border: 1px solid var(--line-2); transform: scale(1.02) rotate(-.4deg); box-shadow: 0 22px 44px -16px rgba(0,0,0,.3), 0 6px 14px -6px rgba(0,0,0,.14); }
+.task.dragging.is-active { background: linear-gradient(var(--accent-soft), var(--accent-soft)) var(--surface); }
+.task.dragging .task-actions, .task.dragging .subplan, .task.dragging .task-start { display: none; }
+.task.dragging[data-move]::after { content: attr(data-move); position: absolute; top: -11px; right: 14px; padding: 2px 9px; border-radius: 999px; background: var(--accent); color: var(--on-accent); font-size: 11px; font-weight: 650; letter-spacing: .02em; box-shadow: 0 4px 10px -4px var(--accent); }
+.task-drop { border: 1.5px dashed color-mix(in oklab, var(--accent) 45%, transparent); border-radius: 14px; background: var(--accent-soft); }
+.task.dropped { animation: dropped .9s ease-out; }
+@keyframes dropped { from { background-color: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); } to { box-shadow: inset 0 0 0 1.5px transparent; } }
 .task-start { color: var(--accent); font: 11px var(--f-body); }
 @media (hover: hover) { .task-start { display: none; position: absolute; z-index: 2; top: -10px; right: 12px; padding: 2px 8px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); white-space: nowrap; } .task:hover .task-start, .task:focus-within .task-start { display: inline; } }
-.tasks.sorting { user-select: none; -webkit-user-select: none; cursor: grabbing; }
+.tasks.sorting, .tasks.sorting * { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 .tasks .group { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 14px 10px 6px; font-size: 11.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
 .tasks .group span { font-family: var(--f-mono); font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
 .grip { width: 20px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--line-2); cursor: grab; touch-action: none; }
@@ -379,18 +382,42 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .toast { pointer-events: none; position: fixed; z-index: 60; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); translate: -50% 0; background: var(--fg); color: var(--bg); padding: 11px 16px; border-radius: 14px; font-size: 14px; box-shadow: var(--shadow); max-width: min(92vw, 460px); text-align: center; }
 
 .overlay { position: fixed; inset: 0; z-index: 40; background: var(--scrim); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 16px; }
-.sheet { width: min(100%, 440px); max-height: calc(100% - 32px); overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 22px; display: grid; gap: 16px; box-shadow: var(--shadow); }
+.sheet { width: min(100%, 460px); max-height: calc(100% - 32px); overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 24px; padding: 22px; display: grid; gap: 16px; box-shadow: var(--shadow); }
 .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fields.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .field { display: grid; gap: 5px; font-size: 13px; color: var(--muted); }
 .field input { height: 40px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface-2); padding: 0 12px; font-family: var(--f-mono); font-size: 14px; color: var(--fg); width: 100%; min-width: 0; }
 .field select { height: 40px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface-2); padding: 0 10px; color: var(--fg); width: 100%; min-width: 0; }
-#tickingOptions .fields { padding-block: 8px; }
-#tickingOptions input[type="range"] { padding: 0; border: 0; background: transparent; accent-color: var(--accent); cursor: pointer; }
-.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; padding: 8px 0; border-top: 1px solid var(--line); }
+.field-head { display: flex; justify-content: space-between; gap: 8px; }
+#tickVolumeValue { font-family: var(--f-mono); color: var(--faint); }
+.unit { position: relative; display: block; }
+.unit input { padding-right: 52px; -moz-appearance: textfield; appearance: textfield; }
+.unit input::-webkit-inner-spin-button, .unit input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.unit i { position: absolute; right: 11px; top: 50%; translate: 0 -50%; font: 12px var(--f-body); font-style: normal; color: var(--faint); pointer-events: none; }
+.group { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 10px; }
+.group legend { padding: 0; margin-bottom: 10px; font-size: 11px; font-weight: 650; letter-spacing: .09em; text-transform: uppercase; color: var(--faint); }
+.group .hint { margin: -2px 2px 0; font-size: 12px; color: var(--faint); }
+.card { border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); padding: 0 14px; }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; padding: 10px 0; }
+.toggle + .toggle, .nested + .toggle { border-top: 1px solid var(--line); }
+.toggle > span:first-child, .toggle > label { display: grid; gap: 1px; min-width: 0; cursor: pointer; }
+.toggle small { font-size: 12px; color: var(--muted); }
+.toggle .acts { display: flex; align-items: center; gap: 10px; flex: none; }
 .toggle input { width: 40px; height: 22px; appearance: none; border-radius: 999px; background: var(--line-2); position: relative; cursor: pointer; transition: background .2s; flex: none; }
 .toggle input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); transition: translate .2s; }
 .toggle input:checked { background: var(--fg); }
 .toggle input:checked::after { translate: 18px 0; }
+.nested { margin: 0 0 12px; padding: 2px 0 2px 12px; border-left: 2px solid var(--line-2); }
+.nested .field select { background: var(--surface); }
+#tickingOptions input[type="range"] { height: 40px; padding: 0; border: 0; background: transparent; accent-color: var(--accent); cursor: pointer; }
+.settings-sheet { gap: 18px; }
+.seg { display: flex; padding: 4px; gap: 2px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+.seg button { flex: 1; border: 0; background: transparent; padding: 7px 10px; border-radius: 999px; font-size: 13px; font-weight: 550; color: var(--muted); white-space: nowrap; transition: background .2s, color .2s; }
+.seg button:hover { color: var(--fg); }
+.seg button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line); }
+.set-panels { display: grid; }
+.set-panel { grid-area: 1 / 1; display: grid; gap: 20px; align-content: start; min-width: 0; }
+.set-panel[aria-hidden="true"] { visibility: hidden; }
 .sheet-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 @media (max-width: 520px) {
@@ -400,6 +427,9 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   .go { min-width: 130px; height: 60px; }
   .panel { padding: 16px 14px; }
   .fields { grid-template-columns: 1fr; }
+  .settings-sheet .fields { grid-template-columns: 1fr 1fr; }
+  .seg button { min-height: 44px; padding-inline: 6px; }
+  .settings-sheet .fields.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
   .app { padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right)); padding-block: 8px 32px; gap: 14px; }
@@ -686,29 +716,59 @@ body.zen .working { width: min(100%, 420px); }
 </div>
 
 <div class="overlay" id="settings" hidden>
-  <form class="sheet" id="settingsForm" aria-labelledby="setH">
+  <form class="sheet settings-sheet" id="settingsForm" aria-labelledby="setH">
     <div class="sec-head"><h2 id="setH">Timer settings</h2><button class="icon-btn" type="button" id="closeSettings" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="fields">
-      <label class="field">Focus (minutes)<input type="number" id="sFocus" min="1" max="120" inputmode="numeric"></label>
-      <label class="field">Short break<input type="number" id="sShort" min="1" max="60" inputmode="numeric"></label>
-      <label class="field">Long break<input type="number" id="sLong" min="1" max="90" inputmode="numeric"></label>
-      <label class="field">Long break every<input type="number" id="sEvery" min="2" max="12" inputmode="numeric"></label>
-      <label class="field">Daily goal (cycles)<input type="number" id="sGoal" min="1" max="30" inputmode="numeric"></label>
+    <div class="seg" role="tablist" aria-label="Settings categories">
+      <button type="button" role="tab" id="setTab-timer" data-tab="timer" aria-controls="setPanel-timer" aria-selected="true">Timer</button>
+      <button type="button" role="tab" id="setTab-auto" data-tab="auto" aria-controls="setPanel-auto" aria-selected="false" tabindex="-1">Automation</button>
+      <button type="button" role="tab" id="setTab-alerts" data-tab="alerts" aria-controls="setPanel-alerts" aria-selected="false" tabindex="-1">Sound &amp; alerts</button>
     </div>
-    <div>
-      <label class="toggle">Start breaks automatically<input type="checkbox" id="sAutoBreak"></label>
-      <label class="toggle">Start focus after a break automatically<input type="checkbox" id="sAutoFocus"></label>
-      <label class="toggle">Show a notification when a cycle or break ends<input type="checkbox" id="sNotify"></label>
-      <label class="toggle">Play a sound when a cycle, break or task finishes<input type="checkbox" id="sSound"></label>
-      <div class="toggle"><span class="sub">Sounds play only after you've clicked somewhere on the page.</span><button class="btn" type="button" id="testSound">Test sound</button></div>
-      <label class="toggle" id="autoFloatRow" hidden>Open the floating timer automatically when a session starts or you switch tabs<input type="checkbox" id="sAutoFloat"></label>
-      <label class="toggle">Gentle ticking during focus<input type="checkbox" id="sTicking" aria-controls="tickingOptions"></label>
-      <div id="tickingOptions" hidden>
-        <div class="fields">
-          <label class="field">Tick volume <span id="tickVolumeValue"></span><input type="range" id="sTickVolume" min="0" max="100" step="1" aria-label="Tick volume"></label>
-          <label class="field">Pace<select id="sTickPace"><option value="1">Every second</option><option value="2">Every 2 seconds</option><option value="4">Every 4 seconds</option></select></label>
+    <div class="set-panels">
+      <div class="set-panel" role="tabpanel" id="setPanel-timer" aria-labelledby="setTab-timer">
+        <fieldset class="group">
+          <legend>Durations</legend>
+          <div class="fields three">
+            <label class="field">Focus<span class="unit"><input type="number" id="sFocus" min="1" max="120" inputmode="numeric"><i>min</i></span></label>
+            <label class="field">Short break<span class="unit"><input type="number" id="sShort" min="1" max="60" inputmode="numeric"><i>min</i></span></label>
+            <label class="field">Long break<span class="unit"><input type="number" id="sLong" min="1" max="90" inputmode="numeric"><i>min</i></span></label>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>Cycles</legend>
+          <div class="fields">
+            <label class="field">Long break every<span class="unit"><input type="number" id="sEvery" min="2" max="12" inputmode="numeric"><i>cycles</i></span></label>
+            <label class="field">Daily goal<span class="unit"><input type="number" id="sGoal" min="1" max="30" inputmode="numeric"><i>cycles</i></span></label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="set-panel" role="tabpanel" id="setPanel-auto" aria-labelledby="setTab-auto">
+        <fieldset class="group">
+          <legend>Start automatically</legend>
+          <div class="card">
+            <label class="toggle"><span>Breaks<small>Right after a focus cycle ends</small></span><input type="checkbox" id="sAutoBreak"></label>
+            <label class="toggle"><span>Focus cycles<small>Right after a break ends</small></span><input type="checkbox" id="sAutoFocus"></label>
+          </div>
+        </fieldset>
+        <fieldset class="group" id="autoFloatRow" hidden>
+          <legend>Floating timer</legend>
+          <div class="card">
+            <label class="toggle"><span>Open automatically<small>When a session starts or you switch tabs</small></span><input type="checkbox" id="sAutoFloat"></label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="set-panel" role="tabpanel" id="setPanel-alerts" aria-labelledby="setTab-alerts">
+        <div class="group">
+          <div class="card">
+            <label class="toggle"><span>Notification<small>When a cycle or break ends</small></span><input type="checkbox" id="sNotify"></label>
+            <div class="toggle"><label for="sSound">Sound<small>When a cycle, break or task finishes</small></label><span class="acts"><button class="btn small" type="button" id="testSound">Test</button><input type="checkbox" id="sSound"></span></div>
+            <div class="toggle"><label for="sTicking">Ticking<small>A soft tap during focus, quiet otherwise</small></label><span class="acts"><button class="btn small" type="button" id="testTicking">Preview</button><input type="checkbox" id="sTicking" aria-controls="tickingOptions"></span></div>
+            <div class="nested fields" id="tickingOptions" hidden>
+              <label class="field"><span class="field-head">Volume<span id="tickVolumeValue"></span></span><input type="range" id="sTickVolume" min="0" max="100" step="1" aria-label="Tick volume"></label>
+              <label class="field">Pace<select id="sTickPace"><option value="1">Every second</option><option value="2">Every 2 seconds</option><option value="4">Every 4 seconds</option></select></label>
+            </div>
+          </div>
+          <p class="hint">Sounds play once you've clicked somewhere on the page.</p>
         </div>
-        <div class="toggle"><span class="sub">A soft, warm tap. Quiet during breaks and pauses.</span><button class="btn" type="button" id="testTicking">Preview</button></div>
       </div>
     </div>
     <div class="sheet-foot"><span class="sub" id="setNote">Changes save as you type.</span><button class="btn solid" type="submit">Done</button></div>
@@ -1216,37 +1276,69 @@ body.zen .working { width: min(100%, 420px); }
 
   // ---------- reordering ----------
   let drag = null;
+  const EASE = "cubic-bezier(.2, .8, .2, 1)";
+  const calm = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function groupBefore(ul, el) {
+    let group = "later";
+    for (const c of ul.children) { if (c === el) break; if (c.classList.contains("group")) group = c.dataset.g; }
+    return group;
+  }
+  // Rows are hit-tested by layout position, so the sliding animations can't make the slot flicker back and forth.
+  function moveSlot(next) {
+    const { ul, slot } = drag, rows = [...ul.children];
+    const before = new Map(rows.map((el) => [el, el.getBoundingClientRect().top]));
+    ul.insertBefore(slot, next);
+    if (calm()) return;
+    const top = ul.getBoundingClientRect().top;
+    for (const el of rows) {
+      const d = before.get(el) - (top + el.offsetTop);
+      if (Math.abs(d) > 0.5) el.animate([{ transform: "translateY(" + d + "px)" }, { transform: "none" }], { duration: 220, easing: EASE });
+    }
+  }
   function updateDrop(y) {
-    if (!drag) return;
+    if (!drag || drag.settling) return;
     const { ul, slot, li } = drag;
     li.style.top = Math.max(0, Math.min(innerHeight - 40, y - drag.offset)) + "px";
+    const top = ul.getBoundingClientRect().top;
     const rows = [...ul.children].filter((el) => el !== slot);
-    const heading = rows.find((el) => { const r = el.getBoundingClientRect(); return el.classList.contains("group") && y >= r.top && y <= r.bottom; });
-    let next = heading ? rows[rows.indexOf(heading) + 1] || null : rows.find((el) => { const r = el.getBoundingClientRect(); return y < r.top + r.height / 2; }) || null;
+    const heading = rows.find((el) => { const t = top + el.offsetTop; return el.classList.contains("group") && y >= t && y <= t + el.offsetHeight; });
+    let next = heading ? rows[rows.indexOf(heading) + 1] || null : rows.find((el) => y < top + el.offsetTop + el.offsetHeight / 2) || null;
     if (next === rows[0] && next?.classList.contains("group")) next = rows[1] || null;
-    if (next !== slot.nextElementSibling) ul.insertBefore(slot, next);
-    let group = "Later";
-    for (const el of ul.children) { if (el === slot) break; if (el.classList.contains("group")) group = el.dataset.g === "today" ? "Today" : "Later"; }
-    slot.textContent = "Drop here · " + group;
+    if (next !== slot.nextElementSibling) moveSlot(next);
+    const group = groupBefore(ul, slot);
+    if (group === drag.from) delete li.dataset.move; else li.dataset.move = "Move to " + (group === "today" ? "Today" : "Later");
   }
   function dragScroll() {
-    if (!drag) return;
+    if (!drag || drag.settling) return;
     const bounds = drag.ul.getBoundingClientRect(), y = drag.y;
     const step = y < 64 && bounds.top < y ? -Math.ceil((64 - y) / 5) : y > innerHeight - 64 && bounds.bottom > y ? Math.ceil((y - innerHeight + 64) / 5) : 0;
     if (step) { scrollBy(0, Math.max(-14, Math.min(14, step))); updateDrop(y); }
     drag.frame = requestAnimationFrame(dragScroll);
   }
   function finishDrag(cancel = false) {
-    if (!drag) return;
-    const { ul, li, slot, next, id, frame } = drag, taskId = li.dataset.id;
-    cancelAnimationFrame(frame);
-    ul.insertBefore(li, cancel ? next?.parentNode === ul ? next : null : slot);
-    slot.remove(); li.classList.remove("dragging");
-    for (const name of ["top", "left", "width"]) li.style.removeProperty(name);
-    ul.classList.remove("sorting"); drag = null;
-    try { ul.releasePointerCapture(id); } catch {}
-    if (cancel) renderTasks(); else commitOrder();
-    [...ul.querySelectorAll(".task")].find((el) => el.dataset.id === taskId)?.querySelector(".grip")?.focus({ preventScroll: true });
+    if (!drag || drag.settling) return;
+    drag.settling = true;
+    cancelAnimationFrame(drag.frame);
+    try { drag.ul.releasePointerCapture(drag.id); } catch {}
+    if (cancel) moveSlot(drag.next?.parentNode === drag.ul ? drag.next : null);
+    const { ul, li, slot } = drag, taskId = li.dataset.id;
+    const done = () => {
+      li.getAnimations().forEach((a) => a.cancel());
+      ul.insertBefore(li, slot);
+      slot.remove(); li.classList.remove("dragging"); delete li.dataset.move;
+      for (const name of ["top", "left", "width"]) li.style.removeProperty(name);
+      ul.classList.remove("sorting"); drag = null;
+      S.dropped = cancel ? null : { id: taskId, at: Date.now() };
+      if (cancel) renderTasks(); else commitOrder();
+      [...ul.querySelectorAll(".task")].find((el) => el.dataset.id === taskId)?.querySelector(".grip")?.focus({ preventScroll: true });
+    };
+    if (calm()) { done(); return; }
+    const to = slot.getBoundingClientRect();
+    let ended = false;
+    const end = () => { if (!ended) { ended = true; done(); } };
+    li.animate([{ top: to.top + "px", left: to.left + "px", transform: "none", boxShadow: "none" }], { duration: 200, easing: EASE, fill: "forwards" }).finished.then(end, end);
+    // Animations freeze in hidden tabs; don't leave the drop hanging.
+    setTimeout(end, 300);
   }
   function commitOrder() {
     const changed = [];
@@ -1750,7 +1842,8 @@ body.zen .working { width: min(100%, 420px); }
         }
         const active = t.id === S.activeId;
         const del = S.confirmDel === t.id;
-        return '<li class="task' + (active ? " is-active" : "") + '" data-id="' + esc(t.id) + '">' +
+        const dropAge = S.dropped && S.dropped.id === t.id ? Date.now() - S.dropped.at : Infinity;
+        return '<li class="task' + (active ? " is-active" : "") + (dropAge < 900 ? ' dropped" style="animation-delay:-' + dropAge + "ms" : "") + '" data-id="' + esc(t.id) + '">' +
           '<button class="grip" type="button"' + (S.projectFilter ? ' disabled' : '') + ' aria-label="Reorder “' + esc(t.title) + '”: drag, or press the up and down arrow keys" title="' + (S.projectFilter ? "Show all tasks to reorder" : "Drag to reorder") + '">' + ICON.grip + "</button>" +
           '<button class="check" type="button" data-act="done" aria-label="Mark “' + esc(t.title) + '” as finished" title="Mark finished">' + ICON.check + "</button>" +
           '<div class="task-main" data-act="select" title="Work on this task"><div class="task-title">' + esc(t.title) + (active ? '<span class="chip now">Now</span>' : "") + (t.sample ? '<span class="chip">Example</span>' : "") + "</div>" +
@@ -2243,13 +2336,15 @@ body.zen .working { width: min(100%, 420px); }
     if (guardPreview()) return;
     const ul = e.currentTarget;
     const li = g.closest(".task"), r = li.getBoundingClientRect(), slot = document.createElement("li");
-    slot.className = "task-drop"; slot.setAttribute("aria-hidden", "true"); slot.style.height = r.height + "px";
-    drag = { ul, li, slot, next: li.nextElementSibling, id: e.pointerId, offset: e.clientY - r.top, y: e.clientY, frame: null };
+    slot.className = "task-drop"; slot.setAttribute("aria-hidden", "true");
+    drag = { ul, li, slot, next: li.nextElementSibling, from: groupBefore(ul, li), id: e.pointerId, offset: e.clientY - r.top, y: e.clientY, frame: null };
     try { ul.setPointerCapture(e.pointerId); } catch {}
     ul.insertBefore(slot, li); document.body.appendChild(li);
     li.classList.add("dragging"); ul.classList.add("sorting");
     li.style.left = r.left + "px"; li.style.width = r.width + "px";
+    slot.style.height = li.offsetHeight + "px";
     updateDrop(e.clientY); drag.frame = requestAnimationFrame(dragScroll);
+    if (!calm()) li.animate([{ transform: "none", boxShadow: "none", offset: 0 }], { duration: 180, easing: EASE });
   });
   $("#taskList").addEventListener("pointermove", (e) => {
     if (!drag || e.pointerId !== drag.id) return;
@@ -2408,13 +2503,34 @@ body.zen .working { width: min(100%, 420px); }
       requestAnimationFrame(sizeMobileTimer);
     }
   }
+  const setTabs = [...document.querySelectorAll("#settingsForm [role=tab]")];
+  function showSetTab(name, focus) {
+    for (const t of setTabs) {
+      const on = t.dataset.tab === name;
+      t.setAttribute("aria-selected", on);
+      t.tabIndex = on ? 0 : -1;
+      $("#" + t.getAttribute("aria-controls")).setAttribute("aria-hidden", !on);
+      if (on && focus) t.focus();
+    }
+    ls.set("pl.setTab", name);
+  }
+  showSetTab(setTabs.some((t) => t.dataset.tab === ls.get("pl.setTab")) ? ls.get("pl.setTab") : "timer");
+  for (const t of setTabs) {
+    t.addEventListener("click", () => showSetTab(t.dataset.tab));
+    t.addEventListener("keydown", (e) => {
+      const i = setTabs.indexOf(t), n = setTabs.length;
+      const j = e.key === "ArrowRight" ? (i + 1) % n : e.key === "ArrowLeft" ? (i - 1 + n) % n : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : -1;
+      if (j < 0) return;
+      e.preventDefault(); showSetTab(setTabs[j].dataset.tab, true);
+    });
+  }
   function closeSettings() { cancelTickPreview(); setOverlay("#settings", false); $("#openSettings").focus({ preventScroll: true }); }
-  $("#openSettings").addEventListener("click", () => { fillSettings(); setOverlay("#settings", true); $("#sFocus").focus({ preventScroll: true }); });
+  $("#openSettings").addEventListener("click", () => { fillSettings(); setOverlay("#settings", true); $("#settingsForm [aria-selected=true]").focus({ preventScroll: true }); });
   $("#closeSettings").addEventListener("click", closeSettings);
   $("#testSound").addEventListener("click", () => { if (!S.settings.sound) { toast("Turn sounds on first."); return; } playSound("focus"); });
   $("#testTicking").addEventListener("click", () => {
     ensureAudio(); cancelTickPreview();
-    if (!S.settings.ticking) return;
+    if (!S.settings.ticking) { toast("Turn ticking on first."); return; }
     if (T.status === "running" && T.mode === "focus") { toast("The ticking is already playing with your timer."); return; }
     try { tickPreview = tickingNode(6); } catch {}
   });
