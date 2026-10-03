@@ -69,7 +69,9 @@ button { cursor: pointer; }
 .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px 4px 8px; background: var(--surface); }
 .pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
 .pill[data-state="db"] i { background: var(--good); }
-.pill[data-state="preview"] i { background: var(--warn); }
+.pill[data-state="preview"] i, .pill[data-state="offline"] i { background: var(--warn); }
+button.pill { cursor: pointer; font: inherit; font-size: 12.5px; transition: background .15s, border-color .15s; }
+button.pill:hover { background: var(--surface-2); border-color: var(--line-2); }
 .icon-btn { width: 36px; height: 36px; display: inline-grid; place-items: center; border-radius: 10px; border: 1px solid transparent; background: transparent; color: var(--muted); transition: background .15s, color .15s; }
 .icon-btn:hover { background: var(--surface-2); color: var(--fg); }
 .icon-btn svg { width: 18px; height: 18px; }
@@ -79,6 +81,7 @@ button { cursor: pointer; }
 .banner strong { color: var(--fg); font-weight: 600; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); font-weight: 550; font-size: 14px; transition: background .15s, border-color .15s; white-space: nowrap; }
 .btn:hover { background: var(--surface-2); }
+a.btn { color: inherit; text-decoration: none; }
 .btn.solid { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .btn.solid:hover { opacity: .9; }
 .btn svg { width: 16px; height: 16px; }
@@ -418,6 +421,8 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .set-panels { display: grid; }
 .set-panel { grid-area: 1 / 1; display: grid; gap: 20px; align-content: start; min-width: 0; }
 .set-panel[aria-hidden="true"] { visibility: hidden; }
+.sync-row b { font-weight: 550; }
+.sync-row .acts { flex-wrap: wrap; justify-content: flex-end; }
 .sheet-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 @media (max-width: 520px) {
@@ -557,9 +562,9 @@ body.zen .working { width: min(100%, 420px); }
       <span>Pomodoro Ledger</span>
     </div>
     <div class="bar-right">
-      <span class="pill" id="syncPill" data-state="local"><i></i><span>Saved in this browser</span></span>
+      <button class="pill" id="syncPill" type="button" data-state="local" title="Sync settings"><i></i><span>Saved in this browser</span></button>
       <button class="icon-btn" id="openRoom" type="button" aria-label="Work together" title="Work together"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.2.2 3.6 1.6 4 3.8"/></svg></button>
-      <button class="icon-btn" id="openSettings" type="button" aria-label="Timer settings" title="Timer settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+      <button class="icon-btn" id="openSettings" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     </div>
   </header>
 
@@ -717,11 +722,12 @@ body.zen .working { width: min(100%, 420px); }
 
 <div class="overlay" id="settings" hidden>
   <form class="sheet settings-sheet" id="settingsForm" aria-labelledby="setH">
-    <div class="sec-head"><h2 id="setH">Timer settings</h2><button class="icon-btn" type="button" id="closeSettings" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="sec-head"><h2 id="setH">Settings</h2><button class="icon-btn" type="button" id="closeSettings" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="seg" role="tablist" aria-label="Settings categories">
       <button type="button" role="tab" id="setTab-timer" data-tab="timer" aria-controls="setPanel-timer" aria-selected="true">Timer</button>
       <button type="button" role="tab" id="setTab-auto" data-tab="auto" aria-controls="setPanel-auto" aria-selected="false" tabindex="-1">Automation</button>
       <button type="button" role="tab" id="setTab-alerts" data-tab="alerts" aria-controls="setPanel-alerts" aria-selected="false" tabindex="-1">Sound &amp; alerts</button>
+      <button type="button" role="tab" id="setTab-sync" data-tab="sync" aria-controls="setPanel-sync" aria-selected="false" tabindex="-1">Sync</button>
     </div>
     <div class="set-panels">
       <div class="set-panel" role="tabpanel" id="setPanel-timer" aria-labelledby="setTab-timer">
@@ -768,6 +774,14 @@ body.zen .working { width: min(100%, 420px); }
             </div>
           </div>
           <p class="hint">Sounds play once you've clicked somewhere on the page.</p>
+        </div>
+      </div>
+      <div class="set-panel" role="tabpanel" id="setPanel-sync" aria-labelledby="setTab-sync">
+        <div class="group">
+          <div class="card">
+            <div class="toggle sync-row"><span><b id="syncTitle"></b><small id="syncDetail"></small></span><span class="acts" id="syncActs"></span></div>
+          </div>
+          <p class="hint" id="syncHint"></p>
         </div>
       </div>
     </div>
@@ -820,16 +834,20 @@ body.zen .working { width: min(100%, 420px); }
     },
     cache() { ls.set("pl.tasks", [...S.tasks.values()]); ls.set("pl.settings", S.settings); ls.set("pl.labels", S.labels); },
     async connect() {
-      if (!window.claude || typeof window.claude.use !== "function") return;
-      let db, user, uid;
-      try { [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]); } catch { return; }
-      if (!db || !user) return;
-      try { uid = await user.id(); } catch {}
-      if (!uid) return;
-      try {
-        this.prof = db.doc("data/users/" + uid + "/profile");
-        this.col = this.prof.collection("tasks");
-      } catch { return; }
+      if (window.claude && typeof window.claude.use === "function") {
+        let db, user, uid, prof, col;
+        try { [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]); } catch { return; }
+        if (!db || !user) return;
+        try { uid = await user.id(); } catch {}
+        if (!uid) return;
+        try { prof = db.doc("data/users/" + uid + "/profile"); col = prof.collection("tasks"); } catch { return; }
+        return this.attach(prof, col);
+      }
+      const cloud = await Cloud.start();
+      if (cloud) this.attach(cloud.prof, cloud.col);
+    },
+    attach(prof, col) {
+      this.prof = prof; this.col = col;
       let first = true;
       this.col.onSnapshot((snap) => {
         const next = new Map();
@@ -883,17 +901,122 @@ body.zen .working { width: min(100%, 420px); }
       S.tasks.delete(id); dirty.delete(id); this.cache();
       if (S.storeMode === "db" && this.col) {
         this.chains[id] = (this.chains[id] || Promise.resolve()).then(() => this.col.doc(id).delete()).catch((e) => this.fail(e));
-      }
+      } else if (Cloud.email) Cloud.queueDelete(id, Date.now());
       renderAll();
     },
     saveSettings() {
-      this.cache();
+      this.cache(); ls.set("pl.profileAt", Date.now());
       clearTimeout(this.setTimer);
       this.setTimer = setTimeout(() => {
         if (S.storeMode === "db" && this.prof) {
           this.chains._p = (this.chains._p || Promise.resolve()).then(() => this.prof.set({ settings: clone(S.settings), labels: clone(S.labels) })).catch((e) => this.fail(e));
         }
       }, 700);
+    },
+  };
+
+  // ---------- account sync: Cloudflare Access login + one Durable Object per user ----------
+  // Gives Store the same doc/collection surface it uses elsewhere, over a WebSocket. Conflicts resolve last-write-wins.
+  const Cloud = {
+    state: "off", email: "", ws: null, docs: new Map(), subs: {}, retry: 0, timer: 0, ping: 0,
+    async me() {
+      try {
+        const r = await fetch("/api/sync/me", { redirect: "manual", cache: "no-store" });
+        if (r.type === "opaqueredirect" || r.status === 401 || r.status === 403) return { configured: true, signedIn: false };
+        if (!r.ok) return { configured: false };
+        return await r.json();
+      } catch { return null; }
+    },
+    set(state) { this.state = state; renderPill(); renderSyncTab(); },
+    async start() {
+      const me = await this.me();
+      if (me) { this.email = me.signedIn ? me.email : ""; ls.set("pl.syncEmail", this.email); this.configured = !!me.configured; }
+      else { this.email = ls.get("pl.syncEmail", ""); this.configured = !!this.email; }
+      if (!this.email) { this.set(this.configured ? "signedout" : "off"); return null; }
+      const col = {
+        onSnapshot: (cb, err) => { this.subs.tasks = cb; this.subs.err = err; },
+        doc: (id) => ({
+          set: async (body) => { this.docs.set(id, body); this.push({ t: "put", kind: "task", id, at: body.updatedAt || Date.now(), body }); },
+          delete: async () => { this.docs.delete(id); this.push({ t: "del", kind: "task", id, at: Date.now() }); },
+        }),
+      };
+      const prof = {
+        onSnapshot: (cb) => { this.subs.prof = cb; },
+        set: async (body) => { this.push({ t: "put", kind: "profile", id: "profile", at: ls.get("pl.profileAt", 0) || Date.now(), body }); },
+      };
+      this.set("connecting"); this.open();
+      addEventListener("online", () => this.wake());
+      return { prof, col };
+    },
+    open() {
+      clearTimeout(this.timer);
+      let ws;
+      try { ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/sync/ws"); } catch { return this.reconnect(); }
+      this.ws = ws;
+      ws.onopen = () => {
+        this.retry = 0; ws.send(JSON.stringify({ t: "hello" }));
+        clearInterval(this.ping); this.ping = setInterval(() => { try { ws.send("ping"); } catch {} }, 25000);
+      };
+      ws.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch { return; } this.receive(m); };
+      ws.onclose = () => {
+        if (this.ws !== ws) return;
+        this.ws = null; clearInterval(this.ping);
+        if (this.state !== "signedout") { this.set("offline"); this.reconnect(); }
+      };
+    },
+    reconnect() {
+      clearTimeout(this.timer);
+      this.timer = setTimeout(async () => {
+        const me = await this.me();
+        if (me && me.configured && !me.signedIn) return this.signedOut();
+        this.open();
+      }, Math.min(30000, 1000 * 2 ** this.retry++));
+    },
+    wake() { if (this.state === "offline" && !this.ws) { this.retry = 0; this.reconnect(); } },
+    signedOut() {
+      this.email = ""; ls.set("pl.syncEmail", ""); this.set("signedout");
+      if (this.subs.err) this.subs.err({ code: "revoked" });
+      toast("You're signed out, so changes stay in this browser. Sign in again under Settings → Sync.");
+    },
+    push(m) {
+      if (this.ws && this.ws.readyState === 1) { try { this.ws.send(JSON.stringify(m)); return; } catch {} }
+      if (m.t === "del") this.queueDelete(m.id, m.at);
+    },
+    queueDelete(id, at) { const d = ls.get("pl.syncDel", {}); d[id] = at; ls.set("pl.syncDel", d); },
+    emitTasks() { if (this.subs.tasks) this.subs.tasks({ docs: [...this.docs].map(([id, body]) => ({ id, exists: true, data: () => body })) }); },
+    emitProfile(body) { if (this.subs.prof) this.subs.prof({ exists: true, data: () => body }); },
+    receive(m) {
+      if (m.t === "snapshot") return this.merge(m.docs || []);
+      if (m.t === "error") return toast(m.code === "quota_exceeded" ? "Your synced ledger is full. Delete a few old tasks to keep syncing." : "That task is too large to sync.");
+      if (m.kind === "profile" && m.t === "put") { ls.set("pl.profileAt", m.at); return this.emitProfile(m.body); }
+      if (m.kind !== "task") return;
+      if (m.t === "put") this.docs.set(m.id, m.body); else if (m.t === "del") this.docs.delete(m.id);
+      this.emitTasks();
+    },
+    // Runs on every (re)connect: whatever changed here while offline is pushed if it's newer than the server's copy.
+    merge(list) {
+      const server = new Map();
+      let profile = null;
+      for (const d of list) { if (d.kind === "task") server.set(d.id, d); else if (d.kind === "profile") profile = d; }
+      this.docs = new Map();
+      for (const [id, d] of server) if (d.t === "put") this.docs.set(id, d.body);
+      for (const t of S.tasks.values()) {
+        const d = server.get(t.id), mine = t.updatedAt || 0;
+        if (t.sample || (d && d.at >= mine)) continue;
+        this.docs.set(t.id, t); this.push({ t: "put", kind: "task", id: t.id, at: mine || Date.now(), body: t });
+      }
+      const pending = ls.get("pl.syncDel", {});
+      ls.set("pl.syncDel", {});
+      for (const [id, at] of Object.entries(pending)) {
+        const d = server.get(id);
+        if (d && d.t === "put" && d.at <= at) { this.docs.delete(id); this.push({ t: "del", kind: "task", id, at }); }
+      }
+      // Without a recorded change time, customised settings still beat a fresh device's defaults.
+      const localAt = ls.get("pl.profileAt", 0) || (JSON.stringify({ ...DEF, ...S.settings }) !== JSON.stringify(DEF) || S.labels.length ? 2 : 1);
+      if (profile && profile.t === "put" && profile.at >= localAt) { ls.set("pl.profileAt", profile.at); this.emitProfile(profile.body); }
+      else this.push({ t: "put", kind: "profile", id: "profile", at: localAt, body: { settings: clone(S.settings), labels: clone(S.labels) } });
+      this.set("live");
+      this.emitTasks();
     },
   };
 
@@ -2080,9 +2203,10 @@ body.zen .working { width: min(100%, 420px); }
   }
   function renderPill() {
     const p = $("#syncPill");
-    const st = preview() ? "preview" : S.storeMode;
+    const offline = S.storeMode === "db" && Cloud.state === "offline";
+    const st = preview() ? "preview" : offline ? "offline" : S.storeMode;
     p.dataset.state = st;
-    p.querySelector("span").textContent = DEMO ? "Demo mode" : st === "preview" ? "Example data" : st === "db" ? "Synced to your account" : "Saved in this browser";
+    p.querySelector("span").textContent = DEMO ? "Demo mode" : st === "preview" ? "Example data" : offline ? "Offline · will sync" : st === "db" ? "Synced to your account" : Cloud.state === "signedout" ? "Saved in this browser · Sign in to sync" : "Saved in this browser";
     $("#previewBanner").hidden = !preview();
     $("#previewBanner span").innerHTML = DEMO
       ? "<strong>Interactive demo.</strong> Changes reset when you reload and never affect your saved ledger."
@@ -2528,6 +2652,28 @@ body.zen .working { width: min(100%, 420px); }
       requestAnimationFrame(sizeMobileTimer);
     }
   }
+  function renderSyncTab() {
+    const st = Cloud.state, viaClaude = Cloud.state === "off" && S.storeMode === "db";
+    const local = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+    const copy = {
+      off: viaClaude ? ["Synced to your account", "Tasks, history and settings sync automatically."] : ["Saved in this browser", "Account sync isn't set up on this server, so everything stays on this device."],
+      signedout: ["Not signed in", "Sign in to keep tasks, history and settings in sync across your devices. What's already here is added to your account."],
+      connecting: ["Connecting…", Cloud.email],
+      live: ["Synced", Cloud.email],
+      offline: ["Offline", "Changes are saved here and sync when you're back online. " + Cloud.email],
+    }[st];
+    $("#syncTitle").textContent = copy[0];
+    $("#syncDetail").textContent = copy[1];
+    $("#syncActs").innerHTML = st === "signedout" ? '<a class="btn small solid" href="/api/sync/login">Sign in</a>'
+      : ["live", "offline", "connecting"].includes(st) ? '<a class="btn small" href="/api/sync/export" download>Export</a>' + (local ? "" : '<button class="btn small" type="button" id="syncOut">Sign out</button>') : "";
+    $("#syncHint").textContent = ["live", "offline", "connecting"].includes(st) ? "The running timer stays on each device. Export downloads everything as JSON." : "";
+  }
+  $("#syncActs").addEventListener("click", (e) => {
+    if (e.target.id !== "syncOut") return;
+    ls.set("pl.syncEmail", "");
+    location.href = "/cdn-cgi/access/logout";
+  });
+  $("#syncPill").addEventListener("click", () => { if (DEMO) return; fillSettings(); setOverlay("#settings", true); showSetTab("sync", true); });
   const setTabs = [...document.querySelectorAll("#settingsForm [role=tab]")];
   function showSetTab(name, focus) {
     for (const t of setTabs) {
@@ -2774,7 +2920,7 @@ body.zen .working { width: min(100%, 420px); }
   setInterval(tick, 250);
   let rz = null, lastW = 0;
   addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { const w = $("#bars").clientWidth; if (w !== lastW) { lastW = w; renderStats(); } }, 150); });
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) { tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); } });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); Cloud.wake(); } });
 
   function sizeViewport() {
     if (!window.visualViewport) return;
@@ -2827,7 +2973,13 @@ body.zen .working { width: min(100%, 420px); }
   } else if (RM.code) roomConnect();
   renderRoom();
   renderAll();
-  if (!DEMO) Store.connect().then(renderPill);
+  renderSyncTab();
+  if (!DEMO) Store.connect().then(() => {
+    renderPill();
+    if (!new URLSearchParams(location.search).has("synced")) return;
+    history.replaceState(null, "", location.pathname + location.hash);
+    if (Cloud.email) toast("Signed in as " + Cloud.email + ". This device now stays in sync.");
+  });
 })();
 </script>
 </body>

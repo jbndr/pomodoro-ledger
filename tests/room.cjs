@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const { webcrypto } = require('node:crypto');
 
 const source = fs.readFileSync('src/worker.js', 'utf8')
-  .replace(/^import .*$/m, '')
+  .replace(/^(import|export \{).*$/gm, '')
   .replace('export default', 'const worker =')
   .replace('export class Room', 'class Room');
 const Room = vm.runInNewContext(source + '\nRoom', {
