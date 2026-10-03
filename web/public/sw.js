@@ -1,5 +1,5 @@
 // Offline shell: the page is fetched fresh when online and served from cache when not.
-const CACHE = "pomodoro-ledger-v1";
+const CACHE = "pomodoro-ledger-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
