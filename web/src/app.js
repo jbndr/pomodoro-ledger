@@ -6,6 +6,7 @@ import TaskList from "./tasks/TaskList.svelte";
 import { list, progress } from "./lib/redraw.svelte";
 import { cyclesOf, focusTasks, labelHue, matchLabel, matchesLabel, projectNames, projectOf, sessionProject, timeOf } from "./lib/tasks";
 import Progress from "./progress/Progress.svelte";
+import Settings from "./settings/Settings.svelte";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -553,13 +554,6 @@ function notify(body) {
     n.onclick = () => { window.focus(); n.close(); };
   } catch {}
 }
-async function askNotify() {
-  let p = "Notification" in window ? Notification.permission : "unsupported";
-  if (p === "default") { try { p = await Notification.requestPermission(); } catch {} }
-  if (p === "granted") return;
-  S.settings.notify = false; $("#sNotify").checked = false; Store.saveSettings();
-  toast(p === "unsupported" ? "This browser can't show notifications." : p === "denied" ? "Notifications are blocked for this site. Allow them in the browser's site settings." : "Notifications weren't allowed.");
-}
 // Skipping keeps the clock going if it was running.
 function skip() { const run = T.status === "running"; flushPartial(); setMode(T.mode === "focus" ? "short" : "focus"); if (run) start(); }
 
@@ -774,7 +768,6 @@ function toggleZen(native) {
 let floatWindow = null, floatOpening = false;
 const floatBtn = $("#floatBtn");
 floatBtn.hidden = !window.documentPictureInPicture || !window.isSecureContext;
-$("#autoFloatRow").hidden = floatBtn.hidden;
 function renderFloating(txt, frac) {
   if (!floatWindow || floatWindow.closed) return;
   const doc = floatWindow.document, root = doc.documentElement;
@@ -1823,20 +1816,11 @@ document.addEventListener("keydown", (e) => {
 });
 
 // settings
-const F = { sFocus: "focus", sShort: "short", sLong: "long", sEvery: "longEvery", sGoal: "goal" };
-const B = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat" };
-function fillTicking() {
-  $("#tickingOptions").hidden = !S.settings.ticking;
-  $("#sTickVolume").value = S.settings.tickVolume;
-  $("#tickVolumeValue").textContent = S.settings.tickVolume + "%";
-  $("#sTickPace").value = S.settings.tickPace;
-}
-function fillSettings() {
-  for (const [id, k] of Object.entries(F)) { const el = $("#" + id); if (document.activeElement !== el) el.value = S.settings[k]; }
-  for (const [id, k] of Object.entries(B)) $("#" + id).checked = !!S.settings[k];
-  if (document.activeElement !== $("#sDayEnd")) $("#sDayEnd").value = S.settings.workdayEnd || "";
-  fillTicking();
-}
+let settingsUI = null;
+function fillSettings() { settingsUI.fill(); }
+function openSettings(tab) { settingsUI.open(tab); }
+function closeSettings() { settingsUI.close(); }
+function renderSyncTab() { settingsUI.renderSync(); }
 let modalScroll = null;
 function setOverlay(id, open) {
   const overlay = $(id);
@@ -1858,49 +1842,7 @@ function setOverlay(id, open) {
     requestAnimationFrame(sizeTimer);
   }
 }
-function renderSyncTab() {
-  const st = Cloud.state, viaClaude = Cloud.state === "off" && S.storeMode === "db";
-  const local = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
-  const copy = {
-    off: viaClaude ? ["Synced to your account", "Tasks, history and settings sync automatically."] : ["Saved in this browser", "Account sync isn't set up on this server, so everything stays on this device."],
-    signedout: ["Not signed in", "Sign in to keep tasks, history and settings in sync across your devices. What's already here is added to your account."],
-    connecting: ["Connecting…", Cloud.email],
-    live: ["Synced", Cloud.email],
-    offline: ["Offline", "Changes are saved here and sync when you're back online. " + Cloud.email],
-  }[st];
-  $("#syncTitle").textContent = copy[0];
-  $("#syncDetail").textContent = copy[1];
-  $("#syncActs").innerHTML = st === "signedout" ? '<a class="btn small solid" href="/api/sync/login">Sign in</a>'
-    : ["live", "offline", "connecting"].includes(st) ? '<a class="btn small" href="/api/sync/export" download>Export</a>' + (local ? "" : '<button class="btn small" type="button" id="syncOut">Sign out</button>') : "";
-  $("#syncHint").textContent = ["live", "offline", "connecting"].includes(st) ? "The timer and the task you're working on sync too. Export downloads everything as JSON." : "";
-}
-$("#syncActs").addEventListener("click", (e) => {
-  if (e.target.id !== "syncOut") return;
-  ls.set("pl.syncEmail", "");
-  location.href = "/cdn-cgi/access/logout";
-});
-$("#syncPill").addEventListener("click", () => { if (DEMO) return; fillSettings(); setOverlay("#settings", true); showSetTab("sync", true); });
-const setTabs = [...document.querySelectorAll("#settingsForm [role=tab]")];
-function showSetTab(name, focus) {
-  for (const t of setTabs) {
-    const on = t.dataset.tab === name;
-    t.setAttribute("aria-selected", on);
-    t.tabIndex = on ? 0 : -1;
-    $("#" + t.getAttribute("aria-controls")).setAttribute("aria-hidden", !on);
-    if (on && focus) t.focus();
-  }
-  ls.set("pl.setTab", name);
-}
-showSetTab(setTabs.some((t) => t.dataset.tab === ls.get("pl.setTab")) ? ls.get("pl.setTab") : "timer");
-for (const t of setTabs) {
-  t.addEventListener("click", () => showSetTab(t.dataset.tab));
-  t.addEventListener("keydown", (e) => {
-    const i = setTabs.indexOf(t), n = setTabs.length;
-    const j = e.key === "ArrowRight" ? (i + 1) % n : e.key === "ArrowLeft" ? (i - 1 + n) % n : e.key === "Home" ? 0 : e.key === "End" ? n - 1 : -1;
-    if (j < 0) return;
-    e.preventDefault(); showSetTab(setTabs[j].dataset.tab, true);
-  });
-}
+$("#syncPill").addEventListener("click", () => { if (!DEMO) openSettings("sync"); });
 // ---------- theme: system, light or dark, remembered per device ----------
 const THEMES = ["system", "light", "dark"];
 const THEME_ICON = {
@@ -1935,37 +1877,7 @@ function closeKeys() { setOverlay("#keys", false); $("#openKeys").focus({ preven
 $("#openKeys").addEventListener("click", openKeys);
 $("#closeKeys").addEventListener("click", closeKeys);
 $("#keys").addEventListener("click", (e) => { if (e.target.id === "keys") closeKeys(); });
-function closeSettings() { cancelTickPreview(); setOverlay("#settings", false); $("#openSettings").focus({ preventScroll: true }); }
-$("#openSettings").addEventListener("click", () => { fillSettings(); setOverlay("#settings", true); $("#settingsForm [aria-selected=true]").focus({ preventScroll: true }); });
-$("#closeSettings").addEventListener("click", closeSettings);
-$("#testSound").addEventListener("click", () => { if (!S.settings.sound) { toast("Turn sounds on first."); return; } playSound("focus"); });
-$("#testTicking").addEventListener("click", () => {
-  ensureAudio(); cancelTickPreview();
-  if (!S.settings.ticking) { toast("Turn ticking on first."); return; }
-  if (T.status === "running" && T.mode === "focus") { toast("The ticking is already playing with your timer."); return; }
-  try { tickPreview = tickingNode(6); } catch {}
-});
-$("#settings").addEventListener("click", (e) => { if (e.target.id === "settings") closeSettings(); });
-$("#settingsForm").addEventListener("submit", (e) => { e.preventDefault(); closeSettings(); });
-$("#settingsForm").addEventListener("input", (e) => {
-  const id = e.target.id;
-  if (F[id]) {
-    const el = e.target, v = Math.round(+el.value);
-    if (!v || v < +el.min || v > +el.max) { $("#setNote").textContent = "Use a number from " + el.min + " to " + el.max + "."; return; }
-    S.settings[F[id]] = v;
-  } else if (B[id]) S.settings[B[id]] = e.target.checked;
-  else if (id === "sTickVolume") S.settings.tickVolume = Math.max(0, Math.min(100, +e.target.value));
-  else if (id === "sTickPace") S.settings.tickPace = [1, 2, 4].includes(+e.target.value) ? +e.target.value : 2;
-  else if (id === "sDayEnd") S.settings.workdayEnd = /^\d\d:\d\d$/.test(e.target.value) ? e.target.value : "";
-  if (["sTicking", "sTickVolume", "sTickPace"].includes(id)) { cancelTickPreview(); fillTicking(); syncTicking(); }
-  $("#setNote").textContent = "Saved.";
-  Store.saveSettings();
-  if (T.setIndex > S.settings.longEvery) T.setIndex = 0;
-  if (id === "sNotify" && S.settings.notify) askNotify();
-  if (id === "sSound") { if (S.settings.sound) scheduleEnd(); else cancelEnd(); }
-  if (id === "sAutoFloat") autoFloatHandler();
-  renderTimer(true); renderStats(); renderEstPick();
-});
+$("#openSettings").addEventListener("click", () => openSettings());
 
 // ---------- shared room ----------
 const ss = {
@@ -2259,6 +2171,11 @@ if (["today", "upcoming", "later"].includes(ss.get("pl.taskView"))) S.taskView =
 mount(Progress, { target: $(".app"), props: { api: {
   S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
   deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask,
+} } });
+settingsUI = mount(Settings, { target: document.body, props: { api: {
+  S, Store, Cloud, ls, toast, setOverlay, floatable: !floatBtn.hidden, get T() { return T; },
+  ensureAudio, playSound, scheduleEnd, cancelEnd, cancelTickPreview, syncTicking, previewTicking: () => { tickPreview = tickingNode(6); },
+  autoFloatHandler, renderTimer, renderStats, renderEstPick,
 } } });
 taskList = mount(TaskList, { target: $("#taskFoot").parentNode, anchor: $("#taskFoot"), props: { api: {
   S, ICON, completing, calm, guardPreview,
