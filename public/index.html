@@ -271,6 +271,9 @@ td.barcell { width: 38%; min-width: 120px; }
 @media (hover: hover) { .task:not(.open):hover { background: var(--surface-2); } }
 .task:focus-visible { box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent); }
 .task.is-active:not(.open) { background: color-mix(in oklab, var(--accent) 8%, transparent); }
+/* Breathing room so a tinted row never touches a heading's rule or its neighbours. */
+.tasks .group + .task { margin-top: 4px; }
+.task + .task { margin-top: 2px; }
 @media (hover: hover) { .task.is-active:not(.open):hover { background: color-mix(in oklab, var(--accent) 12%, transparent); } }
 .task.dragging .task-side, .task.dragging .task-card { display: none; }
 .task-start { font: 12px var(--f-body); color: var(--faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
