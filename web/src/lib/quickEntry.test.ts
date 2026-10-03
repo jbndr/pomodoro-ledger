@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseTitle } from "./quickEntry";
+import { breaksBetween, dropToken, hashToken, parseTitle } from "./quickEntry";
 
 // Saturday, 3 October 2026.
 const NOW = new Date(2026, 9, 3, 15, 30).getTime();
@@ -45,5 +45,42 @@ describe("parseTitle", () => {
 
   it("caps estimates at 24 cycles", () => {
     expect(parse("Thesis 40c").est).toBe(24);
+  });
+});
+
+describe("hashToken", () => {
+  it("finds the label being typed after # at the caret", () => {
+    expect(hashToken("Write docs #wo", 14)).toEqual({ at: 11, query: "wo" });
+    expect(hashToken("#", 1)).toEqual({ at: 0, query: "" });
+    expect(hashToken("Write #docs now", 11)).toEqual({ at: 6, query: "docs" });
+    expect(hashToken("Fix #12 crash", 13)).toEqual({ at: 4, query: "12 crash" });
+  });
+  it("ignores # inside a word, a selection, or no # at all", () => {
+    expect(hashToken("C# guide", 8)).toBeNull();
+    expect(hashToken("Write #docs", 11, 8)).toBeNull();
+    expect(hashToken("Write docs", 10)).toBeNull();
+    expect(hashToken("Write #docs", 5)).toBeNull();
+  });
+});
+
+describe("dropToken", () => {
+  it("removes the last occurrence, ignoring case, and leaves room to keep typing", () => {
+    expect(dropToken("Pay invoices tomorrow", "tomorrow")).toBe("Pay invoices ");
+    expect(dropToken("Plan Friday x3", "x3")).toBe("Plan Friday ");
+    expect(dropToken("Call Fri about FRI", "fri")).toBe("Call Fri about ");
+  });
+  it("returns null when the token is gone", () => {
+    expect(dropToken("Pay invoices", "tomorrow")).toBeNull();
+  });
+});
+
+describe("breaksBetween", () => {
+  const S = 5, L = 15;
+  it("adds a break between cycles and a long one after every set", () => {
+    expect(breaksBetween(1, 4, S, L)).toBe(0);
+    expect(breaksBetween(2, 4, S, L)).toBe(5);
+    expect(breaksBetween(4, 4, S, L)).toBe(15);
+    expect(breaksBetween(5, 4, S, L)).toBe(30);
+    expect(breaksBetween(9, 4, S, L)).toBe(6 * S + 2 * L);
   });
 });

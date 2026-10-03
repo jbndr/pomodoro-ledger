@@ -38,3 +38,24 @@ export function parseTitle(raw: string, keep: string[] = [], now = Date.now()): 
   out.title = t.trim();
   return out;
 }
+
+/** The "#label" being typed at the caret, if any: where its "#" sits and what follows it. */
+export function hashToken(value: string, caret: number, end = caret): { at: number; query: string } | null {
+  const at = value.lastIndexOf("#", caret - 1);
+  if (caret !== end || at < 0 || (at > 0 && !/\s/.test(value[at - 1]))) return null;
+  return { at, query: value.slice(at + 1, caret) };
+}
+
+/** The title without the last occurrence of a recognised token, ready to type on; null if it isn't there. */
+export function dropToken(value: string, text: string): string | null {
+  const i = value.toLowerCase().lastIndexOf(text.toLowerCase());
+  if (i < 0) return null;
+  return (value.slice(0, i) + value.slice(i + text.length)).replace(/\s+$/, "") + " ";
+}
+
+/** Break time between `est` focus cycles, with a long break after every `longEvery`. */
+export function breaksBetween(est: number, longEvery: number, short: number, long: number): number {
+  let ms = 0;
+  for (let i = 1; i < est; i++) ms += i % longEvery ? short : long;
+  return ms;
+}
