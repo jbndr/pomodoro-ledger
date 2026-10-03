@@ -297,6 +297,11 @@ td.barcell { width: 38%; min-width: 120px; }
 @media (hover: hover) { .task-start { display: none; position: absolute; z-index: 2; top: -10px; right: 12px; padding: 2px 8px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); white-space: nowrap; } .task:hover .task-start, .task:focus-within .task-start { display: inline; } }
 .tasks.sorting, .tasks.sorting * { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 .tasks .group { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 14px 10px 6px; font-size: 11.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.tasks .group.day { padding: 20px 10px 8px; border-bottom: 1px solid var(--line); align-items: baseline; gap: 10px; color: var(--fg); font-size: 15px; font-weight: 650; letter-spacing: 0; text-transform: none; }
+.tasks .group.day b { font: 650 26px/1 var(--f-display); letter-spacing: -.02em; min-width: 1.3em; }
+.tasks .group.day.empty { color: var(--faint); border-bottom-style: dashed; }
+.tasks .group.month { padding-top: 24px; color: var(--fg); font-size: 15px; font-weight: 650; letter-spacing: 0; text-transform: none; border-bottom: 1px solid var(--line); }
+.when-chip { color: var(--accent); font: 600 11px var(--f-body); }
 .tasks .group span { font-family: var(--f-mono); font-size: 12px; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
 .grip { width: 20px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--line-2); cursor: grab; touch-action: none; }
 .task.dragging .grip { color: var(--muted); }
@@ -411,7 +416,24 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .pick-menu.pop { position: fixed; z-index: 45; right: auto; bottom: auto; width: min(300px, calc(100vw - 24px)); }
 .pick-menu.pop:focus { outline: none; }
 .pick-menu.pop kbd { flex: none; }
-.cal-pop { position: fixed; z-index: 46; width: min(296px, calc(100vw - 24px)); padding: 10px; border-radius: 16px; border: 1px solid var(--line-2); background: var(--surface); box-shadow: var(--shadow); }
+.when-pop { position: fixed; z-index: 46; width: min(300px, calc(100vw - 24px)); padding: 8px; border-radius: 18px; border: 1px solid var(--line-2); background: var(--surface); box-shadow: 0 24px 60px -24px rgba(0,0,0,.35), var(--shadow); transform-origin: top right; }
+.when-pop:not([hidden]) { animation: when-in .16s cubic-bezier(.2, .8, .2, 1); }
+@keyframes when-in { from { opacity: 0; transform: scale(.96) translateY(-4px); } }
+#whenInput { width: 100%; height: 38px; padding: 0 12px; border: 0; border-radius: 11px; background: var(--surface-2); color: var(--fg); font: 500 14px var(--f-body); }
+#whenInput:focus { outline: 2px solid color-mix(in oklab, var(--accent) 45%, transparent); outline-offset: 0; }
+.when-list { list-style: none; margin: 6px 0 4px; padding: 0; display: grid; gap: 1px; }
+.when-list li { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 550; }
+.when-list li.act { background: var(--surface-2); }
+.when-list li[aria-disabled="true"] { cursor: default; color: var(--faint); font-weight: 450; }
+.when-list li svg { width: 17px; height: 17px; flex: none; }
+.when-list li span { flex: 1; min-width: 0; }
+.when-list li em { font-style: normal; font: 12px var(--f-mono); color: var(--faint); }
+.when-list li .ic-today { color: #E8A800; }
+.when-list li .ic-day { color: var(--accent); }
+.when-list li .ic-week { color: var(--sky); }
+.when-list li .ic-later { color: var(--faint); }
+.when-list li.parsed { color: var(--fg); }
+.when-pop .cal-head { padding-top: 6px; border-top: 1px solid var(--line); }
 .cal-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
 .cal-head strong { font-family: var(--f-display); font-size: 15px; font-weight: 650; }
 .cal-head .icon-btn { width: 32px; height: 32px; }
@@ -422,6 +444,7 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .cal-grid button.out { color: var(--faint); }
 .cal-grid button:disabled { color: var(--line-2); cursor: default; }
 .cal-grid button.today { box-shadow: inset 0 0 0 1.5px var(--line-2); }
+.cal-grid button.preview:not([aria-pressed="true"]) { box-shadow: inset 0 0 0 2px var(--accent); }
 .cal-grid button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); font-weight: 650; }
 .cal-grid button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .cal-grid button i { position: absolute; bottom: 4px; left: 50%; translate: -50% 0; display: flex; gap: 2px; }
@@ -736,7 +759,7 @@ body.zen .working { width: min(100%, 420px); }
         </div>
         <small id="workingNote"></small>
       </div>
-      <div class="keys"><kbd>Space</kbd> start or pause · <kbd>S</kbd> skip · <kbd>F</kbd> fill page · <kbd>⇧F</kbd> full screen<br><kbd>T</kbd> <kbd>M</kbd> <kbd>W</kbd> <kbd>L</kbd> <kbd>D</kbd> move a task to today, tomorrow, next week, later, or a day</div>
+      <div class="keys"><kbd>Space</kbd> start or pause · <kbd>S</kbd> skip · <kbd>F</kbd> fill page · <kbd>⇧F</kbd> full screen<br><kbd>T</kbd> <kbd>M</kbd> <kbd>W</kbd> <kbd>L</kbd> move a task · <kbd>D</kbd> when…</div>
     </section>
 
     <section class="panel" aria-labelledby="tasksH">
@@ -814,7 +837,9 @@ body.zen .working { width: min(100%, 420px); }
 </nav>
 <div class="tip" id="tip" hidden></div>
 <ul class="pick-menu pop" id="pop" role="listbox" tabindex="-1" hidden></ul>
-<div class="cal-pop" id="calPop" role="dialog" aria-label="Pick a day" hidden>
+<div class="when-pop" id="whenPop" role="dialog" aria-label="When" hidden>
+  <input type="text" id="whenInput" placeholder="When? tomorrow, fri, in 3 days, 12 oct…" autocomplete="off" spellcheck="false" aria-label="When" aria-controls="whenList" aria-autocomplete="list">
+  <ul class="when-list" id="whenList" role="listbox" aria-label="Suggestions"></ul>
   <div class="cal-head">
     <button class="icon-btn" type="button" data-cal-step="-1" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
     <strong id="calMonth" aria-live="polite"></strong>
@@ -1221,8 +1246,10 @@ body.zen .working { width: min(100%, 420px); }
     const days = Math.round((keyTime(k) - sod(Date.now())) / 864e5);
     if (days <= 0) return "Today";
     if (days === 1) return "Tomorrow";
-    return fmtDate(keyTime(k), days < 7 ? { weekday: "long" } : { weekday: "short", day: "numeric", month: "short" });
+    if (days <= 7) return (days === 7 ? "Next " : "") + fmtDate(keyTime(k), { weekday: "long" });
+    return fmtDate(keyTime(k), { weekday: "short", day: "numeric", month: "short" });
   }
+  const shortDay = (k) => fmtDate(keyTime(k), { weekday: "short" }) + " " + new Date(keyTime(k)).getDate();
   // g is a list group: "today", "later", or a YYYY-MM-DD day.
   function placed(t, g, order) {
     const n = { ...clone(t), order, today: g === "today" };
@@ -1230,6 +1257,17 @@ body.zen .working { width: min(100%, 420px); }
     return n;
   }
   const inGroup = (t, g) => (g === "today" ? isToday(t) : g === "later" ? bucketOf(t) === "later" : bucketOf(t) === "upcoming" && t.plan === g);
+  const viewOf = (g) => (g === "today" || g === "later" ? g : "upcoming");
+  function leaveRows(ids, done) {
+    const rows = [...$("#taskList").querySelectorAll(".task")].filter((li) => ids.includes(li.dataset.id));
+    if (!rows.length || calm()) return done();
+    rows.forEach((li) => {
+      li.style.overflow = "hidden";
+      li.animate([{ height: li.offsetHeight + "px", opacity: 1, transform: "none" }, { height: "0px", opacity: 0, paddingTop: "0px", paddingBottom: "0px", transform: "translateX(18px)" }], { duration: 240, easing: "cubic-bezier(.2, .8, .2, 1)", fill: "forwards" });
+    });
+    // A timer rather than the animation's promise: animations pause in background tabs.
+    setTimeout(done, 250);
+  }
   function scheduleTask(id, g) {
     const t = S.tasks.get(id);
     if (!t) return;
@@ -1237,8 +1275,8 @@ body.zen .working { width: min(100%, 420px); }
     const where = g === "later" ? "Later" : dayName(g === "today" ? todayKey() : g);
     if (inGroup(t, g)) { toast("“" + t.title + "” is already in " + where + "."); return; }
     const last = Math.max(-1, ...openOf(S.tasks).filter((x) => x.id !== id && inGroup(x, g)).map(ord));
-    Store.saveTask(placed(t, g, last + 1));
-    toast("Moved “" + t.title + "” to " + where + ".");
+    const save = () => { Store.saveTask(placed(t, g, last + 1)); toast("Moved “" + t.title + "” to " + where + "."); };
+    if (viewOf(g) !== S.taskView) leaveRows([id], save); else save();
   }
   const unplanned = (at) => {
     const id = "unplanned-" + dayKey(at).slice(0, 7);
@@ -1676,12 +1714,12 @@ body.zen .working { width: min(100%, 420px); }
   }
   function commitOrder() {
     const changed = [];
-    let g = S.taskView === "today" ? "today" : "later", i = 0;
+    let g = S.taskView === "today" ? "today" : "later", end = "", i = 0;
     for (const el of $("#taskList").children) {
-      if (el.classList.contains("group")) { g = el.dataset.g; continue; }
+      if (el.classList.contains("group")) { g = el.dataset.g; end = el.dataset.end || ""; continue; }
       const t = S.tasks.get(el.dataset.id);
       if (!t) continue;
-      const n = placed(t, g, i);
+      const n = placed(t, end && t.plan >= g && t.plan <= end ? t.plan : g, i);
       if (t.order !== i || !!t.today !== n.today || (t.plan || "") !== (n.plan || "")) changed.push(n);
       i++;
     }
@@ -2211,7 +2249,7 @@ body.zen .working { width: min(100%, 420px); }
       ul.innerHTML = "";
       $("#taskFoot").innerHTML = S.projectFilter ? '<div class="empty"><strong>No open tasks with this label</strong><span>Choose “All” to see the rest of your ledger.</span></div>' : '<div class="empty"><strong>No open tasks</strong><span>Add one above and estimate how many 25-minute cycles it needs. Then pick it under “Working on” and press Start.</span></div>';
     } else {
-      const row = (t) => {
+      const row = (t, dated) => {
         if (S.editing === t.id) {
           let pick = "";
           for (let i = 1; i <= 12; i++) pick += '<button type="button" role="radio" aria-checked="' + (i === S.editEst) + '" aria-label="' + plural(i, "pomodoro") + '" data-eest="' + i + '" class="' + (i <= S.editEst ? "on" : "") + '"><i></i></button>';
@@ -2224,11 +2262,11 @@ body.zen .working { width: min(100%, 420px); }
           '<button class="grip" type="button"' + (S.projectFilter ? ' disabled' : '') + ' aria-label="Reorder “' + esc(t.title) + '”: drag, or press the up and down arrow keys" title="' + (S.projectFilter ? "Show all tasks to reorder" : "Drag to reorder") + '">' + ICON.grip + "</button>" +
           '<button class="check" type="button" data-act="done" aria-label="Mark “' + esc(t.title) + '” as finished" title="Mark finished">' + ICON.check + "</button>" +
           '<div class="task-main" data-act="select" title="Work on this task"><div class="task-title">' + esc(t.title) + (active ? '<span class="chip now">Now</span>' : "") + (t.sample ? '<span class="chip">Example</span>' : "") + "</div>" +
-          '<div class="task-meta">' + (projectOf(t) ? projectHTML(t, true) : "") + pipsHTML(t) + "<span>" + metaText(t) + "</span>" + (isToday(t) ? '<span class="task-start"></span>' + (t.plan && t.plan < tk ? '<span class="carry">from ' + esc(fmtDate(keyTime(t.plan), { weekday: "short" })) + "</span>" : "") : "") + (subsOf(t).length ? subCountHTML(t) : "") + (projectOf(t) ? "" : projectHTML(t, true)) + (subsOf(t).length ? "" : subCountHTML(t)) + "</div></div>" +
+          '<div class="task-meta">' + (dated && t.plan ? '<span class="when-chip">' + esc(shortDay(t.plan)) + "</span>" : "") + (projectOf(t) ? projectHTML(t, true) : "") + pipsHTML(t) + "<span>" + metaText(t) + "</span>" + (isToday(t) ? '<span class="task-start"></span>' + (t.plan && t.plan < tk ? '<span class="carry">from ' + esc(fmtDate(keyTime(t.plan), { weekday: "short" })) + "</span>" : "") : "") + (subsOf(t).length ? subCountHTML(t) : "") + (projectOf(t) ? "" : projectHTML(t, true)) + (subsOf(t).length ? "" : subCountHTML(t)) + "</div></div>" +
           '<div class="task-actions">' +
           (del ? '<button class="icon-btn danger" type="button" data-act="del">Delete?</button>' :
             '<button class="icon-btn play" type="button" data-act="focus" aria-label="Start focusing on “' + esc(t.title) + '”" title="Focus on this">' + ICON.play + "</button>" +
-            '<button class="icon-btn sched hov" type="button" data-act="sched" data-sched aria-haspopup="listbox" aria-label="Schedule “' + esc(t.title) + '”" title="Move to another day (T today, M tomorrow, W next week, L later, D pick a day)">' + ICON.cal + "</button>" +
+            '<button class="icon-btn sched hov" type="button" data-act="sched" data-sched aria-haspopup="listbox" aria-label="Schedule “' + esc(t.title) + '”" title="When? (D) · T today · M tomorrow · W next week · L later">' + ICON.cal + "</button>" +
             '<button class="icon-btn hov" type="button" data-act="edit" aria-label="Edit task" title="Edit">' + ICON.edit + "</button>" +
             '<button class="icon-btn hov" type="button" data-act="del" aria-label="Delete task" title="Delete">' + ICON.trash + "</button>") +
           "</div>" + subtasksHTML(t) + "</li>";
@@ -2240,18 +2278,27 @@ body.zen .working { width: min(100%, 420px); }
         const n = left(shown);
         html = '<li class="group" data-g="today">Today<span>' + plural(shown.length, "task") + " · " + (n ? plural(n, "cycle") + ' to go · <span class="today-plan"></span>' : "all planned cycles done") + "</span></li>";
       }
-      let day = "";
-      shown.forEach((t) => {
-        if (S.taskView === "upcoming" && t.plan !== day) {
-          day = t.plan;
-          const same = shown.filter((x) => x.plan === day), n = left(same);
-          html += '<li class="group" data-g="' + esc(day) + '">' + esc(dayName(day)) + "<span>" + esc(fmtDate(keyTime(day), { weekday: "short", day: "numeric", month: "short" })) + " · " + plural(same.length, "task") + (n ? " · " + fmtDur(n * dur("focus")) + " focus" : "") + "</span></li>";
+      const summary = (list) => (list.length ? plural(list.length, "task") + (left(list) ? " · " + fmtDur(left(list) * dur("focus")) + " focus" : "") : "");
+      if (S.taskView === "upcoming") {
+        // The next seven days always show, so any of them can take a dropped task; further out is grouped by month.
+        const base = sod(Date.now()), week = [...Array(7)].map((_, i) => dayKey(addDays(base, i + 1)));
+        for (const k of week) {
+          const same = shown.filter((t) => t.plan === k);
+          html += '<li class="group day' + (same.length ? "" : " empty") + '" data-g="' + k + '"><b>' + new Date(keyTime(k)).getDate() + "</b>" + esc(dayName(k)) + "<span>" + summary(same) + "</span></li>";
+          same.forEach((t) => { html += row(t); });
         }
-        html += row(t);
-      });
+        const months = new Map();
+        shown.filter((t) => t.plan > week[6]).forEach((t) => { const ym = t.plan.slice(0, 7); months.set(ym, [...(months.get(ym) || []), t]); });
+        for (const [ym, list] of months) {
+          const [y, m] = ym.split("-").map(Number), firstDay = dayKey(addDays(base, 8)), start = firstDay > ym + "-01" ? firstDay : ym + "-01";
+          const end = dayKey(new Date(y, m, 0).getTime()), name = fmtDate(new Date(y, m - 1, 1).getTime(), y === new Date(base).getFullYear() ? { month: "long" } : { month: "long", year: "numeric" });
+          html += '<li class="group month" data-g="' + start + '" data-end="' + end + '">' + esc((start !== ym + "-01" ? "Rest of " : "") + name) + "<span>" + summary(list) + "</span></li>";
+          list.forEach((t) => { html += row(t, true); });
+        }
+      } else shown.forEach((t) => { html += row(t); });
       ul.innerHTML = html;
-      const empty = { today: ["Nothing planned for today", "Use the calendar button on a task in Upcoming or Later, or add one above."], upcoming: ["Nothing scheduled", "Move a task to another day with its calendar button. It shows up in Today when that day comes."], later: ["Nothing in Later", "Tasks without a day land here."] }[S.taskView];
-      $("#taskFoot").innerHTML = (shown.length ? "" : '<div class="empty"><strong>' + empty[0] + "</strong><span>" + empty[1] + "</span></div>") +
+      const empty = { today: ["Nothing planned for today", "Press D on a task, or use its calendar button, to bring it here."], upcoming: ["", ""], later: ["Nothing in Later", "Tasks without a day land here."] }[S.taskView];
+      $("#taskFoot").innerHTML = (shown.length || !empty[0] ? "" : '<div class="empty"><strong>' + empty[0] + "</strong><span>" + empty[1] + "</span></div>") +
         (doneN ? '<div class="finished-note">' + plural(doneN, "finished task") + ' with cycles and time are in the <a href="#ledger">ledger below</a>.</div>' : "");
     }
     renderTaskStarts(true);
@@ -2715,8 +2762,8 @@ body.zen .working { width: min(100%, 420px); }
       playSound("task");
       toast("Finished “" + t.title + "” in " + plural(cyclesOf(t), "cycle") + " · " + fmtDur(timeOf(t)) + " of focus.");
     } else if (act === "sched") {
-      if (!pop.hidden) { closePop(); return; }
-      openScheduleMenu(e.target.closest("[data-sched]"), t);
+      if (!whenPop.hidden) { closeWhen(); return; }
+      openWhen(e.target.closest("[data-sched]"), t);
     } else if (act === "edit") {
       S.editing = id; S.editEst = t.est || 1; S.editLabel = projectOf(t); renderTasks(); const inp = $("#editTitle"); inp.focus(); inp.select();
     } else if (act === "cancel") { S.editing = null; if (!(t.subtasks || []).length) S.subtaskOpen.delete(id); renderTasks(); }
@@ -2851,58 +2898,124 @@ body.zen .working { width: min(100%, 420px); }
     else return;
     e.preventDefault();
   });
-  document.addEventListener("pointerdown", (e) => { if (!pop.hidden && !e.target.closest("#pop, [data-move], [data-sched]")) closePop(); });
+  document.addEventListener("pointerdown", (e) => { if (!pop.hidden && !e.target.closest("#pop, [data-move]")) closePop(); });
   function quickDays() {
     const now = Date.now();
     return { today: "today", tomorrow: dayKey(addDays(now, 1)), week: dayKey(addDays(sod(now), ((8 - new Date(now).getDay()) % 7) || 7)), later: "later" };
   }
-  function openScheduleMenu(anchor, t) {
-    const q = quickDays(), bucket = bucketOf(t);
-    const items = [
-      { id: "today", title: "Today", key: "T" },
-      { id: q.tomorrow, title: "Tomorrow · " + fmtDate(keyTime(q.tomorrow), { weekday: "short" }), key: "M" },
-      { id: q.week, title: "Next week · " + fmtDate(keyTime(q.week), { weekday: "short", day: "numeric", month: "short" }), key: "W" },
-      { id: "pick", title: "Pick a day…", key: "D" },
-      { id: "later", title: "Later · no day", key: "L" },
-    ];
-    const cur = bucket === "today" ? "today" : bucket === "later" ? "later" : t.plan === q.tomorrow || t.plan === q.week ? t.plan : "pick";
-    openPop(anchor, items, cur, (g) => (g === "pick" ? openCal(anchor, t) : scheduleTask(t.id, g)));
-  }
 
-  // ---------- day picker ----------
-  const calPop = $("#calPop"), calGrid = $("#calGrid");
-  const CAL = { month: 0, focus: "", task: null, anchor: null };
+  // Understands what people type into "When": today, tom, fri, next week, in 3 days, 12 oct, 12.10., plus common German words.
+  const WEEKDAYS = [["sunday", "sonntag"], ["monday", "montag"], ["tuesday", "dienstag"], ["wednesday", "mittwoch"], ["thursday", "donnerstag"], ["friday", "freitag"], ["saturday", "samstag"]];
+  const MONTHS = [["january", "januar", "jänner"], ["february", "februar"], ["march", "märz", "maerz"], ["april"], ["may", "mai"], ["june", "juni"], ["july", "juli"], ["august"], ["september"], ["october", "oktober"], ["november"], ["december", "dezember"]];
+  function parseWhen(raw) {
+    const q = raw.trim().toLowerCase().replace(/\s+/g, " ").replace(/^(on|am|bis|until) /, "");
+    if (!q) return null;
+    const base = sod(Date.now()), at = (n) => dayKey(addDays(base, n));
+    const word = (list, min) => list.some((w) => q.length >= min && w.startsWith(q));
+    if (word(["today", "heute"], 3)) return "today";
+    if (word(["tomorrow", "tmrw"], 3) || q === "tm" || word(["morgen"], 3)) return at(1);
+    if (word(["übermorgen", "uebermorgen", "day after tomorrow"], 4)) return at(2);
+    if (word(["later", "someday", "anytime", "irgendwann", "später", "spaeter", "no day", "kein tag"], 3)) return "later";
+    if (word(["next week", "nächste woche", "naechste woche"], 6) || q === "nw") return quickDays().week;
+    if (word(["weekend", "wochenende"], 4)) { const d = (6 - new Date(base).getDay() + 7) % 7 || 7; return at(d); }
+    let m = q.match(/^(?:in )?\+?(\d{1,3}) ?(d|days?|t|tag|tage|tagen|w|wk|weeks?|wochen?)?$/);
+    if (m && (m[2] || q.startsWith("in ") || q.startsWith("+"))) return at(+m[1] * (/^w/.test(m[2] || "") ? 7 : 1));
+    const wd = q.replace(/^(next|nächsten|naechsten|nächster|kommenden) /, "");
+    const day = WEEKDAYS.findIndex((names) => names.some((w) => wd.length >= 2 && w.startsWith(wd)));
+    if (day >= 0) return at(((day - new Date(base).getDay() + 7) % 7) || 7);
+    const month = (s) => MONTHS.findIndex((names) => names.some((w) => s.length >= 3 && w.startsWith(s.replace(/\.$/, ""))));
+    const make = (y, mo, d) => {
+      const date = new Date(y ?? new Date(base).getFullYear(), mo, d);
+      if (date.getMonth() !== mo || date.getDate() !== d) return undefined;
+      if (y == null && date.getTime() < base) date.setFullYear(date.getFullYear() + 1);
+      return dayKey(date.getTime());
+    };
+    const year = (y) => (y == null ? null : y.length === 2 ? 2000 + +y : +y);
+    if ((m = q.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) return make(+m[1], m[2] - 1, +m[3]);
+    if ((m = q.match(/^(\d{1,2})\.(\d{1,2})\.?(\d{2}|\d{4})?$/))) return make(year(m[3]), m[2] - 1, +m[1]);
+    if ((m = q.match(/^(\d{1,2})\.? ([a-zäöü]+\.?)(?: (\d{4}))?$/)) && month(m[2]) >= 0) return make(year(m[3]), month(m[2]), +m[1]);
+    if ((m = q.match(/^([a-zäöü]+\.?) (\d{1,2})(?:,? (\d{4}))?$/)) && month(m[1]) >= 0) return make(year(m[3]), month(m[1]), +m[2]);
+    return undefined;
+  }
+  const inDays = (k) => { const n = Math.round((keyTime(k) - sod(Date.now())) / 864e5); return n <= 0 ? "today" : n === 1 ? "tomorrow" : n < 14 ? "in " + n + " days" : "in " + Math.round(n / 7) + " weeks"; };
+
+  const WHEN_ICON = {
+    today: '<svg class="ic-today" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>',
+    day: '<svg class="ic-day" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
+    week: '<svg class="ic-week" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12M12 6l6 6-6 6M20 5v14"/></svg>',
+    later: '<svg class="ic-later" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9M10 13h4"/></svg>',
+  };
+  const whenPop = $("#whenPop"), whenInput = $("#whenInput"), whenList = $("#whenList"), calGrid = $("#calGrid");
+  const WHEN = { task: null, anchor: null, items: [], idx: 0, month: 0, focus: "", preview: "" };
   const weekStart = (() => {
     try { const l = new Intl.Locale(navigator.language), w = l.getWeekInfo ? l.getWeekInfo() : l.weekInfo; return w ? w.firstDay % 7 : 1; } catch { return 1; }
   })();
-  function openCal(anchor, t) {
-    const tk = todayKey(), start = t.plan && t.plan > tk ? t.plan : quickDays().tomorrow;
-    CAL.task = t; CAL.anchor = anchor; CAL.focus = start;
-    const d = new Date(keyTime(start)); CAL.month = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
-    calPop.hidden = false;
-    renderCal();
-    const r = anchor.getBoundingClientRect(), w = calPop.offsetWidth, h = calPop.offsetHeight;
-    calPop.style.left = Math.max(12, Math.min(r.right - w, innerWidth - w - 12)) + "px";
-    calPop.style.top = Math.max(8, r.bottom + 6 + h > innerHeight - 8 && r.top - 6 - h > 8 ? r.top - 6 - h : Math.min(r.bottom + 6, innerHeight - h - 8)) + "px";
-    calGrid.querySelector('[tabindex="0"]')?.focus({ preventScroll: true });
+  function whenItems() {
+    const q = quickDays(), typed = whenInput.value.trim(), items = [];
+    if (typed) {
+      const g = parseWhen(typed);
+      if (g === undefined) items.push({ off: true, icon: WHEN_ICON.day, title: "No day matches “" + typed + "”" });
+      else if (g === "later") items.push({ g, icon: WHEN_ICON.later, title: "Later", note: "no day", parsed: true });
+      else if (g === "today" || g <= todayKey()) items.push({ g: "today", icon: WHEN_ICON.today, title: "Today", parsed: true });
+      else items.push({ g, icon: WHEN_ICON.day, title: fmtDate(keyTime(g), { weekday: "short", day: "numeric", month: "short" }), note: inDays(g), parsed: true });
+    }
+    items.push({ g: "today", icon: WHEN_ICON.today, title: "Today", key: "T" },
+      { g: q.tomorrow, icon: WHEN_ICON.day, title: "Tomorrow", note: fmtDate(keyTime(q.tomorrow), { weekday: "short" }), key: "M" },
+      { g: q.week, icon: WHEN_ICON.week, title: "Next week", note: shortDay(q.week), key: "W" },
+      { g: "later", icon: WHEN_ICON.later, title: "Later", note: "no day", key: "L" });
+    return items;
   }
-  function closeCal(refocus) {
-    if (calPop.hidden) return;
-    calPop.hidden = true;
-    if (refocus && CAL.anchor && CAL.anchor.isConnected) CAL.anchor.focus({ preventScroll: true });
+  function renderWhen() {
+    WHEN.items = whenItems();
+    const first = WHEN.items.findIndex((o) => !o.off);
+    if (WHEN.idx < first || WHEN.idx >= WHEN.items.length || WHEN.items[WHEN.idx].off) WHEN.idx = first;
+    whenList.innerHTML = WHEN.items.map((o, i) => '<li role="option" id="when-' + i + '" data-i="' + i + '"' + (o.off ? ' aria-disabled="true"' : "") + (o.parsed ? ' class="parsed"' : "") + ' aria-selected="' + (i === WHEN.idx) + '">' +
+      o.icon + "<span>" + esc(o.title) + "</span>" + (o.note ? "<em>" + esc(o.note) + "</em>" : "") + (o.key ? "<kbd>" + o.key + "</kbd>" : "") + "</li>").join("");
+    [...whenList.children].forEach((li, j) => li.classList.toggle("act", j === WHEN.idx));
+    whenInput.setAttribute("aria-activedescendant", "when-" + WHEN.idx);
+    const parsed = WHEN.items[0] && WHEN.items[0].parsed && WHEN.items[0].g !== "later" ? (WHEN.items[0].g === "today" ? todayKey() : WHEN.items[0].g) : "";
+    if (parsed !== WHEN.preview) {
+      WHEN.preview = parsed;
+      if (parsed) { const d = new Date(keyTime(parsed)); WHEN.month = new Date(d.getFullYear(), d.getMonth(), 1).getTime(); WHEN.focus = parsed; }
+    }
+    renderCal();
+  }
+  function openWhen(anchor, t) {
+    const tk = todayKey(), start = t.plan && t.plan > tk ? t.plan : quickDays().tomorrow;
+    WHEN.task = t; WHEN.anchor = anchor; WHEN.focus = start; WHEN.idx = 0; WHEN.preview = "";
+    const d = new Date(keyTime(start)); WHEN.month = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+    whenInput.value = "";
+    whenPop.hidden = false;
+    renderWhen();
+    const r = anchor.getBoundingClientRect(), w = whenPop.offsetWidth, h = whenPop.offsetHeight;
+    const above = r.bottom + 6 + h > innerHeight - 8 && r.top - 6 - h > 8;
+    whenPop.style.left = Math.max(12, Math.min(r.right - w, innerWidth - w - 12)) + "px";
+    whenPop.style.top = Math.max(8, above ? r.top - 6 - h : Math.min(r.bottom + 6, innerHeight - h - 8)) + "px";
+    whenPop.style.transformOrigin = (above ? "bottom" : "top") + " right";
+    // On phones a focused field would pop the keyboard over the calendar.
+    if (matchMedia("(hover: hover)").matches) whenInput.focus({ preventScroll: true }); else whenPop.focus({ preventScroll: true });
+  }
+  function closeWhen(refocus) {
+    if (whenPop.hidden) return;
+    whenPop.hidden = true;
+    if (refocus && WHEN.anchor && WHEN.anchor.isConnected) WHEN.anchor.focus({ preventScroll: true });
+  }
+  function chooseWhen(g) {
+    const t = WHEN.task; closeWhen(true);
+    if (t && g) scheduleTask(t.id, g);
   }
   function renderCal() {
-    const first = new Date(CAL.month), y = first.getFullYear(), m = first.getMonth(), tk = todayKey();
+    const first = new Date(WHEN.month), y = first.getFullYear(), m = first.getMonth(), tk = todayKey();
     const load = new Map();
     for (const t of openOf(S.tasks)) { const k = isToday(t) ? tk : t.plan; if (k) load.set(k, (load.get(k) || 0) + 1); }
-    $("#calMonth").textContent = fmtDate(CAL.month, { month: "long", year: "numeric" });
+    $("#calMonth").textContent = fmtDate(WHEN.month, { month: "long", year: "numeric" });
     const offset = (first.getDay() - weekStart + 7) % 7;
     let html = "";
     for (let i = 0; i < 7; i++) html += '<span class="wd" aria-hidden="true">' + esc(fmtDate(new Date(y, m, 1 - offset + i).getTime(), { weekday: "narrow" })) + "</span>";
     for (let i = 0; i < 42; i++) {
       const d = new Date(y, m, 1 - offset + i), k = dayKey(d.getTime()), n = Math.min(3, load.get(k) || 0);
-      html += '<button type="button" data-day="' + k + '" tabindex="' + (k === CAL.focus ? 0 : -1) + '"' + (k < tk ? " disabled" : "") +
-        ' class="' + (d.getMonth() !== m ? "out " : "") + (k === tk ? "today" : "") + '" aria-pressed="' + (CAL.task && CAL.task.plan === k) + '"' +
+      html += '<button type="button" data-day="' + k + '" tabindex="' + (k === WHEN.focus ? 0 : -1) + '"' + (k < tk ? " disabled" : "") +
+        ' class="' + (d.getMonth() !== m ? "out " : "") + (k === tk ? "today " : "") + (k === WHEN.preview ? "preview" : "") + '" aria-pressed="' + (WHEN.task && WHEN.task.plan === k) + '"' +
         ' aria-label="' + esc(fmtDate(d.getTime(), { weekday: "long", day: "numeric", month: "long" }) + (load.get(k) ? ", " + plural(load.get(k), "task") + " planned" : "")) + '">' +
         d.getDate() + (n ? "<i>" + "<b></b>".repeat(n) + "</i>" : "") + "</button>";
     }
@@ -2910,40 +3023,47 @@ body.zen .working { width: min(100%, 420px); }
   }
   function calFocus(k) {
     if (k < todayKey()) k = todayKey();
-    CAL.focus = k;
-    const d = new Date(keyTime(k)), month = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
-    if (month !== CAL.month) CAL.month = month;
+    WHEN.focus = k;
+    const d = new Date(keyTime(k)); WHEN.month = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
     renderCal();
     calGrid.querySelector('[tabindex="0"]')?.focus({ preventScroll: true });
   }
-  calGrid.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-day]");
-    if (!b || b.disabled) return;
-    const t = CAL.task; closeCal(true);
-    if (t) scheduleTask(t.id, b.dataset.day);
+  whenInput.addEventListener("input", () => { WHEN.idx = 0; renderWhen(); });
+  whenInput.addEventListener("keydown", (e) => {
+    const k = e.key, step = (dir) => { let i = WHEN.idx; do { i = (i + dir + WHEN.items.length) % WHEN.items.length; } while (WHEN.items[i].off && i !== WHEN.idx); WHEN.idx = i; renderWhen(); };
+    if (k === "ArrowDown") step(1);
+    else if (k === "ArrowUp") step(-1);
+    else if (k === "Enter") { const o = WHEN.items[WHEN.idx]; if (o && !o.off) chooseWhen(o.g); }
+    else if (k === "Escape") closeWhen(true);
+    else return;
+    e.preventDefault(); e.stopPropagation();
   });
-  calPop.addEventListener("click", (e) => {
-    const step = e.target.closest("[data-cal-step]");
-    if (!step) return;
-    const d = new Date(CAL.month); CAL.month = new Date(d.getFullYear(), d.getMonth() + +step.dataset.calStep, 1).getTime();
+  whenList.addEventListener("click", (e) => { const li = e.target.closest("li"); const o = li && WHEN.items[+li.dataset.i]; if (o && !o.off) chooseWhen(o.g); });
+  whenList.addEventListener("pointermove", (e) => { const li = e.target.closest("li"); if (li && !WHEN.items[+li.dataset.i].off && +li.dataset.i !== WHEN.idx) { WHEN.idx = +li.dataset.i; [...whenList.children].forEach((x, j) => x.classList.toggle("act", j === WHEN.idx)); } });
+  calGrid.addEventListener("click", (e) => { const b = e.target.closest("[data-day]"); if (b && !b.disabled) chooseWhen(b.dataset.day); });
+  whenPop.addEventListener("click", (e) => {
+    const stepBtn = e.target.closest("[data-cal-step]");
+    if (!stepBtn) return;
+    const d = new Date(WHEN.month); WHEN.month = new Date(d.getFullYear(), d.getMonth() + +stepBtn.dataset.calStep, 1).getTime();
     renderCal();
   });
-  calPop.addEventListener("keydown", (e) => {
+  calGrid.addEventListener("keydown", (e) => {
     e.stopPropagation();
-    const k = e.key, at = keyTime(CAL.focus || todayKey()), d = new Date(at);
+    const k = e.key, at = keyTime(WHEN.focus || todayKey()), d = new Date(at);
     const move = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[k];
-    if (k === "Escape") closeCal(true);
+    if (k === "Escape") closeWhen(true);
     else if (move) calFocus(dayKey(addDays(at, move)));
     else if (k === "PageUp" || k === "PageDown") calFocus(dayKey(new Date(d.getFullYear(), d.getMonth() + (k === "PageUp" ? -1 : 1), Math.min(d.getDate(), 28)).getTime()));
     else if (k === "Home") calFocus(dayKey(addDays(at, -((d.getDay() - weekStart + 7) % 7))));
     else if (k === "End") calFocus(dayKey(addDays(at, 6 - ((d.getDay() - weekStart + 7) % 7))));
-    else if (k === "Tab") { closeCal(); return; }
     else return;
     e.preventDefault();
   });
-  document.addEventListener("pointerdown", (e) => { if (!calPop.hidden && !e.target.closest("#calPop, [data-sched]")) closeCal(); });
-  addEventListener("resize", () => closeCal());
-  addEventListener("scroll", (e) => { if (!calPop.contains(e.target)) closeCal(); }, true);
+  whenPop.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); closeWhen(true); } });
+  whenPop.tabIndex = -1;
+  document.addEventListener("pointerdown", (e) => { if (!whenPop.hidden && !e.target.closest("#whenPop, [data-sched]")) closeWhen(); });
+  addEventListener("resize", () => closeWhen());
+  addEventListener("scroll", (e) => { if (!whenPop.contains(e.target)) closeWhen(); }, true);
 
   // ---------- scheduling shortcuts ----------
   // They act on the task under the mouse or keyboard focus, else the one you're working on.
@@ -2963,7 +3083,7 @@ body.zen .working { width: min(100%, 420px); }
     const q = quickDays();
     if (key === "d") {
       const row = [...$("#taskList").querySelectorAll(".task")].find((li) => li.dataset.id === t.id);
-      openCal(row ? row.querySelector("[data-sched]") || row : $("#taskPick"), t);
+      openWhen(row ? row.querySelector("[data-sched]") || row : $("#taskPick"), t);
       return;
     }
     scheduleTask(t.id, { t: q.today, m: q.tomorrow, w: q.week, l: q.later }[key]);
@@ -2980,8 +3100,10 @@ body.zen .working { width: min(100%, 420px); }
     if (!ids.length) return;
     const tomorrow = dayKey(addDays(Date.now(), 1));
     let last = Math.max(-1, ...openOf(S.tasks).filter((x) => inGroup(x, tomorrow)).map(ord));
-    Store.saveTasks(ids.map((id) => placed(S.tasks.get(id), tomorrow, ++last)));
-    toast("Moved " + plural(ids.length, "task") + " to tomorrow.");
+    leaveRows(ids, () => {
+      Store.saveTasks(ids.map((id) => placed(S.tasks.get(id), tomorrow, ++last)));
+      toast("Moved " + plural(ids.length, "task") + " to tomorrow.");
+    });
   });
   addEventListener("scroll", (e) => { if (e.target !== pop) closePop(); }, true);
   addEventListener("resize", () => closePop());
