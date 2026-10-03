@@ -1,6 +1,9 @@
 import { addDays, dayKey, keyTime, nextMonday, pad, sod } from "./lib/dates";
 import { parseWhen } from "./lib/when";
 import { parseTitle } from "./lib/quickEntry";
+import { flushSync, mount } from "svelte";
+import TaskList from "./tasks/TaskList.svelte";
+import { list } from "./tasks/list.svelte";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -26,6 +29,7 @@ const S = {
   confirmDel: null, showAll: false, logN: 8, confirmSes: null,
   subtaskDrafts: new Map(), openTask: null, taskView: "today", projectFilter: "", statsFilter: "", byRange: "30", labels: [], newLabel: "",
 };
+let taskList = null;
 let T = Object.assign({ mode: "focus", status: "idle", remaining: null, endsAt: 0, total: 0, setIndex: 0, saved: {}, adj: {} }, ls.get("pl.timer", {}));
 const dirty = new Set();
 
@@ -703,83 +707,14 @@ function closePop(refocus) {
 function popChoose(i) { const cb = popCb, o = popItems[i]; closePop(true); if (cb && o) cb(o.id); }
 
 // ---------- reordering ----------
-let drag = null;
-const EASE = "cubic-bezier(.2, .8, .2, 1)";
 const calm = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-function groupBefore(ul, el) {
-  let group = "later";
-  for (const c of ul.children) { if (c === el) break; if (c.classList.contains("group")) group = c.dataset.g; }
-  return group;
-}
-// Rows are hit-tested by layout position, so the sliding animations can't make the slot flicker back and forth.
-function moveSlot(next) {
-  const { ul, slot } = drag, rows = [...ul.children];
-  const before = new Map(rows.map((el) => [el, el.getBoundingClientRect().top]));
-  ul.insertBefore(slot, next);
-  if (calm()) return;
-  const top = ul.getBoundingClientRect().top;
-  for (const el of rows) {
-    const d = before.get(el) - (top + el.offsetTop);
-    if (Math.abs(d) > 0.5) el.animate([{ transform: "translateY(" + d + "px)" }, { transform: "none" }], { duration: 220, easing: EASE });
-  }
-}
-function updateDrop(y) {
-  if (!drag || drag.settling) return;
-  const { ul, slot, li } = drag;
-  li.style.top = Math.max(0, Math.min(innerHeight - 40, y - drag.offset)) + "px";
-  const top = ul.getBoundingClientRect().top;
-  const rows = [...ul.children].filter((el) => el !== slot);
-  const heading = rows.find((el) => { const t = top + el.offsetTop; return el.classList.contains("group") && y >= t && y <= t + el.offsetHeight; });
-  let next = heading ? rows[rows.indexOf(heading) + 1] || null : rows.find((el) => y < top + el.offsetTop + el.offsetHeight / 2) || null;
-  if (next === rows[0] && next?.classList.contains("group")) next = rows[1] || null;
-  if (next !== slot.nextElementSibling) moveSlot(next);
-  const group = groupBefore(ul, slot);
-  if (group === drag.from) delete li.dataset.move; else li.dataset.move = "Move to " + groupName(group);
-}
-function dragScroll() {
-  if (!drag || drag.settling) return;
-  const bounds = drag.ul.getBoundingClientRect(), y = drag.y;
-  const view = drag.scroller ? drag.scroller.getBoundingClientRect() : { top: 0, bottom: innerHeight };
-  const step = y < view.top + 64 && bounds.top < y ? -Math.ceil((view.top + 64 - y) / 5) : y > view.bottom - 64 && bounds.bottom > y ? Math.ceil((y - view.bottom + 64) / 5) : 0;
-  if (step) { (drag.scroller || window).scrollBy(0, Math.max(-14, Math.min(14, step))); updateDrop(y); }
-  drag.frame = requestAnimationFrame(dragScroll);
-}
-function finishDrag(cancel = false) {
-  if (!drag || drag.settling) return;
-  drag.settling = true;
-  cancelAnimationFrame(drag.frame);
-  try { drag.ul.releasePointerCapture(drag.id); } catch {}
-  if (cancel) moveSlot(drag.next?.parentNode === drag.ul ? drag.next : null);
-  const { ul, li, slot } = drag, taskId = li.dataset.id;
-  const done = () => {
-    li.getAnimations().forEach((a) => a.cancel());
-    ul.insertBefore(li, slot);
-    slot.remove(); li.classList.remove("dragging"); delete li.dataset.move;
-    for (const name of ["top", "left", "width"]) li.style.removeProperty(name);
-    ul.classList.remove("sorting"); drag = null; dragJustEnded = !cancel;
-    setTimeout(() => { dragJustEnded = false; }, 0);
-    S.dropped = cancel ? null : { id: taskId, at: Date.now() };
-    if (cancel) renderTasks(); else commitOrder();
-    [...ul.querySelectorAll(".task")].find((el) => el.dataset.id === taskId)?.querySelector(".grip")?.focus({ preventScroll: true });
-  };
-  if (calm()) { done(); return; }
-  const to = slot.getBoundingClientRect();
-  let ended = false;
-  const end = () => { if (!ended) { ended = true; done(); } };
-  li.animate([{ top: to.top + "px", left: to.left + "px", transform: "none", boxShadow: "none" }], { duration: 200, easing: EASE, fill: "forwards" }).finished.then(end, end);
-  // Animations freeze in hidden tabs; don't leave the drop hanging.
-  setTimeout(end, 300);
-}
-function commitOrder() {
+function commitPlacements(order) {
   const changed = [];
-  let g = S.taskView === "today" ? "today" : "later", end = "", i = 0;
-  for (const el of $("#taskList").children) {
-    if (el.classList.contains("group")) { g = el.dataset.g; end = el.dataset.end || ""; continue; }
-    const t = S.tasks.get(el.dataset.id);
+  for (const p of order) {
+    const t = S.tasks.get(p.id);
     if (!t) continue;
-    const n = placed(t, end && t.plan >= g && t.plan <= end ? t.plan : g, i);
-    if (t.order !== i || !!t.today !== n.today || (t.plan || "") !== (n.plan || "") || (t.section || "") !== (n.section || "")) changed.push(n);
-    i++;
+    const n = placed(t, p.end && t.plan >= p.g && t.plan <= p.end ? t.plan : p.g, p.order);
+    if (t.order !== p.order || !!t.today !== n.today || (t.plan || "") !== (n.plan || "") || (t.section || "") !== (n.section || "")) changed.push(n);
   }
   if (changed.length) Store.saveTasks(changed); else renderTasks();
 }
@@ -1000,24 +935,6 @@ async function openFloating(quiet) {
 autoFloatHandler();
 
 // ---------- rendering: tasks ----------
-function pipsHTML(t) {
-  const c = cyclesOf(t), est = t.est || 0, n = Math.max(c, est);
-  if (n > 12) {
-    const pct = est ? Math.min(100, (c / est) * 100) : 100;
-    return '<span class="mini" aria-hidden="true"><b style="width:' + pct + '%"></b></span>';
-  }
-  let h = '<span class="pips" aria-hidden="true">';
-  for (let i = 0; i < n; i++) h += "<i class=\"" + (i < c ? (i >= est ? "o" : "f") : "") + "\"></i>";
-  return h + "</span>";
-}
-function metaText(t) {
-  const c = cyclesOf(t), est = t.est || 0, over = c - est;
-  let s = c + "/" + est + " cycles";
-  if (est && over > 0) s += ' <span class="over">+' + over + " over</span>";
-  const ms = timeOf(t);
-  if (ms) s += " · " + fmtDur(ms) + " focus";
-  return s;
-}
 const projectOf = (t) => typeof t.project === "string" ? t.project.trim() : "";
 const sessionProject = (t, s) => Object.hasOwn(s, "project") ? projectOf(s) : projectOf(t);
 const matchesLabel = (name, f) => !f || (f === "none" ? !name : name === f.slice(8));
@@ -1201,11 +1118,6 @@ document.addEventListener("pointerdown", (e) => {
 addEventListener("resize", placeLabelPop);
 const subsOf = (t) => (Array.isArray(t.subtasks) ? t.subtasks : []);
 const subOpen = (t) => S.openTask === t.id;
-function subCountHTML(t) {
-  const subs = subsOf(t), done = subs.filter((s) => s.done).length, open = subOpen(t);
-  const name = subs.length ? done + " of " + plural(subs.length, "subtask") + " done. " + (open ? "Hide" : "Show") + " subtasks" : "Add subtasks";
-  return '<button class="meta-chip' + (subs.length ? (done === subs.length ? " all-done" : "") : " none") + '" type="button" data-act="subtasks" aria-expanded="' + open + '" aria-label="' + name + '" title="' + (subs.length ? (open ? "Hide subtasks" : "Show subtasks") : "Add subtasks") + '">' + ICON.steps + "<span>" + (subs.length ? done + "/" + subs.length : "Subtasks") + "</span></button>";
-}
 function subtasksHTML(t, archive = false) {
   const subtasks = subsOf(t);
   if (archive) return subtasks.length ? '<details class="subtask-archive"><summary>Subtasks · ' + subtasks.filter((s) => s.done).length + "/" + subtasks.length + ' done</summary><ul>' + subtasks.map((s) => '<li>' + (s.done ? "✓ " : "○ ") + esc(s.title) + "</li>").join("") + "</ul></details>" : "";
@@ -1221,27 +1133,6 @@ function estCircles(est, attr) {
   let h = "";
   for (let i = 1, n = Math.min(16, Math.max(8, est + 1)); i <= n; i++) h += '<button type="button" role="radio" aria-checked="' + (i === est) + '" aria-label="' + plural(i, "cycle") + '" ' + attr + '="' + i + '" class="' + (i <= est ? "on" : "") + '"><i></i></button>';
   return '<span class="est-pick" role="radiogroup" aria-label="Estimated cycles">' + h + "</span>";
-}
-function whenLabel(t) {
-  const b = bucketOf(t);
-  return b === "today" ? ICON.star + "Today" : b === "later" ? ICON.cal + "When" : ICON.cal + esc(dayName(t.plan));
-}
-function cardHTML(t, del) {
-  const est = t.est || 0, c = cyclesOf(t), ms = timeOf(t);
-  return '<div class="task-card">' +
-    '<input class="card-title" type="text" data-field="title" maxlength="140" value="' + esc(t.title) + '" aria-label="Title">' +
-    '<textarea class="card-notes" data-field="notes" rows="1" maxlength="4000" placeholder="Notes" aria-label="Notes">' + esc(t.notes || "") + "</textarea>" +
-    subtasksHTML(t) +
-    '<div class="card-bar">' +
-      '<button class="card-btn' + (bucketOf(t) === "later" ? "" : " set") + '" type="button" data-act="sched" data-sched aria-haspopup="dialog" title="When? (D)">' + whenLabel(t) + "</button>" +
-      '<button class="card-btn' + (projectOf(t) ? " set" : "") + '" type="button" data-act="label" aria-haspopup="listbox" aria-expanded="false" aria-label="' + esc(labelChipName(projectOf(t))) + '">' + (projectOf(t) ? labelDot(projectOf(t)) + esc(projectOf(t)) : ICON.tag + "Label") + "</button>" +
-      '<span class="card-est">' + estCircles(est, "data-cest") + "<output>" + plural(est, "cycle") + "</output></span>" +
-      '<span class="spacer"></span>' +
-      (del ? '<button class="icon-btn danger" type="button" data-act="del">Delete?</button>' : '<button class="icon-btn" type="button" data-act="del" aria-label="Delete task" title="Delete">' + ICON.trash + "</button>") +
-      '<button class="btn small solid" type="button" data-act="focus">' + ICON.play + "Focus</button>" +
-    "</div>" +
-    '<div class="card-stats">' + c + " of " + plural(t.est || 0, "cycle") + (ms ? " · " + fmtDur(ms) + " focus" : "") + (isToday(t) ? '<span class="task-start"></span>' : "") + (t.createdAt > 1 ? " · added " + esc(fmtDate(t.createdAt)) : "") + "</div>" +
-  "</div>";
 }
 function taskStartPlan() {
   const today = openOf(viewTasks()).filter(isToday), plan = new Map();
@@ -1282,23 +1173,13 @@ function taskStartPlan() {
   return plan;
 }
 function renderTaskStarts(force = false) {
-  if (drag) return;
+  if (taskList && taskList.dragging()) return;
   if (renderedDay !== todayKey()) { renderTasks(); return; }
   const minute = Math.floor(Date.now() / MIN);
   if (!force && minute === startEstimateMinute) return;
   startEstimateMinute = minute;
   const plan = taskStartPlan();
-  document.querySelectorAll("#taskList .task-start").forEach((el) => {
-    const estimate = plan.get(el.closest(".task").dataset.id), inCard = !!el.closest(".card-stats");
-    el.textContent = estimate ? (inCard ? " · " + estimate.text.replace(/^Starts/, "starts") : estimate.text) : "";
-    el.title = estimate ? estimate.hint : "";
-    el.classList.toggle("late", !!(estimate && estimate.late));
-  });
-  document.querySelectorAll("#taskList .late-flag").forEach((el) => {
-    const estimate = plan.get(el.closest(".task").dataset.id);
-    el.hidden = !(estimate && estimate.late);
-    el.title = el.hidden ? "" : "Won't finish before " + fmtClock(plan.endAt) + " · " + estimate.text;
-  });
+  list.setPlan(plan);
   const fit = $("#dayFit"), ids = plan.over ? plan.rest : plan.late;
   fit.hidden = S.taskView !== "today" || !ids.length || preview();
   fit.classList.toggle("over", plan.over);
@@ -1307,27 +1188,10 @@ function renderTaskStarts(force = false) {
     $("#dayFitText").textContent = plan.over ? "Your workday ended at " + fmtClock(plan.endAt) + ". Done for today?" : plural(ids.length, "task") + " won't fit before " + fmtClock(plan.endAt) + ".";
     $("#dayFitMove").textContent = plan.over ? "Move the rest to tomorrow" : "Move to tomorrow";
   }
-  document.querySelectorAll("#taskList .group.section").forEach((h) => {
-    const times = [...$("#taskList").querySelectorAll(".task")].filter((li) => groupBefore($("#taskList"), li) === h.dataset.g).map((li) => plan.get(li.dataset.id)).filter((x) => x && x.start);
-    h.querySelector(".sec-time").textContent = times.length ? fmtClock(Math.min(...times.map((x) => x.start))) + " – " + fmtClock(Math.max(...times.map((x) => x.end))) : "";
-  });
-  const day = $("#taskList .day-plan");
-  if (day) {
-    const late = plan.end > plan.endAt && !plan.over;
-    day.querySelector(".net").textContent = fmtDur(plan.focus);
-    day.querySelector(".gross").textContent = fmtDur(plan.focus + plan.breaks);
-    day.querySelector(".eta").textContent = "~" + fmtClock(plan.end);
-    day.querySelector(".eta-stat").classList.toggle("late", late);
-    day.title = plural(+day.dataset.tasks, "task") + " · " + plural(+day.dataset.cycles, "cycle") + " to go. Focus is pure work time; with breaks adds " + fmtDur(plan.breaks) + " of short and long breaks from your settings. Done is when you'd finish if you start now" + (late ? ", after your workday ends at " + fmtClock(plan.endAt) : "") + ".";
-  }
 }
 function renderTasks() {
-  if (drag) return;
+  if (taskList && taskList.dragging()) return;
   renderedDay = todayKey();
-  const fa = document.activeElement, keepFocus = fa && $("#taskList").contains(fa) && fa.closest(".task") ? {
-    id: fa.closest(".task").dataset.id, field: fa.dataset.field || "", subid: fa.matches("[data-subtitle]") ? fa.closest(".subtask").dataset.subid : "",
-    add: fa.matches(".subtask-add input"), row: fa.matches(".task"), value: fa.value, start: fa.selectionStart, end: fa.selectionEnd } : null;
-  $("#taskList").querySelectorAll(".subtask-add input").forEach((input) => S.subtaskDrafts.set(input.closest(".task").dataset.id, input.value));
   const vt = viewTasks(), pv = preview();
   const projects = projectNames(vt);
   Labels.importTasks(S.tasks);
@@ -1352,87 +1216,17 @@ function renderTasks() {
     b.setAttribute("aria-pressed", b.dataset.view === S.taskView);
     b.querySelector("em").textContent = byView[b.dataset.view].length || "";
   });
-  const ul = $("#taskList");
   if (!open.length) {
-    ul.innerHTML = "";
     $("#taskFoot").innerHTML = S.projectFilter ? '<div class="empty"><strong>No open tasks with this label</strong><span>Choose “All” to see the rest of your ledger.</span></div>' : '<div class="empty"><strong>No open tasks</strong><span>Add one above and estimate how many 25-minute cycles it needs. Then pick it under “Working on” and press Start.</span></div>';
   } else {
-    const row = (t, dated) => {
-      const active = t.id === S.activeId, open = S.openTask === t.id, del = S.confirmDel === t.id;
-      const subs = subsOf(t), subsDone = subs.filter((x) => x.done).length;
-      const dropAge = S.dropped && S.dropped.id === t.id ? Date.now() - S.dropped.at : Infinity;
-      const today = isToday(t), name = esc(t.title);
-      const meta = 
-        (dated && t.plan ? '<span class="when-chip">' + esc(shortDay(t.plan)) + "</span>" : "") +
-        (projectOf(t) ? projectHTML(t) : "") +
-        (subs.length ? '<span class="' + (subsDone === subs.length ? "done-all" : "") + '">' + ICON.list + subsDone + "/" + subs.length + "</span>" : "") +
-        (t.notes ? '<span title="Has notes">' + ICON.note + "</span>" : "") +
-        (today && t.plan && t.plan < tk ? '<span class="carry">from ' + esc(fmtDate(keyTime(t.plan), { weekday: "short" })) + "</span>" : "");
-      const cls = "task" + (active ? " is-active" : "") + (open ? " open" : "") + (completing.has(t.id) ? " completing" : "") + (dropAge < 900 ? " dropped" : "");
-      return '<li class="' + cls + '"' + (dropAge < 900 ? ' style="animation-delay:-' + dropAge + 'ms"' : "") + ' data-id="' + esc(t.id) + '" tabindex="0" aria-expanded="' + open + '" aria-label="' + name + '">' +
-        '<button class="grip" type="button" tabindex="-1"' + (S.projectFilter ? " disabled" : "") + ' aria-label="Reorder “' + name + '”: drag, or press the up and down arrow keys" title="' + (S.projectFilter ? "Show all tasks to reorder" : "Drag to reorder") + '">' + ICON.grip + "</button>" +
-        '<button class="check" type="button" data-act="done" aria-label="Mark “' + name + '” as finished" title="Mark finished">' + ICON.check + "</button>" +
-        '<div class="task-main" data-act="open"><div class="task-title"><span class="tt">' + name + "</span></div>" + '<div class="task-meta">' + meta + "</div></div>" +
-        '<div class="task-side"><div class="side-info">' + (today ? '<span class="late-flag" hidden>' + ICON.clock + "</span>" : "") + '<span class="cyc" title="' + cyclesOf(t) + " of " + plural(t.est || 0, "planned cycle") + '">' + pipsHTML(t) + "</span></div>" +
-        '<div class="side-acts">' + (today ? '<span class="task-start"></span>' : "") + '<button class="icon-btn" type="button" data-act="sched" data-sched aria-haspopup="dialog" aria-label="When: “' + name + '”" title="When? (D)">' + ICON.cal + "</button>" +
-        '<button class="icon-btn play" type="button" data-act="focus" aria-label="Start focusing on “' + name + '”" title="Focus on this">' + ICON.play + "</button></div></div>" +
-        (open ? cardHTML(t, del) : "") + "</li>";
-    };
-    const left = (list) => list.reduce((a, t) => a + Math.max(0, (t.est || 0) - cyclesOf(t)), 0);
     const shown = byView[S.taskView];
-    let html = "";
-    if (S.taskView === "today" && (shown.length || sections().length)) {
-      const n = left(shown);
-      html = '<li class="group today-head" data-g="today">' + ICON.star + 'Today<button class="add-sec" type="button" data-addsec title="Add a section, like Morning or Admin">+ Section</button>' +
-        (n ? '<div class="day-plan" data-cycles="' + n + '" data-tasks="' + shown.length + '"><span class="stat"><small>Focus</small><strong class="net"></strong></span>' +
-          '<span class="stat"><small><span class="lg">With breaks</span><span class="sh">Total</span></small><strong class="gross"></strong></span>' +
-          '<span class="stat eta-stat"><small>Done</small><strong class="eta"></strong></span></div>'
-
-          : "<span>" + (shown.length ? plural(shown.length, "task") + " · all planned cycles done" : "Nothing planned yet") + "</span>") + "</li>";
-    }
-    const summary = (list) => (list.length ? plural(list.length, "task") + (left(list) ? " · " + fmtDur(left(list) * dur("focus")) + " focus" : "") : "");
-    if (S.taskView === "upcoming") {
-      // The next seven days always show, so any of them can take a dropped task; further out is grouped by month.
-      const base = sod(Date.now()), week = [...Array(7)].map((_, i) => dayKey(addDays(base, i + 1)));
-      for (const k of week) {
-        const same = shown.filter((t) => t.plan === k);
-        html += '<li class="group day' + (same.length ? "" : " empty") + '" data-g="' + k + '"><b>' + new Date(keyTime(k)).getDate() + "</b>" + esc(dayName(k)) + "<span>" + summary(same) + "</span></li>";
-        same.forEach((t) => { html += row(t); });
-      }
-      const months = new Map();
-      shown.filter((t) => t.plan > week[6]).forEach((t) => { const ym = t.plan.slice(0, 7); months.set(ym, [...(months.get(ym) || []), t]); });
-      for (const [ym, list] of months) {
-        const [y, m] = ym.split("-").map(Number), firstDay = dayKey(addDays(base, 8)), start = firstDay > ym + "-01" ? firstDay : ym + "-01";
-        const end = dayKey(new Date(y, m, 0).getTime()), name = fmtDate(new Date(y, m - 1, 1).getTime(), y === new Date(base).getFullYear() ? { month: "long" } : { month: "long", year: "numeric" });
-        html += '<li class="group month" data-g="' + start + '" data-end="' + end + '">' + esc((start !== ym + "-01" ? "Rest of " : "") + name) + "<span>" + summary(list) + "</span></li>";
-        list.forEach((t) => { html += row(t, true); });
-      }
-    } else if (S.taskView === "today") {
-      const known = new Set(sections().map((x) => x.id));
-      shown.filter((t) => !known.has(t.section)).forEach((t) => { html += row(t); });
-      for (const sec of sections()) {
-        const mine = shown.filter((t) => t.section === sec.id);
-        html += '<li class="group section" data-g="sec:' + esc(sec.id) + '"><button class="grip sec-grip" type="button" aria-label="Move section ' + esc(sec.title) + ': drag, or press the up and down arrow keys" title="Drag to reorder">' + ICON.grip + '</button><input class="sec-title" type="text" maxlength="60" value="' + esc(sec.title) + '" aria-label="Section name" data-sec="' + esc(sec.id) + '">' +
-          '<span class="sec-time"></span><span class="sec-sum">' + (mine.length ? "" : "Drag tasks here") + "</span>" +
-          '<button class="icon-btn sec-del" type="button" data-secdel="' + esc(sec.id) + '" aria-label="Remove section ' + esc(sec.title) + '" title="Remove section (its tasks stay in Today)">' + ICON.x + "</button></li>";
-        mine.forEach((t) => { html += row(t); });
-      }
-    } else shown.forEach((t) => { html += row(t); });
-    ul.innerHTML = html;
     const empty = { today: ["Nothing planned for today", "Press D on a task, or use its calendar button, to bring it here."], upcoming: ["", ""], later: ["Nothing in Later", "Tasks without a day land here."] }[S.taskView];
     $("#taskFoot").innerHTML = (shown.length || !empty[0] ? "" : '<div class="empty"><strong>' + empty[0] + "</strong><span>" + empty[1] + "</span></div>") +
       (doneN ? '<div class="finished-note">' + plural(doneN, "finished task") + ' with cycles and time are in the <a href="#ledger">ledger below</a>.</div>' : "");
   }
-  if (keepFocus) {
-    const li = [...ul.querySelectorAll(".task")].find((x) => x.dataset.id === keepFocus.id);
-    const el = !li ? null : keepFocus.row ? li : keepFocus.field ? li.querySelector('[data-field="' + keepFocus.field + '"]') : keepFocus.subid ? li.querySelector('[data-subid="' + keepFocus.subid + '"] [data-subtitle]') : keepFocus.add ? li.querySelector(".subtask-add input") : null;
-    if (el) {
-      if (keepFocus.field && el.value !== keepFocus.value) el.value = keepFocus.value;
-      el.focus({ preventScroll: true });
-      try { if (keepFocus.start != null) el.setSelectionRange(keepFocus.start, keepFocus.end); } catch {}
-    }
-  }
+  list.refresh();
   renderTaskStarts(true);
+  flushSync();
   if (!labelPop.hidden) {
     const a = labelAnchor();
     if (a) { if (LP.key !== "hash") a.setAttribute("aria-expanded", "true"); placeLabelPop(); } else closeLabelPop();
@@ -1829,63 +1623,41 @@ newTaskForm.addEventListener("submit", (e) => {
   newTitle.focus();
   toast("Added “" + title + "”" + (t.project ? " to " + t.project : "") + " · " + (into === "later" ? "Later" : dayName(into === "today" ? todayKey() : into)) + ".");
 });
-function focusSubtask(id, subid, selector = "[data-subdone]") {
-  const row = [...$("#taskList").querySelectorAll(".task")].find((el) => el.dataset.id === id);
-  if (!row) return;
-  const sub = [...row.querySelectorAll(".subtask")].find((el) => el.dataset.subid === subid);
-  (sub ? sub.querySelector(selector) : row.querySelector(".subtask-add input"))?.focus();
+function focusAddSubtask(id) {
+  [...$("#taskList").querySelectorAll(".task")].find((el) => el.dataset.id === id)?.querySelector(".subtask-add input")?.focus();
 }
-$("#taskList").addEventListener("submit", (e) => {
-  const form = e.target.closest(".subtask-add");
-  if (!form) return;
-  e.preventDefault();
-  if (guardPreview()) return;
-  const input = form.querySelector("input"), title = input.value.trim(), id = form.closest(".task").dataset.id;
-  if (!title) { input.focus(); return; }
-  addSubtasks(id, [title]);
-});
 function addSubtasks(id, titles) {
   const t = S.tasks.get(id);
   if (!t) return;
   const n = clone(t);
   n.subtasks = [...(n.subtasks || []), ...titles.map((title) => ({ id: crypto.randomUUID(), title: title.slice(0, 140), done: false }))];
   S.subtaskDrafts.delete(id);
-  const input = [...$("#taskList").querySelectorAll(".task")].find((el) => el.dataset.id === id)?.querySelector(".subtask-add input");
-  if (input) input.value = "";
   Store.saveTask(n);
-  focusSubtask(id);
 }
-$("#taskList").addEventListener("paste", (e) => {
-  if (!e.target.closest(".subtask-add")) return;
-  const lines = (e.clipboardData ? e.clipboardData.getData("text") : "").split(/\r?\n/).map((l) => l.replace(/^\s*(?:[-*•]|\d+[.)])?\s*(?:\[[ xX]?\]\s*)?/, "").trim()).filter(Boolean);
-  if (lines.length < 2) return;
-  e.preventDefault();
+function editSubtask(id, subid, edit) {
   if (guardPreview()) return;
-  addSubtasks(e.target.closest(".task").dataset.id, lines.slice(0, 50));
-});
-$("#taskList").addEventListener("change", (e) => {
-  const input = e.target;
-  if (!input.matches("[data-subdone], [data-subtitle]")) return;
-  if (guardPreview()) return;
-  const id = input.closest(".task").dataset.id, subid = input.closest(".subtask").dataset.subid, t = S.tasks.get(id);
+  const t = S.tasks.get(id);
   if (!t) return;
   const n = clone(t), sub = (n.subtasks || []).find((s) => s.id === subid);
   if (!sub) return;
-  if (input.matches("[data-subdone]")) sub.done = input.checked;
-  else {
-    const title = input.value.trim();
-    if (!title) { input.value = sub.title; return; }
-    sub.title = title;
-  }
-  const checkbox = input.matches("[data-subdone]");
-  Store.saveTask(n, checkbox);
-  if (checkbox) focusSubtask(id, subid);
-  else {
-    const row = input.closest(".subtask");
-    row.querySelector("[data-subdone]").setAttribute("aria-label", "Complete subtask: " + sub.title);
-    row.querySelector("[data-act='subdelete']").setAttribute("aria-label", "Delete subtask: " + sub.title);
-  }
-});
+  edit(sub);
+  Store.saveTask(n);
+}
+function renameSubtask(id, subid, input) {
+  const t = S.tasks.get(id), sub = t && subsOf(t).find((s) => s.id === subid), title = input.value.trim();
+  if (!sub) return;
+  if (!title) { input.value = sub.title; return; }
+  if (title !== sub.title) editSubtask(id, subid, (s) => { s.title = title; });
+}
+function deleteSubtask(id, subid) {
+  if (guardPreview()) return;
+  const t = S.tasks.get(id);
+  if (!t) return;
+  const n = clone(t);
+  n.subtasks = (n.subtasks || []).filter((s) => s.id !== subid);
+  Store.saveTask(n);
+  focusAddSubtask(id);
+}
 $("#projectFilter").addEventListener("click", (e) => {
   const b = e.target.closest("[data-filter]");
   if (!b) return;
@@ -1894,174 +1666,109 @@ $("#projectFilter").addEventListener("click", (e) => {
   renderTasks();
   $('#projectFilter [aria-pressed="true"]')?.focus();
 });
-let delTimer = null;
-function saveSections(list) { S.settings.sections = list; Store.saveSettings(); renderTasks(); }
-
-// Sections move as a block: the heading floats with the pointer, a line marks where it lands, and its tasks follow on drop.
-let secDrag = null, secPending = null;
-function sectionBlocks() {
-  const blocks = [];
-  let cur = null;
-  for (const el of $("#taskList").children) {
-    if (el.classList.contains("section")) { cur = { id: el.dataset.g.slice(4), els: [el] }; blocks.push(cur); }
-    else if (el.classList.contains("group")) cur = null;
-    else if (cur) cur.els.push(el);
-  }
-  return blocks;
-}
+function saveSections(next) { S.settings.sections = next; Store.saveSettings(); renderTasks(); }
 function moveSection(id, to) {
-  const list = sections(), from = list.findIndex((x) => x.id === id);
-  if (from < 0 || to < 0 || to >= list.length || to === from) return false;
-  const next = [...list]; next.splice(to, 0, next.splice(from, 1)[0]);
+  const all = sections(), from = all.findIndex((x) => x.id === id);
+  if (from < 0 || to < 0 || to >= all.length || to === from) return false;
+  const next = [...all]; next.splice(to, 0, next.splice(from, 1)[0]);
   saveSections(next);
   return true;
 }
-function startSecDrag(e, head) {
-  if (guardPreview()) return;
-  const blocks = sectionBlocks(), from = blocks.findIndex((b) => b.els[0] === head);
-  if (from < 0 || blocks.length < 2) return;
-  const r = head.getBoundingClientRect(), n = blocks[from].els.length - 1;
-  const ghost = Object.assign(document.createElement("div"), { className: "sec-ghost", textContent: head.querySelector(".sec-title").value + (n ? "  ·  " + plural(n, "task") : "") });
-  Object.assign(ghost.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" });
-  const line = Object.assign(document.createElement("div"), { className: "sec-drop" });
-  document.body.append(ghost, line);
-  blocks[from].els.forEach((el) => el.classList.add("sec-lifted"));
-  document.body.classList.add("sec-sorting");
-  secDrag = { blocks, from, to: from, ghost, line, offset: e.clientY - r.top };
-  moveSecDrag(e.clientY);
-}
-function moveSecDrag(y) {
-  const d = secDrag, others = d.blocks.filter((_, i) => i !== d.from);
-  d.ghost.style.top = y - d.offset + "px";
-  let to = others.findIndex((b) => y < (b.els[0].getBoundingClientRect().top + b.els.at(-1).getBoundingClientRect().bottom) / 2);
-  if (to < 0) to = others.length;
-  d.to = to;
-  const list = $("#taskList").getBoundingClientRect();
-  const at = others[to] ? others[to].els[0].getBoundingClientRect().top - 2 : others.at(-1).els.at(-1).getBoundingClientRect().bottom + 2;
-  Object.assign(d.line.style, { left: list.left + "px", width: list.width + "px", top: at + "px" });
-}
-function endSecDrag(cancel) {
-  const d = secDrag;
-  if (!d) return;
-  secDrag = null;
-  d.ghost.remove(); d.line.remove();
-  d.blocks[d.from].els.forEach((el) => el.classList.remove("sec-lifted"));
-  document.body.classList.remove("sec-sorting");
-  if (!cancel) moveSection(d.blocks[d.from].id, d.to);
-}
-$("#taskList").addEventListener("pointerdown", (e) => {
-  if (e.button > 0 || secDrag || drag) return;
-  const grip = e.target.closest(".sec-grip"), head = e.target.closest(".group.section");
-  if (grip) { e.preventDefault(); startSecDrag(e, head); return; }
-  if (head && e.pointerType === "mouse" && !e.target.closest("input, button")) secPending = { x: e.clientX, y: e.clientY, head };
-});
-document.addEventListener("pointermove", (e) => {
-  if (secDrag) { moveSecDrag(e.clientY); return; }
-  if (secPending && Math.hypot(e.clientX - secPending.x, e.clientY - secPending.y) > 5) { const h = secPending.head; secPending = null; startSecDrag(e, h); }
-});
-document.addEventListener("pointerup", () => { secPending = null; endSecDrag(false); });
-document.addEventListener("pointercancel", () => { secPending = null; endSecDrag(true); });
-document.addEventListener("keydown", (e) => { if (secDrag && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); endSecDrag(true); } }, true);
 function renameSection(input) {
-  const list = sections(), sec = list.find((x) => x.id === input.dataset.sec), title = input.value.trim();
+  const all = sections(), sec = all.find((x) => x.id === input.dataset.sec), title = input.value.trim();
   if (!sec) return;
   if (!title) { input.value = sec.title; return; }
-  if (title !== sec.title) saveSections(list.map((x) => (x === sec ? { ...x, title } : x)));
+  if (title !== sec.title) saveSections(all.map((x) => (x === sec ? { ...x, title } : x)));
 }
-$("#taskList").addEventListener("change", (e) => { if (e.target.matches(".sec-title")) renameSection(e.target); });
-$("#taskList").addEventListener("click", (e) => {
-  if (dragJustEnded) { dragJustEnded = false; return; }
-  if (e.target.closest("[data-addsec]")) {
-    if (guardPreview()) return;
-    const id = "s" + Date.now().toString(36);
-    saveSections([...sections(), { id, title: "New section" }]);
-    const input = $('#taskList [data-sec="' + id + '"]');
-    if (input) { input.focus(); input.select(); }
-    return;
-  }
-  const del = e.target.closest("[data-secdel]");
-  if (del) {
-    if (guardPreview()) return;
-    const sec = sections().find((x) => x.id === del.dataset.secdel);
-    saveSections(sections().filter((x) => x !== sec));
-    if (sec) toast("Removed “" + sec.title + "”. Its tasks stay in Today.");
-    return;
-  }
-  const b = e.target.closest("[data-act],[data-cest]"); if (!b) return;
-  const li = b.closest(".task"); const id = li && li.dataset.id;
-  const act = b.dataset.act;
-  if (act === "open") { toggleCard(id); return; }
+function addSection() {
   if (guardPreview()) return;
-  const t = S.tasks.get(id); if (!t) return;
-  if (b.dataset.cest) {
-    // Pointer picks happen on pointerup (below); this path is for Enter/Space.
-    if (e.detail === 0) { const n = clone(t); n.est = +b.dataset.cest; Store.saveTask(n); }
-    return;
-  }
-  if (act === "subtasks") {
-    toggleCard(id);    } else if (act === "subdelete") {
-    const subid = b.closest(".subtask").dataset.subid, n = clone(t);
-    n.subtasks = (n.subtasks || []).filter((s) => s.id !== subid);
-    Store.saveTask(n);
-    focusSubtask(id);
-  } else if (act === "label") {
-    const find = () => [...$("#taskList").querySelectorAll(".task")].find((el) => el.dataset.id === id)?.querySelector("[data-act='label']");
-    openLabelPop("row:" + id, find, projectOf(t), (name) => {
-      const cur = S.tasks.get(id);
-      if (!cur || name === projectOf(cur)) return;
-      const n = clone(cur);
-      if (name) n.project = Labels.use(name); else delete n.project;
+  const id = "s" + Date.now().toString(36);
+  saveSections([...sections(), { id, title: "New section" }]);
+  const input = $('#taskList [data-sec="' + id + '"]');
+  if (input) { input.focus(); input.select(); }
+}
+function removeSection(id) {
+  if (guardPreview()) return;
+  const sec = sections().find((x) => x.id === id);
+  saveSections(sections().filter((x) => x !== sec));
+  if (sec) toast("Removed “" + sec.title + "”. Its tasks stay in Today.");
+}
+function completeTask(id) {
+  if (guardPreview()) return;
+  // A short pause before the task leaves, so a slipped click can be taken back.
+  if (completing.has(id)) { clearTimeout(completing.get(id)); completing.delete(id); renderTasks(); return; }
+  if (!S.tasks.get(id)) return;
+  playSound("task");
+  completing.set(id, setTimeout(() => {
+    completing.delete(id);
+    const cur = S.tasks.get(id); if (!cur || cur.done) return;
+    if (S.openTask === id) S.openTask = null;
+    leaveRows([id], () => {
+      const n = clone(cur); n.done = true; n.doneAt = Date.now();
+      if (S.activeId === id) { S.activeId = openOf(S.tasks).find((task) => task.id !== id)?.id || null; saveTimer(); }
       Store.saveTask(n);
-      find()?.focus();
+      toast("Finished “" + cur.title + "” in " + plural(cyclesOf(cur), "cycle") + " · " + fmtDur(timeOf(cur)) + " of focus.");
     });
-  } else if (act === "select" || act === "focus") {
-    S.activeId = id; saveTimer(); renderTasks();
-    if (act === "focus") { if (T.mode !== "focus") setMode("focus", true); if (T.status !== "running") start(); if (phone()) showPage("timer"); }
-  } else if (act === "done") {
-    // A short pause before the task leaves, so a slipped click can be taken back.
-    if (completing.has(id)) { clearTimeout(completing.get(id)); completing.delete(id); li.classList.remove("completing"); return; }
-    li.classList.add("completing"); playSound("task");
-    completing.set(id, setTimeout(() => {
-      completing.delete(id);
-      const cur = S.tasks.get(id); if (!cur || cur.done) return;
-      if (S.openTask === id) S.openTask = null;
-      leaveRows([id], () => {
-        const n = clone(cur); n.done = true; n.doneAt = Date.now();
-        if (S.activeId === id) { S.activeId = openOf(S.tasks).find((task) => task.id !== id)?.id || null; saveTimer(); }
-        Store.saveTask(n);
-        toast("Finished “" + cur.title + "” in " + plural(cyclesOf(cur), "cycle") + " · " + fmtDur(timeOf(cur)) + " of focus.");
-      });
-    }, 900));
-  } else if (act === "sched") {
-    if (!whenPop.hidden) { closeWhen(); return; }
-    openWhen(e.target.closest("[data-sched]"), t);
-  } else if (act === "del") {
-    if (S.confirmDel === id) { S.confirmDel = null; if (S.openTask === id) S.openTask = null; if (S.activeId === id) { S.activeId = null; saveTimer(); } Store.deleteTask(id); toast("Deleted “" + t.title + "”."); }
-    else { S.confirmDel = id; renderTasks(); clearTimeout(delTimer); delTimer = setTimeout(() => { S.confirmDel = null; renderTasks(); }, 3000); }
-  }
-});
+  }, 900));
+  renderTasks();
+}
+function focusOnTask(id) {
+  if (guardPreview() || !S.tasks.get(id)) return;
+  S.activeId = id; saveTimer(); renderTasks();
+  if (T.mode !== "focus") setMode("focus", true);
+  if (T.status !== "running") start();
+  if (phone()) showPage("timer");
+}
+function labelTask(id) {
+  const t = S.tasks.get(id);
+  if (guardPreview() || !t) return;
+  const find = () => [...$("#taskList").querySelectorAll(".task")].find((el) => el.dataset.id === id)?.querySelector("[data-act='label']");
+  openLabelPop("row:" + id, find, projectOf(t), (name) => {
+    const cur = S.tasks.get(id);
+    if (!cur || name === projectOf(cur)) return;
+    const n = clone(cur);
+    if (name) n.project = Labels.use(name); else delete n.project;
+    Store.saveTask(n);
+    find()?.focus();
+  });
+}
+function schedTask(anchor, id) {
+  const t = S.tasks.get(id);
+  if (guardPreview() || !t) return;
+  if (!whenPop.hidden) { closeWhen(); return; }
+  openWhen(anchor, t);
+}
+let delTimer = null;
+function deleteTask(id) {
+  const t = S.tasks.get(id);
+  if (guardPreview() || !t) return;
+  clearTimeout(delTimer);
+  if (S.confirmDel === id) { S.confirmDel = null; if (S.openTask === id) S.openTask = null; if (S.activeId === id) { S.activeId = null; saveTimer(); } Store.deleteTask(id); toast("Deleted “" + t.title + "”."); }
+  else { S.confirmDel = id; renderTasks(); delTimer = setTimeout(() => { S.confirmDel = null; renderTasks(); }, 3000); }
+}
+function setEstimate(id, est) {
+  const t = S.tasks.get(id);
+  if (guardPreview() || !t || (t.est || 0) === est) return;
+  const n = clone(t); n.est = est; Store.saveTask(n);
+}
 function focusRow(li) {
   if (!li) return;
   if (phone() && document.body.dataset.page !== "tasks") showPage("tasks");
   li.focus({ preventScroll: true });
   li.scrollIntoView({ block: "nearest" });
 }
-// A sync update can redraw the list between press and release, and the browser then drops the click.
+// The composer redraws its circles while you click them, and the browser then drops the click.
 // Reading the circle under the pointer on release still finds the redrawn one in the same place.
 let circleDown = null;
 document.addEventListener("pointerdown", (e) => {
-  const c = e.target.closest && e.target.closest("[data-cest], [data-nset]");
+  const c = e.target.closest && e.target.closest("[data-nset]");
   circleDown = c && e.button === 0 ? { x: e.clientX, y: e.clientY } : null;
 }, true);
 document.addEventListener("pointerup", (e) => {
   const down = circleDown; circleDown = null;
   if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) return;
-  const c = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-cest], [data-nset]");
-  if (!c) return;
-  if (c.dataset.nset) { pickNewEst(+c.dataset.nset); return; }
-  const t = S.tasks.get(c.closest(".task")?.dataset.id);
-  if (!t || guardPreview() || (t.est || 0) === +c.dataset.cest) return;
-  const n = clone(t); n.est = +c.dataset.cest; Store.saveTask(n);
+  const c = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-nset]");
+  if (c) pickNewEst(+c.dataset.nset);
 }, true);
 function toggleCard(id, focusTitle) {
   S.openTask = S.openTask === id ? null : id;
@@ -2083,121 +1790,10 @@ function saveField(input) {
   Store.saveTask(n, false);
   if (field === "title") renderTasks();
 }
-let notesTimer = 0;
-$("#taskList").addEventListener("input", (e) => {
-  if (!e.target.matches('[data-field="notes"]')) return;
-  clearTimeout(notesTimer);
-  const el = e.target; notesTimer = setTimeout(() => saveField(el), 500);
-});
-$("#taskList").addEventListener("focusout", (e) => { if (e.target.matches("[data-field]")) { clearTimeout(notesTimer); saveField(e.target); } });
 document.addEventListener("pointerdown", (e) => {
   if (!S.openTask || e.target.closest(".task.open, #whenPop, #labelPop, #pop, .toast")) return;
   const el = document.activeElement; if (el && el.matches && el.matches("[data-field]")) saveField(el);
   S.openTask = null; S.confirmDel = null; renderTasks();
-});
-
-// Mouse users drag the whole row once it moves a few pixels; touch keeps the grip so lists still scroll.
-let pendingDrag = null, dragJustEnded = false;
-$("#taskList").addEventListener("pointerdown", (e) => {
-  if (e.pointerType !== "mouse" || e.button > 0 || drag || S.projectFilter) return;
-  const li = e.target.closest(".task");
-  if (!li || li.classList.contains("open") || e.target.closest("button, input, textarea, a, .task-card")) return;
-  pendingDrag = { x: e.clientX, y: e.clientY, li, id: e.pointerId };
-});
-$("#taskList").addEventListener("pointermove", (e) => {
-  if (!pendingDrag || e.pointerId !== pendingDrag.id || drag) return;
-  if (Math.hypot(e.clientX - pendingDrag.x, e.clientY - pendingDrag.y) < 5) return;
-  const li = pendingDrag.li; pendingDrag = null;
-  startDrag(e, li);
-});
-addEventListener("pointerup", () => { pendingDrag = null; });
-$("#taskList").addEventListener("pointerdown", (e) => {
-  const g = e.target.closest(".grip:not(.sec-grip)");
-  if (!g || g.disabled || drag || e.button > 0) return;
-  e.preventDefault();
-  startDrag(e, g.closest(".task"));
-});
-function startDrag(e, li) {
-  if (guardPreview()) return;
-  const ul = $("#taskList");
-  const r = li.getBoundingClientRect(), slot = document.createElement("li");
-  slot.className = "task-drop"; slot.setAttribute("aria-hidden", "true");
-  const panel = ul.closest(".panel");
-  drag = { ul, li, slot, next: li.nextElementSibling, from: groupBefore(ul, li), id: e.pointerId, offset: e.clientY - r.top, y: e.clientY, frame: null,
-    scroller: panel && getComputedStyle(panel).overflowY === "auto" ? panel : null };
-  try { ul.setPointerCapture(e.pointerId); } catch {}
-  ul.insertBefore(slot, li); document.body.appendChild(li);
-  li.classList.add("dragging"); ul.classList.add("sorting");
-  li.style.left = r.left + "px"; li.style.width = r.width + "px";
-  slot.style.height = li.offsetHeight + "px";
-  updateDrop(e.clientY); drag.frame = requestAnimationFrame(dragScroll);
-  if (!calm()) li.animate([{ transform: "none", boxShadow: "none", offset: 0 }], { duration: 180, easing: EASE });
-}
-$("#taskList").addEventListener("pointermove", (e) => {
-  if (!drag || e.pointerId !== drag.id) return;
-  drag.y = e.clientY; updateDrop(e.clientY);
-});
-const endDrag = (e) => {
-  if (!drag || e.pointerId !== drag.id) return;
-  finishDrag(e.type !== "pointerup");
-};
-$("#taskList").addEventListener("pointerup", endDrag);
-$("#taskList").addEventListener("pointercancel", endDrag);
-$("#taskList").addEventListener("lostpointercapture", endDrag);
-document.addEventListener("keydown", (e) => { if (drag && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); finishDrag(true); } }, true);
-$("#taskList").addEventListener("keydown", (e) => {
-  if (e.target.matches("[data-subtitle]")) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.target.dispatchEvent(new Event("change", { bubbles: true }));
-    } else if (e.key === "Escape") {
-      e.stopPropagation();
-      const task = S.tasks.get(e.target.closest(".task").dataset.id);
-      const sub = (task && task.subtasks || []).find((s) => s.id === e.target.closest(".subtask").dataset.subid);
-      if (sub) e.target.value = sub.title;
-    }
-    return;
-  }
-  if (e.target.matches(".sec-grip") && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
-    e.preventDefault();
-    const id = e.target.closest(".group.section").dataset.g.slice(4), i = sections().findIndex((x) => x.id === id);
-    if (moveSection(id, i + (e.key === "ArrowUp" ? -1 : 1))) $('#taskList [data-g="sec:' + id + '"] .sec-grip')?.focus();
-    return;
-  }
-  const g = e.target.closest(".grip");
-  if (g && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
-    e.preventDefault();
-    if (guardPreview()) return;
-    const li = g.closest(".task"), ul = li.parentNode, id = li.dataset.id;
-    if (e.key === "ArrowUp") {
-      const prev = li.previousElementSibling;
-      if (!prev || (prev === ul.firstElementChild && prev.classList.contains("group"))) return;
-      ul.insertBefore(li, prev);
-    } else {
-      if (!li.nextElementSibling) return;
-      ul.insertBefore(li.nextElementSibling, li);
-    }
-    commitOrder();
-    const again = [...ul.querySelectorAll(".task")].find((x) => x.dataset.id === id);
-    if (again) again.querySelector(".grip").focus();
-    return;
-  }
-  if (e.target.matches('[data-field="title"], .sec-title') && e.key === "Enter") { e.preventDefault(); e.target.blur(); return; }
-  if (e.target.matches(".sec-title") && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); const sec = sections().find((x) => x.id === e.target.dataset.sec); if (sec) e.target.value = sec.title; e.target.blur(); return; }
-  const li = e.target.closest(".task");
-  if (li && e.key === "Escape" && li.classList.contains("open")) {
-    e.preventDefault(); e.stopPropagation();
-    if (e.target.matches("[data-field]")) saveField(e.target);
-    toggleCard(li.dataset.id);
-    return;
-  }
-  if (e.target !== li) return;
-  if (e.key === "Enter") { e.preventDefault(); toggleCard(li.dataset.id, true); }
-  else if (["ArrowDown", "ArrowUp", "j", "k"].includes(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
-    e.preventDefault(); e.stopPropagation();
-    const rows = [...$("#taskList").querySelectorAll(".task")], i = rows.indexOf(li);
-    focusRow(rows[i + (e.key === "ArrowDown" || e.key === "j" ? 1 : -1)]);
-  }
 });
 $("#statsFilter").addEventListener("click", (e) => {
   const b = e.target.closest("[data-filter]");
@@ -2397,8 +1993,6 @@ addEventListener("scroll", (e) => { if (!whenPop.contains(e.target)) closeWhen()
 // ---------- scheduling shortcuts ----------
 // They act on the task under the mouse or keyboard focus, else the one you're working on.
 let hoverTask = "";
-$("#taskList").addEventListener("pointerover", (e) => { if (e.pointerType === "mouse") hoverTask = e.target.closest(".task")?.dataset.id || ""; });
-$("#taskList").addEventListener("pointerleave", () => { hoverTask = ""; });
 function shortcutTask() {
   const focused = document.activeElement && document.activeElement.closest && document.activeElement.closest("#taskList .task");
   const id = focused ? focused.dataset.id : hoverTask || S.activeId;
@@ -2406,32 +2000,15 @@ function shortcutTask() {
   return t && !t.done && !t.system ? t : null;
 }
 // ⌥↑/⌥↓ move a task one place (past a heading counts as a step); with ⇧ it jumps a whole section, or a day in Upcoming.
-function moveTaskKey(up, jump) {
+function moveTaskKey(up, far) {
   const t = shortcutTask();
   if (!t) { toast("Point at a task or pick one to work on first."); return; }
   if (guardPreview()) return;
   if (S.projectFilter) { toast("Show all tasks to reorder."); return; }
-  const ul = $("#taskList"), li = [...ul.querySelectorAll(".task")].find((x) => x.dataset.id === t.id);
-  if (!li) return;
-  const before = groupBefore(ul, li), heads = [...ul.children].filter((el) => el.classList.contains("group") && !el.classList.contains("month"));
-  if (!jump && up) {
-    const prev = li.previousElementSibling;
-    if (!prev || (prev === ul.firstElementChild && prev.classList.contains("group"))) return;
-    ul.insertBefore(li, prev);
-  } else if (!jump) {
-    if (!li.nextElementSibling) return;
-    ul.insertBefore(li.nextElementSibling, li);
-  } else {
-    let cur = null;
-    for (const el of ul.children) { if (el === li) break; if (el.classList.contains("group")) cur = el; }
-    const i = heads.indexOf(cur);
-    if (up) { if (i <= 0) return; ul.insertBefore(li, cur); }
-    else { const next = heads[i + 1]; if (!next) return; ul.insertBefore(li, next.nextSibling); }
-  }
-  const after = groupBefore(ul, li);
-  commitOrder();
-  if (after !== before) toast("Moved “" + t.title + "” to " + groupName(after) + ".");
-  focusRow([...ul.querySelectorAll(".task")].find((x) => x.dataset.id === t.id));
+  const moved = taskList.moveTask(t.id, up, far);
+  if (!moved) return;
+  if (moved.to !== moved.from) toast("Moved “" + t.title + "” to " + groupName(moved.to) + ".");
+  focusRow([...$("#taskList").querySelectorAll(".task")].find((x) => x.dataset.id === t.id));
 }
 function scheduleShortcut(key) {
   const t = shortcutTask();
@@ -2937,6 +2514,15 @@ if (invite) {
   } else if (RM.code) roomConnect();
 } else if (RM.code) roomConnect();
 if (["today", "upcoming", "later"].includes(ss.get("pl.taskView"))) S.taskView = ss.get("pl.taskView");
+taskList = mount(TaskList, { target: $("#taskFoot").parentNode, anchor: $("#taskFoot"), props: { api: {
+  S, ICON, completing, calm, guardPreview,
+  todayKey, bucketOf, isToday, sections, openOf, viewTasks, inProject, cyclesOf, timeOf, projectOf, labelHue, labelChipName, subsOf,
+  plural, fmtDur, fmtDate, fmtClock, shortDay, dayName, keyTime, dayKey, addDays, sod, dur, groupName,
+  renderTasks, commit: commitPlacements, focusRow, hover: (id) => { hoverTask = id; },
+  open: toggleCard, complete: completeTask, focus: focusOnTask, label: labelTask, sched: schedTask, del: deleteTask, setEst: setEstimate,
+  saveField, addSubtasks, subDone: (id, subid, done) => editSubtask(id, subid, (s) => { s.done = done; }), renameSub: renameSubtask, deleteSub: deleteSubtask,
+  addSection, removeSection, renameSection, moveSection,
+} } });
 renderRoom();
 renderAll();
 document.documentElement.style.setProperty("--bar-h", $(".bar").offsetHeight + "px");
