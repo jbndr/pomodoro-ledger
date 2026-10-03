@@ -701,6 +701,7 @@ body.zen .working { width: min(100%, 420px); }
       <label class="toggle">Show a notification when a cycle or break ends<input type="checkbox" id="sNotify"></label>
       <label class="toggle">Play a sound when a cycle, break or task finishes<input type="checkbox" id="sSound"></label>
       <div class="toggle"><span class="sub">Sounds play only after you've clicked somewhere on the page.</span><button class="btn" type="button" id="testSound">Test sound</button></div>
+      <label class="toggle" id="autoFloatRow" hidden>Open the floating timer automatically when a session starts or you switch tabs<input type="checkbox" id="sAutoFloat"></label>
       <label class="toggle">Gentle ticking during focus<input type="checkbox" id="sTicking" aria-controls="tickingOptions"></label>
       <div id="tickingOptions" hidden>
         <div class="fields">
@@ -722,7 +723,7 @@ body.zen .working { width: min(100%, 420px); }
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const MIN = 60000;
   const DEMO = new URLSearchParams(location.search).get("demo") === "1";
-  const DEF = { focus: 25, short: 5, long: 15, longEvery: 4, autoBreak: true, autoFocus: false, sound: true, notify: false, goal: 8, ticking: false, tickVolume: 20, tickPace: 2 };
+  const DEF = { focus: 25, short: 5, long: 15, longEvery: 4, autoBreak: true, autoFocus: false, sound: true, notify: false, goal: 8, ticking: false, tickVolume: 20, tickPace: 2, autoFloat: false };
   const ls = {
     get(k, d) { if (DEMO) return d; try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
     set(k, v) { if (DEMO) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -790,7 +791,7 @@ body.zen .working { width: min(100%, 420px); }
         if (!d.exists) return;
         const b = d.data() || {};
         if (Array.isArray(b.labels)) { Labels.merge(b.labels); Store.cache(); refreshLabelPop(); }
-        if (b.settings) { S.settings = { ...DEF, ...b.settings }; this.cache(); fillSettings(); renderTimer(true); renderStats(); }
+        if (b.settings) { S.settings = { ...DEF, ...b.settings }; this.cache(); fillSettings(); autoFloatHandler(); renderTimer(true); renderStats(); }
       }, () => {});
     },
     write(t) {
@@ -1028,6 +1029,7 @@ body.zen .working { width: min(100%, 420px); }
     T.endsAt = (from || Date.now()) + T.remaining;
     T.status = "running";
     scheduleEnd(); saveTimer(); wakeOn(); renderTimer(true);
+    autoFloat();
   }
   function pause() {
     if (T.status !== "running") return;
@@ -1345,6 +1347,7 @@ body.zen .working { width: min(100%, 420px); }
   let floatWindow = null, floatOpening = false;
   const floatBtn = $("#floatBtn");
   floatBtn.hidden = !window.documentPictureInPicture || !window.isSecureContext;
+  $("#autoFloatRow").hidden = floatBtn.hidden;
   function renderFloating(txt, frac) {
     if (!floatWindow || floatWindow.closed) return;
     const doc = floatWindow.document, root = doc.documentElement;
@@ -1373,9 +1376,19 @@ body.zen .working { width: min(100%, 420px); }
       button.setAttribute("aria-label", label);
     }
   }
-  floatBtn.addEventListener("click", async () => {
-    if (floatOpening) return;
-    if (floatWindow && !floatWindow.closed) { floatWindow.close(); return; }
+  floatBtn.addEventListener("click", () => {
+    if (floatWindow && !floatWindow.closed) floatWindow.close();
+    else openFloating();
+  });
+  function autoFloatHandler() {
+    if (!navigator.mediaSession) return;
+    try { navigator.mediaSession.setActionHandler("enterpictureinpicture", S.settings.autoFloat && !floatBtn.hidden ? () => openFloating(true) : null); } catch {}
+  }
+  function autoFloat() {
+    if (S.settings.autoFloat && !floatBtn.hidden && navigator.userActivation?.isActive && !(floatWindow && !floatWindow.closed)) openFloating(true);
+  }
+  async function openFloating(quiet) {
+    if (floatOpening || (floatWindow && !floatWindow.closed)) return;
     floatOpening = true;
     let opened = null;
     try {
@@ -1444,9 +1457,10 @@ body.zen .working { width: min(100%, 420px); }
       tick();
     } catch {
       if (opened) opened.close();
-      toast("Couldn't open the floating timer. Try again from a supported desktop browser.");
+      if (!quiet) toast("Couldn't open the floating timer. Try again from a supported desktop browser.");
     } finally { floatOpening = false; }
-  });
+  }
+  autoFloatHandler();
 
   // ---------- rendering: tasks ----------
   function pipsHTML(t) {
@@ -2361,7 +2375,7 @@ body.zen .working { width: min(100%, 420px); }
 
   // settings
   const F = { sFocus: "focus", sShort: "short", sLong: "long", sEvery: "longEvery", sGoal: "goal" };
-  const B = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking" };
+  const B = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat" };
   function fillTicking() {
     $("#tickingOptions").hidden = !S.settings.ticking;
     $("#sTickVolume").value = S.settings.tickVolume;
@@ -2421,6 +2435,7 @@ body.zen .working { width: min(100%, 420px); }
     if (T.setIndex > S.settings.longEvery) T.setIndex = 0;
     if (id === "sNotify" && S.settings.notify) askNotify();
     if (id === "sSound") { if (S.settings.sound) scheduleEnd(); else cancelEnd(); }
+    if (id === "sAutoFloat") autoFloatHandler();
     renderTimer(true); renderStats(); renderEstPick();
   });
 
