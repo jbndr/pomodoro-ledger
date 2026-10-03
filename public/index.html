@@ -1583,7 +1583,7 @@ body.zen .working { width: min(100%, 420px); }
     let s = c + "/" + est + " cycles";
     if (est && over > 0) s += ' <span class="over">+' + over + " over</span>";
     const ms = timeOf(t);
-    if (ms) s += " · " + fmtDur(ms);
+    if (ms) s += " · " + fmtDur(ms) + " focus";
     return s;
   }
   const projectOf = (t) => typeof t.project === "string" ? t.project.trim() : "";
@@ -1795,17 +1795,22 @@ body.zen .working { width: min(100%, 420px); }
     if (T.mode !== "focus") cursor += remNow();
     else if (T.status !== "idle" && !current) { cursor += remNow(); index++; cursor += nextBreak(); }
     let cyclesLeft = sequence.reduce((n, t) => n + remaining(t), 0);
+    plan.focus = 0; plan.breaks = 0;
     for (const t of sequence) {
       const cycles = remaining(t);
       if (!cycles) { plan.set(t.id, { text: "Estimate met", hint: "All estimated cycles for this task are complete. Increase the estimate to plan more time." }); continue; }
-      plan.set(t.id, { text: t === current ? T.status === "running" ? "In progress" : "Resume now" : "Starts ~" + fmtClock(cursor),
-        hint: "Estimated start if you follow every remaining planned cycle and take the short and long breaks in your settings. " + (current ? "Finish the current task first, then follow Today’s order." : "Tasks follow Today’s order; paused timers are assumed to resume now.") });
+      const start = cursor;
+      let end = cursor;
       for (let i = 0; i < cycles; i++) {
-        cursor += t === current && i === 0 ? remNow() : dur("focus");
+        const focus = t === current && i === 0 ? remNow() : dur("focus");
+        cursor += focus; plan.focus += focus; end = cursor;
         index++; cyclesLeft--;
-        if (cyclesLeft) cursor += nextBreak();
+        if (cyclesLeft) { const rest = nextBreak(); cursor += rest; plan.breaks += rest; }
       }
+      plan.set(t.id, { text: t === current ? T.status === "running" ? "In progress" : "Resume now" : "Starts ~" + fmtClock(start),
+        hint: (t === current ? "Estimated to finish ~" + fmtClock(end) : "Estimated ~" + fmtClock(start) + " – " + fmtClock(end)) + ", including the short and long breaks in your settings. " + (current ? "Finish the current task first, then follow Today’s order." : "Tasks follow Today’s order; paused timers are assumed to resume now.") });
     }
+    plan.end = cursor;
     return plan;
   }
   function renderTaskStarts(force = false) {
@@ -1819,6 +1824,11 @@ body.zen .working { width: min(100%, 420px); }
       el.textContent = estimate ? estimate.text : "";
       el.title = estimate ? estimate.hint : "";
     });
+    const todayPlan = $("#taskList .today-plan");
+    if (todayPlan) {
+      todayPlan.textContent = fmtDur(plan.focus) + " focus" + (plan.breaks ? " + " + fmtDur(plan.breaks) + " breaks" : "") + " · done ~" + fmtClock(plan.end);
+      todayPlan.title = "Focus is pure work time. Breaks follow your timer settings, so the finish time is when you'd be done if you start now and don't skip any.";
+    }
   }
   function renderTasks() {
     if (drag) return;
@@ -1873,7 +1883,7 @@ body.zen .working { width: min(100%, 420px); }
       let html = "", split = false;
       if (mine.length) {
         const left = mine.reduce((a, t) => a + Math.max(0, (t.est || 0) - cyclesOf(t)), 0);
-        html = '<li class="group" data-g="today">Today<span>' + plural(mine.length, "task") + " · " + (left ? plural(left, "cycle") + " to go · " + fmtDur(left * S.settings.focus * MIN) : "all planned cycles done") + "</span></li>";
+        html = '<li class="group" data-g="today">Today<span>' + plural(mine.length, "task") + " · " + (left ? plural(left, "cycle") + ' to go · <span class="today-plan"></span>' : "all planned cycles done") + "</span></li>";
       }
       open.forEach((t) => {
         if (mine.length && !t.today && !split) { split = true; html += later; }
@@ -1895,7 +1905,7 @@ body.zen .working { width: min(100%, 420px); }
     $("#pickValue").textContent = pickOpts[Math.max(0, cur)].title;
     pickMenu.innerHTML = pickOpts.map((o, i) => '<li role="option" id="pick-' + i + '" data-i="' + i + '" aria-selected="' + (i === Math.max(0, cur)) + '"><span>' + esc(o.title) + "</span>" + (o.meta ? "<em>" + o.meta + "</em>" : "") + ICON.check + "</li>").join("");
     if (pickOpen) pickMove(Math.min(pickIdx, pickOpts.length - 1));
-    $("#workingNote").textContent = act ? cyclesOf(act) + " of " + plural(act.est || 0, "planned cycle") + " done · " + fmtDur(timeOf(act)) + " so far" : "Pick a task so its cycles and time are tracked.";
+    $("#workingNote").textContent = act ? cyclesOf(act) + " of " + plural(act.est || 0, "planned cycle") + " done · " + fmtDur(timeOf(act)) + " focus so far" : "Pick a task so its cycles and time are tracked.";
   }
 
   // ---------- rendering: stats ----------
@@ -1932,8 +1942,8 @@ body.zen .working { width: min(100%, 420px); }
     const diff = ratio == null ? 0 : Math.round((ratio - 1) * 100);
     const delta = wk - prev;
     const tiles = [
-      { k: "Today", v: fmtDur(tk.ms).replace(/(\d+)([hm])/g, "$1<small>$2</small>"), s: '<div class="meter" role="img" aria-label="' + tk.cycles + " of " + goal + ' cycles"><b style="width:' + Math.min(100, (tk.cycles / goal) * 100) + '%"></b></div><span>' + tk.cycles + " of " + goal + " cycles" + (tk.cycles >= goal ? " · goal reached" : "") + "</span>" },
-      { k: "Last 7 days", v: fmtDur(wk).replace(/(\d+)([hm])/g, "$1<small>$2</small>"), s: prev || wk ? '<span class="' + (delta >= 0 ? "up" : "down") + '">' + (delta >= 0 ? "+" : "−") + fmtDur(Math.abs(delta)) + "</span> vs the 7 days before" : "No focus logged yet" },
+      { k: "Focus today", v: fmtDur(tk.ms).replace(/(\d+)([hm])/g, "$1<small>$2</small>"), s: '<div class="meter" role="img" aria-label="' + tk.cycles + " of " + goal + ' cycles"><b style="width:' + Math.min(100, (tk.cycles / goal) * 100) + '%"></b></div><span>' + tk.cycles + " of " + goal + " cycles" + (tk.cycles >= goal ? " · goal reached" : "") + "</span>" },
+      { k: "Focus · 7 days", v: fmtDur(wk).replace(/(\d+)([hm])/g, "$1<small>$2</small>"), s: prev || wk ? '<span class="' + (delta >= 0 ? "up" : "down") + '">' + (delta >= 0 ? "+" : "−") + fmtDur(Math.abs(delta)) + "</span> vs the 7 days before" : "No focus logged yet" },
       { k: "Streak", v: streak + "<small>" + (streak === 1 ? "day" : "days") + "</small>", s: streak ? "Best run: " + plural(best, "day") : "Finish a cycle today to start one" },
       { k: "Estimates", v: ratio == null ? "–" : ratio.toFixed(2) + "<small>×</small>", s: ratio == null ? "Finish a task to compare plan and reality" : (Math.abs(diff) < 5 ? "Finished tasks land close to plan" : "Tasks take " + Math.abs(diff) + "% " + (diff > 0 ? "more" : "fewer") + " cycles than planned") + " · " + plural(fin.length, "task") },
     ];
@@ -2083,7 +2093,9 @@ body.zen .working { width: min(100%, 420px); }
     let h = "";
     for (let i = 1; i <= 8; i++) h += '<button type="button" role="radio" aria-checked="' + (i === S.newEst) + '" aria-label="' + plural(i, "pomodoro") + '" data-est="' + i + '" class="' + (i <= S.newEst ? "on" : "") + '"><i></i></button>';
     $("#estPick").innerHTML = h;
-    $("#estOut").textContent = plural(S.newEst, "cycle") + " · " + fmtDur(S.newEst * S.settings.focus * MIN);
+    let breaks = 0;
+    for (let i = 1; i < S.newEst; i++) breaks += dur(i % S.settings.longEvery ? "short" : "long");
+    $("#estOut").textContent = plural(S.newEst, "cycle") + " · " + fmtDur(S.newEst * dur("focus")) + " focus" + (breaks ? " + " + fmtDur(breaks) + " breaks" : "");
   }
   function renderAll() { renderPill(); renderTasks(); renderStats(); renderEstPick(); renderTimer(true); }
 
@@ -2325,7 +2337,7 @@ body.zen .working { width: min(100%, 420px); }
       }
       Store.saveTask(n);
       playSound("task");
-      toast("Finished “" + t.title + "” in " + plural(cyclesOf(t), "cycle") + " · " + fmtDur(timeOf(t)) + ".");
+      toast("Finished “" + t.title + "” in " + plural(cyclesOf(t), "cycle") + " · " + fmtDur(timeOf(t)) + " of focus.");
     } else if (act === "today") {
       const n = clone(t); n.today = !t.today; Store.saveTask(n);
     } else if (act === "edit") {
