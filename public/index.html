@@ -551,7 +551,9 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   body.landscape-phone .dial-wrap { grid-column: 1; grid-row: 2 / 5; width: min(100%, 220px); }
   body.landscape-phone .adjust, body.landscape-phone .set-dots, body.landscape-phone .controls { grid-column: 2; }
   body.compact-phone .app { gap: 10px; }
-  body.compact-phone .room { padding: 8px; gap: 6px; }
+  body.compact-phone .room { padding: 8px; gap: 6px; grid-template-columns: auto minmax(0, 1fr) auto; }
+  body.compact-phone .mates { grid-column: 2; grid-row: 1; }
+  body.compact-phone .room-actions { grid-column: 3; }
   body.compact-phone .timer-card { padding-block: 8px; gap: 6px; }
   body.compact-phone .modes { padding: 2px; }
   body.compact-phone .go { height: 52px; }
@@ -573,7 +575,7 @@ body.zen .working { width: min(100%, 420px); }
 /* Phones: one section per page, switched from a bottom tab bar, so the timer gets the whole screen. */
 .tabbar { display: none; }
 @media (max-width: 640px) {
-  .app { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .app { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
   .banner { order: 1; }
   .tabbar { position: fixed; z-index: 25; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 6px max(10px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left)); border-top: 1px solid var(--line); background: color-mix(in oklab, var(--bg) 86%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
   .tabbar button { min-height: 52px; display: grid; justify-items: center; align-content: center; gap: 3px; border: 0; border-radius: 14px; background: transparent; color: var(--faint); font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; transition: color .15s, background .15s; }
@@ -599,9 +601,9 @@ body.zen .working { width: min(100%, 420px); }
   body[data-page="timer"] .adjust { gap: 8px; }
   body[data-page="timer"] .adjust button { border-color: transparent; background: color-mix(in oklab, var(--surface) 55%, transparent); min-height: 40px; padding-inline: 16px; }
   body[data-page="timer"] .controls { gap: 20px; }
-  body[data-page="timer"] .round { width: 60px; height: 60px; border-color: transparent; background: color-mix(in oklab, var(--surface) 60%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: var(--fg); }
-  body[data-page="timer"] .round svg { width: 22px; height: 22px; }
-  body[data-page="timer"] .go { height: 72px; max-width: 220px; font-size: 21px; }
+  body[data-page="timer"] .round { width: 54px; height: 54px; border-color: transparent; background: color-mix(in oklab, var(--surface) 60%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: var(--fg); }
+  body[data-page="timer"] .round svg { width: 20px; height: 20px; }
+  body[data-page="timer"] .go { height: 60px; max-width: 180px; font-size: 18px; }
   body[data-page="timer"] .working { border-top: 0; padding-top: 2px; }
   body[data-page="timer"] .pick-btn { height: auto; min-height: 60px; padding: 9px 14px 9px 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; border-radius: 18px; border-color: color-mix(in oklab, var(--line) 70%, transparent); background: color-mix(in oklab, var(--surface) 62%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 15.5px; }
   body[data-page="timer"] .pick-btn::before { content: "Working on"; grid-column: 1; font-size: 10.5px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
@@ -612,8 +614,8 @@ body.zen .working { width: min(100%, 420px); }
   body.compact-phone[data-page="timer"] .timer-card { gap: 6px; }
   body.compact-phone[data-page="timer"] .set-dots { display: none; }
   body.compact-phone[data-page="timer"] .adjust button { min-height: 34px; }
-  body.compact-phone[data-page="timer"] .round { width: 52px; height: 52px; }
-  body.compact-phone[data-page="timer"] .go { height: 60px; }
+  body.compact-phone[data-page="timer"] .round { width: 50px; height: 50px; }
+  body.compact-phone[data-page="timer"] .go { height: 54px; font-size: 17px; }
   body.compact-phone[data-page="timer"] .pick-btn { min-height: 52px; padding-block: 6px; }
   body.zen .tabbar { display: none; }
   .page-in { animation: page-in .22s ease-out; }
@@ -3090,13 +3092,20 @@ body.zen .working { width: min(100%, 420px); }
     if (landscape) { card.style.removeProperty("--mobile-fill"); return; }
     if (document.body.dataset.page !== "timer") return;
     const viewport = window.visualViewport ? visualViewport.height : innerHeight;
-    const tabbar = $(".tabbar").getBoundingClientRect().height;
-    // Measure the header and room at the top of the document, independent of scrolling.
-    const top = card.getBoundingClientRect().top + scrollY;
-    const overhead = card.getBoundingClientRect().height - dial.getBoundingClientRect().height;
-    const size = Math.max(140, Math.min(380, viewport - top - tabbar - overhead - 28));
+    const below = parseFloat(getComputedStyle($(".app")).paddingBottom) || 0;
+    const fit = () => {
+      // Measure the card's natural height: while it's stretched to fill the screen, the filler would count as content.
+      card.style.removeProperty("--mobile-fill");
+      // The header and room sit above the card in the document, so measure from there, independent of scrolling.
+      const box = card.getBoundingClientRect(), room = viewport - (box.top + scrollY) - below;
+      card.style.setProperty("--mobile-fill", Math.max(0, room) + "px");
+      return room - 16 - (box.height - dial.getBoundingClientRect().height);
+    };
+    // Short screens, or a room strip on top, get the tighter layout before the dial gets small.
+    let size = fit();
+    if (size < 200 && !document.body.classList.contains("compact-phone")) { document.body.classList.add("compact-phone"); size = fit(); }
+    size = Math.max(140, Math.min(380, size));
     card.style.setProperty("--mobile-dial", size + "px");
-    card.style.setProperty("--mobile-fill", Math.max(0, viewport - top - tabbar - 12) + "px");
   }
   const timerLayout = new ResizeObserver(sizeTimer);
   [$(".bar"), $("#roomStrip"), $("#previewBanner"), $(".working")].forEach((el) => timerLayout.observe(el));
