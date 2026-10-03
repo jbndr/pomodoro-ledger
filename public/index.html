@@ -585,7 +585,12 @@ body.zen .working { width: min(100%, 420px); }
   body[data-page="timer"] .top > .panel, body[data-page="timer"] .progress,
   body[data-page="tasks"] .timer-card, body[data-page="tasks"] .progress,
   body[data-page="progress"] .timer-card, body[data-page="progress"] .top > .panel { display: none; }
-  body[data-page="timer"]:not(.landscape-phone) .timer-card { min-height: var(--mobile-fill, auto); align-content: space-evenly; }
+  body[data-page="timer"]:not(.landscape-phone) .timer-card { align-content: space-evenly; }
+  /* An app shell: header and tab bar stay put, and only the current page scrolls, inside its own area. */
+  html, body { height: 100%; overflow: hidden; }
+  .app { height: var(--viewport-height, 100dvh); display: flex; flex-direction: column; }
+  .app > *, .top > * { flex: none; }
+  body[data-page="timer"] .timer-card, body[data-page="tasks"] .top > .panel, body[data-page="progress"] .progress { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
   /* The timer page is the app's home: no card, the mode colour fills the screen behind it. */
   body[data-page="timer"] .timer-card { background: transparent; border: 0; box-shadow: none; border-radius: 0; padding: 0 2px; overflow: visible; gap: 10px; }
   body[data-page="timer"] .timer-card > .glow { display: none; }
@@ -1553,8 +1558,9 @@ body.zen .working { width: min(100%, 420px); }
   function dragScroll() {
     if (!drag || drag.settling) return;
     const bounds = drag.ul.getBoundingClientRect(), y = drag.y;
-    const step = y < 64 && bounds.top < y ? -Math.ceil((64 - y) / 5) : y > innerHeight - 64 && bounds.bottom > y ? Math.ceil((y - innerHeight + 64) / 5) : 0;
-    if (step) { scrollBy(0, Math.max(-14, Math.min(14, step))); updateDrop(y); }
+    const view = drag.scroller ? drag.scroller.getBoundingClientRect() : { top: 0, bottom: innerHeight };
+    const step = y < view.top + 64 && bounds.top < y ? -Math.ceil((view.top + 64 - y) / 5) : y > view.bottom - 64 && bounds.bottom > y ? Math.ceil((y - view.bottom + 64) / 5) : 0;
+    if (step) { (drag.scroller || window).scrollBy(0, Math.max(-14, Math.min(14, step))); updateDrop(y); }
     drag.frame = requestAnimationFrame(dragScroll);
   }
   function finishDrag(cancel = false) {
@@ -2606,7 +2612,9 @@ body.zen .working { width: min(100%, 420px); }
     const ul = e.currentTarget;
     const li = g.closest(".task"), r = li.getBoundingClientRect(), slot = document.createElement("li");
     slot.className = "task-drop"; slot.setAttribute("aria-hidden", "true");
-    drag = { ul, li, slot, next: li.nextElementSibling, from: groupBefore(ul, li), id: e.pointerId, offset: e.clientY - r.top, y: e.clientY, frame: null };
+    const panel = ul.closest(".panel");
+    drag = { ul, li, slot, next: li.nextElementSibling, from: groupBefore(ul, li), id: e.pointerId, offset: e.clientY - r.top, y: e.clientY, frame: null,
+      scroller: panel && getComputedStyle(panel).overflowY === "auto" ? panel : null };
     try { ul.setPointerCapture(e.pointerId); } catch {}
     ul.insertBefore(slot, li); document.body.appendChild(li);
     li.classList.add("dragging"); ul.classList.add("sorting");
@@ -3039,16 +3047,17 @@ body.zen .working { width: min(100%, 420px); }
     if (!PAGES.includes(name)) name = "timer";
     const prev = document.body.dataset.page;
     if (prev === name) return;
-    if (prev) pageScroll[prev] = scrollY;
+    const scroller = (n) => n === "timer" ? $(".timer-card") : n === "tasks" ? $(".top > .panel") : $(".progress");
+    if (prev) pageScroll[prev] = scroller(prev).scrollTop;
     document.body.dataset.page = name;
     ss.set("pl.page", name);
     document.querySelectorAll(".tabbar [data-page]").forEach((b) => b.dataset.page === name ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
     if (!phone() || !prev) return;
-    scrollTo(0, pageScroll[name] || 0);
+    const el = scroller(name);
+    el.scrollTop = pageScroll[name] || 0;
     // Charts measure their width, which is zero while the page is hidden.
     if (name === "progress") renderStats();
     if (name === "timer") sizeTimer();
-    const el = name === "timer" ? $(".timer-card") : name === "tasks" ? $(".top > .panel") : $(".progress");
     el.classList.remove("page-in"); void el.offsetWidth; el.classList.add("page-in");
   }
   $(".tabbar").addEventListener("click", (e) => { const b = e.target.closest("[data-page]"); if (b) showPage(b.dataset.page); });
@@ -3078,7 +3087,6 @@ body.zen .working { width: min(100%, 420px); }
     document.body.classList.toggle("landscape-phone", mobile && landscape);
     document.body.classList.toggle("compact-phone", mobile && !landscape && matchMedia("(max-height: 640px)").matches);
     if (!mobile) {
-      card.style.removeProperty("--mobile-fill");
       // The card is sticky, so measure where its column starts in the document rather than where it's stuck now.
       const top = $(".top").getBoundingClientRect().top + scrollY;
       const fit = () => innerHeight - top - 18 - (card.getBoundingClientRect().height - dial.getBoundingClientRect().height);
@@ -3089,23 +3097,18 @@ body.zen .working { width: min(100%, 420px); }
       card.style.setProperty("--desk-dial", Math.max(160, Math.min(380, size)) + "px");
       return;
     }
-    if (landscape) { card.style.removeProperty("--mobile-fill"); return; }
-    if (document.body.dataset.page !== "timer") return;
-    const viewport = window.visualViewport ? visualViewport.height : innerHeight;
-    const below = parseFloat(getComputedStyle($(".app")).paddingBottom) || 0;
+    if (landscape || document.body.dataset.page !== "timer") return;
+    // The shell gives the card a fixed height; whatever its other rows don't need goes to the dial.
     const fit = () => {
-      // Measure the card's natural height: while it's stretched to fill the screen, the filler would count as content.
-      card.style.removeProperty("--mobile-fill");
-      // The header and room sit above the card in the document, so measure from there, independent of scrolling.
-      const box = card.getBoundingClientRect(), room = viewport - (box.top + scrollY) - below;
-      card.style.setProperty("--mobile-fill", Math.max(0, room) + "px");
-      return room - 16 - (box.height - dial.getBoundingClientRect().height);
+      const cs = getComputedStyle(card), gap = parseFloat(cs.rowGap) || 0;
+      const rows = [...card.children].filter((el) => el !== dial && !el.classList.contains("glow") && el.offsetHeight);
+      const used = rows.reduce((sum, el) => sum + el.offsetHeight, 0) + gap * rows.length + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      return card.clientHeight - used - 12;
     };
     // Short screens, or a room strip on top, get the tighter layout before the dial gets small.
     let size = fit();
     if (size < 200 && !document.body.classList.contains("compact-phone")) { document.body.classList.add("compact-phone"); size = fit(); }
-    size = Math.max(140, Math.min(380, size));
-    card.style.setProperty("--mobile-dial", size + "px");
+    card.style.setProperty("--mobile-dial", Math.max(140, Math.min(380, size)) + "px");
   }
   const timerLayout = new ResizeObserver(sizeTimer);
   [$(".bar"), $("#roomStrip"), $("#previewBanner"), $(".working")].forEach((el) => timerLayout.observe(el));
