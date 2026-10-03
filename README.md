@@ -23,7 +23,8 @@ Worker in `src/` powers shared rooms and account sync.
 web/                 the app (Vite root)
   index.html         markup
   src/app.js         app logic (being split into modules)
-  src/lib/*.ts       pure, tested logic: dates, the When parser, quick entry
+  src/lib/*.ts       pure, tested logic: dates, the When parser, quick entry, list order
+  src/tasks/         the task list, in Svelte 5
   src/styles/app.css styles
   public/            copied as-is: service worker, manifest, icons
 src/                 Cloudflare Worker: rooms (worker.js) and sync (sync.js)
