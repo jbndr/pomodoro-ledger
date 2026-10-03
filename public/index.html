@@ -6,6 +6,7 @@
 <meta name="description" content="A Pomodoro timer with estimated tasks, cycle and time tracking per task, and progress charts.">
 <meta name="theme-color" content="#EDEFEC" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E1110" media="(prefers-color-scheme: dark)">
+<script>try { const t = JSON.parse(localStorage.getItem("pl.theme")); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
@@ -47,6 +48,7 @@
     color-scheme: dark;
   }
 }
+:root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] {
   --bg: #0E1110; --surface: #161A18; --surface-2: #1D2220; --line: #262C29; --line-2: #353D39;
   --fg: #E8ECE9; --muted: #A0A9A3; --faint: #6D7671;
@@ -271,6 +273,9 @@ td.barcell { width: 38%; min-width: 120px; }
 @media (hover: hover) { .task:not(.open):hover { background: var(--surface-2); } }
 .task:focus-visible { box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent); }
 .task.is-active:not(.open) { background: color-mix(in oklab, var(--accent) 8%, transparent); }
+/* Breathing room so a tinted row never touches a heading's rule or its neighbours. */
+.tasks .group + .task { margin-top: 4px; }
+.task + .task { margin-top: 2px; }
 @media (hover: hover) { .task.is-active:not(.open):hover { background: color-mix(in oklab, var(--accent) 12%, transparent); } }
 .task.dragging .task-side, .task.dragging .task-card { display: none; }
 .task-start { font: 12px var(--f-body); color: var(--faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -375,15 +380,30 @@ td.barcell { width: 38%; min-width: 120px; }
 .est-pick button[aria-checked="true"] i { animation: check-pop .28s cubic-bezier(.2, .8, .2, 1.4); }
 .add-sec { margin-left: auto; height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: 600 12.5px var(--f-body); letter-spacing: 0; }
 @media (hover: hover) { .add-sec:hover { background: var(--surface-2); color: var(--fg); } }
-.tasks .group.section { padding: 22px 8px 7px; gap: 10px; align-items: baseline; flex-wrap: nowrap; border-bottom: 1px solid var(--line); text-transform: none; letter-spacing: 0; }
+.tasks .group.section { min-height: 57px; padding: 22px 10px 7px 8px; gap: 10px; align-items: center; flex-wrap: nowrap; border-bottom: 1px solid var(--line); text-transform: none; letter-spacing: 0; }
 .sec-title { flex: 1; min-width: 0; border: 0; border-radius: 6px; background: transparent; padding: 2px 4px; margin-left: -4px; font: 650 15px var(--f-body); color: var(--fg); text-overflow: ellipsis; }
 @media (hover: hover) { .sec-title:hover { background: var(--surface-2); } }
 .sec-title:focus { outline: none; background: var(--surface-2); }
 .tasks .group.section span { font: 12px var(--f-body); color: var(--faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tasks .group.section span:empty { display: none; }
-.sec-del { width: 28px; height: 28px; flex: none; }
+/* The glyph, not the button box, lines up with the right edge of the time column. */
+.sec-del { width: 26px; height: 26px; flex: none; margin-right: -9px; }
+.tasks .group.section { position: relative; }
+.tasks .group.section:not(:has(.sec-title:focus)) { cursor: grab; }
+/* In the flow, centred with the name, but pulled into the gutter so names still line up with Today. */
+.tasks .group .sec-grip { flex: none; width: 18px; height: 26px; margin: 0 -2px 0 -26px; }
+@media (hover: hover) { .sec-grip { opacity: 0; } .group.section:hover .sec-grip, .sec-grip:focus-visible { opacity: 1; } }
+.sec-lifted { opacity: .3; transition: opacity .15s; }
+.sec-ghost { position: fixed; z-index: 60; pointer-events: none; padding: 9px 14px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); font: 650 15px var(--f-body); color: var(--fg); white-space: pre; box-shadow: 0 22px 44px -16px rgba(0,0,0,.3), 0 6px 14px -6px rgba(0,0,0,.14); transform: rotate(-.4deg) scale(1.01); }
+.sec-drop { position: fixed; z-index: 59; height: 3px; margin-top: -1px; border-radius: 3px; background: var(--accent); pointer-events: none; transition: top .12s ease-out; }
+body.sec-sorting, body.sec-sorting * { user-select: none; -webkit-user-select: none; cursor: grabbing !important; }
 .sec-del svg { width: 14px; height: 14px; }
-@media (hover: hover) { .sec-del { opacity: 0; } .group.section:hover .sec-del, .sec-del:focus-visible { opacity: 1; } }
+/* Like task rows: the time sits flush right in the rows' side column, and hovering swaps it for the remove button. */
+@media (hover: hover) {
+  .sec-del { display: none; }
+  .group.section:hover .sec-del, .group.section:focus-within .sec-del { display: grid; }
+  .group.section:hover .sec-time, .group.section:hover .sec-sum, .group.section:focus-within .sec-time, .group.section:focus-within .sec-sum { display: none; }
+}
 .day-fit.over { color: var(--muted); }
 .field .opt { font-size: 11px; color: var(--faint); }
 .subtask input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 17px; height: 17px; margin: 0 3px; border: 1.5px solid var(--line-2); border-radius: 5px; display: grid; place-items: center; transition: background .15s, border-color .15s; }
@@ -655,6 +675,7 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   .card-bar { gap: 6px; }
   .card-btn { height: 36px; }
   .tasks-head .task-views { flex-basis: 100%; }
+  .tasks .group.section { padding-left: 12px; }
   .subtask input[type="text"], .subtask-add input { height: 44px; }
   .subtask input[type="checkbox"] { width: 24px; height: 24px; margin: 10px 6px; }
   .subtask-add::before { width: 36px; }
@@ -788,6 +809,7 @@ body.zen .working { width: min(100%, 420px); }
     <div class="bar-right">
       <button class="pill" id="syncPill" type="button" data-state="local" title="Sync settings"><i></i><span>Saved in this browser</span></button>
       <button class="icon-btn" id="openRoom" type="button" aria-label="Work together" title="Work together"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.2.2 3.6 1.6 4 3.8"/></svg></button>
+      <button class="icon-btn" id="themeBtn" type="button"></button>
       <button class="icon-btn keys-btn" id="openKeys" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/></svg></button>
       <button class="icon-btn" id="openSettings" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     </div>
@@ -987,6 +1009,8 @@ body.zen .working { width: min(100%, 420px); }
         <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move between tasks (or <kbd>J</kbd> <kbd>K</kbd>)</dd>
         <dt><kbd>↵</kbd></dt><dd>Open the task</dd>
         <dt><kbd>Esc</kbd></dt><dd>Close it</dd>
+        <dt><kbd>⌥</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move the task up or down</dd>
+        <dt><kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move it to the previous or next section (a day in Upcoming)</dd>
       </dl></section>
       <section><h3>When</h3><dl>
         <dt><kbd>T</kbd></dt><dd>Today</dd>
@@ -2488,7 +2512,7 @@ body.zen .working { width: min(100%, 420px); }
         shown.filter((t) => !known.has(t.section)).forEach((t) => { html += row(t); });
         for (const sec of sections()) {
           const mine = shown.filter((t) => t.section === sec.id);
-          html += '<li class="group section" data-g="sec:' + esc(sec.id) + '"><input class="sec-title" type="text" maxlength="60" value="' + esc(sec.title) + '" aria-label="Section name" data-sec="' + esc(sec.id) + '">' +
+          html += '<li class="group section" data-g="sec:' + esc(sec.id) + '"><button class="grip sec-grip" type="button" aria-label="Move section ' + esc(sec.title) + ': drag, or press the up and down arrow keys" title="Drag to reorder">' + ICON.grip + '</button><input class="sec-title" type="text" maxlength="60" value="' + esc(sec.title) + '" aria-label="Section name" data-sec="' + esc(sec.id) + '">' +
             '<span class="sec-time"></span><span class="sec-sum">' + (mine.length ? "" : "Drag tasks here") + "</span>" +
             '<button class="icon-btn sec-del" type="button" data-secdel="' + esc(sec.id) + '" aria-label="Remove section ' + esc(sec.title) + '" title="Remove section (its tasks stay in Today)">' + ICON.x + "</button></li>";
           mine.forEach((t) => { html += row(t); });
@@ -2990,6 +3014,72 @@ body.zen .working { width: min(100%, 420px); }
   });
   let delTimer = null;
   function saveSections(list) { S.settings.sections = list; Store.saveSettings(); renderTasks(); }
+
+  // Sections move as a block: the heading floats with the pointer, a line marks where it lands, and its tasks follow on drop.
+  let secDrag = null, secPending = null;
+  function sectionBlocks() {
+    const blocks = [];
+    let cur = null;
+    for (const el of $("#taskList").children) {
+      if (el.classList.contains("section")) { cur = { id: el.dataset.g.slice(4), els: [el] }; blocks.push(cur); }
+      else if (el.classList.contains("group")) cur = null;
+      else if (cur) cur.els.push(el);
+    }
+    return blocks;
+  }
+  function moveSection(id, to) {
+    const list = sections(), from = list.findIndex((x) => x.id === id);
+    if (from < 0 || to < 0 || to >= list.length || to === from) return false;
+    const next = [...list]; next.splice(to, 0, next.splice(from, 1)[0]);
+    saveSections(next);
+    return true;
+  }
+  function startSecDrag(e, head) {
+    if (guardPreview()) return;
+    const blocks = sectionBlocks(), from = blocks.findIndex((b) => b.els[0] === head);
+    if (from < 0 || blocks.length < 2) return;
+    const r = head.getBoundingClientRect(), n = blocks[from].els.length - 1;
+    const ghost = Object.assign(document.createElement("div"), { className: "sec-ghost", textContent: head.querySelector(".sec-title").value + (n ? "  ·  " + plural(n, "task") : "") });
+    Object.assign(ghost.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" });
+    const line = Object.assign(document.createElement("div"), { className: "sec-drop" });
+    document.body.append(ghost, line);
+    blocks[from].els.forEach((el) => el.classList.add("sec-lifted"));
+    document.body.classList.add("sec-sorting");
+    secDrag = { blocks, from, to: from, ghost, line, offset: e.clientY - r.top };
+    moveSecDrag(e.clientY);
+  }
+  function moveSecDrag(y) {
+    const d = secDrag, others = d.blocks.filter((_, i) => i !== d.from);
+    d.ghost.style.top = y - d.offset + "px";
+    let to = others.findIndex((b) => y < (b.els[0].getBoundingClientRect().top + b.els.at(-1).getBoundingClientRect().bottom) / 2);
+    if (to < 0) to = others.length;
+    d.to = to;
+    const list = $("#taskList").getBoundingClientRect();
+    const at = others[to] ? others[to].els[0].getBoundingClientRect().top - 2 : others.at(-1).els.at(-1).getBoundingClientRect().bottom + 2;
+    Object.assign(d.line.style, { left: list.left + "px", width: list.width + "px", top: at + "px" });
+  }
+  function endSecDrag(cancel) {
+    const d = secDrag;
+    if (!d) return;
+    secDrag = null;
+    d.ghost.remove(); d.line.remove();
+    d.blocks[d.from].els.forEach((el) => el.classList.remove("sec-lifted"));
+    document.body.classList.remove("sec-sorting");
+    if (!cancel) moveSection(d.blocks[d.from].id, d.to);
+  }
+  $("#taskList").addEventListener("pointerdown", (e) => {
+    if (e.button > 0 || secDrag || drag) return;
+    const grip = e.target.closest(".sec-grip"), head = e.target.closest(".group.section");
+    if (grip) { e.preventDefault(); startSecDrag(e, head); return; }
+    if (head && e.pointerType === "mouse" && !e.target.closest("input, button")) secPending = { x: e.clientX, y: e.clientY, head };
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (secDrag) { moveSecDrag(e.clientY); return; }
+    if (secPending && Math.hypot(e.clientX - secPending.x, e.clientY - secPending.y) > 5) { const h = secPending.head; secPending = null; startSecDrag(e, h); }
+  });
+  document.addEventListener("pointerup", () => { secPending = null; endSecDrag(false); });
+  document.addEventListener("pointercancel", () => { secPending = null; endSecDrag(true); });
+  document.addEventListener("keydown", (e) => { if (secDrag && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); endSecDrag(true); } }, true);
   function renameSection(input) {
     const list = sections(), sec = list.find((x) => x.id === input.dataset.sec), title = input.value.trim();
     if (!sec) return;
@@ -3140,7 +3230,7 @@ body.zen .working { width: min(100%, 420px); }
   });
   addEventListener("pointerup", () => { pendingDrag = null; });
   $("#taskList").addEventListener("pointerdown", (e) => {
-    const g = e.target.closest(".grip");
+    const g = e.target.closest(".grip:not(.sec-grip)");
     if (!g || g.disabled || drag || e.button > 0) return;
     e.preventDefault();
     startDrag(e, g.closest(".task"));
@@ -3184,6 +3274,12 @@ body.zen .working { width: min(100%, 420px); }
         const sub = (task && task.subtasks || []).find((s) => s.id === e.target.closest(".subtask").dataset.subid);
         if (sub) e.target.value = sub.title;
       }
+      return;
+    }
+    if (e.target.matches(".sec-grip") && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+      e.preventDefault();
+      const id = e.target.closest(".group.section").dataset.g.slice(4), i = sections().findIndex((x) => x.id === id);
+      if (moveSection(id, i + (e.key === "ArrowUp" ? -1 : 1))) $('#taskList [data-g="sec:' + id + '"] .sec-grip')?.focus();
       return;
     }
     const g = e.target.closest(".grip");
@@ -3461,6 +3557,34 @@ body.zen .working { width: min(100%, 420px); }
     const t = id && S.tasks.get(id);
     return t && !t.done && !t.system ? t : null;
   }
+  // ⌥↑/⌥↓ move a task one place (past a heading counts as a step); with ⇧ it jumps a whole section, or a day in Upcoming.
+  function moveTaskKey(up, jump) {
+    const t = shortcutTask();
+    if (!t) { toast("Point at a task or pick one to work on first."); return; }
+    if (guardPreview()) return;
+    if (S.projectFilter) { toast("Show all tasks to reorder."); return; }
+    const ul = $("#taskList"), li = [...ul.querySelectorAll(".task")].find((x) => x.dataset.id === t.id);
+    if (!li) return;
+    const before = groupBefore(ul, li), heads = [...ul.children].filter((el) => el.classList.contains("group") && !el.classList.contains("month"));
+    if (!jump && up) {
+      const prev = li.previousElementSibling;
+      if (!prev || (prev === ul.firstElementChild && prev.classList.contains("group"))) return;
+      ul.insertBefore(li, prev);
+    } else if (!jump) {
+      if (!li.nextElementSibling) return;
+      ul.insertBefore(li.nextElementSibling, li);
+    } else {
+      let cur = null;
+      for (const el of ul.children) { if (el === li) break; if (el.classList.contains("group")) cur = el; }
+      const i = heads.indexOf(cur);
+      if (up) { if (i <= 0) return; ul.insertBefore(li, cur); }
+      else { const next = heads[i + 1]; if (!next) return; ul.insertBefore(li, next.nextSibling); }
+    }
+    const after = groupBefore(ul, li);
+    commitOrder();
+    if (after !== before) toast("Moved “" + t.title + "” to " + groupName(after) + ".");
+    focusRow([...ul.querySelectorAll(".task")].find((x) => x.dataset.id === t.id));
+  }
   function scheduleShortcut(key) {
     const t = shortcutTask();
     if (!t) { toast("Point at a task, or pick one to work on, then press " + key.toUpperCase() + "."); return; }
@@ -3516,6 +3640,7 @@ body.zen .working { width: min(100%, 420px); }
     else if ((e.key === "+" || e.key === "=") && !e.metaKey && !e.ctrlKey) adjust(1);
     else if (e.key === "-" && !e.metaKey && !e.ctrlKey) adjust(-1);
     else if (e.key === "Escape" && document.body.classList.contains("zen")) toggleZen(false);
+    else if ((e.key === "ArrowUp" || e.key === "ArrowDown") && e.altKey && !e.metaKey && !e.ctrlKey && !document.body.classList.contains("zen")) { e.preventDefault(); moveTaskKey(e.key === "ArrowUp", e.shiftKey); }
     else if (/^[tmwld]$/i.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && !document.body.classList.contains("zen")) { e.preventDefault(); scheduleShortcut(e.key.toLowerCase()); }
     else if (["ArrowDown", "ArrowUp", "j", "k"].includes(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey && !document.body.classList.contains("zen") && !$("#taskList").contains(document.activeElement)) {
       const rows = [...$("#taskList").querySelectorAll(".task")];
@@ -3605,6 +3730,35 @@ body.zen .working { width: min(100%, 420px); }
       e.preventDefault(); showSetTab(setTabs[j].dataset.tab, true);
     });
   }
+  // ---------- theme: system, light or dark, remembered per device ----------
+  const THEMES = ["system", "light", "dark"];
+  const THEME_ICON = {
+    system: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/></svg>',
+    light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>',
+    dark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
+  };
+  function applyTheme(t) {
+    if (!THEMES.includes(t)) t = "system";
+    if (t === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+    // Keep the browser's tab and status bar colour in step with a forced theme.
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
+      const own = m.media.includes("dark") ? "#0E1110" : "#EDEFEC";
+      m.content = t === "system" ? own : t === "dark" ? "#0E1110" : "#EDEFEC";
+    });
+    const next = THEMES[(THEMES.indexOf(t) + 1) % THEMES.length], name = (x) => x[0].toUpperCase() + x.slice(1);
+    const b = $("#themeBtn");
+    b.innerHTML = THEME_ICON[t];
+    b.setAttribute("aria-label", "Theme: " + name(t) + ". Switch to " + name(next));
+    b.title = "Theme: " + name(t) + " · click for " + name(next);
+    if (floatWindow && !floatWindow.closed) renderFloating(lastTxt, 0);
+  }
+  $("#themeBtn").addEventListener("click", () => {
+    const cur = ls.get("pl.theme", "system"), next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+    ls.set("pl.theme", next);
+    applyTheme(next);
+    toast("Theme: " + next[0].toUpperCase() + next.slice(1) + (next === "system" ? " (follows your device)" : "") + ".");
+  });
+  applyTheme(ls.get("pl.theme", "system"));
   function openKeys() { setOverlay("#keys", true); $("#closeKeys").focus({ preventScroll: true }); }
   function closeKeys() { setOverlay("#keys", false); $("#openKeys").focus({ preventScroll: true }); }
   $("#openKeys").addEventListener("click", openKeys);
