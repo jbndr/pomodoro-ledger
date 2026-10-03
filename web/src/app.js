@@ -3,7 +3,9 @@ import { parseWhen } from "./lib/when";
 import { parseTitle } from "./lib/quickEntry";
 import { flushSync, mount } from "svelte";
 import TaskList from "./tasks/TaskList.svelte";
-import { list } from "./tasks/list.svelte";
+import { list, progress } from "./lib/redraw.svelte";
+import { cyclesOf, focusTasks, labelHue, matchLabel, matchesLabel, projectNames, projectOf, sessionProject, timeOf } from "./lib/tasks";
+import Progress from "./progress/Progress.svelte";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -26,8 +28,8 @@ const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
 const S = {
   tasks: new Map(), settings: { ...DEF }, activeId: ls.get("pl.active", null),
   started: ls.get("pl.started", false), storeMode: "local", newEst: 2, newWhen: null, newKeep: [],
-  confirmDel: null, showAll: false, logN: 8, confirmSes: null,
-  subtaskDrafts: new Map(), openTask: null, taskView: "today", projectFilter: "", statsFilter: "", byRange: "30", labels: [], newLabel: "",
+  confirmDel: null,
+  subtaskDrafts: new Map(), openTask: null, taskView: "today", projectFilter: "", labels: [], newLabel: "",
 };
 let taskList = null;
 let T = Object.assign({ mode: "focus", status: "idle", remaining: null, endsAt: 0, total: 0, setIndex: 0, saved: {}, adj: {} }, ls.get("pl.timer", {}));
@@ -278,7 +280,6 @@ function markStarted(silent) {
 }
 
 // ---------- derived numbers ----------
-const cyclesOf = (t) => (t.sessions || []).filter((s) => s.full).length;
 const ord = (t) => (t.order == null ? t.createdAt : t.order);
 const todayKey = () => dayKey(Date.now());
 // Planned days that have arrived (or passed) count as today, so nothing has to flip at midnight.
@@ -338,15 +339,6 @@ const unplanned = (at) => {
   const id = "unplanned-" + dayKey(at).slice(0, 7);
   return S.tasks.get(id) || { id, title: "Unplanned focus", system: true, est: 0, done: false, createdAt: at, sessions: [] };
 };
-const timeOf = (t) => (t.sessions || []).reduce((a, s) => a + (s.ms || 0), 0);
-function dayTotals(tasks) {
-  const m = new Map();
-  for (const t of tasks.values()) for (const s of t.sessions || []) {
-    const k = dayKey(s.at); const o = m.get(k) || { ms: 0, cycles: 0 };
-    o.ms += s.ms || 0; if (s.full) o.cycles++; m.set(k, o);
-  }
-  return m;
-}
 
 // ---------- timer ----------
 const dur = (m) => (S.settings[m] || DEF[m]) * MIN;
@@ -752,30 +744,6 @@ function moveItems() {
     .concat(openOf(S.tasks).map((t) => ({ id: t.id, title: t.title })))
     .concat(fin.map((t) => ({ id: t.id, title: t.title + " (finished)" })));
 }
-function renderSessions(vt, filter = "") {
-  const all = [];
-  for (const t of vt.values()) (t.sessions || []).forEach((s, i) => { if (matchesLabel(sessionProject(t, s), filter)) all.push({ t, i, s }); });
-  all.sort((a, b) => b.s.at - a.s.at);
-  const tb = $("#sesTable");
-  if (!all.length) {
-    tb.innerHTML = "";
-    $("#sesFoot").innerHTML = '<div class="empty"><strong>No sessions yet</strong><span>Every focus block you run is listed here, so you can move it to another task or delete it.</span></div>';
-    return;
-  }
-  const rows = all.slice(0, S.logN).map(({ t, i, s }) => {
-    const key = t.id + ":" + i;
-    const name = sessionProject(t, s);
-    const label = '<button class="meta-chip session-label' + (name ? "" : " none") + '" type="button" data-session-label aria-haspopup="listbox" aria-expanded="false" aria-label="' + esc(name ? "Session label: " + name + ". Change label" : "Add a label to this session") + '" title="Change label for this session">' + labelChipInner(name) + '</button>';
-    return '<tr data-ses="' + esc(key) + '"><td class="mono">' + fmtDate(s.at, { weekday: "short", day: "numeric", month: "short" }) + " · " + fmtClock(s.at) + "</td>" +
-      '<td class="t"><button class="move" type="button" data-move aria-haspopup="listbox" title="Move to another task"><span>' + esc(t.title) + "</span>" + ICON.chev + "</button> " + label + "</td>" +
-      '<td class="num">' + fmtDur(s.ms) + '</td><td><span class="chip">' + (s.full ? "Cycle" : "Partial") + "</span></td>" +
-      '<td class="num">' + (S.confirmSes === key ? '<button class="icon-btn danger" type="button" data-sdel>Delete?</button>' : '<button class="icon-btn" type="button" data-sdel aria-label="Delete this session" title="Delete">' + ICON.trash + "</button>") + "</td></tr>";
-  }).join("");
-  tb.innerHTML = '<thead><tr><th>When</th><th>Task</th><th class="num">Length</th><th>Type</th><th class="num"><span hidden>Actions</span></th></tr></thead><tbody>' + rows + "</tbody>";
-  labelTable(tb);
-  $("#sesFoot").innerHTML = all.length > S.logN ? '<button class="link" type="button" id="sesMore">Show ' + Math.min(20, all.length - S.logN) + " more</button>" : "";
-}
-
 // ---------- full screen ----------
 function setZen(on) {
   document.body.classList.toggle("zen", on);
@@ -935,17 +903,6 @@ async function openFloating(quiet) {
 autoFloatHandler();
 
 // ---------- rendering: tasks ----------
-const projectOf = (t) => typeof t.project === "string" ? t.project.trim() : "";
-const sessionProject = (t, s) => Object.hasOwn(s, "project") ? projectOf(s) : projectOf(t);
-const matchesLabel = (name, f) => !f || (f === "none" ? !name : name === f.slice(8));
-const projectNames = (tasks) => [...new Set([...tasks.values()].filter((t) => !t.system).map(projectOf).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-const progressLabelNames = (tasks) => [...new Set([...projectNames(tasks), ...[...tasks.values()].flatMap((t) => (t.sessions || []).map((s) => sessionProject(t, s))).filter(Boolean)])].sort((a, b) => a.localeCompare(b));
-const matchLabel = (t, f) => matchesLabel(projectOf(t), f);
-function focusTasks(tasks, filter) {
-  if (!filter) return tasks;
-  return new Map([...tasks].map(([id, t]) => [id, { ...t, sessions: (t.sessions || []).filter((s) => matchesLabel(sessionProject(t, s), filter)) }])
-    .filter(([, t]) => t.sessions.length || matchLabel(t, filter)));
-}
 const inProject = (t) => matchLabel(t, S.projectFilter);
 const labelHidden = (name) => S.labels.some((l) => l.archived && l.name.toLocaleLowerCase() === name.toLocaleLowerCase());
 const Labels = {
@@ -982,21 +939,10 @@ const Labels = {
   },
   use(name) { return this.add(name, true); },
 };
-const LABEL_HUES = [25, 60, 100, 150, 195, 245, 290, 335];
 const sameLabel = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
-function labelHue(name) {
-  let h = 0;
-  for (const c of name.toLocaleLowerCase()) h = (h * 31 + c.codePointAt(0)) >>> 0;
-  return LABEL_HUES[h % LABEL_HUES.length];
-}
 const labelDot = (name) => '<i class="label-dot" style="--h:' + labelHue(name) + '"></i>';
 const labelChipInner = (name) => (name ? labelDot(name) : ICON.tag) + "<span>" + esc(name || "Label") + "</span>";
 const labelChipName = (name) => name ? "Label: " + name + ". Change label" : "Add a label";
-function projectHTML(t, pick) {
-  const project = projectOf(t);
-  if (pick) return '<button class="meta-chip' + (project ? "" : " none") + '" type="button" data-act="label" aria-haspopup="listbox" aria-expanded="false" aria-label="' + esc(labelChipName(project)) + '" title="' + (project ? "Change label" : "Add a label") + '">' + labelChipInner(project) + "</button>";
-  return project ? '<span class="meta-chip" title="Label: ' + esc(project) + '">' + labelChipInner(project) + "</span>" : "";
-}
 
 // ---------- label picker ----------
 const labelPop = $("#labelPop"), labelSearch = $("#labelSearch"), labelOpts = $("#labelOpts");
@@ -1118,14 +1064,6 @@ document.addEventListener("pointerdown", (e) => {
 addEventListener("resize", placeLabelPop);
 const subsOf = (t) => (Array.isArray(t.subtasks) ? t.subtasks : []);
 const subOpen = (t) => S.openTask === t.id;
-function subtasksHTML(t, archive = false) {
-  const subtasks = subsOf(t);
-  if (archive) return subtasks.length ? '<details class="subtask-archive"><summary>Subtasks · ' + subtasks.filter((s) => s.done).length + "/" + subtasks.length + ' done</summary><ul>' + subtasks.map((s) => '<li>' + (s.done ? "✓ " : "○ ") + esc(s.title) + "</li>").join("") + "</ul></details>" : "";
-  if (!subOpen(t)) return "";
-  return '<div class="subplan"><ul class="subtasks">' +
-    subtasks.map((s) => '<li class="subtask" data-subid="' + esc(s.id) + '" data-done="' + !!s.done + '"><input type="checkbox" data-subdone aria-label="Complete subtask: ' + esc(s.title) + '"' + (s.done ? " checked" : "") + '><input type="text" data-subtitle maxlength="140" aria-label="Subtask title" value="' + esc(s.title) + '"><button class="icon-btn" type="button" data-act="subdelete" aria-label="Delete subtask: ' + esc(s.title) + '" title="Delete subtask">' + ICON.trash + "</button></li>").join("") +
-    '</ul><form class="subtask-add" autocomplete="off"><input type="text" maxlength="140" aria-label="New subtask for ' + esc(t.title) + '" placeholder="' + (subtasks.length ? "Add another step" : "Add a step, e.g. Draft the outline") + '" value="' + esc(S.subtaskDrafts.get(t.id) || "") + '"><button class="btn small" type="submit">Add</button></form></div>';
-}
 let startEstimateMinute = -1, renderedDay = "";
 const completing = new Map();
 // Circles to click, like the original picker; the row grows when the estimate goes past it.
@@ -1243,175 +1181,7 @@ function renderTasks() {
 }
 
 // ---------- rendering: stats ----------
-function renderStats() {
-  const all = viewTasks(), names = progressLabelNames(all), now = Date.now(), today = sod(now);
-  if (!names.length || (S.statsFilter.startsWith("project:") && !names.includes(S.statsFilter.slice(8)))) S.statsFilter = "";
-  const vt = focusTasks(all, S.statsFilter), days = dayTotals(vt);
-  const ledgerTasks = S.statsFilter ? new Map([...all].filter(([, t]) => matchLabel(t, S.statsFilter))) : all;
-  const statsChip = (v, html, list) => '<button type="button" data-filter="' + esc(v) + '" aria-pressed="' + (S.statsFilter === v) + '">' + html + "<em>" + fmtDur(list.reduce((a, t) => a + timeOf(t), 0)) + "</em></button>";
-  const tasksOf = (f) => [...focusTasks(all, f).values()];
-  $("#statsFilter").hidden = !names.length;
-  $("#statsFilter").innerHTML = statsChip("", "<span>All</span>", tasksOf("")) +
-    names.filter((name) => S.statsFilter === "project:" + name || !labelHidden(name)).map((name) => statsChip("project:" + name, labelDot(name) + "<span>" + esc(name) + "</span>", tasksOf("project:" + name))).join("") +
-    statsChip("none", "<span>No label</span>", tasksOf("none"));
-  renderByLabel(all, today);
-  const tk = days.get(dayKey(now)) || { ms: 0, cycles: 0 };
-  const goal = S.settings.goal;
-  const sumRange = (from, n) => { let ms = 0; for (let i = 0; i < n; i++) { const o = days.get(dayKey(addDays(from, -i))); if (o) ms += o.ms; } return ms; };
-  const wk = sumRange(today, 7), prev = sumRange(addDays(today, -7), 7);
-  // streak
-  let streak = 0, d = today;
-  if (!(days.get(dayKey(d)) || {}).cycles) d = addDays(d, -1);
-  while ((days.get(dayKey(d)) || {}).cycles) { streak++; d = addDays(d, -1); }
-  let best = 0, run = 0;
-  const keys = [...days.keys()].sort();
-  if (keys.length) {
-    let cur = sod(new Date(keys[0] + "T00:00").getTime());
-    while (cur <= today) { if ((days.get(dayKey(cur)) || {}).cycles) { run++; best = Math.max(best, run); } else run = 0; cur = addDays(cur, 1); }
-  }
-  // estimates
-  const fin = [...ledgerTasks.values()].filter((t) => t.done && !t.system && t.est > 0);
-  const planned = fin.reduce((a, t) => a + t.est, 0), took = fin.reduce((a, t) => a + cyclesOf(t), 0);
-  const ratio = planned ? took / planned : null;
-  const diff = ratio == null ? 0 : Math.round((ratio - 1) * 100);
-  const delta = wk - prev;
-  const tiles = [
-    { k: "Focus today", v: fmtDur(tk.ms).replace(/(\d+)([hm])/g, "$1<small>$2</small>"), s: '<div class="meter" role="img" aria-label="' + tk.cycles + " of " + goal + ' cycles"><b style="width:' + Math.min(100, (tk.cycles / goal) * 100) + '%"></b></div><span>' + tk.cycles + " of " + goal + " cycles" + (tk.cycles >= goal ? " · goal reached" : "") + "</span>" },
-    { k: "Focus · 7 days", v: fmtDur(wk).replace(/(\d+)([hm])/g, "$1<small>$2</small>"), s: prev || wk ? '<span class="' + (delta >= 0 ? "up" : "down") + '">' + (delta >= 0 ? "+" : "−") + fmtDur(Math.abs(delta)) + "</span> vs the 7 days before" : "No focus logged yet" },
-    { k: "Streak", v: streak + "<small>" + (streak === 1 ? "day" : "days") + "</small>", s: streak ? "Best run: " + plural(best, "day") : "Finish a cycle today to start one" },
-    { k: "Estimates", v: ratio == null ? "–" : ratio.toFixed(2) + "<small>×</small>", s: ratio == null ? "Finish a task to compare plan and reality" : (Math.abs(diff) < 5 ? "Finished tasks land close to plan" : "Tasks take " + Math.abs(diff) + "% " + (diff > 0 ? "more" : "fewer") + " cycles than planned") + " · " + plural(fin.length, "task") },
-  ];
-  $("#tiles").innerHTML = tiles.map((t) => '<div class="tile"><div class="k">' + t.k + '</div><div class="v">' + t.v + '</div><div class="s">' + t.s + "</div></div>").join("");
-  const split = S.statsFilter ? new Map() : dayLabels(vt);
-  renderBars(days, today, split);
-  renderHeat(days, today, split);
-  renderSessions(all, S.statsFilter);
-  renderLedger(ledgerTasks);
-}
-
-function renderByLabel(tasks, today) {
-  const card = $("#byLabel");
-  card.hidden = !progressLabelNames(tasks).length;
-  if (card.hidden) return;
-  $("#byRange").innerHTML = [["7", "7 days"], ["30", "30 days"], ["all", "All time"]].map(([v, l]) => '<button type="button" data-range="' + v + '" aria-pressed="' + (S.byRange === v) + '"><span>' + l + "</span></button>").join("");
-  const since = S.byRange === "all" ? 0 : addDays(today, 1 - S.byRange), by = new Map();
-  for (const t of tasks.values()) {
-    const name = projectOf(t), r = by.get(name) || { name, ms: 0, cycles: 0, done: 0, open: 0 };
-    by.set(name, r);
-    for (const s of t.sessions || []) if (s.at >= since) {
-      const label = sessionProject(t, s), row = by.get(label) || { name: label, ms: 0, cycles: 0, done: 0, open: 0 };
-      by.set(label, row); row.ms += s.ms || 0; if (s.full) row.cycles++;
-    }
-    if (t.system) continue;
-    if (!t.done) r.open++; else if ((t.doneAt || 0) >= since) r.done++;
-  }
-  const rows = [...by.values()].filter((r) => r.ms || r.done).sort((a, b) => b.ms - a.ms || a.name.localeCompare(b.name));
-  const total = rows.reduce((a, r) => a + r.ms, 0), max = Math.max(1, ...rows.map((r) => r.ms)), tb = $("#byLabelTable");
-  $("#byLabelSub").textContent = rows.length ? fmtDur(total) + " of focus " + (S.byRange === "all" ? "in total" : "in the last " + S.byRange + " days") + ". “No label” includes unplanned focus." : "No focus logged in this period.";
-  if (!rows.length) { tb.innerHTML = ""; return; }
-  tb.innerHTML = '<thead><tr><th>Label</th><th>Share of focus</th><th class="num">Focus time</th><th class="num">Share</th><th class="num">Cycles</th><th class="num">Finished</th><th class="num">Open</th></tr></thead><tbody>' + rows.map((r) => {
-    const share = total ? Math.round((r.ms / total) * 100) + "%" : "–", name = r.name || "No label";
-    const tip = "<b>" + esc(name) + "</b><br>" + fmtDur(r.ms) + " · " + plural(r.cycles, "cycle") + " · " + share + " of focus";
-    return '<tr data-tip="' + esc(tip) + '"><td class="t"><span class="by-name' + (r.name ? "" : " none") + '">' + (r.name ? labelDot(r.name) : '<i class="label-dot none"></i>') + "<span>" + esc(name) + '</span></span></td><td class="barcell"><div class="hbar">' + (r.ms ? '<b style="width:' + (r.ms / max) * 100 + '%"></b>' : "") + '</div></td><td class="num">' + fmtDur(r.ms) + '</td><td class="num">' + share + '</td><td class="num">' + r.cycles + '</td><td class="num">' + r.done + '</td><td class="num">' + r.open + "</td></tr>";
-  }).join("") + "</tbody>";
-  labelTable(tb);
-}
-
-function barPath(x, y, w, h, r) {
-  if (h <= 0.5) return "";
-  r = Math.min(r, h, w / 2);
-  return "M" + x + "," + (y + h) + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y + "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + (y + h) + "Z";
-}
-function dayLabels(tasks) {
-  const m = new Map();
-  for (const t of tasks.values()) for (const s of t.sessions || []) {
-    const k = dayKey(s.at), o = m.get(k) || new Map();
-    const name = sessionProject(t, s);
-    o.set(name, (o.get(name) || 0) + (s.ms || 0)); m.set(k, o);
-  }
-  return m;
-}
-function labelTip(o) {
-  if (!o || ![...o.keys()].some(Boolean)) return "";
-  const rows = [...o].sort((a, b) => b[1] - a[1]);
-  return rows.slice(0, 4).map(([name, ms]) => "<br>" + esc(name || "No label") + " " + fmtDur(ms)).join("") + (rows.length > 4 ? "<br>+" + (rows.length - 4) + " more" : "");
-}
-function renderBars(days, today, split) {
-  const W = Math.max(300, Math.min(760, $("#bars").clientWidth || 560)), H = 210, ml = 34, mr = 8, mt = 18, mb = 26, n = 14;
-  const pw = W - ml - mr, ph = H - mt - mb, band = pw / n, bw = Math.min(26, band * 0.62);
-  const data = [];
-  for (let i = n - 1; i >= 0; i--) { const t = addDays(today, -i); const o = days.get(dayKey(t)) || { ms: 0, cycles: 0 }; data.push({ t, min: o.ms / MIN, cycles: o.cycles }); }
-  const goalMin = S.settings.goal * S.settings.focus;
-  const maxV = Math.max(goalMin, ...data.map((d) => d.min), 60);
-  const steps = [15, 30, 60, 90, 120, 180, 240, 360];
-  const step = steps.find((s) => maxV / s <= 4) || 480;
-  const top = Math.ceil(maxV / step) * step;
-  const y = (v) => mt + ph - (v / top) * ph;
-  let g = "";
-  for (let v = 0; v <= top; v += step) {
-    g += '<line class="' + (v === 0 ? "base" : "grid") + '" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>';
-    g += '<text x="' + (ml - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + (v >= 60 && v % 60 === 0 ? v / 60 + "h" : v) + "</text>";
-  }
-  data.forEach((d, i) => {
-    const x = ml + i * band + (band - bw) / 2, isT = i === n - 1;
-    const tip = "<b>" + fmtDate(d.t, { weekday: "short", day: "numeric", month: "short" }) + "</b><br>" + (d.min ? fmtDur(d.min * MIN) + " · " + plural(d.cycles, "cycle") + labelTip(split.get(dayKey(d.t))) : "No focus");
-    g += '<rect class="hit" data-tip="' + esc(tip) + '" x="' + (ml + i * band) + '" y="' + mt + '" width="' + band + '" height="' + ph + '" fill="transparent"/>';
-    g += '<path class="bar' + (isT ? " today" : "") + '" data-i="' + i + '" d="' + barPath(x, y(d.min), bw, y(0) - y(d.min), 4) + '"/>';
-    const lab = new Date(d.t).getDate();
-    g += '<text x="' + (x + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle"' + (isT ? ' class="val"' : "") + ">" + lab + "</text>";
-    if (isT && d.min) g += '<text class="val" x="' + (x + bw / 2) + '" y="' + (y(d.min) - 6) + '" text-anchor="middle">' + fmtDur(d.min * MIN) + "</text>";
-  });
-  g += '<line class="goal" x1="' + ml + '" x2="' + (W - mr) + '" y1="' + y(goalMin) + '" y2="' + y(goalMin) + '"/>';
-  g += '<text class="goal-l" x="' + ml + '" y="' + (y(goalMin) - 5) + '">goal ' + fmtDur(goalMin * MIN) + "</text>";
-  $("#bars").innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Focus minutes per day for the last 14 days">' + g + "</svg>";
-}
-function renderHeat(days, today, split) {
-  const weeks = 20, cs = 13, gap = 3, ml = 30, mt = 18;
-  const dow = (new Date(today).getDay() + 6) % 7; // Monday = 0
-  const start = addDays(today, -dow - (weeks - 1) * 7);
-  const W = ml + weeks * (cs + gap), H = mt + 7 * (cs + gap);
-  let g = "", lastM = -1;
-  for (let c = 0; c < weeks; c++) {
-    const colStart = addDays(start, c * 7), m = new Date(colStart).getMonth();
-    if (m !== lastM) { if (c < weeks - 1) g += '<text x="' + (ml + c * (cs + gap)) + '" y="11">' + fmtDate(colStart, { month: "short" }) + "</text>"; lastM = m; }
-    for (let r = 0; r < 7; r++) {
-      const t = addDays(start, c * 7 + r);
-      if (t > today) continue;
-      const o = days.get(dayKey(t)) || { ms: 0, cycles: 0 }, min = o.ms / MIN;
-      const lv = min === 0 ? 0 : min < 30 ? 1 : min < 75 ? 2 : min < 150 ? 3 : 4;
-      const tip = "<b>" + fmtDate(t, { weekday: "short", day: "numeric", month: "short" }) + "</b><br>" + (min ? fmtDur(o.ms) + " · " + plural(o.cycles, "cycle") + labelTip(split.get(dayKey(t))) : "No focus");
-      g += '<rect class="cell l' + lv + (t === today ? " today" : "") + '" data-tip="' + esc(tip) + '" x="' + (ml + c * (cs + gap)) + '" y="' + (mt + r * (cs + gap)) + '" width="' + cs + '" height="' + cs + '" rx="3"/>';
-    }
-  }
-  ["Mon", "", "Wed", "", "Fri", "", ""].forEach((l, r) => { if (l) g += '<text x="0" y="' + (mt + r * (cs + gap) + 10) + '">' + l + "</text>"; });
-  $("#heat").innerHTML = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Focus calendar for the last 20 weeks">' + g + "</svg>";
-}
-function renderLedger(vt) {
-  const fin = [...vt.values()].filter((t) => t.done && !t.system).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
-  const tb = $("#doneTable");
-  if (!fin.length) {
-    tb.innerHTML = "";
-    $("#doneFoot").innerHTML = '<div class="empty"><strong>Nothing finished yet</strong><span>Tick a task when it’s done. It moves here with its planned cycles, actual cycles and total focus time.</span></div>';
-    return;
-  }
-  const rows = (S.showAll ? fin : fin.slice(0, 8)).map((t) => {
-    const c = cyclesOf(t), d = c - (t.est || 0);
-    const badge = !t.est ? "" : d > 0 ? '<span class="delta over">+' + d + "</span>" : d === 0 ? '<span class="delta on">on plan</span>' : '<span class="delta on">' + d + "</span>";
-    const first = (t.sessions || []).reduce((a, s) => Math.min(a, s.at), t.doneAt || Date.now());
-    const span = Math.max(1, Math.round((sod(t.doneAt || Date.now()) - sod(first)) / 86400000) + 1);
-    return "<tr><td class=\"t\">" + esc(t.title) + " " + projectHTML(t) + subtasksHTML(t, true) + (t.sample ? ' <span class="chip">Example</span>' : "") + '</td><td class="num">' + (t.est || "–") + '</td><td class="num">' + c + badge + '</td><td class="num">' + fmtDur(timeOf(t)) + '</td><td class="mono">' + (t.doneAt ? fmtDate(t.doneAt) : "–") + '</td><td class="mono">' + plural(span, "day") + '</td><td class="num"><button class="icon-btn" type="button" data-reopen="' + esc(t.id) + '" aria-label="Move “' + esc(t.title) + '” back to open tasks" title="Reopen">' + ICON.undo + "</button></td></tr>";
-  }).join("");
-  tb.innerHTML = '<thead><tr><th>Task</th><th class="num">Planned</th><th class="num">Took</th><th class="num">Focus time</th><th>Finished</th><th>Span</th><th class="num"><span hidden>Actions</span></th></tr></thead><tbody>' + rows + "</tbody>";
-  labelTable(tb);
-  $("#doneFoot").innerHTML = fin.length > 8 ? '<button class="link" type="button" id="toggleAll">' + (S.showAll ? "Show recent only" : "Show all " + fin.length + " finished tasks") + "</button>" : "";
-}
-
-function labelTable(table) {
-  const labels = [...table.querySelectorAll("thead th")].map((th) => th.textContent.trim());
-  table.querySelectorAll("tbody tr").forEach((row) => {
-    [...row.cells].forEach((cell, i) => { cell.dataset.label = labels[i]; });
-  });
-}
+function renderStats() { progress.refresh(); }
 function renderPill() {
   const p = $("#syncPill");
   const offline = S.storeMode === "db" && Cloud.state === "offline";
@@ -1795,43 +1565,6 @@ document.addEventListener("pointerdown", (e) => {
   const el = document.activeElement; if (el && el.matches && el.matches("[data-field]")) saveField(el);
   S.openTask = null; S.confirmDel = null; renderTasks();
 });
-$("#statsFilter").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-filter]");
-  if (!b) return;
-  S.statsFilter = b.dataset.filter; S.logN = 8; S.showAll = false;
-  renderStats();
-  $('#statsFilter [aria-pressed="true"]')?.focus();
-});
-$("#byRange").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-range]");
-  if (!b) return;
-  S.byRange = b.dataset.range;
-  renderStats();
-  $('#byRange [aria-pressed="true"]')?.focus();
-});
-let sesTimer = null;
-$("#sessions").addEventListener("click", (e) => {
-  if (e.target.id === "sesMore") { S.logN += 20; renderStats(); return; }
-  const tr = e.target.closest("[data-ses]"); if (!tr) return;
-  const key = tr.dataset.ses, mv = e.target.closest("[data-move]");
-  const label = e.target.closest("[data-session-label]");
-  if (label) {
-    if (guardPreview()) return;
-    const r = sesAt(key); if (!r) return;
-    const find = () => [...$("#sesTable").querySelectorAll("[data-ses]")].find((row) => row.dataset.ses === key)?.querySelector("[data-session-label]");
-    openLabelPop("session:" + key, find, sessionProject(r.t, r.t.sessions[r.i]), (name) => labelSession(key, name));
-  } else if (mv) {
-    if (!pop.hidden) { closePop(); return; }
-    if (guardPreview()) return;
-    const r = sesAt(key); if (!r) return;
-    openPop(mv, moveItems(), r.t.system ? "" : r.t.id, (id) => moveSession(key, id));
-  } else if (e.target.closest("[data-sdel]")) {
-    if (guardPreview()) return;
-    clearTimeout(sesTimer);
-    if (S.confirmSes === key) { S.confirmSes = null; deleteSession(key); }
-    else { S.confirmSes = key; renderStats(); sesTimer = setTimeout(() => { S.confirmSes = null; renderStats(); }, 3000); }
-  }
-});
 pop.addEventListener("click", (e) => { const li = e.target.closest("li"); if (li) popChoose(+li.dataset.i); });
 pop.addEventListener("pointermove", (e) => { const li = e.target.closest("li"); if (li && +li.dataset.i !== popIdx) popMove(+li.dataset.i); });
 pop.addEventListener("keydown", (e) => {
@@ -2041,11 +1774,13 @@ $("#dayFitMove").addEventListener("click", () => {
 });
 addEventListener("scroll", (e) => { if (e.target !== pop) closePop(); }, true);
 addEventListener("resize", () => closePop());
-$("#ledger").addEventListener("click", (e) => {
-  const r = e.target.closest("[data-reopen]");
-  if (r) { if (guardPreview()) return; const t = S.tasks.get(r.dataset.reopen); if (!t) return; const n = clone(t); n.done = false; n.doneAt = null; Store.saveTask(n); toast("Moved “" + t.title + "” back to open tasks."); return; }
-  if (e.target.id === "toggleAll") { S.showAll = !S.showAll; renderStats(); }
-});
+function reopenTask(id) {
+  const t = S.tasks.get(id);
+  if (guardPreview() || !t) return;
+  const n = clone(t); n.done = false; n.doneAt = null;
+  Store.saveTask(n);
+  toast("Moved “" + t.title + "” back to open tasks.");
+}
 document.addEventListener("keydown", (e) => {
   const tag = (e.target.tagName || "").toLowerCase();
   if (tag === "input" || tag === "select" || tag === "textarea" || !$("#settings").hidden || !$("#room").hidden || !$("#keys").hidden) {
@@ -2422,8 +2157,6 @@ function showPage(name) {
   if (!phone() || !prev) return;
   const el = scroller(name);
   el.scrollTop = pageScroll[name] || 0;
-  // Charts measure their width, which is zero while the page is hidden.
-  if (name === "progress") renderStats();
   if (name === "timer") sizeTimer();
   el.classList.remove("page-in"); void el.offsetWidth; el.classList.add("page-in");
 }
@@ -2437,8 +2170,6 @@ function tick() {
   if (RM.code) roomTick();
 }
 setInterval(tick, 250);
-let rz = null, lastW = 0;
-addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { const w = $("#bars").clientWidth; if (w !== lastW) { lastW = w; renderStats(); } }, 150); });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { sizeTimer(); tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); Cloud.wake(); } });
 
 function sizeViewport() {
@@ -2514,6 +2245,10 @@ if (invite) {
   } else if (RM.code) roomConnect();
 } else if (RM.code) roomConnect();
 if (["today", "upcoming", "later"].includes(ss.get("pl.taskView"))) S.taskView = ss.get("pl.taskView");
+mount(Progress, { target: $(".app"), props: { api: {
+  S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
+  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask,
+} } });
 taskList = mount(TaskList, { target: $("#taskFoot").parentNode, anchor: $("#taskFoot"), props: { api: {
   S, ICON, completing, calm, guardPreview,
   todayKey, bucketOf, isToday, sections, openOf, viewTasks, inProject, cyclesOf, timeOf, projectOf, labelHue, labelChipName, subsOf,
