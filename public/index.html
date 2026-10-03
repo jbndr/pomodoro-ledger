@@ -1461,6 +1461,9 @@ body.zen .working { width: min(100%, 420px); }
     taskEl.textContent = task ? task.title : T.mode === "focus" ? "Time to focus" : "Take a breather";
     taskEl.title = task ? task.title : "";
     doc.getElementById("miniProgress").style.width = (frac * 100) + "%";
+    const [less, more] = doc.querySelectorAll(".step button");
+    less.disabled = remNow() < 2 * MIN;
+    more.disabled = totalNow() + MIN > MAX_RUN;
     const button = doc.getElementById("miniToggle");
     const label = T.status === "running" ? "Pause" : T.status === "paused" ? "Resume" : "Start";
     if (button.getAttribute("aria-label") !== label) {
@@ -1498,6 +1501,12 @@ body.zen .working { width: min(100%, 420px); }
         .meta { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
         #miniMode { overflow: hidden; color: var(--accent); font-size: 9.5px; font-weight: 650; letter-spacing: .1em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
         #miniSub { flex: none; color: var(--muted); font: 9.5px/1.2 var(--f-mono); white-space: nowrap; }
+        .time-row { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .step { display: flex; gap: 4px; opacity: .55; transition: opacity .15s; }
+        main:hover .step, .step:focus-within { opacity: 1; }
+        .step button { width: 30px; height: 26px; border-radius: 999px; font: 550 11px var(--f-mono); }
+        .step button:disabled { opacity: .35; cursor: default; transform: none; }
+        .step button:disabled:hover { background: var(--surface-2); color: var(--muted); }
         #miniTime { font: 650 clamp(42px, 17vw, 52px)/.9 var(--f-display); letter-spacing: -.02em; font-variation-settings: "opsz" 96; font-variant-numeric: tabular-nums; white-space: nowrap; }
         #miniTime .d { display: inline-block; width: .6em; text-align: center; }
         #miniTime .c { display: inline-block; width: .28em; text-align: center; translate: 0 -.06em; }
@@ -1525,12 +1534,16 @@ body.zen .working { width: min(100%, 420px); }
         @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
       `;
       doc.head.appendChild(style);
-      doc.body.innerHTML = '<main aria-label="Floating Pomodoro timer"><div class="glow" aria-hidden="true"></div><div class="meta"><div id="miniMode"></div><div id="miniSub"></div></div><div id="miniTime" role="timer" aria-label="Time remaining"></div><div class="progress" aria-hidden="true"><i id="miniProgress"></i></div><div class="task"><span class="task-label">Working on</span><span id="miniTask"></span></div><div class="actions"><button class="round" id="miniReset" type="button" aria-label="Reset timer" title="Reset timer">' + ICON.undo + '</button><button id="miniToggle" type="button"></button><button class="round" id="miniSkip" type="button" aria-label="Skip to next phase" title="Skip to next phase">' + $("#skipBtn").innerHTML + '</button></div></main>';
+      doc.body.innerHTML = '<main aria-label="Floating Pomodoro timer"><div class="glow" aria-hidden="true"></div><div class="meta"><div id="miniMode"></div><div id="miniSub"></div></div><div class="time-row"><div id="miniTime" role="timer" aria-label="Time remaining"></div><div class="step" role="group" aria-label="Adjust this session"><button type="button" data-adj="-1" aria-label="1 minute less" title="1 minute less (−)">−1</button><button type="button" data-adj="1" aria-label="1 minute more" title="1 minute more (+)">+1</button></div></div><div class="progress" aria-hidden="true"><i id="miniProgress"></i></div><div class="task"><span class="task-label">Working on</span><span id="miniTask"></span></div><div class="actions"><button class="round" id="miniReset" type="button" aria-label="Reset timer" title="Reset timer">' + ICON.undo + '</button><button id="miniToggle" type="button"></button><button class="round" id="miniSkip" type="button" aria-label="Skip to next phase" title="Skip to next phase">' + $("#skipBtn").innerHTML + '</button></div></main>';
       doc.getElementById("miniToggle").addEventListener("click", toggle);
       doc.getElementById("miniReset").addEventListener("click", () => { flushPartial(); setMode(T.mode); });
       doc.getElementById("miniSkip").addEventListener("click", skip);
+      doc.querySelector(".step").addEventListener("click", (e) => { const b = e.target.closest("[data-adj]"); if (b) adjust(+b.dataset.adj); });
       doc.addEventListener("keydown", (e) => {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
         if (e.code === "Space" && e.target === doc.body && !e.repeat) { e.preventDefault(); toggle(); }
+        else if (e.key === "+" || e.key === "=") adjust(1);
+        else if (e.key === "-") adjust(-1);
       });
       floatWindow = opened;
       // Keep the visible mini clock fresh even when the main tab is in the background.
