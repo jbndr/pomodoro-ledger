@@ -269,7 +269,7 @@ td.barcell { width: 38%; min-width: 120px; }
 
 .tasks { position: relative; list-style: none; margin: 14px 0 0; padding: 0; display: grid; }
 /* Task rows stay calm; everything about a task lives in a card that opens on click. */
-.task { position: relative; display: grid; grid-template-columns: 22px 24px minmax(0, 1fr) auto; align-items: center; column-gap: 10px; min-height: 50px; padding: 6px 10px 6px 2px; border-radius: 12px; outline: none; transition: background .15s, margin .2s; }
+.task { position: relative; display: grid; grid-template-columns: 22px 24px minmax(0, 1fr) auto; align-items: start; column-gap: 10px; min-height: 50px; padding: 6px 10px 6px 2px; border-radius: 12px; outline: none; transition: background .15s, margin .2s; }
 @media (hover: hover) { .task:not(.open):hover { background: var(--surface-2); } }
 .task:focus-visible { box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--accent) 55%, transparent); }
 .task.is-active:not(.open) { background: color-mix(in oklab, var(--accent) 8%, transparent); }
@@ -287,7 +287,7 @@ td.barcell { width: 38%; min-width: 120px; }
 .task.dragging .grip { color: var(--muted); }
 @media (hover: hover) { .grip { opacity: 0; transition: opacity .15s; } .task:hover .grip, .grip:focus-visible, .task.dragging .grip { opacity: 1; } .grip:hover { color: var(--muted); } }
 .grip svg { width: 14px; height: 14px; }
-.check { grid-column: 2; width: 22px; height: 22px; border-radius: 7px; border: 1.6px solid var(--line-2); background: transparent; display: grid; place-items: center; padding: 0; color: transparent; transition: border-color .15s, background .2s, color .2s, transform .1s; }
+.check { grid-column: 2; margin-top: 5px; width: 22px; height: 22px; border-radius: 7px; border: 1.6px solid var(--line-2); background: transparent; display: grid; place-items: center; padding: 0; color: transparent; transition: border-color .15s, background .2s, color .2s, transform .1s; }
 .check svg { width: 14px; height: 14px; }
 .check:active { transform: scale(.9); }
 @media (hover: hover) { .check:hover { border-color: var(--accent); } }
@@ -304,7 +304,7 @@ td.barcell { width: 38%; min-width: 120px; }
 .task-meta .lbl b { width: 7px; height: 7px; border-radius: 50%; }
 .task-meta .lbl span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 18ch; }
 .task-meta .done-all { color: var(--good); }
-.task-side { grid-column: 4; display: flex; align-items: center; justify-content: flex-end; gap: 12px; min-height: 34px; }
+.task-side { grid-column: 4; display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 32px; }
 .side-info { display: flex; align-items: center; gap: 12px; }
 .side-acts { display: none; gap: 0; }
 @media (hover: hover) { .task:hover .side-info, .task:focus-within .side-info { display: none; } .task:hover .side-acts, .task:focus-within .side-acts { display: flex; } }
@@ -316,7 +316,7 @@ td.barcell { width: 38%; min-width: 120px; }
 .mini b { display: block; height: 100%; background: var(--tomato); border-radius: 3px; }
 .task.open { margin: 10px -8px; padding: 10px 14px 14px 6px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 18px 44px -26px rgba(0,0,0,.4); align-items: start; }
 .task.open .task-main, .task.open .task-side, .task.open .grip { display: none; }
-.task.open .check { margin-top: 6px; }
+.task.open .check { margin-top: 7px; }
 .task-card { grid-column: 3 / -1; grid-row: 1; min-width: 0; display: grid; gap: 6px; animation: card-in .2s cubic-bezier(.2, .8, .2, 1); }
 @keyframes card-in { from { opacity: 0; transform: translateY(-3px); } }
 .card-title { width: 100%; border: 0; background: transparent; padding: 4px 0; font: 600 16.5px var(--f-body); color: var(--fg); }
@@ -373,7 +373,8 @@ td.barcell { width: 38%; min-width: 120px; }
 .card-est .est-pick button { width: 17px; height: 26px; }
 .card-est .est-pick button i { width: 11px; height: 11px; }
 .card-est output { font: 12.5px var(--f-body); color: var(--muted); white-space: nowrap; }
-@media (hover: hover) { .est-pick:hover button i { border-color: var(--line-2); background: transparent; } .est-pick:hover button:hover i, .est-pick button:has(~ button:hover) i { border-color: var(--tomato); background: color-mix(in oklab, var(--tomato) 35%, transparent); } }
+@media (hover: hover) { .est-pick:hover button i { border-color: var(--line-2); background: transparent; } .est-pick:hover button:hover i, .est-pick button:has(~ button:hover) i { border-color: var(--tomato); background: var(--tomato); } }
+.est-pick button[aria-checked="true"] i { animation: check-pop .28s cubic-bezier(.2, .8, .2, 1.4); }
 .add-sec { margin-left: auto; height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: 600 12.5px var(--f-body); letter-spacing: 0; }
 @media (hover: hover) { .add-sec:hover { background: var(--surface-2); color: var(--fg); } }
 .tasks .group.section { padding: 22px 8px 7px; gap: 10px; align-items: baseline; flex-wrap: nowrap; border-bottom: 1px solid var(--line); text-transform: none; letter-spacing: 0; }
@@ -497,6 +498,15 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .pick-menu.pop { position: fixed; z-index: 45; right: auto; bottom: auto; width: min(300px, calc(100vw - 24px)); }
 .pick-menu.pop:focus { outline: none; }
 .pick-menu.pop kbd { flex: none; }
+.sheet.keys-sheet { width: min(100%, 680px); }
+.keys-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.keys-grid h3 { margin: 0 0 8px; font: 650 11px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.keys-grid dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: baseline; }
+.keys-grid dt { white-space: nowrap; }
+.keys-grid dd { margin: 0; font-size: 13.5px; color: var(--muted); }
+.keys-sheet .hint { margin: 0; font-size: 12.5px; color: var(--faint); }
+@media (hover: none) { .keys-btn { display: none; } }
+@media (max-width: 640px) { .keys-grid { grid-template-columns: 1fr; } }
 .when-pop { position: fixed; z-index: 46; width: min(300px, calc(100vw - 24px)); padding: 8px; border-radius: 18px; border: 1px solid var(--line-2); background: var(--surface); box-shadow: 0 24px 60px -24px rgba(0,0,0,.35), var(--shadow); transform-origin: top right; }
 .when-pop:not([hidden]) { animation: when-in .16s cubic-bezier(.2, .8, .2, 1); }
 @keyframes when-in { from { opacity: 0; transform: scale(.96) translateY(-4px); } }
@@ -640,7 +650,8 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   .est-pick button { width: 100%; height: 44px; }
   .task { grid-template-columns: 24px 34px minmax(0, 1fr) auto; column-gap: 6px; padding-left: 0; }
   .grip { width: 24px; height: 44px; }
-  .check { width: 26px; height: 26px; justify-self: center; }
+  .check { width: 26px; height: 26px; margin-top: 2px; justify-self: center; }
+  .grip { margin-top: -7px; }
   .task-main { min-height: 40px; }
   .task.open { margin-inline: -4px; padding-right: 10px; }
   .card-bar { gap: 6px; }
@@ -779,6 +790,7 @@ body.zen .working { width: min(100%, 420px); }
     <div class="bar-right">
       <button class="pill" id="syncPill" type="button" data-state="local" title="Sync settings"><i></i><span>Saved in this browser</span></button>
       <button class="icon-btn" id="openRoom" type="button" aria-label="Work together" title="Work together"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.2.2 3.6 1.6 4 3.8"/></svg></button>
+      <button class="icon-btn keys-btn" id="openKeys" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/></svg></button>
       <button class="icon-btn" id="openSettings" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     </div>
   </header>
@@ -839,7 +851,6 @@ body.zen .working { width: min(100%, 420px); }
         </div>
         <small id="workingNote"></small>
       </div>
-      <div class="keys"><kbd>Space</kbd> start or pause · <kbd>S</kbd> skip · <kbd>F</kbd> fill page · <kbd>⇧F</kbd> full screen<br><kbd>↑</kbd><kbd>↓</kbd> pick a task · <kbd>↵</kbd> open · <kbd>T</kbd> <kbd>M</kbd> <kbd>W</kbd> <kbd>L</kbd> move · <kbd>D</kbd> when…</div>
     </section>
 
     <section class="panel" aria-labelledby="tasksH">
@@ -962,6 +973,34 @@ body.zen .working { width: min(100%, 420px); }
   </div>
 </div>
 
+<div class="overlay" id="keys" hidden>
+  <div class="sheet keys-sheet" role="dialog" aria-labelledby="keysH">
+    <div class="sec-head"><h2 id="keysH">Keyboard shortcuts</h2><button class="icon-btn" type="button" id="closeKeys" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="keys-grid">
+      <section><h3>Timer</h3><dl>
+        <dt><kbd>Space</kbd></dt><dd>Start or pause</dd>
+        <dt><kbd>S</kbd></dt><dd>Skip to the next phase</dd>
+        <dt><kbd>+</kbd> <kbd>−</kbd></dt><dd>A minute more or less</dd>
+        <dt><kbd>F</kbd></dt><dd>Fill the page</dd>
+        <dt><kbd>⇧</kbd> <kbd>F</kbd></dt><dd>Full screen</dd>
+      </dl></section>
+      <section><h3>Tasks</h3><dl>
+        <dt><kbd>N</kbd></dt><dd>New task</dd>
+        <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move between tasks (or <kbd>J</kbd> <kbd>K</kbd>)</dd>
+        <dt><kbd>↵</kbd></dt><dd>Open the task</dd>
+        <dt><kbd>Esc</kbd></dt><dd>Close it</dd>
+      </dl></section>
+      <section><h3>When</h3><dl>
+        <dt><kbd>T</kbd></dt><dd>Today</dd>
+        <dt><kbd>M</kbd></dt><dd>Tomorrow</dd>
+        <dt><kbd>W</kbd></dt><dd>Next week</dd>
+        <dt><kbd>L</kbd></dt><dd>Later</dd>
+        <dt><kbd>D</kbd></dt><dd>Pick a day…</dd>
+      </dl></section>
+    </div>
+    <p class="hint">Scheduling keys act on the task under the pointer or with keyboard focus, otherwise the one you're working on. <kbd>?</kbd> opens this list.</p>
+  </div>
+</div>
 <div class="overlay" id="settings" hidden>
   <form class="sheet settings-sheet" id="settingsForm" aria-labelledby="setH">
     <div class="sec-head"><h2 id="setH">Settings</h2><button class="icon-btn" type="button" id="closeSettings" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -2781,6 +2820,12 @@ body.zen .working { width: min(100%, 420px); }
     }
     markStarted(); $("#newTitle").focus();
   });
+  function pickNewEst(n) {
+    const parsed = parseNew($("#newTitle").value);
+    if (parsed.est) dropToken(parsed.tokens.at(-1).text);
+    S.newEst = n;
+    renderEstPick();
+  }
   // Changing a chip by hand takes over from what was typed, so the typed words come out of the title.
   function dropToken(text) {
     const v = newTitle.value, i = v.toLowerCase().lastIndexOf(text.toLowerCase());
@@ -2789,12 +2834,7 @@ body.zen .working { width: min(100%, 420px); }
   }
   $("#addForm").addEventListener("click", (e) => {
     const pick = e.target.closest("[data-nset]");
-    if (pick) {
-      const parsed = parseNew(newTitle.value);
-      if (parsed.est) dropToken(parsed.tokens.at(-1).text);
-      S.newEst = +pick.dataset.nset;
-      renderEstPick(); return;
-    }
+    if (pick) { if (e.detail === 0) pickNewEst(+pick.dataset.nset); return; }
     if (e.target.id === "newKeep") {
       S.newKeep.push(...parseNew(newTitle.value).tokens.map((x) => x.text.toLowerCase()));
       renderEstPick(); newTitle.focus(); return;
@@ -2985,7 +3025,8 @@ body.zen .working { width: min(100%, 420px); }
     if (guardPreview()) return;
     const t = S.tasks.get(id); if (!t) return;
     if (b.dataset.cest) {
-      const n = clone(t); n.est = +b.dataset.cest; Store.saveTask(n);
+      // Pointer picks happen on pointerup (below); this path is for Enter/Space.
+      if (e.detail === 0) { const n = clone(t); n.est = +b.dataset.cest; Store.saveTask(n); }
       return;
     }
     if (act === "subtasks") {
@@ -3036,6 +3077,23 @@ body.zen .working { width: min(100%, 420px); }
     li.focus({ preventScroll: true });
     li.scrollIntoView({ block: "nearest" });
   }
+  // A sync update can redraw the list between press and release, and the browser then drops the click.
+  // Reading the circle under the pointer on release still finds the redrawn one in the same place.
+  let circleDown = null;
+  document.addEventListener("pointerdown", (e) => {
+    const c = e.target.closest && e.target.closest("[data-cest], [data-nset]");
+    circleDown = c && e.button === 0 ? { x: e.clientX, y: e.clientY } : null;
+  }, true);
+  document.addEventListener("pointerup", (e) => {
+    const down = circleDown; circleDown = null;
+    if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) return;
+    const c = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-cest], [data-nset]");
+    if (!c) return;
+    if (c.dataset.nset) { pickNewEst(+c.dataset.nset); return; }
+    const t = S.tasks.get(c.closest(".task")?.dataset.id);
+    if (!t || guardPreview() || (t.est || 0) === +c.dataset.cest) return;
+    const n = clone(t); n.est = +c.dataset.cest; Store.saveTask(n);
+  }, true);
   function toggleCard(id, focusTitle) {
     S.openTask = S.openTask === id ? null : id;
     S.confirmDel = null;
@@ -3444,8 +3502,15 @@ body.zen .working { width: min(100%, 420px); }
   });
   document.addEventListener("keydown", (e) => {
     const tag = (e.target.tagName || "").toLowerCase();
-    if (tag === "input" || tag === "select" || tag === "textarea" || !$("#settings").hidden || !$("#room").hidden) {
-      if (e.key === "Escape") { if (!$("#settings").hidden) closeSettings(); else if (!$("#room").hidden) closeRoom(); }
+    if (tag === "input" || tag === "select" || tag === "textarea" || !$("#settings").hidden || !$("#room").hidden || !$("#keys").hidden) {
+      if (e.key === "Escape") { if (!$("#settings").hidden) closeSettings(); else if (!$("#room").hidden) closeRoom(); else if (!$("#keys").hidden) closeKeys(); }
+      return;
+    }
+    if (e.key === "?" && !e.metaKey && !e.ctrlKey) { e.preventDefault(); openKeys(); return; }
+    if ((e.key === "n" || e.key === "N") && !e.metaKey && !e.ctrlKey && !e.altKey && !document.body.classList.contains("zen")) {
+      e.preventDefault();
+      if (phone()) showPage("tasks");
+      $("#newTitle").focus();
       return;
     }
     if (e.code === "Space" && tag !== "button") { e.preventDefault(); toggle(); }
@@ -3490,7 +3555,7 @@ body.zen .working { width: min(100%, 420px); }
       document.body.classList.add("modal-open");
     }
     overlay.hidden = !open;
-    if (!open && modalScroll !== null && $("#room").hidden && $("#settings").hidden) {
+    if (!open && modalScroll !== null && $("#room").hidden && $("#settings").hidden && $("#keys").hidden) {
       const top = modalScroll;
       modalScroll = null;
       document.body.classList.remove("modal-open");
@@ -3543,6 +3608,11 @@ body.zen .working { width: min(100%, 420px); }
       e.preventDefault(); showSetTab(setTabs[j].dataset.tab, true);
     });
   }
+  function openKeys() { setOverlay("#keys", true); $("#closeKeys").focus({ preventScroll: true }); }
+  function closeKeys() { setOverlay("#keys", false); $("#openKeys").focus({ preventScroll: true }); }
+  $("#openKeys").addEventListener("click", openKeys);
+  $("#closeKeys").addEventListener("click", closeKeys);
+  $("#keys").addEventListener("click", (e) => { if (e.target.id === "keys") closeKeys(); });
   function closeSettings() { cancelTickPreview(); setOverlay("#settings", false); $("#openSettings").focus({ preventScroll: true }); }
   $("#openSettings").addEventListener("click", () => { fillSettings(); setOverlay("#settings", true); $("#settingsForm [aria-selected=true]").focus({ preventScroll: true }); });
   $("#closeSettings").addEventListener("click", closeSettings);
