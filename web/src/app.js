@@ -1,11 +1,15 @@
 import { addDays, dayKey, keyTime, nextMonday, pad, sod } from "./lib/dates";
-import { parseWhen } from "./lib/when";
-import { parseTitle } from "./lib/quickEntry";
 import { flushSync, mount } from "svelte";
 import TaskList from "./tasks/TaskList.svelte";
 import { list, progress } from "./lib/redraw.svelte";
 import { cyclesOf, focusTasks, labelHue, matchLabel, matchesLabel, projectNames, projectOf, sessionProject, timeOf } from "./lib/tasks";
 import Progress from "./progress/Progress.svelte";
+import Composer from "./composer/Composer.svelte";
+import { composer } from "./composer/state.svelte";
+import LabelPop from "./popovers/LabelPop.svelte";
+import Pop from "./popovers/Pop.svelte";
+import WhenPop from "./popovers/WhenPop.svelte";
+import { LP, labelPop, pop, whenPop } from "./popovers/state.svelte";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -673,30 +677,17 @@ function pickChoose(i) {
   S.activeId = o.id || null; saveTimer(); renderTasks();
 }
 
-// ---------- floating menu ----------
-const pop = $("#pop");
-let popItems = [], popCb = null, popAnchor = null, popIdx = 0;
-function popMove(i) {
-  popIdx = i;
-  [...pop.children].forEach((li, j) => li.classList.toggle("act", j === i));
-  if (pop.children[i]) pop.children[i].scrollIntoView({ block: "nearest" });
-}
-function openPop(anchor, items, cur, cb) {
-  popItems = items; popCb = cb; popAnchor = anchor;
-  pop.innerHTML = items.map((o, i) => '<li role="option" data-i="' + i + '" aria-selected="' + (o.id === cur) + '"' + (o.key ? ' aria-keyshortcuts="' + o.key + '"' : "") + "><span>" + esc(o.title) + "</span>" + (o.key ? "<kbd>" + o.key + "</kbd>" : "") + ICON.check + "</li>").join("");
-  pop.hidden = false;
-  const r = anchor.getBoundingClientRect(), h = pop.offsetHeight, w = pop.offsetWidth;
-  pop.style.left = Math.max(12, Math.min(r.left, innerWidth - w - 12)) + "px";
-  pop.style.top = (r.bottom + 6 + h > innerHeight - 8 && r.top - 6 - h > 8 ? r.top - 6 - h : r.bottom + 6) + "px";
-  popMove(Math.max(0, items.findIndex((o) => o.id === cur)));
-  pop.focus({ preventScroll: true });
-}
-function closePop(refocus) {
-  if (pop.hidden) return;
-  pop.hidden = true; popCb = null;
-  if (refocus && popAnchor && popAnchor.isConnected) popAnchor.focus();
-}
-function popChoose(i) { const cb = popCb, o = popItems[i]; closePop(true); if (cb && o) cb(o.id); }
+// ---------- popovers: floating menu, When and label picker ----------
+let popUI = null, whenUI = null, labelUI = null;
+function openPop(anchor, items, cur, cb) { popUI.open(anchor, items, cur, cb); }
+function closePop(refocus) { popUI?.close(refocus); }
+function openWhen(anchor, t, onPick) { whenUI.open(anchor, t, onPick); }
+function closeWhen(refocus) { whenUI?.close(refocus); }
+function openLabelPop(key, find, value, cb) { labelUI.open(key, find, value, cb); }
+function closeLabelPop(refocus) { labelUI?.close(refocus); }
+function refreshLabelPop() { labelUI?.refresh(); }
+function placeLabelPop() { labelUI?.place(); }
+function labelAnchor() { return labelUI ? labelUI.anchor() : null; }
 
 // ---------- reordering ----------
 const calm = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -939,139 +930,13 @@ const Labels = {
   },
   use(name) { return this.add(name, true); },
 };
-const sameLabel = (a, b) => a.toLocaleLowerCase() === b.toLocaleLowerCase();
 const labelDot = (name) => '<i class="label-dot" style="--h:' + labelHue(name) + '"></i>';
-const labelChipInner = (name) => (name ? labelDot(name) : ICON.tag) + "<span>" + esc(name || "Label") + "</span>";
 const labelChipName = (name) => name ? "Label: " + name + ". Change label" : "Add a label";
 
-// ---------- label picker ----------
-const labelPop = $("#labelPop"), labelSearch = $("#labelSearch"), labelOpts = $("#labelOpts");
-const LP = { key: "", find: null, cb: null, value: "", query: "", opts: [], idx: -1, manage: false, skip: "" };
-const labelAnchor = () => (LP.find ? LP.find() : null);
-function labelMatches(q) {
-  q = q.toLocaleLowerCase();
-  const starts = (l) => (l.name.toLocaleLowerCase().startsWith(q) ? 0 : 1);
-  return S.labels.filter((l) => !l.archived && l.name.toLocaleLowerCase().includes(q)).sort((a, b) => starts(a) - starts(b) || a.name.localeCompare(b.name));
-}
-function labelMove(i) {
-  LP.idx = i;
-  [...labelOpts.children].forEach((li, j) => li.classList.toggle("act", j === i));
-  const li = labelOpts.children[i];
-  if (!li || i < 0) { labelSearch.removeAttribute("aria-activedescendant"); return; }
-  labelSearch.setAttribute("aria-activedescendant", li.id);
-  const top = li.offsetTop - labelOpts.offsetTop;
-  if (top < labelOpts.scrollTop) labelOpts.scrollTop = top;
-  else if (top + li.offsetHeight > labelOpts.scrollTop + labelOpts.clientHeight) labelOpts.scrollTop = top + li.offsetHeight - labelOpts.clientHeight;
-}
-function renderLabelPop() {
-  const q = LP.query.trim(), hash = LP.key === "hash";
-  let opts, idx = -1;
-  if (LP.manage) opts = [...S.labels].sort((a, b) => a.name.localeCompare(b.name));
-  else {
-    opts = labelMatches(q).map((l) => ({ name: l.name }));
-    const first = opts.length ? 0 : -1;
-    if (q && !opts.some((o) => sameLabel(o.name, q))) opts.push({ name: q, create: true });
-    if (!q && LP.value) opts.unshift({ name: "", clear: true });
-    idx = q ? first : opts.findIndex((o) => !o.clear && sameLabel(o.name, LP.value));
-    // "#12" in a title is far more often an issue number than a new label
-    if (idx < 0 && opts.length && !(hash && /^\d+$/.test(q))) idx = opts.findIndex((o) => !o.clear);
-  }
-  LP.opts = opts;
-  labelOpts.setAttribute("role", LP.manage ? "list" : "listbox");
-  labelOpts.innerHTML = opts.length ? opts.map((o, i) => {
-    if (LP.manage) return '<li class="plain' + (o.archived ? " off" : "") + '">' + labelDot(o.name) + "<span>" + esc(o.name) + '</span><button class="btn small" type="button" data-label-archive="' + esc(o.name) + '">' + (o.archived ? "Restore" : "Hide") + "</button></li>";
-    const sel = !o.create && !o.clear && sameLabel(o.name, LP.value);
-    return '<li role="option" id="label-opt-' + i + '" data-i="' + i + '" aria-selected="' + sel + '">' + (o.create ? "<b>+</b><span>Create “" + esc(o.name) + "”</span>" : o.clear ? '<i class="label-dot none"></i><span>No label</span>' : labelDot(o.name) + "<span>" + esc(o.name) + "</span>") + (sel ? ICON.check : "") + "</li>";
-  }).join("") : '<li class="plain empty-note">' + (LP.manage ? "No labels yet." : "No labels yet. Type a name to create your first one.") + "</li>";
-  $("#labelPopHint").textContent = LP.manage ? "Hidden labels aren’t suggested" : LP.key.startsWith("session:") ? "Applies only to this session" : "Or type # in a new task";
-  $("#labelManage").textContent = LP.manage ? "Done" : "Manage";
-  labelMove(idx);
-}
-function placeLabelPop() {
-  const a = labelAnchor();
-  if (!a) return;
-  const r = a.getBoundingClientRect();
-  labelPop.style.left = Math.max(12, Math.min(r.left, document.documentElement.clientWidth - labelPop.offsetWidth - 12)) + scrollX + "px";
-  labelPop.style.top = r.bottom + 6 + scrollY + "px";
-}
-function openLabelPop(key, find, value, cb) {
-  const toggled = LP.skip === key;
-  LP.skip = "";
-  closeLabelPop(toggled);
-  if (toggled) return;
-  const hash = key === "hash";
-  Object.assign(LP, { key, find, cb, value: value || "", query: "", manage: false });
-  labelSearch.value = ""; labelSearch.hidden = hash; $("#labelPopFoot").hidden = hash;
-  labelPop.hidden = false;
-  if (!hash) find().setAttribute("aria-expanded", "true");
-  placeLabelPop(); renderLabelPop();
-  if (!hash) labelSearch.focus({ preventScroll: true });
-  labelPop.scrollIntoView({ block: "nearest" });
-}
-function closeLabelPop(refocus) {
-  if (labelPop.hidden) return;
-  const a = labelAnchor();
-  labelPop.hidden = true;
-  LP.find = LP.cb = null;
-  if (!a) return;
-  if (LP.key !== "hash") a.setAttribute("aria-expanded", "false");
-  if (refocus) a.focus();
-}
-function chooseLabel(i) {
-  const o = LP.opts[i], cb = LP.cb;
-  if (!o || LP.manage) return;
-  closeLabelPop(true);
-  cb(o.clear ? "" : o.name);
-}
-function refreshLabelPop() { if (!labelPop.hidden) renderLabelPop(); }
-function labelKey(e) {
-  const k = e.key, last = LP.opts.length - 1;
-  if (k === "Escape") closeLabelPop(true);
-  else if (LP.manage) return;
-  else if (k === "ArrowDown") labelMove(LP.idx >= last ? 0 : LP.idx + 1);
-  else if (k === "ArrowUp") labelMove(LP.idx <= 0 ? last : LP.idx - 1);
-  else if (k === "Enter" && LP.idx >= 0) chooseLabel(LP.idx);
-  else return;
-  e.preventDefault(); e.stopPropagation();
-}
-labelSearch.addEventListener("input", () => { LP.query = labelSearch.value; renderLabelPop(); });
-labelPop.addEventListener("mousedown", (e) => { if (e.target !== labelSearch) e.preventDefault(); });
-labelPop.addEventListener("pointermove", (e) => { const li = e.target.closest("li[data-i]"); if (li && +li.dataset.i !== LP.idx) labelMove(+li.dataset.i); });
-labelPop.addEventListener("click", (e) => {
-  const hide = e.target.closest("[data-label-archive]"), li = e.target.closest("li[data-i]");
-  if (hide) {
-    const label = S.labels.find((l) => l.name === hide.dataset.labelArchive);
-    if (!label) return;
-    label.archived = !label.archived; label.updatedAt = Date.now();
-    Store.saveSettings(); renderLabelPop(); renderTasks();
-  } else if (e.target.id === "labelManage") {
-    LP.manage = !LP.manage; LP.query = labelSearch.value = "";
-    renderLabelPop(); labelSearch.focus();
-  } else if (li) chooseLabel(+li.dataset.i);
-});
-labelPop.addEventListener("keydown", (e) => {
-  const inSearch = e.target === labelSearch;
-  if (e.key === "Tab" && (inSearch ? e.shiftKey : !e.shiftKey && e.target.id === "labelManage")) { e.preventDefault(); closeLabelPop(true); }
-  else if (inSearch || e.key === "Escape") labelKey(e);
-});
-document.addEventListener("pointerdown", (e) => {
-  LP.skip = "";
-  if (labelPop.hidden || labelPop.contains(e.target)) return;
-  const a = labelAnchor();
-  if (a && a.contains(e.target) && LP.key !== "hash") LP.skip = LP.key;
-  else if (!a || !a.contains(e.target)) closeLabelPop();
-});
-addEventListener("resize", placeLabelPop);
 const subsOf = (t) => (Array.isArray(t.subtasks) ? t.subtasks : []);
 const subOpen = (t) => S.openTask === t.id;
 let startEstimateMinute = -1, renderedDay = "";
 const completing = new Map();
-// Circles to click, like the original picker; the row grows when the estimate goes past it.
-function estCircles(est, attr) {
-  let h = "";
-  for (let i = 1, n = Math.min(16, Math.max(8, est + 1)); i <= n; i++) h += '<button type="button" role="radio" aria-checked="' + (i === est) + '" aria-label="' + plural(i, "cycle") + '" ' + attr + '="' + i + '" class="' + (i <= est ? "on" : "") + '"><i></i></button>';
-  return '<span class="est-pick" role="radiogroup" aria-label="Estimated cycles">' + h + "</span>";
-}
 function taskStartPlan() {
   const today = openOf(viewTasks()).filter(isToday), plan = new Map();
   const current = T.mode === "focus" && T.status !== "idle" ? today.find((t) => t.id === S.activeId) : null;
@@ -1194,41 +1059,7 @@ function renderPill() {
     : "<strong>You're looking at example data.</strong> Add your first task or start the timer, and the examples disappear.";
   $("#startOwn").textContent = DEMO ? "Exit demo" : "Start my own ledger";
 }
-// Labels for what the title parser recognised, in the words the composer shows.
-function parseNew(raw) {
-  const parsed = parseTitle(raw, S.newKeep);
-  return { ...parsed, tokens: parsed.tokens.map((x) => ({ text: x.text, label: x.kind === "est" ? plural(x.est, "cycle") : x.when === "later" ? "Later" : dayName(x.when === "today" ? todayKey() : x.when) })) };
-}
-const newDefaultWhen = () => (S.taskView === "upcoming" ? dayKey(addDays(Date.now(), 1)) : S.taskView);
-// Looked up rather than closed over: this runs during startup, before the composer's other bindings exist.
-function newWhenNow(parsed = parseNew($("#newTitle").value)) { return parsed.when || S.newWhen || newDefaultWhen(); }
-function renderEstPick() {
-  const parsed = parseNew($("#newTitle").value), est = parsed.est || S.newEst, when = newWhenNow(parsed);
-  let breaks = 0;
-  for (let i = 1; i < est; i++) breaks += dur(i % S.settings.longEvery ? "short" : "long");
-  const out = $("#estOut");
-  out.textContent = plural(est, "cycle");
-  out.title = fmtDur(est * dur("focus")) + " focus" + (breaks ? " + " + fmtDur(breaks) + " breaks" : "");
-  out.parentElement.classList.toggle("auto", !!parsed.est);
-  syncEstCircles($("#newEst .est-pick"), est);
-  const w = $("#newWhen");
-  setHTML(w, when === "today" ? ICON.star + "Today" : when === "later" ? ICON.cal + "Later" : ICON.cal + esc(dayName(when)));
-  w.classList.toggle("auto", !!parsed.when);
-  const hint = $("#newParsed");
-  hint.hidden = !parsed.tokens.length;
-  setHTML(hint, parsed.tokens.map((x) => "<mark>" + esc(x.text) + "</mark> → " + esc(x.label)).join(" · ") + (parsed.tokens.length ? ' <button type="button" id="newKeep">Keep as text</button>' : ""));
-}
-// This runs on every keystroke; redrawing unchanged circles would replay the selected one's pop animation.
-function syncEstCircles(pick, est) {
-  const n = Math.min(16, Math.max(8, est + 1));
-  if (pick.children.length !== n) { pick.outerHTML = estCircles(est, "data-nset"); return; }
-  [...pick.children].forEach((b, i) => {
-    b.classList.toggle("on", i < est);
-    b.setAttribute("aria-checked", String(i + 1 === est));
-  });
-}
-const shownHTML = new WeakMap();
-function setHTML(el, html) { if (shownHTML.get(el) !== html) { shownHTML.set(el, html); el.innerHTML = html; } }
+function renderEstPick() { composer.refresh(); }
 function renderAll() { renderPill(); renderTasks(); renderStats(); renderEstPick(); renderTimer(true); }
 
 // ---------- toast & tooltip ----------
@@ -1298,112 +1129,20 @@ $("#startOwn").addEventListener("click", () => {
   }
   markStarted(); $("#newTitle").focus();
 });
-function pickNewEst(n) {
-  const parsed = parseNew($("#newTitle").value);
-  if (parsed.est) dropToken(parsed.tokens.at(-1).text);
-  S.newEst = n;
-  renderEstPick();
-}
-// Changing a chip by hand takes over from what was typed, so the typed words come out of the title.
-function dropToken(text) {
-  const v = newTitle.value, i = v.toLowerCase().lastIndexOf(text.toLowerCase());
-  if (i < 0) return;
-  newTitle.value = (v.slice(0, i) + v.slice(i + text.length)).replace(/\s+$/, "") + " ";
-}
-$("#addForm").addEventListener("click", (e) => {
-  const pick = e.target.closest("[data-nset]");
-  if (pick) { if (e.detail === 0) pickNewEst(+pick.dataset.nset); return; }
-  if (e.target.id === "newKeep") {
-    S.newKeep.push(...parseNew(newTitle.value).tokens.map((x) => x.text.toLowerCase()));
-    renderEstPick(); newTitle.focus(); return;
-  }
-  if (e.target.closest("#newWhen")) {
-    const parsed = parseNew(newTitle.value), when = newWhenNow(parsed);
-    openWhen($("#newWhen"), { plan: when !== "today" && when !== "later" ? when : undefined }, (g) => {
-      const p = parseNew(newTitle.value);
-      if (p.when) dropToken(p.tokens[0].text);
-      S.newWhen = g; renderEstPick(); newTitle.focus();
-    });
-  }
-});
-$("#newTitle").addEventListener("input", renderEstPick);
-const newTaskForm = $("#addForm"), newTaskOptions = $("#newTaskOptions"), newTitle = $("#newTitle"), newLabel = $("#newLabel");
 const filterLabel = () => (S.projectFilter.startsWith("project:") ? S.projectFilter.slice(8) : "");
-function renderNewLabel() {
-  newLabel.classList.toggle("set", !!S.newLabel);
-  newLabel.innerHTML = labelChipInner(S.newLabel);
-  newLabel.setAttribute("aria-label", labelChipName(S.newLabel));
-}
-renderNewLabel();
-function collapseNewTask() {
-  if (LP.key === "new" || LP.key === "hash") closeLabelPop();
-  if (newTaskForm.contains(document.activeElement)) document.activeElement.blur();
-  newTaskOptions.hidden = true; newTaskForm.classList.remove("open");
-  if (!newTitle.value.trim()) { S.newLabel = filterLabel(); renderNewLabel(); S.newWhen = null; S.newKeep = []; $("#newNotes").value = ""; renderEstPick(); }
-}
-newTaskForm.addEventListener("focusin", () => { newTaskOptions.hidden = false; newTaskForm.classList.add("open"); renderEstPick(); });
-// on click, not pointerdown: collapsing shifts the list, and the click would land on a different row
-document.addEventListener("click", (e) => {
-  if (newTaskOptions.hidden || !e.target.isConnected || e.target.closest("#openRoom, #openSettings, #labelPop, #whenPop")) return;
-  if (!newTaskForm.contains(e.target) && !newTitle.value.trim()) collapseNewTask();
-});
-newLabel.addEventListener("click", () => {
-  openLabelPop("new", () => newLabel, S.newLabel, (name) => { S.newLabel = name; renderNewLabel(); newTitle.focus(); });
-});
-let hashOff = -1;
-function hashToken() {
-  const v = newTitle.value, caret = newTitle.selectionStart, at = v.lastIndexOf("#", caret - 1);
-  if (caret !== newTitle.selectionEnd || at < 0 || (at > 0 && !/\s/.test(v[at - 1]))) return null;
-  return { at, query: v.slice(at + 1, caret) };
-}
-const hashOpen = () => !labelPop.hidden && LP.key === "hash";
-newTitle.addEventListener("input", () => {
-  const tok = hashToken(), q = tok ? tok.query : "";
-  if (!tok) hashOff = -1;
-  if (!tok || tok.at === hashOff || /^\s/.test(q) || (/\s/.test(q) && !labelMatches(q.trim()).length)) { if (hashOpen()) closeLabelPop(); return; }
-  if (!hashOpen()) {
-    openLabelPop("hash", () => newTitle, S.newLabel, (name) => {
-      const t = hashToken();
-      if (t) {
-        const v = newTitle.value, head = v.slice(0, t.at);
-        newTitle.value = head + v.slice(newTitle.selectionStart).trimStart();
-        newTitle.setSelectionRange(head.length, head.length);
-      }
-      S.newLabel = name; renderNewLabel();
-    });
-  }
-  LP.query = q; renderLabelPop();
-  if (!LP.opts.length) closeLabelPop();
-});
-newTitle.addEventListener("keydown", (e) => {
-  if (!hashOpen()) return;
-  if (e.key === "Tab") { closeLabelPop(); return; }
-  if (e.key === "Escape") { const tok = hashToken(); hashOff = tok ? tok.at : -1; }
-  labelKey(e);
-});
-newTitle.addEventListener("blur", () => { if (hashOpen() && document.hasFocus()) closeLabelPop(); });
-newTaskForm.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") { e.stopPropagation(); collapseNewTask(); }
-  else if (e.key === "Enter" && e.target.id === "newNotes" && !e.shiftKey) { e.preventDefault(); newTaskForm.requestSubmit(); }
-});
-newTaskForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  if (hashOpen()) closeLabelPop();
-  const parsed = parseNew(newTitle.value), title = parsed.title.slice(0, 140);
-  if (!title) { newTitle.focus(); return; }
+function renderNewLabel() { composer.refresh(); }
+const newTitle = { get value() { return $("#newTitle")?.value ?? ""; } };
+function addTask(title, est, into, notes) {
   markStarted(true);
   const id = "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const into = newWhenNow(parsed), notes = $("#newNotes").value.trim();
   const last = Math.max(-1, ...openOf(S.tasks).filter((x) => inGroup(x, into)).map(ord));
-  const t = placed({ id, title, est: parsed.est || S.newEst, done: false, createdAt: Date.now(), doneAt: null, sessions: [], subtasks: [], ...(notes ? { notes } : {}) }, into, last + 1);
+  const t = placed({ id, title, est, done: false, createdAt: Date.now(), doneAt: null, sessions: [], subtasks: [], ...(notes ? { notes } : {}) }, into, last + 1);
   if (S.newLabel) t.project = Labels.use(S.newLabel);
   if (!S.activeId || !S.tasks.get(S.activeId) || S.tasks.get(S.activeId).done) { S.activeId = id; saveTimer(); }
-  newTitle.value = ""; $("#newNotes").value = ""; S.newWhen = null; S.newKeep = [];
   if (!inProject(t)) S.projectFilter = "";
   Store.saveTask(t);
-  newTitle.focus();
   toast("Added “" + title + "”" + (t.project ? " to " + t.project : "") + " · " + (into === "later" ? "Later" : dayName(into === "today" ? todayKey() : into)) + ".");
-});
+}
 function focusAddSubtask(id) {
   [...$("#taskList").querySelectorAll(".task")].find((el) => el.dataset.id === id)?.querySelector(".subtask-add input")?.focus();
 }
@@ -1538,19 +1277,6 @@ function focusRow(li) {
   li.focus({ preventScroll: true });
   li.scrollIntoView({ block: "nearest" });
 }
-// The composer redraws its circles while you click them, and the browser then drops the click.
-// Reading the circle under the pointer on release still finds the redrawn one in the same place.
-let circleDown = null;
-document.addEventListener("pointerdown", (e) => {
-  const c = e.target.closest && e.target.closest("[data-nset]");
-  circleDown = c && e.button === 0 ? { x: e.clientX, y: e.clientY } : null;
-}, true);
-document.addEventListener("pointerup", (e) => {
-  const down = circleDown; circleDown = null;
-  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) return;
-  const c = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-nset]");
-  if (c) pickNewEst(+c.dataset.nset);
-}, true);
 function toggleCard(id, focusTitle) {
   S.openTask = S.openTask === id ? null : id;
   S.confirmDel = null;
@@ -1576,163 +1302,10 @@ document.addEventListener("pointerdown", (e) => {
   const el = document.activeElement; if (el && el.matches && el.matches("[data-field]")) saveField(el);
   S.openTask = null; S.confirmDel = null; renderTasks();
 });
-pop.addEventListener("click", (e) => { const li = e.target.closest("li"); if (li) popChoose(+li.dataset.i); });
-pop.addEventListener("pointermove", (e) => { const li = e.target.closest("li"); if (li && +li.dataset.i !== popIdx) popMove(+li.dataset.i); });
-pop.addEventListener("keydown", (e) => {
-  const k = e.key, last = popItems.length - 1;
-  e.stopPropagation();
-  if (k === "Tab") { closePop(); return; }
-  if (k === "Escape") closePop(true);
-  else if (k === "ArrowDown") popMove(Math.min(last, popIdx + 1));
-  else if (k === "ArrowUp") popMove(Math.max(0, popIdx - 1));
-  else if (k === "Home") popMove(0);
-  else if (k === "End") popMove(last);
-  else if (k === "Enter" || k === " ") popChoose(popIdx);
-  else if (k.length === 1 && popItems.some((o) => o.key === k.toUpperCase())) popChoose(popItems.findIndex((o) => o.key === k.toUpperCase()));
-  else return;
-  e.preventDefault();
-});
-document.addEventListener("pointerdown", (e) => { if (!pop.hidden && !e.target.closest("#pop, [data-move]")) closePop(); });
 function quickDays() {
   const now = Date.now();
   return { today: "today", tomorrow: dayKey(addDays(now, 1)), week: nextMonday(now), later: "later" };
 }
-
-const inDays = (k) => { const n = Math.round((keyTime(k) - sod(Date.now())) / 864e5); return n <= 0 ? "today" : n === 1 ? "tomorrow" : n < 14 ? "in " + n + " days" : "in " + Math.round(n / 7) + " weeks"; };
-
-const WHEN_ICON = {
-  today: '<svg class="ic-today" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"/></svg>',
-  day: '<svg class="ic-day" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
-  week: '<svg class="ic-week" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h12M12 6l6 6-6 6M20 5v14"/></svg>',
-  later: '<svg class="ic-later" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="17" height="5" rx="1.5"/><path d="M5 9v9.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V9M10 13h4"/></svg>',
-};
-const whenPop = $("#whenPop"), whenInput = $("#whenInput"), whenList = $("#whenList"), calGrid = $("#calGrid");
-const WHEN = { task: null, anchor: null, items: [], idx: 0, month: 0, focus: "", preview: "" };
-const weekStart = (() => {
-  try { const l = new Intl.Locale(navigator.language), w = l.getWeekInfo ? l.getWeekInfo() : l.weekInfo; return w ? w.firstDay % 7 : 1; } catch { return 1; }
-})();
-function whenItems() {
-  const q = quickDays(), typed = whenInput.value.trim(), items = [];
-  if (typed) {
-    const g = parseWhen(typed);
-    if (g === undefined) items.push({ off: true, icon: WHEN_ICON.day, title: "No day matches “" + typed + "”" });
-    else if (g === "later") items.push({ g, icon: WHEN_ICON.later, title: "Later", note: "no day", parsed: true });
-    else if (g === "today" || g <= todayKey()) items.push({ g: "today", icon: WHEN_ICON.today, title: "Today", parsed: true });
-    else items.push({ g, icon: WHEN_ICON.day, title: fmtDate(keyTime(g), { weekday: "short", day: "numeric", month: "short" }), note: inDays(g), parsed: true });
-  }
-  items.push({ g: "today", icon: WHEN_ICON.today, title: "Today", key: "T" },
-    { g: q.tomorrow, icon: WHEN_ICON.day, title: "Tomorrow", note: fmtDate(keyTime(q.tomorrow), { weekday: "short" }), key: "M" },
-    { g: q.week, icon: WHEN_ICON.week, title: "Next week", note: shortDay(q.week), key: "W" },
-    { g: "later", icon: WHEN_ICON.later, title: "Later", note: "no day", key: "L" });
-  return items;
-}
-function renderWhen() {
-  WHEN.items = whenItems();
-  const first = WHEN.items.findIndex((o) => !o.off);
-  if (WHEN.idx < first || WHEN.idx >= WHEN.items.length || WHEN.items[WHEN.idx].off) WHEN.idx = first;
-  whenList.innerHTML = WHEN.items.map((o, i) => '<li role="option" id="when-' + i + '" data-i="' + i + '"' + (o.off ? ' aria-disabled="true"' : "") + (o.parsed ? ' class="parsed"' : "") + ' aria-selected="' + (i === WHEN.idx) + '">' +
-    o.icon + "<span>" + esc(o.title) + "</span>" + (o.note ? "<em>" + esc(o.note) + "</em>" : "") + (o.key ? "<kbd>" + o.key + "</kbd>" : "") + "</li>").join("");
-  [...whenList.children].forEach((li, j) => li.classList.toggle("act", j === WHEN.idx));
-  whenInput.setAttribute("aria-activedescendant", "when-" + WHEN.idx);
-  const parsed = WHEN.items[0] && WHEN.items[0].parsed && WHEN.items[0].g !== "later" ? (WHEN.items[0].g === "today" ? todayKey() : WHEN.items[0].g) : "";
-  if (parsed !== WHEN.preview) {
-    WHEN.preview = parsed;
-    if (parsed) { const d = new Date(keyTime(parsed)); WHEN.month = new Date(d.getFullYear(), d.getMonth(), 1).getTime(); WHEN.focus = parsed; }
-  }
-  renderCal();
-}
-function openWhen(anchor, t, onPick) {
-  WHEN.onPick = onPick || null;
-  const tk = todayKey(), start = t.plan && t.plan > tk ? t.plan : quickDays().tomorrow;
-  WHEN.task = t; WHEN.anchor = anchor; WHEN.focus = start; WHEN.idx = 0; WHEN.preview = "";
-  const d = new Date(keyTime(start)); WHEN.month = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
-  whenInput.value = "";
-  whenPop.hidden = false;
-  renderWhen();
-  // Hover-only buttons have no box while hidden; fall back to their row.
-  let r = anchor.getBoundingClientRect();
-  if (!r.width && !r.height) r = (anchor.closest(".task") || $("#taskList")).getBoundingClientRect();
-  const w = whenPop.offsetWidth, h = whenPop.offsetHeight;
-  const above = r.bottom + 6 + h > innerHeight - 8 && r.top - 6 - h > 8;
-  whenPop.style.left = Math.max(12, Math.min(r.right - w, innerWidth - w - 12)) + "px";
-  whenPop.style.top = Math.max(8, above ? r.top - 6 - h : Math.min(r.bottom + 6, innerHeight - h - 8)) + "px";
-  whenPop.style.transformOrigin = (above ? "bottom" : "top") + " right";
-  // On phones a focused field would pop the keyboard over the calendar.
-  if (matchMedia("(hover: hover)").matches) whenInput.focus({ preventScroll: true }); else whenPop.focus({ preventScroll: true });
-}
-function closeWhen(refocus) {
-  if (whenPop.hidden) return;
-  whenPop.hidden = true;
-  const a = WHEN.anchor;
-  if (!refocus || !a || !a.isConnected) return;
-  a.focus({ preventScroll: true });
-  if (document.activeElement !== a) a.closest(".task")?.focus({ preventScroll: true });
-}
-function chooseWhen(g) {
-  const t = WHEN.task, cb = WHEN.onPick; closeWhen(true);
-  if (!g) return;
-  if (cb) cb(g); else if (t) scheduleTask(t.id, g);
-}
-function renderCal() {
-  const first = new Date(WHEN.month), y = first.getFullYear(), m = first.getMonth(), tk = todayKey();
-  const load = new Map();
-  for (const t of openOf(S.tasks)) { const k = isToday(t) ? tk : t.plan; if (k) load.set(k, (load.get(k) || 0) + 1); }
-  $("#calMonth").textContent = fmtDate(WHEN.month, { month: "long", year: "numeric" });
-  const offset = (first.getDay() - weekStart + 7) % 7;
-  let html = "";
-  for (let i = 0; i < 7; i++) html += '<span class="wd" aria-hidden="true">' + esc(fmtDate(new Date(y, m, 1 - offset + i).getTime(), { weekday: "narrow" })) + "</span>";
-  for (let i = 0; i < 42; i++) {
-    const d = new Date(y, m, 1 - offset + i), k = dayKey(d.getTime()), n = Math.min(3, load.get(k) || 0);
-    html += '<button type="button" data-day="' + k + '" tabindex="' + (k === WHEN.focus ? 0 : -1) + '"' + (k < tk ? " disabled" : "") +
-      ' class="' + (d.getMonth() !== m ? "out " : "") + (k === tk ? "today " : "") + (k === WHEN.preview ? "preview" : "") + '" aria-pressed="' + (WHEN.task && WHEN.task.plan === k) + '"' +
-      ' aria-label="' + esc(fmtDate(d.getTime(), { weekday: "long", day: "numeric", month: "long" }) + (load.get(k) ? ", " + plural(load.get(k), "task") + " planned" : "")) + '">' +
-      d.getDate() + (n ? "<i>" + "<b></b>".repeat(n) + "</i>" : "") + "</button>";
-  }
-  calGrid.innerHTML = html;
-}
-function calFocus(k) {
-  if (k < todayKey()) k = todayKey();
-  WHEN.focus = k;
-  const d = new Date(keyTime(k)); WHEN.month = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
-  renderCal();
-  calGrid.querySelector('[tabindex="0"]')?.focus({ preventScroll: true });
-}
-whenInput.addEventListener("input", () => { WHEN.idx = 0; renderWhen(); });
-whenInput.addEventListener("keydown", (e) => {
-  const k = e.key, step = (dir) => { let i = WHEN.idx; do { i = (i + dir + WHEN.items.length) % WHEN.items.length; } while (WHEN.items[i].off && i !== WHEN.idx); WHEN.idx = i; renderWhen(); };
-  if (k === "ArrowDown") step(1);
-  else if (k === "ArrowUp") step(-1);
-  else if (k === "Enter") { const o = WHEN.items[WHEN.idx]; if (o && !o.off) chooseWhen(o.g); }
-  else if (k === "Escape") closeWhen(true);
-  else return;
-  e.preventDefault(); e.stopPropagation();
-});
-whenList.addEventListener("click", (e) => { const li = e.target.closest("li"); const o = li && WHEN.items[+li.dataset.i]; if (o && !o.off) chooseWhen(o.g); });
-whenList.addEventListener("pointermove", (e) => { const li = e.target.closest("li"); if (li && !WHEN.items[+li.dataset.i].off && +li.dataset.i !== WHEN.idx) { WHEN.idx = +li.dataset.i; [...whenList.children].forEach((x, j) => x.classList.toggle("act", j === WHEN.idx)); } });
-calGrid.addEventListener("click", (e) => { const b = e.target.closest("[data-day]"); if (b && !b.disabled) chooseWhen(b.dataset.day); });
-whenPop.addEventListener("click", (e) => {
-  const stepBtn = e.target.closest("[data-cal-step]");
-  if (!stepBtn) return;
-  const d = new Date(WHEN.month); WHEN.month = new Date(d.getFullYear(), d.getMonth() + +stepBtn.dataset.calStep, 1).getTime();
-  renderCal();
-});
-calGrid.addEventListener("keydown", (e) => {
-  e.stopPropagation();
-  const k = e.key, at = keyTime(WHEN.focus || todayKey()), d = new Date(at);
-  const move = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[k];
-  if (k === "Escape") closeWhen(true);
-  else if (move) calFocus(dayKey(addDays(at, move)));
-  else if (k === "PageUp" || k === "PageDown") calFocus(dayKey(new Date(d.getFullYear(), d.getMonth() + (k === "PageUp" ? -1 : 1), Math.min(d.getDate(), 28)).getTime()));
-  else if (k === "Home") calFocus(dayKey(addDays(at, -((d.getDay() - weekStart + 7) % 7))));
-  else if (k === "End") calFocus(dayKey(addDays(at, 6 - ((d.getDay() - weekStart + 7) % 7))));
-  else return;
-  e.preventDefault();
-});
-whenPop.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.stopPropagation(); closeWhen(true); } });
-whenPop.tabIndex = -1;
-document.addEventListener("pointerdown", (e) => { if (!whenPop.hidden && !e.target.closest("#whenPop, [data-sched]")) closeWhen(); });
-addEventListener("resize", () => closeWhen());
-addEventListener("scroll", (e) => { if (!whenPop.contains(e.target)) closeWhen(); }, true);
 
 // ---------- scheduling shortcuts ----------
 // They act on the task under the mouse or keyboard focus, else the one you're working on.
@@ -1783,8 +1356,6 @@ $("#dayFitMove").addEventListener("click", () => {
     toast("Moved " + plural(ids.length, "task") + " to tomorrow.");
   });
 });
-addEventListener("scroll", (e) => { if (e.target !== pop) closePop(); }, true);
-addEventListener("resize", () => closePop());
 function reopenTask(id) {
   const t = S.tasks.get(id);
   if (guardPreview() || !t) return;
@@ -2259,6 +1830,13 @@ if (["today", "upcoming", "later"].includes(ss.get("pl.taskView"))) S.taskView =
 mount(Progress, { target: $(".app"), props: { api: {
   S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
   deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask,
+} } });
+popUI = mount(Pop, { target: document.body, anchor: $("#toast"), props: { api: { ICON } } });
+whenUI = mount(WhenPop, { target: document.body, anchor: $("#toast"), props: { api: { S, todayKey, openOf, isToday, scheduleTask, fmtDate, plural } } });
+labelUI = mount(LabelPop, { target: document.body, anchor: $("#toast"), props: { api: { S, ICON, renderTasks, saveSettings: () => Store.saveSettings() } } });
+mount(Composer, { target: $("#projectFilter").parentNode, anchor: $("#projectFilter"), props: { api: {
+  S, ICON, plural, dayName, todayKey, dur, fmtDur, labelChipName, filterLabel, addTask,
+  openWhen, openLabelPop, closeLabelPop, labelKey: (e) => labelUI.key(e), filterLabels: (q) => labelUI.filter(q),
 } } });
 taskList = mount(TaskList, { target: $("#taskFoot").parentNode, anchor: $("#taskFoot"), props: { api: {
   S, ICON, completing, calm, guardPreview,

@@ -105,23 +105,6 @@
           <button type="button" data-view="later" aria-pressed="false">Later<em></em></button>
         </div>
       </div>
-      <form class="add" id="addForm" autocomplete="off">
-        <span class="add-check" aria-hidden="true"></span>
-        <div class="add-body">
-          <input type="text" id="newTitle" maxlength="160" placeholder="New task" aria-label="New task title" aria-describedby="newParsed">
-          <div class="new-task-options" id="newTaskOptions" hidden>
-            <div class="new-parsed" id="newParsed" aria-live="polite" hidden></div>
-            <textarea id="newNotes" rows="1" maxlength="4000" placeholder="Notes" aria-label="Notes"></textarea>
-            <div class="card-bar">
-              <button class="card-btn set" type="button" id="newWhen" data-sched aria-haspopup="dialog" title="When? Or type it: tomorrow, fri, next week, 12 oct"></button>
-              <button class="card-btn" type="button" id="newLabel" aria-haspopup="listbox" aria-expanded="false" title="Label, or type #name"></button>
-              <span class="card-est" id="newEst"><span class="est-pick"></span><output id="estOut"></output></span>
-              <span class="spacer"></span>
-              <button class="btn small solid" type="submit">Add <kbd>↵</kbd></button>
-            </div>
-          </div>
-        </div>
-      </form>
       <div class="label-filter" id="projectFilter" role="group" aria-label="Filter tasks by label" hidden></div>
       <div class="day-fit" id="dayFit" role="status" hidden><span id="dayFitText"></span><button class="btn small" type="button" id="dayFitMove">Move to tomorrow</button></div>
       <div class="sub" id="projectSummary" hidden></div>
@@ -137,23 +120,6 @@
   <button type="button" data-page="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/></svg><span>Progress</span></button>
 </nav>
 <div class="tip" id="tip" hidden></div>
-<ul class="pick-menu pop" id="pop" role="listbox" tabindex="-1" hidden></ul>
-<div class="when-pop" id="whenPop" role="dialog" aria-label="When" hidden>
-  <input type="text" id="whenInput" placeholder="When? tomorrow, fri, in 3 days, 12 oct…" autocomplete="off" spellcheck="false" aria-label="When" aria-controls="whenList" aria-autocomplete="list">
-  <ul class="when-list" id="whenList" role="listbox" aria-label="Suggestions"></ul>
-  <div class="cal-head">
-    <button class="icon-btn" type="button" data-cal-step="-1" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-    <strong id="calMonth" aria-live="polite"></strong>
-    <button class="icon-btn" type="button" data-cal-step="1" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
-  </div>
-  <div class="cal-grid" id="calGrid"></div>
-  <div class="cal-foot"><i aria-hidden="true"></i>Tasks already planned that day</div>
-</div>
-<div class="label-pop" id="labelPop" hidden>
-  <input type="text" id="labelSearch" maxlength="80" placeholder="Find or create a label" role="combobox" aria-expanded="true" aria-controls="labelOpts" aria-autocomplete="list" aria-label="Find or create a label" autocomplete="off" spellcheck="false">
-  <ul id="labelOpts" role="listbox" aria-label="Labels"></ul>
-  <div class="label-pop-foot" id="labelPopFoot"><span id="labelPopHint"></span><button class="link" type="button" id="labelManage"></button></div>
-</div>
 <div class="toast" id="toast" role="status" hidden></div>
 
 <div class="ask" id="ask" role="alert" hidden></div>
