@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays, dayKey, keyTime, nextMonday, sod } from "./dates";
-import { parseWhen } from "./when";
+import { inDays, parseWhen, whenOptions } from "./when";
 
 // Saturday, 3 October 2026, mid-afternoon local time.
 const NOW = new Date(2026, 9, 3, 15, 30).getTime();
@@ -51,5 +51,38 @@ describe("parseWhen", () => {
     it.each(["tom", "do", "mo", "1.2", "12.10", "later", "tm", "fr"])("ignores %j", (q) => {
       expect(when(q, true)).toBeUndefined();
     });
+  });
+});
+
+describe("inDays", () => {
+  it.each([["2026-10-03", "today"], ["2026-10-01", "today"], ["2026-10-04", "tomorrow"], ["2026-10-09", "in 6 days"], ["2026-10-16", "in 13 days"], ["2026-10-17", "in 2 weeks"], ["2026-11-14", "in 6 weeks"]])(
+    "%s is %s",
+    (k, expected) => expect(inDays(k, NOW)).toBe(expected),
+  );
+});
+
+describe("whenOptions", () => {
+  const opts = (typed: string) => whenOptions(typed, NOW).map((o) => [o.g ?? null, o.icon, o.key ?? "", !!o.parsed, !!o.off]);
+  const day = (k: string, o: Intl.DateTimeFormatOptions) => new Date(keyTime(k)).toLocaleDateString(undefined, o);
+  const fixed = [["today", "today", "T", false, false], ["2026-10-04", "day", "M", false, false], ["2026-10-05", "week", "W", false, false], ["later", "later", "L", false, false]];
+
+  it("offers today, tomorrow, next week and later", () => {
+    expect(opts("")).toEqual(fixed);
+    const [, tomorrow, week, later] = whenOptions("", NOW);
+    expect(tomorrow.note).toBe(day("2026-10-04", { weekday: "short" }));
+    expect(week.note).toBe(day("2026-10-05", { weekday: "short" }) + " 5");
+    expect(later.note).toBe("no day");
+  });
+  it("puts what was typed first", () => {
+    expect(opts("fri")).toEqual([["2026-10-09", "day", "", true, false], ...fixed]);
+    const typed = whenOptions(" fri ", NOW)[0];
+    expect(typed.title).toBe(day("2026-10-09", { weekday: "short", day: "numeric", month: "short" }));
+    expect(typed.note).toBe("in 6 days");
+    expect(opts("someday")[0]).toEqual(["later", "later", "", true, false]);
+    expect(opts("heute")[0]).toEqual(["today", "today", "", true, false]);
+  });
+  it("says when nothing matches, without offering it", () => {
+    expect(opts("zzz")[0]).toEqual([null, "day", "", false, true]);
+    expect(whenOptions("zzz", NOW)[0].title).toBe("No day matches “zzz”");
   });
 });

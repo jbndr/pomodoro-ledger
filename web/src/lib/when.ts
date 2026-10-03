@@ -1,4 +1,4 @@
-import { addDays, dayKey, nextMonday, sod, type DayKey } from "./dates";
+import { addDays, dayKey, keyTime, nextMonday, sod, type DayKey } from "./dates";
 
 /** Where a task goes: today, a future day, or no day at all. */
 export type When = "today" | "later" | DayKey;
@@ -43,4 +43,43 @@ export function parseWhen(raw: string, strict = false, now = Date.now()): When |
   if ((m = q.match(/^(\d{1,2})\.? ([a-zäöü]+\.?)(?: (\d{4}))?$/)) && month(m[2]) >= 0) return make(year(m[3]), month(m[2]), +m[1]);
   if ((m = q.match(/^([a-zäöü]+\.?) (\d{1,2})(?:,? (\d{4}))?$/)) && month(m[1]) >= 0) return make(year(m[3]), month(m[1]), +m[2]);
   return undefined;
+}
+
+export interface WhenOption {
+  g?: When;
+  icon: "today" | "day" | "week" | "later";
+  title: string;
+  note?: string;
+  /** Its scheduling shortcut. */
+  key?: string;
+  /** Read from what was typed. */
+  parsed?: boolean;
+  /** Typed text that matches no day. */
+  off?: boolean;
+}
+
+const fmt = (t: number, o: Intl.DateTimeFormatOptions) => new Date(t).toLocaleDateString(undefined, o);
+
+/** How far off a day is, in words. */
+export function inDays(k: DayKey, now = Date.now()): string {
+  const n = Math.round((keyTime(k) - sod(now)) / 864e5);
+  return n <= 0 ? "today" : n === 1 ? "tomorrow" : n < 14 ? "in " + n + " days" : "in " + Math.round(n / 7) + " weeks";
+}
+
+/** The When popover's suggestions: what the typed text means, if anything, then the fixed choices. */
+export function whenOptions(typed: string, now = Date.now()): WhenOption[] {
+  const items: WhenOption[] = [], tomorrow = dayKey(addDays(now, 1)), week = nextMonday(now);
+  typed = typed.trim();
+  if (typed) {
+    const g = parseWhen(typed, false, now);
+    if (g === undefined) items.push({ off: true, icon: "day", title: "No day matches “" + typed + "”" });
+    else if (g === "later") items.push({ g, icon: "later", title: "Later", note: "no day", parsed: true });
+    else if (g === "today" || g == null || g <= dayKey(now)) items.push({ g: "today", icon: "today", title: "Today", parsed: true });
+    else items.push({ g, icon: "day", title: fmt(keyTime(g), { weekday: "short", day: "numeric", month: "short" }), note: inDays(g, now), parsed: true });
+  }
+  items.push({ g: "today", icon: "today", title: "Today", key: "T" },
+    { g: tomorrow, icon: "day", title: "Tomorrow", note: fmt(keyTime(tomorrow), { weekday: "short" }), key: "M" },
+    { g: week, icon: "week", title: "Next week", note: fmt(keyTime(week), { weekday: "short" }) + " " + new Date(keyTime(week)).getDate(), key: "W" },
+    { g: "later", icon: "later", title: "Later", note: "no day", key: "L" });
+  return items;
 }
