@@ -11,6 +11,8 @@ build step is required.
 - Tasks, subtasks, cycle estimates, Today/Later planning, and estimated start times
 - Labels, filters, focus history, charts, and finished-task tracking
 - Configurable timers, optional gentle ticking, and a floating Picture-in-Picture timer
+- Installable as an app on phones (PWA) that opens offline, with a full-screen timer page and bottom tabs
+- Optional sign-in to sync tasks, history, settings, and the running timer between devices
 - Temporary shared rooms that sync timer status while keeping tasks and history private
 
 ## Deploy
@@ -44,8 +46,9 @@ storage, so the app works offline. Without sign-in they stay on that device.
 
 ## Sync between devices
 
-Signing in syncs tasks, history, labels, and settings across devices. The running
-timer stays on each device. Login is handled by Cloudflare Access, and each
+Signing in syncs tasks, history, labels, settings, and the timer itself across
+devices: start on your laptop, pause on your phone. When a cycle ends on two open
+devices, it's logged once. Login is handled by Cloudflare Access, and each
 person's data lives in its own Durable Object (plain SQLite, one `docs` table),
 keyed by email. Conflicts resolve last-write-wins per task. Changes made offline
 merge when the device reconnects. **Settings → Sync → Export** downloads

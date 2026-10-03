@@ -102,6 +102,16 @@ test('malformed and unknown messages are ignored', async () => {
   assert.deepEqual(a.messages.at(-1).docs, []);
 });
 
+test('the running timer syncs as a single document', async () => {
+  const { socket, send } = setup();
+  const a = socket(), b = socket();
+  const timer = { t: 'put', kind: 'timer', id: 'timer', at: 100, body: { T: { mode: 'focus', status: 'running', endsAt: 1500000 }, activeId: 't1' } };
+  await send(a, timer);
+  assert.deepEqual(b.messages.at(-1), timer);
+  await send(a, { ...timer, id: 'other' });
+  assert.equal(b.messages.length, 1);
+});
+
 test('oversized documents are refused', async () => {
   const { socket, send } = setup();
   const a = socket();

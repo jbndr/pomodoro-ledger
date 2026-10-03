@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 
-const KINDS = ["task", "profile"];
+const KINDS = ["task", "profile", "timer"];
 const MAX_BODY = 256 * 1024;
 const MAX_DOCS = 20000;
 
@@ -121,7 +121,7 @@ export class Ledger extends DurableObject {
     if (m.t !== "put" && m.t !== "del") return;
     const id = typeof m.id === "string" ? m.id : "", at = Math.round(Number(m.at));
     if (!KINDS.includes(m.kind) || !id || id.length > 80 || !Number.isFinite(at) || at <= 0) return;
-    if (m.kind === "profile" && id !== "profile") return;
+    if (m.kind !== "task" && id !== m.kind) return;
     const cur = this.row(m.kind, id);
     // An older write lost; tell the sender what won so it can converge.
     if (cur && cur.at > at) return this.send(ws, this.wire(cur));
