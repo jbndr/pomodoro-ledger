@@ -385,6 +385,14 @@ td.barcell { width: 38%; min-width: 120px; }
 .tasks .group.section span { font: 12px var(--f-body); color: var(--faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tasks .group.section span:empty { display: none; }
 .sec-del { width: 28px; height: 28px; flex: none; }
+.tasks .group.section { position: relative; }
+.tasks .group.section:not(:has(.sec-title:focus)) { cursor: grab; }
+.tasks .group .sec-grip { position: absolute; left: -14px; top: 22px; width: 18px; height: 24px; margin: 0; }
+@media (hover: hover) { .sec-grip { opacity: 0; } .group.section:hover .sec-grip, .sec-grip:focus-visible { opacity: 1; } }
+.sec-lifted { opacity: .3; transition: opacity .15s; }
+.sec-ghost { position: fixed; z-index: 60; pointer-events: none; padding: 9px 14px; border-radius: 12px; border: 1px solid var(--line-2); background: var(--surface); font: 650 15px var(--f-body); color: var(--fg); white-space: pre; box-shadow: 0 22px 44px -16px rgba(0,0,0,.3), 0 6px 14px -6px rgba(0,0,0,.14); transform: rotate(-.4deg) scale(1.01); }
+.sec-drop { position: fixed; z-index: 59; height: 3px; margin-top: -1px; border-radius: 3px; background: var(--accent); pointer-events: none; transition: top .12s ease-out; }
+body.sec-sorting, body.sec-sorting * { user-select: none; -webkit-user-select: none; cursor: grabbing !important; }
 .sec-del svg { width: 14px; height: 14px; }
 @media (hover: hover) { .sec-del { opacity: 0; } .group.section:hover .sec-del, .sec-del:focus-visible { opacity: 1; } }
 .day-fit.over { color: var(--muted); }
@@ -2491,7 +2499,7 @@ body.zen .working { width: min(100%, 420px); }
         shown.filter((t) => !known.has(t.section)).forEach((t) => { html += row(t); });
         for (const sec of sections()) {
           const mine = shown.filter((t) => t.section === sec.id);
-          html += '<li class="group section" data-g="sec:' + esc(sec.id) + '"><input class="sec-title" type="text" maxlength="60" value="' + esc(sec.title) + '" aria-label="Section name" data-sec="' + esc(sec.id) + '">' +
+          html += '<li class="group section" data-g="sec:' + esc(sec.id) + '"><button class="grip sec-grip" type="button" aria-label="Move section ' + esc(sec.title) + ': drag, or press the up and down arrow keys" title="Drag to reorder">' + ICON.grip + '</button><input class="sec-title" type="text" maxlength="60" value="' + esc(sec.title) + '" aria-label="Section name" data-sec="' + esc(sec.id) + '">' +
             '<span class="sec-time"></span><span class="sec-sum">' + (mine.length ? "" : "Drag tasks here") + "</span>" +
             '<button class="icon-btn sec-del" type="button" data-secdel="' + esc(sec.id) + '" aria-label="Remove section ' + esc(sec.title) + '" title="Remove section (its tasks stay in Today)">' + ICON.x + "</button></li>";
           mine.forEach((t) => { html += row(t); });
@@ -2993,6 +3001,72 @@ body.zen .working { width: min(100%, 420px); }
   });
   let delTimer = null;
   function saveSections(list) { S.settings.sections = list; Store.saveSettings(); renderTasks(); }
+
+  // Sections move as a block: the heading floats with the pointer, a line marks where it lands, and its tasks follow on drop.
+  let secDrag = null, secPending = null;
+  function sectionBlocks() {
+    const blocks = [];
+    let cur = null;
+    for (const el of $("#taskList").children) {
+      if (el.classList.contains("section")) { cur = { id: el.dataset.g.slice(4), els: [el] }; blocks.push(cur); }
+      else if (el.classList.contains("group")) cur = null;
+      else if (cur) cur.els.push(el);
+    }
+    return blocks;
+  }
+  function moveSection(id, to) {
+    const list = sections(), from = list.findIndex((x) => x.id === id);
+    if (from < 0 || to < 0 || to >= list.length || to === from) return false;
+    const next = [...list]; next.splice(to, 0, next.splice(from, 1)[0]);
+    saveSections(next);
+    return true;
+  }
+  function startSecDrag(e, head) {
+    if (guardPreview()) return;
+    const blocks = sectionBlocks(), from = blocks.findIndex((b) => b.els[0] === head);
+    if (from < 0 || blocks.length < 2) return;
+    const r = head.getBoundingClientRect(), n = blocks[from].els.length - 1;
+    const ghost = Object.assign(document.createElement("div"), { className: "sec-ghost", textContent: head.querySelector(".sec-title").value + (n ? "  ·  " + plural(n, "task") : "") });
+    Object.assign(ghost.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px" });
+    const line = Object.assign(document.createElement("div"), { className: "sec-drop" });
+    document.body.append(ghost, line);
+    blocks[from].els.forEach((el) => el.classList.add("sec-lifted"));
+    document.body.classList.add("sec-sorting");
+    secDrag = { blocks, from, to: from, ghost, line, offset: e.clientY - r.top };
+    moveSecDrag(e.clientY);
+  }
+  function moveSecDrag(y) {
+    const d = secDrag, others = d.blocks.filter((_, i) => i !== d.from);
+    d.ghost.style.top = y - d.offset + "px";
+    let to = others.findIndex((b) => y < (b.els[0].getBoundingClientRect().top + b.els.at(-1).getBoundingClientRect().bottom) / 2);
+    if (to < 0) to = others.length;
+    d.to = to;
+    const list = $("#taskList").getBoundingClientRect();
+    const at = others[to] ? others[to].els[0].getBoundingClientRect().top - 2 : others.at(-1).els.at(-1).getBoundingClientRect().bottom + 2;
+    Object.assign(d.line.style, { left: list.left + "px", width: list.width + "px", top: at + "px" });
+  }
+  function endSecDrag(cancel) {
+    const d = secDrag;
+    if (!d) return;
+    secDrag = null;
+    d.ghost.remove(); d.line.remove();
+    d.blocks[d.from].els.forEach((el) => el.classList.remove("sec-lifted"));
+    document.body.classList.remove("sec-sorting");
+    if (!cancel) moveSection(d.blocks[d.from].id, d.to);
+  }
+  $("#taskList").addEventListener("pointerdown", (e) => {
+    if (e.button > 0 || secDrag || drag) return;
+    const grip = e.target.closest(".sec-grip"), head = e.target.closest(".group.section");
+    if (grip) { e.preventDefault(); startSecDrag(e, head); return; }
+    if (head && e.pointerType === "mouse" && !e.target.closest("input, button")) secPending = { x: e.clientX, y: e.clientY, head };
+  });
+  document.addEventListener("pointermove", (e) => {
+    if (secDrag) { moveSecDrag(e.clientY); return; }
+    if (secPending && Math.hypot(e.clientX - secPending.x, e.clientY - secPending.y) > 5) { const h = secPending.head; secPending = null; startSecDrag(e, h); }
+  });
+  document.addEventListener("pointerup", () => { secPending = null; endSecDrag(false); });
+  document.addEventListener("pointercancel", () => { secPending = null; endSecDrag(true); });
+  document.addEventListener("keydown", (e) => { if (secDrag && e.key === "Escape") { e.preventDefault(); e.stopPropagation(); endSecDrag(true); } }, true);
   function renameSection(input) {
     const list = sections(), sec = list.find((x) => x.id === input.dataset.sec), title = input.value.trim();
     if (!sec) return;
@@ -3143,7 +3217,7 @@ body.zen .working { width: min(100%, 420px); }
   });
   addEventListener("pointerup", () => { pendingDrag = null; });
   $("#taskList").addEventListener("pointerdown", (e) => {
-    const g = e.target.closest(".grip");
+    const g = e.target.closest(".grip:not(.sec-grip)");
     if (!g || g.disabled || drag || e.button > 0) return;
     e.preventDefault();
     startDrag(e, g.closest(".task"));
@@ -3187,6 +3261,12 @@ body.zen .working { width: min(100%, 420px); }
         const sub = (task && task.subtasks || []).find((s) => s.id === e.target.closest(".subtask").dataset.subid);
         if (sub) e.target.value = sub.title;
       }
+      return;
+    }
+    if (e.target.matches(".sec-grip") && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+      e.preventDefault();
+      const id = e.target.closest(".group.section").dataset.g.slice(4), i = sections().findIndex((x) => x.id === id);
+      if (moveSection(id, i + (e.key === "ArrowUp" ? -1 : 1))) $('#taskList [data-g="sec:' + id + '"] .sec-grip')?.focus();
       return;
     }
     const g = e.target.closest(".grip");
