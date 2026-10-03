@@ -590,7 +590,7 @@ body.zen .working { width: min(100%, 420px); }
   html, body { height: 100%; overflow: hidden; }
   .app { height: var(--viewport-height, 100dvh); display: flex; flex-direction: column; }
   .app > *, .top > * { flex: none; }
-  body[data-page="timer"] .timer-card, body[data-page="tasks"] .top > .panel, body[data-page="progress"] .progress { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  body[data-page="timer"] .timer-card, body[data-page="tasks"] .top > .panel, body[data-page="progress"] .progress { flex: 1 1 auto; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
   /* The timer page is the app's home: no card, the mode colour fills the screen behind it. */
   body[data-page="timer"] .timer-card { background: transparent; border: 0; box-shadow: none; border-radius: 0; padding: 0 2px; overflow: visible; gap: 10px; }
   body[data-page="timer"] .timer-card > .glow { display: none; }
@@ -623,6 +623,8 @@ body.zen .working { width: min(100%, 420px); }
   body.compact-phone[data-page="timer"] .go { height: 54px; font-size: 17px; }
   body.compact-phone[data-page="timer"] .pick-btn { min-height: 52px; padding-block: 6px; }
   body.zen .tabbar { display: none; }
+  /* Full screen keeps its own spacing; the timer-page rules above would otherwise drop the notch padding. */
+  body.zen[data-page] .timer-card { padding: calc(env(safe-area-inset-top, 0px) + 18px) 16px calc(env(safe-area-inset-bottom, 0px) + 18px); align-content: center; align-content: safe center; gap: clamp(12px, 2.4dvh, 26px); background: radial-gradient(120vw 120vw at 50% 40%, color-mix(in oklab, var(--accent) 26%, transparent), transparent 62%), var(--bg); }
   .page-in { animation: page-in .22s ease-out; }
 }
 @keyframes page-in { from { opacity: 0; translate: 0 8px; } }
@@ -2354,19 +2356,30 @@ body.zen .working { width: min(100%, 420px); }
   function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 3600); }
   const tip = $("#tip");
   let hoverBar = null;
-  document.addEventListener("pointermove", (e) => {
-    const el = e.target.closest && e.target.closest("[data-tip]");
+  function hideTip() {
+    tip.hidden = true;
     if (hoverBar) { hoverBar.classList.remove("hover"); hoverBar = null; }
-    if (!el) { tip.hidden = true; return; }
+  }
+  function showTip(e) {
+    const el = e.target.closest && e.target.closest("[data-tip]");
+    hideTip();
+    if (!el) return;
     if (el.classList.contains("hit")) { const b = el.nextElementSibling; if (b) { b.classList.add("hover"); hoverBar = b; } }
     tip.innerHTML = el.dataset.tip; tip.hidden = false;
     const w = tip.offsetWidth, h = tip.offsetHeight;
     let x = e.clientX + 14, y = e.clientY - h - 12;
     if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+    if (x < 8) x = 8;
     if (y < 8) y = e.clientY + 16;
     tip.style.left = x + "px"; tip.style.top = y + "px";
-  });
-  document.addEventListener("pointerleave", () => (tip.hidden = true));
+  }
+  // A finger that starts scrolling fires pointermove but never pointerleave, which left tips stranded; touch shows them on tap.
+  let tipPointer = "mouse";
+  document.addEventListener("pointerdown", (e) => { tipPointer = e.pointerType; }, true);
+  document.addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") showTip(e); });
+  document.addEventListener("click", (e) => { if (tipPointer !== "mouse") showTip(e); });
+  document.addEventListener("pointerleave", hideTip);
+  document.addEventListener("scroll", hideTip, true);
 
   // ---------- events ----------
   const guardPreview = () => { if (preview() && !DEMO) { toast("These are examples. Add a task to start your own ledger."); return true; } return false; };
