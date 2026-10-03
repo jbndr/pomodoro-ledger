@@ -545,10 +545,6 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   body.compact-phone .timer-card { padding-block: 8px; gap: 6px; }
   body.compact-phone .modes { padding: 2px; }
   body.compact-phone .go { height: 52px; }
-  body.compact-phone:not(.zen) .dial-wrap { width: 100%; height: 110px; aspect-ratio: auto; }
-  body.compact-phone:not(.zen) .dial { width: 110px; height: 110px; margin-inline: auto; opacity: .18; }
-  body.compact-phone:not(.zen) .time { font-size: 48px; }
-  body.compact-phone:not(.zen) .dial-label, body.compact-phone:not(.zen) .dial-sub { font-size: 11px; }
 }
 button, .pick-menu li { touch-action: manipulation; }
 .grip { touch-action: none; }
@@ -577,11 +573,48 @@ body.zen .working { width: min(100%, 420px); }
   body[data-page="timer"] .top > .panel, body[data-page="timer"] .progress,
   body[data-page="tasks"] .timer-card, body[data-page="tasks"] .progress,
   body[data-page="progress"] .timer-card, body[data-page="progress"] .top > .panel { display: none; }
-  body[data-page="timer"]:not(.landscape-phone) .timer-card { min-height: var(--mobile-fill, auto); align-content: center; }
+  body[data-page="timer"]:not(.landscape-phone) .timer-card { min-height: var(--mobile-fill, auto); align-content: space-evenly; }
+  /* The timer page is the app's home: no card, the mode colour fills the screen behind it. */
+  body[data-page="timer"] .timer-card { background: transparent; border: 0; box-shadow: none; border-radius: 0; padding: 0 2px; overflow: visible; gap: 10px; }
+  body[data-page="timer"] .timer-card > .glow { display: none; }
+  body[data-page="timer"]::before { content: ""; position: fixed; z-index: -1; inset: 0; pointer-events: none; background: radial-gradient(120vw 120vw at 50% 40%, color-mix(in oklab, var(--accent) 26%, transparent), transparent 62%); transition: opacity .6s; }
+  body[data-page="timer"][data-status="running"]::before { animation: breathe 7s ease-in-out infinite; }
+  body[data-page="timer"][data-status="running"] .bar { opacity: .45; }
+  body[data-page="timer"] .bar { transition: opacity .6s; }
+  body[data-page="timer"] .modes { width: auto; min-width: min(100%, 320px); background: color-mix(in oklab, var(--surface) 55%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  body[data-page="timer"] .dial .track { stroke: color-mix(in oklab, var(--fg) 7%, transparent); }
+  body[data-page="timer"] .dial .knob { filter: drop-shadow(0 0 6px var(--accent)); }
+  body[data-page="timer"] .set-dots { display: flex; min-height: 14px; }
+  body[data-page="timer"] .set-dots span { width: 9px; height: 9px; }
+  body[data-page="timer"] .adjust { gap: 8px; }
+  body[data-page="timer"] .adjust button { border-color: transparent; background: color-mix(in oklab, var(--surface) 55%, transparent); min-height: 40px; padding-inline: 16px; }
+  body[data-page="timer"] .controls { gap: 20px; }
+  body[data-page="timer"] .round { width: 60px; height: 60px; border-color: transparent; background: color-mix(in oklab, var(--surface) 60%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: var(--fg); }
+  body[data-page="timer"] .round svg { width: 22px; height: 22px; }
+  body[data-page="timer"] .go { height: 72px; max-width: 220px; font-size: 21px; box-shadow: 0 14px 34px -14px var(--accent); }
+  body[data-page="timer"] .working { border-top: 0; padding-top: 2px; }
+  body[data-page="timer"] .pick-btn { height: auto; min-height: 60px; padding: 9px 14px 9px 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; border-radius: 18px; border-color: color-mix(in oklab, var(--line) 70%, transparent); background: color-mix(in oklab, var(--surface) 62%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 15.5px; }
+  body[data-page="timer"] .pick-btn::before { content: "Working on"; grid-column: 1; font-size: 10.5px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  body[data-page="timer"] .pick-btn span { grid-column: 1; }
+  body[data-page="timer"] .pick-btn svg { grid-column: 2; grid-row: 1 / 3; }
+  .banner { flex-wrap: nowrap; gap: 10px; padding: 8px 8px 8px 12px; font-size: 12.5px; line-height: 1.35; }
+  .banner .btn { flex: none; min-height: 36px; padding: 0 12px; font-size: 13px; }
+  body.compact-phone[data-page="timer"] .timer-card { gap: 6px; }
+  body.compact-phone[data-page="timer"] .set-dots { display: none; }
+  body.compact-phone[data-page="timer"] .adjust button { min-height: 34px; }
+  body.compact-phone[data-page="timer"] .round { width: 52px; height: 52px; }
+  body.compact-phone[data-page="timer"] .go { height: 60px; }
+  body.compact-phone[data-page="timer"] .pick-btn { min-height: 52px; padding-block: 6px; }
+  /* A small dial leaves room beside it, so its corner buttons move off the ring. */
+  @container (max-width: 260px) {
+    body[data-page="timer"] .full-btn { right: -50px; }
+    body[data-page="timer"] .float-btn { left: -50px; }
+  }
   body.zen .tabbar { display: none; }
   .page-in { animation: page-in .22s ease-out; }
 }
 @keyframes page-in { from { opacity: 0; translate: 0 8px; } }
+@keyframes breathe { 50% { opacity: .55; } }
 /* Touch screens keep :hover after a tap, which looked like a stuck button, so hover styles above are pointer-only. */
 @media (hover: none) {
   .icon-btn:active, .btn:active, .round:active, .adjust button:active, .room-code:active, button.pill:active { background: var(--surface-2); }
@@ -1304,6 +1337,7 @@ body.zen .working { width: min(100%, 420px); }
     const rang = pendingAt && Math.abs(pendingAt - at) < 2000;
     pending = []; pendingAt = 0; // let the bell that is ringing finish
     if (!rang && !stale) playSound(wasFocus ? "focus" : "break");
+    if (!stale && !document.hidden) buzz([60, 80, 60]);
     setMode(next);
     const auto = wasFocus ? S.settings.autoBreak : S.settings.autoFocus;
     // Starting from the end time, not now, lets every synced device arrive at the same next phase.
@@ -1314,6 +1348,8 @@ body.zen .working { width: min(100%, 420px); }
     if (!stale) notify(msg);
   }
   const toggle = () => (T.status === "running" ? pause() : start());
+  // Android only; iOS has no vibration API.
+  const buzz = (pattern) => { try { if (navigator.vibrate && matchMedia("(hover: none)").matches) navigator.vibrate(pattern); } catch {} };
   const MAX_RUN = 180 * MIN;
   function adjust(min) {
     const d = min * MIN, total = totalNow() + d, rem = remNow() + d;
@@ -1379,6 +1415,7 @@ body.zen .working { width: min(100%, 420px); }
   function renderTimer(force) {
     if (force) syncTicking();
     document.body.dataset.mode = T.mode;
+    if (document.body.dataset.status !== T.status) document.body.dataset.status = T.status;
     const total = totalNow(), rem = remNow(), frac = Math.max(0, Math.min(1, rem / total));
     const secs = Math.ceil(rem / 1000), txt = clock(secs);
     if (txt !== lastTxt || force) {
@@ -2320,9 +2357,9 @@ body.zen .working { width: min(100%, 420px); }
 
   // ---------- events ----------
   const guardPreview = () => { if (preview() && !DEMO) { toast("These are examples. Add a task to start your own ledger."); return true; } return false; };
-  $("#startBtn").addEventListener("click", toggle);
-  $("#resetBtn").addEventListener("click", () => { flushPartial(); setMode(T.mode); });
-  $("#skipBtn").addEventListener("click", skip);
+  $("#startBtn").addEventListener("click", () => { buzz(T.status === "running" ? 8 : 14); toggle(); });
+  $("#resetBtn").addEventListener("click", () => { buzz(8); flushPartial(); setMode(T.mode); });
+  $("#skipBtn").addEventListener("click", () => { buzz(8); skip(); });
   $("#adjust").addEventListener("click", (e) => { const b = e.target.closest("[data-adj]"); if (b) adjust(+b.dataset.adj); });
   document.querySelectorAll(".modes button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.mode !== T.mode) setMode(b.dataset.mode, true); }));
   $("#fullBtn").addEventListener("click", (e) => toggleZen(e.shiftKey));
@@ -3039,7 +3076,7 @@ body.zen .working { width: min(100%, 420px); }
     // Measure the header and room at the top of the document, independent of scrolling.
     const top = card.getBoundingClientRect().top + scrollY;
     const overhead = card.getBoundingClientRect().height - dial.getBoundingClientRect().height;
-    const size = Math.max(100, Math.min(320, viewport - top - tabbar - overhead - 24));
+    const size = Math.max(140, Math.min(380, viewport - top - tabbar - overhead - 28));
     card.style.setProperty("--mobile-dial", size + "px");
     card.style.setProperty("--mobile-fill", Math.max(0, viewport - top - tabbar - 12) + "px");
   }
