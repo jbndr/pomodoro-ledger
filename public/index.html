@@ -208,12 +208,6 @@ h2 { font-family: var(--f-display); font-weight: 700; font-size: 24px; letter-sp
 h3 { font-family: var(--f-display); font-weight: 650; font-size: 17px; margin: 0; }
 .sub { color: var(--muted); font-size: 13.5px; }
 
-.add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-top: 14px; padding: 10px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--line); }
-.add input[type="text"] { grid-column: 1 / -1; border: 0; background: transparent; padding: 6px 6px; font-size: 16px; font-weight: 500; min-width: 0; }
-.add input[type="text"]:focus { outline: none; }
-.add input::placeholder { color: var(--faint); }
-.new-task-options { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
-.new-task-options .est { flex: 1 0 auto; padding-left: 0; }
 .label-chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; height: 30px; padding: 0 11px 0 9px; border-radius: 999px; border: 1px dashed var(--line-2); background: transparent; color: var(--muted); font-size: 13px; transition: background .15s, color .15s, border-color .15s; }
 .label-chip[aria-expanded="true"] { background: var(--surface); color: var(--fg); }
 @media (hover: hover) { .label-chip:hover { background: var(--surface); color: var(--fg); } }
@@ -254,13 +248,10 @@ td.barcell { width: 38%; min-width: 120px; }
 .label-pop-foot .link { font-size: 12px; }
 @media (max-width: 640px) {
   .label-chip { height: 44px; padding-inline: 12px 14px; }
-  .new-task-options .est { order: 2; flex-basis: 100%; }
-  .new-task-options .btn { margin-left: auto; }
   .label-filter { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: -4px; padding-inline: 4px; }
   .label-filter button { flex: none; height: 40px; padding-inline: 14px; }
   .label-pop li { min-height: 44px; }
 }
-.add:focus-within { border-color: var(--line-2); }
 .est { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-left: 6px; min-width: 0; }
 .est > span { font-size: 12.5px; color: var(--muted); }
 .est-pick { display: inline-flex; gap: 3px; }
@@ -341,33 +332,45 @@ body[data-status="running"] .now-tag i { animation: now-dot 1.6s ease-in-out inf
 .day-fit { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 2px 0; font-size: 13px; color: var(--warn); }
 .day-fit::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .day-fit .btn.small { height: auto; min-height: 0; padding: 0; border: 0; background: none; color: var(--fg); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
-.add { position: relative; }
-.add::before { content: ""; position: absolute; left: 15px; top: 19px; width: 14px; height: 14px; background: linear-gradient(var(--faint), var(--faint)) center / 14px 1.8px no-repeat, linear-gradient(var(--faint), var(--faint)) center / 1.8px 14px no-repeat; pointer-events: none; }
-.add input[type="text"] { padding-left: 30px; }
 .tasks .group.today-head { padding: 14px 8px 6px; gap: 8px; align-items: center; color: var(--fg); font: 650 17px var(--f-display); letter-spacing: -.01em; text-transform: none; }
 .tasks .group.today-head svg { width: 17px; height: 17px; color: #E8A800; }
 .tasks .group.today-head > span { flex-basis: 100%; font: 12.5px var(--f-body); color: var(--muted); }
 .tasks .group.today-head span { font-family: var(--f-body); }
-.day-plan { flex-basis: 100%; display: grid; gap: 6px; margin-top: 6px; font: 12.5px var(--f-body); color: var(--muted); }
-.day-bar { position: relative; display: flex; gap: 2px; height: 8px; }
-.day-bar i { min-width: 2px; border-radius: 3px; }
-.day-bar i.f { background: var(--accent); }
-.day-bar i.o { background: color-mix(in oklab, var(--accent) 45%, transparent); }
-.day-bar i.b { background: color-mix(in oklab, var(--fg) 12%, transparent); }
-.day-bar b { position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--warn); }
-.day-stats { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-.day-stats strong { color: var(--fg); font-weight: 650; font-variant-numeric: tabular-nums; }
-.day-stats .net strong { color: var(--accent); }
-.day-stats .eta { margin-left: auto; }
-.day-stats span:empty { display: none; }
-.day-count { font-size: 11.5px; color: var(--faint); }
+.day-plan { flex-basis: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; }
+.day-plan .stat { display: grid; gap: 1px; padding: 8px 12px 9px; min-width: 0; }
+.day-plan .stat + .stat { border-left: 1px solid var(--line); }
+.day-plan small { font: 650 10.5px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.day-plan strong { font: 650 19px/1.2 var(--f-display); letter-spacing: -.01em; color: var(--fg); font-variant-numeric: tabular-nums; }
+.tasks .group.today-head .day-plan span { font: 11.5px var(--f-body); color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.day-plan .late strong { color: var(--warn); }
+.tasks .group.today-head .day-plan .late span { color: var(--warn); }
+/* Quick entry: a quiet row that opens into a small card, and reads When, estimate and #label from what you type. */
+.add { display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 10px; align-items: start; margin-top: 14px; padding: 10px 12px 10px 10px; border-radius: 14px; border: 1px solid transparent; background: var(--surface-2); transition: background .15s, border-color .15s, box-shadow .2s; }
+.add:focus-within, .add.open { background: var(--surface); border-color: var(--line-2); box-shadow: 0 16px 40px -26px rgba(0,0,0,.4); }
+.add-check { width: 22px; height: 22px; margin-top: 6px; border-radius: 7px; border: 1.6px dashed var(--line-2); display: grid; place-items: center; }
+.add-check::before { content: "+"; color: var(--faint); font-size: 15px; line-height: 1; }
+.add:focus-within .add-check::before, .add.open .add-check::before { content: ""; }
+.add-body { min-width: 0; display: grid; gap: 4px; }
+#newTitle { width: 100%; border: 0; background: transparent; padding: 6px 0; font: 550 15.5px var(--f-body); color: var(--fg); min-width: 0; }
+#newTitle:focus, #newNotes:focus { outline: none; }
+#newTitle::placeholder, #newNotes::placeholder { color: var(--faint); }
+#newNotes { width: 100%; min-height: 1.5em; resize: none; border: 0; background: transparent; padding: 0; font: 14px/1.5 var(--f-body); color: var(--muted); field-sizing: content; }
+.new-task-options { display: grid; gap: 6px; }
+.new-task-options .card-bar { margin-top: 2px; }
+.new-task-options .btn kbd { margin-left: 4px; border-color: color-mix(in oklab, var(--bg) 40%, transparent); color: inherit; opacity: .7; }
+.new-parsed { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.new-parsed mark { padding: 0 5px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.new-parsed button { border: 0; background: none; padding: 0; color: var(--faint); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.card-btn.auto { border-color: color-mix(in oklab, var(--accent) 50%, transparent); background: var(--accent-soft); color: var(--fg); }
+.card-est.auto output { color: var(--accent); font-weight: 650; }
 .add-sec { margin-left: auto; height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: 600 12.5px var(--f-body); letter-spacing: 0; }
 @media (hover: hover) { .add-sec:hover { background: var(--surface-2); color: var(--fg); } }
-.tasks .group.section { padding: 18px 8px 6px; gap: 10px; align-items: center; flex-wrap: nowrap; border-bottom: 1px solid color-mix(in oklab, var(--accent) 30%, var(--line)); text-transform: none; letter-spacing: 0; }
-.sec-title { flex: 1; min-width: 0; border: 0; background: transparent; padding: 2px 0; font: 650 14.5px var(--f-body); color: var(--accent); text-overflow: ellipsis; }
-.sec-title:focus { outline: none; box-shadow: 0 2px 0 var(--accent); }
-.tasks .group.section span { font: 12px var(--f-body); color: var(--faint); white-space: nowrap; }
-.tasks .group.section .sec-time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.tasks .group.section { padding: 22px 8px 7px; gap: 10px; align-items: baseline; flex-wrap: nowrap; border-bottom: 1px solid var(--line); text-transform: none; letter-spacing: 0; }
+.sec-title { flex: 1; min-width: 0; border: 0; border-radius: 6px; background: transparent; padding: 2px 4px; margin-left: -4px; font: 650 15px var(--f-body); color: var(--fg); text-overflow: ellipsis; }
+@media (hover: hover) { .sec-title:hover { background: var(--surface-2); } }
+.sec-title:focus { outline: none; background: var(--surface-2); }
+.tasks .group.section span { font: 12px var(--f-body); color: var(--faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tasks .group.section span:empty { display: none; }
 .sec-del { width: 28px; height: 28px; flex: none; }
 .sec-del svg { width: 14px; height: 14px; }
 @media (hover: hover) { .sec-del { opacity: 0; } .group.section:hover .sec-del, .sec-del:focus-visible { opacity: 1; } }
@@ -628,8 +631,6 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   .working { padding-top: 10px; }
   .working > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .glow { filter: blur(45px); width: 300px; height: 300px; }
-  .add { grid-template-columns: minmax(0, 1fr); }
-  .add > .btn { width: 100%; }
   .est { padding: 0; gap: 6px; }
   .est-pick { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); width: 100%; gap: 0; }
   .est-pick button { width: 100%; height: 44px; }
@@ -848,15 +849,20 @@ body.zen .working { width: min(100%, 420px); }
         </div>
       </div>
       <form class="add" id="addForm" autocomplete="off">
-        <input type="text" id="newTitle" maxlength="140" placeholder="New task" aria-label="New task title">
-        <div class="new-task-options" id="newTaskOptions" hidden>
-          <button class="label-chip" type="button" id="newLabel" aria-haspopup="listbox" aria-expanded="false"></button>
-          <div class="est">
-            <span>Estimate</span>
-            <div class="est-pick" id="estPick" role="radiogroup" aria-label="Estimated pomodoros"></div>
-            <output id="estOut"></output>
+        <span class="add-check" aria-hidden="true"></span>
+        <div class="add-body">
+          <input type="text" id="newTitle" maxlength="160" placeholder="New task" aria-label="New task title" aria-describedby="newParsed">
+          <div class="new-task-options" id="newTaskOptions" hidden>
+            <div class="new-parsed" id="newParsed" aria-live="polite" hidden></div>
+            <textarea id="newNotes" rows="1" maxlength="4000" placeholder="Notes" aria-label="Notes"></textarea>
+            <div class="card-bar">
+              <button class="card-btn set" type="button" id="newWhen" data-sched aria-haspopup="dialog" title="When? Or type it: tomorrow, fri, next week, 12 oct"></button>
+              <button class="card-btn" type="button" id="newLabel" aria-haspopup="listbox" aria-expanded="false" title="Label, or type #name"></button>
+              <span class="card-est" role="group" aria-label="Estimate"><button type="button" data-nest="-1" aria-label="One cycle less">−</button><output id="estOut"></output><button type="button" data-nest="1" aria-label="One cycle more">+</button></span>
+              <span class="spacer"></span>
+              <button class="btn small solid" type="submit">Add <kbd>↵</kbd></button>
+            </div>
           </div>
-          <button class="btn solid" type="submit">Add</button>
         </div>
       </form>
       <div class="label-filter" id="projectFilter" role="group" aria-label="Filter tasks by label" hidden></div>
@@ -1050,7 +1056,7 @@ body.zen .working { width: min(100%, 420px); }
   // ---------- state ----------
   const S = {
     tasks: new Map(), settings: { ...DEF }, activeId: ls.get("pl.active", null),
-    started: ls.get("pl.started", false), storeMode: "local", newEst: 2,
+    started: ls.get("pl.started", false), storeMode: "local", newEst: 2, newWhen: null, newKeep: [],
     confirmDel: null, showAll: false, logN: 8, confirmSes: null,
     subtaskDrafts: new Map(), openTask: null, taskView: "today", projectFilter: "", statsFilter: "", byRange: "30", labels: [], newLabel: "",
   };
@@ -2329,13 +2335,14 @@ body.zen .working { width: min(100%, 420px); }
     });
     const day = $("#taskList .day-plan");
     if (day) {
-      const span = Math.max(1, plan.end - plan.start), mark = plan.endAt > plan.start && plan.endAt < plan.end ? (plan.endAt - plan.start) / span * 100 : -1;
-      day.querySelector(".day-bar").innerHTML = plan.segs.map((x) => '<i class="' + x.k + '" style="flex-grow:' + Math.max(1, Math.round(x.ms / 1000)) + '"></i>').join("") +
-        (mark >= 0 ? '<b style="left:' + mark.toFixed(2) + '%" title="Workday ends ' + fmtClock(plan.endAt) + '"></b>' : "");
-      day.querySelector(".net").innerHTML = "<strong>" + fmtDur(plan.focus) + "</strong> focus";
-      day.querySelector(".gross").innerHTML = plan.breaks ? "<strong>" + fmtDur(plan.focus + plan.breaks) + "</strong> with breaks" : "";
-      day.querySelector(".eta").innerHTML = "done <strong>~" + fmtClock(plan.end) + "</strong>";
-      day.title = "Focus is pure work time. With breaks adds the short and long breaks from your settings; done is when you'd finish if you start now and don't skip any.";
+      const late = plan.end > plan.endAt && !plan.over;
+      day.querySelector(".net").textContent = fmtDur(plan.focus);
+      day.querySelector(".gross").textContent = fmtDur(plan.focus + plan.breaks);
+      day.querySelector(".brk").textContent = plan.breaks ? "incl. " + fmtDur(plan.breaks) + " breaks" : "no breaks";
+      day.querySelector(".eta").textContent = "~" + fmtClock(plan.end);
+      day.querySelector(".eta-stat").classList.toggle("late", late);
+      if (late) day.querySelector(".eta-sub").textContent = "after " + fmtClock(plan.endAt);
+      day.title = "Focus is pure work time. With breaks adds the short and long breaks from your settings. Done is when you'd finish if you start now and don't skip any.";
     }
   }
   function renderTasks() {
@@ -2401,7 +2408,9 @@ body.zen .working { width: min(100%, 420px); }
       if (S.taskView === "today" && (shown.length || sections().length)) {
         const n = left(shown);
         html = '<li class="group today-head" data-g="today">' + ICON.star + 'Today<button class="add-sec" type="button" data-addsec title="Add a section, like Morning or Admin">+ Section</button>' +
-          (n ? '<div class="day-plan"><div class="day-bar" aria-hidden="true"></div><div class="day-stats"><span class="net"></span><span class="gross"></span><span class="eta"></span></div><div class="day-count">' + plural(shown.length, "task") + " · " + plural(n, "cycle") + " to go</div></div>"
+          (n ? '<div class="day-plan"><div class="stat"><small>Focus</small><strong class="net"></strong><span>' + plural(n, "cycle") + ' to go</span></div>' +
+            '<div class="stat"><small>With breaks</small><strong class="gross"></strong><span class="brk"></span></div>' +
+            '<div class="stat eta-stat"><small>Done</small><strong class="eta"></strong><span class="eta-sub">' + plural(shown.length, "task") + "</span></div></div>"
             : "<span>" + (shown.length ? plural(shown.length, "task") + " · all planned cycles done" : "Nothing planned yet") + "</span>") + "</li>";
       }
       const summary = (list) => (list.length ? plural(list.length, "task") + (left(list) ? " · " + fmtDur(left(list) * dur("focus")) + " focus" : "") : "");
@@ -2427,7 +2436,7 @@ body.zen .working { width: min(100%, 420px); }
         for (const sec of sections()) {
           const mine = shown.filter((t) => t.section === sec.id);
           html += '<li class="group section" data-g="sec:' + esc(sec.id) + '"><input class="sec-title" type="text" maxlength="60" value="' + esc(sec.title) + '" aria-label="Section name" data-sec="' + esc(sec.id) + '">' +
-            '<span class="sec-time"></span><span class="sec-sum">' + (mine.length ? plural(mine.length, "task") : "Drag tasks here") + "</span>" +
+            '<span class="sec-time"></span><span class="sec-sum">' + (mine.length ? "" : "Drag tasks here") + "</span>" +
             '<button class="icon-btn sec-del" type="button" data-secdel="' + esc(sec.id) + '" aria-label="Remove section ' + esc(sec.title) + '" title="Remove section (its tasks stay in Today)">' + ICON.x + "</button></li>";
           mine.forEach((t) => { html += row(t); });
         }
@@ -2644,13 +2653,47 @@ body.zen .working { width: min(100%, 420px); }
       : "<strong>You're looking at example data.</strong> Add your first task or start the timer, and the examples disappear.";
     $("#startOwn").textContent = DEMO ? "Exit demo" : "Start my own ledger";
   }
+  // Reads "Call the accountant friday 2c" as title + When + estimate. Tokens only count at the end, so titles stay intact.
+  function parseNew(raw) {
+    const out = { title: raw.trim(), when: undefined, est: 0, tokens: [] };
+    let t = out.title;
+    const m = t.match(/(?:^|\s)(x(\d{1,2})|(\d{1,2}) ?(?:c|cycles?|pomos?|pomodoros?))$/i);
+    if (m && !S.newKeep.includes(m[1].toLowerCase()) && t.slice(0, m.index).trim()) {
+      out.est = Math.min(24, Math.max(1, +(m[2] || m[3]))); out.tokens.push({ text: m[1], label: plural(out.est, "cycle") });
+      t = t.slice(0, m.index).trimEnd();
+    }
+    const words = t.split(/\s+/);
+    for (let n = Math.min(4, words.length - 1); n >= 1; n--) {
+      const phrase = words.slice(-n).join(" ");
+      if (S.newKeep.includes(phrase.toLowerCase())) continue;
+      const g = parseWhen(phrase, true);
+      if (g == null) continue;
+      out.when = g === "today" || (g !== "later" && g <= todayKey()) ? "today" : g;
+      out.tokens.unshift({ text: phrase, label: out.when === "later" ? "Later" : dayName(out.when === "today" ? todayKey() : out.when) });
+      t = words.slice(0, -n).join(" ");
+      break;
+    }
+    out.title = t.trim();
+    return out;
+  }
+  const newDefaultWhen = () => (S.taskView === "upcoming" ? dayKey(addDays(Date.now(), 1)) : S.taskView);
+  // Looked up rather than closed over: this runs during startup, before the composer's other bindings exist.
+  function newWhenNow(parsed = parseNew($("#newTitle").value)) { return parsed.when || S.newWhen || newDefaultWhen(); }
   function renderEstPick() {
-    let h = "";
-    for (let i = 1; i <= 8; i++) h += '<button type="button" role="radio" aria-checked="' + (i === S.newEst) + '" aria-label="' + plural(i, "pomodoro") + '" data-est="' + i + '" class="' + (i <= S.newEst ? "on" : "") + '"><i></i></button>';
-    $("#estPick").innerHTML = h;
+    const parsed = parseNew($("#newTitle").value), est = parsed.est || S.newEst, when = newWhenNow(parsed);
     let breaks = 0;
-    for (let i = 1; i < S.newEst; i++) breaks += dur(i % S.settings.longEvery ? "short" : "long");
-    $("#estOut").textContent = plural(S.newEst, "cycle") + " · " + fmtDur(S.newEst * dur("focus")) + " focus" + (breaks ? " + " + fmtDur(breaks) + " breaks" : "");
+    for (let i = 1; i < est; i++) breaks += dur(i % S.settings.longEvery ? "short" : "long");
+    const out = $("#estOut");
+    out.textContent = plural(est, "cycle");
+    out.title = fmtDur(est * dur("focus")) + " focus" + (breaks ? " + " + fmtDur(breaks) + " breaks" : "");
+    out.parentElement.classList.toggle("auto", !!parsed.est);
+    out.parentElement.querySelector('[data-nest="-1"]').disabled = est <= 1;
+    const w = $("#newWhen");
+    w.innerHTML = when === "today" ? ICON.star + "Today" : when === "later" ? ICON.cal + "Later" : ICON.cal + esc(dayName(when));
+    w.classList.toggle("auto", !!parsed.when);
+    const hint = $("#newParsed");
+    hint.hidden = !parsed.tokens.length;
+    hint.innerHTML = parsed.tokens.map((x) => "<mark>" + esc(x.text) + "</mark> → " + esc(x.label)).join(" · ") + (parsed.tokens.length ? ' <button type="button" id="newKeep">Keep as text</button>' : "");
   }
   function renderAll() { renderPill(); renderTasks(); renderStats(); renderEstPick(); renderTimer(true); }
 
@@ -2721,7 +2764,34 @@ body.zen .working { width: min(100%, 420px); }
     }
     markStarted(); $("#newTitle").focus();
   });
-  $("#estPick").addEventListener("click", (e) => { const b = e.target.closest("[data-est]"); if (b) { S.newEst = +b.dataset.est; renderEstPick(); } });
+  // Changing a chip by hand takes over from what was typed, so the typed words come out of the title.
+  function dropToken(text) {
+    const v = newTitle.value, i = v.toLowerCase().lastIndexOf(text.toLowerCase());
+    if (i < 0) return;
+    newTitle.value = (v.slice(0, i) + v.slice(i + text.length)).replace(/\s+$/, "") + " ";
+  }
+  $("#addForm").addEventListener("click", (e) => {
+    const step = e.target.closest("[data-nest]");
+    if (step) {
+      const parsed = parseNew(newTitle.value);
+      if (parsed.est) { S.newEst = parsed.est; dropToken(parsed.tokens.at(-1).text); }
+      S.newEst = Math.max(1, Math.min(24, S.newEst + +step.dataset.nest));
+      renderEstPick(); return;
+    }
+    if (e.target.id === "newKeep") {
+      S.newKeep.push(...parseNew(newTitle.value).tokens.map((x) => x.text.toLowerCase()));
+      renderEstPick(); newTitle.focus(); return;
+    }
+    if (e.target.closest("#newWhen")) {
+      const parsed = parseNew(newTitle.value), when = newWhenNow(parsed);
+      openWhen($("#newWhen"), { plan: when !== "today" && when !== "later" ? when : undefined }, (g) => {
+        const p = parseNew(newTitle.value);
+        if (p.when) dropToken(p.tokens[0].text);
+        S.newWhen = g; renderEstPick(); newTitle.focus();
+      });
+    }
+  });
+  $("#newTitle").addEventListener("input", renderEstPick);
   const newTaskForm = $("#addForm"), newTaskOptions = $("#newTaskOptions"), newTitle = $("#newTitle"), newLabel = $("#newLabel");
   const filterLabel = () => (S.projectFilter.startsWith("project:") ? S.projectFilter.slice(8) : "");
   function renderNewLabel() {
@@ -2733,13 +2803,13 @@ body.zen .working { width: min(100%, 420px); }
   function collapseNewTask() {
     if (LP.key === "new" || LP.key === "hash") closeLabelPop();
     if (newTaskForm.contains(document.activeElement)) document.activeElement.blur();
-    newTaskOptions.hidden = true;
-    if (!newTitle.value.trim()) { S.newLabel = filterLabel(); renderNewLabel(); }
+    newTaskOptions.hidden = true; newTaskForm.classList.remove("open");
+    if (!newTitle.value.trim()) { S.newLabel = filterLabel(); renderNewLabel(); S.newWhen = null; S.newKeep = []; $("#newNotes").value = ""; renderEstPick(); }
   }
-  newTaskForm.addEventListener("focusin", () => { newTaskOptions.hidden = false; });
+  newTaskForm.addEventListener("focusin", () => { newTaskOptions.hidden = false; newTaskForm.classList.add("open"); renderEstPick(); });
   // on click, not pointerdown: collapsing shifts the list, and the click would land on a different row
   document.addEventListener("click", (e) => {
-    if (newTaskOptions.hidden || !e.target.isConnected || e.target.closest("#openRoom, #openSettings, #labelPop")) return;
+    if (newTaskOptions.hidden || !e.target.isConnected || e.target.closest("#openRoom, #openSettings, #labelPop, #whenPop")) return;
     if (!newTaskForm.contains(e.target) && !newTitle.value.trim()) collapseNewTask();
   });
   newLabel.addEventListener("click", () => {
@@ -2779,20 +2849,21 @@ body.zen .working { width: min(100%, 420px); }
   newTitle.addEventListener("blur", () => { if (hashOpen() && document.hasFocus()) closeLabelPop(); });
   newTaskForm.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.stopPropagation(); collapseNewTask(); }
+    else if (e.key === "Enter" && e.target.id === "newNotes" && !e.shiftKey) { e.preventDefault(); newTaskForm.requestSubmit(); }
   });
   newTaskForm.addEventListener("submit", (e) => {
     e.preventDefault();
     if (hashOpen()) closeLabelPop();
-    const title = newTitle.value.trim();
+    const parsed = parseNew(newTitle.value), title = parsed.title.slice(0, 140);
     if (!title) { newTitle.focus(); return; }
     markStarted(true);
     const id = "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    const into = S.taskView === "upcoming" ? dayKey(addDays(Date.now(), 1)) : S.taskView;
+    const into = newWhenNow(parsed), notes = $("#newNotes").value.trim();
     const last = Math.max(-1, ...openOf(S.tasks).filter((x) => inGroup(x, into)).map(ord));
-    const t = placed({ id, title, est: S.newEst, done: false, createdAt: Date.now(), doneAt: null, sessions: [], subtasks: [] }, into, last + 1);
+    const t = placed({ id, title, est: parsed.est || S.newEst, done: false, createdAt: Date.now(), doneAt: null, sessions: [], subtasks: [], ...(notes ? { notes } : {}) }, into, last + 1);
     if (S.newLabel) t.project = Labels.use(S.newLabel);
     if (!S.activeId || !S.tasks.get(S.activeId) || S.tasks.get(S.activeId).done) { S.activeId = id; saveTimer(); }
-    newTitle.value = "";
+    newTitle.value = ""; $("#newNotes").value = ""; S.newWhen = null; S.newKeep = [];
     if (!inProject(t)) S.projectFilter = "";
     Store.saveTask(t);
     newTitle.focus();
@@ -3140,23 +3211,24 @@ body.zen .working { width: min(100%, 420px); }
   // Understands what people type into "When": today, tom, fri, next week, in 3 days, 12 oct, 12.10., plus common German words.
   const WEEKDAYS = [["sunday", "sonntag"], ["monday", "montag"], ["tuesday", "dienstag"], ["wednesday", "mittwoch"], ["thursday", "donnerstag"], ["friday", "freitag"], ["saturday", "samstag"]];
   const MONTHS = [["january", "januar", "jänner"], ["february", "februar"], ["march", "märz", "maerz"], ["april"], ["may", "mai"], ["june", "juni"], ["july", "juli"], ["august"], ["september"], ["october", "oktober"], ["november"], ["december", "dezember"]];
-  function parseWhen(raw) {
-    const q = raw.trim().toLowerCase().replace(/\s+/g, " ").replace(/^(on|am|bis|until) /, "");
+  // strict: whole words only, for reading dates out of a task title without misfiring on "Call Tom" or "Release 1.2".
+  function parseWhen(raw, strict) {
+    const q = raw.trim().toLowerCase().replace(/\s+/g, " ").replace(/^(on|am|bis|until|by) /, "");
     if (!q) return null;
     const base = sod(Date.now()), at = (n) => dayKey(addDays(base, n));
-    const word = (list, min) => list.some((w) => q.length >= min && w.startsWith(q));
+    const word = (list, min) => list.some((w) => (strict ? w === q : q.length >= min && w.startsWith(q)));
     if (word(["today", "heute"], 3)) return "today";
-    if (word(["tomorrow", "tmrw"], 3) || q === "tm" || word(["morgen"], 3)) return at(1);
+    if (word(["tomorrow", "tmrw", "morgen"], 3) || (!strict && q === "tm")) return at(1);
     if (word(["übermorgen", "uebermorgen", "day after tomorrow"], 4)) return at(2);
-    if (word(["later", "someday", "anytime", "irgendwann", "später", "spaeter", "no day", "kein tag"], 3)) return "later";
+    if (word(strict ? ["someday", "irgendwann"] : ["later", "someday", "anytime", "irgendwann", "später", "spaeter", "no day", "kein tag"], 3)) return "later";
     if (word(["next week", "nächste woche", "naechste woche"], 6) || q === "nw") return quickDays().week;
     if (word(["weekend", "wochenende"], 4)) { const d = (6 - new Date(base).getDay() + 7) % 7 || 7; return at(d); }
     let m = q.match(/^(?:in )?\+?(\d{1,3}) ?(d|days?|t|tag|tage|tagen|w|wk|weeks?|wochen?)?$/);
     if (m && (m[2] || q.startsWith("in ") || q.startsWith("+"))) return at(+m[1] * (/^w/.test(m[2] || "") ? 7 : 1));
     const wd = q.replace(/^(next|nächsten|naechsten|nächster|kommenden) /, "");
-    const day = WEEKDAYS.findIndex((names) => names.some((w) => wd.length >= 2 && w.startsWith(wd)));
+    const day = WEEKDAYS.findIndex((names) => names.some((w) => (strict ? w === wd || (wd.length === 3 && w.startsWith(wd) && /^[a-z]+$/.test(w)) : wd.length >= 2 && w.startsWith(wd))));
     if (day >= 0) return at(((day - new Date(base).getDay() + 7) % 7) || 7);
-    const month = (s) => MONTHS.findIndex((names) => names.some((w) => s.length >= 3 && w.startsWith(s.replace(/\.$/, ""))));
+    const month = (s) => { const m = s.replace(/\.$/, ""); return MONTHS.findIndex((names) => names.some((w) => (strict ? w === m || (m.length === 3 && w.startsWith(m)) : m.length >= 3 && w.startsWith(m)))); };
     const make = (y, mo, d) => {
       const date = new Date(y ?? new Date(base).getFullYear(), mo, d);
       if (date.getMonth() !== mo || date.getDate() !== d) return undefined;
@@ -3165,7 +3237,7 @@ body.zen .working { width: min(100%, 420px); }
     };
     const year = (y) => (y == null ? null : y.length === 2 ? 2000 + +y : +y);
     if ((m = q.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) return make(+m[1], m[2] - 1, +m[3]);
-    if ((m = q.match(/^(\d{1,2})\.(\d{1,2})\.?(\d{2}|\d{4})?$/))) return make(year(m[3]), m[2] - 1, +m[1]);
+    if ((m = q.match(strict ? /^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})?$/ : /^(\d{1,2})\.(\d{1,2})\.?(\d{2}|\d{4})?$/))) return make(year(m[3]), m[2] - 1, +m[1]);
     if ((m = q.match(/^(\d{1,2})\.? ([a-zäöü]+\.?)(?: (\d{4}))?$/)) && month(m[2]) >= 0) return make(year(m[3]), month(m[2]), +m[1]);
     if ((m = q.match(/^([a-zäöü]+\.?) (\d{1,2})(?:,? (\d{4}))?$/)) && month(m[1]) >= 0) return make(year(m[3]), month(m[1]), +m[2]);
     return undefined;
@@ -3213,7 +3285,8 @@ body.zen .working { width: min(100%, 420px); }
     }
     renderCal();
   }
-  function openWhen(anchor, t) {
+  function openWhen(anchor, t, onPick) {
+    WHEN.onPick = onPick || null;
     const tk = todayKey(), start = t.plan && t.plan > tk ? t.plan : quickDays().tomorrow;
     WHEN.task = t; WHEN.anchor = anchor; WHEN.focus = start; WHEN.idx = 0; WHEN.preview = "";
     const d = new Date(keyTime(start)); WHEN.month = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
@@ -3240,8 +3313,9 @@ body.zen .working { width: min(100%, 420px); }
     if (document.activeElement !== a) a.closest(".task")?.focus({ preventScroll: true });
   }
   function chooseWhen(g) {
-    const t = WHEN.task; closeWhen(true);
-    if (t && g) scheduleTask(t.id, g);
+    const t = WHEN.task, cb = WHEN.onPick; closeWhen(true);
+    if (!g) return;
+    if (cb) cb(g); else if (t) scheduleTask(t.id, g);
   }
   function renderCal() {
     const first = new Date(WHEN.month), y = first.getFullYear(), m = first.getMonth(), tk = todayKey();
