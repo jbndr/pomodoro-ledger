@@ -129,42 +129,6 @@
     </section>
   </main>
 
-  <section class="progress" aria-labelledby="progH">
-    <div class="sec-head">
-      <h2 id="progH">Progress</h2>
-      <span class="sub">Every finished focus block counts as one cycle. Stopped sessions over a minute still count toward focus time.</span>
-    </div>
-    <div class="label-filter" id="statsFilter" role="group" aria-label="Show progress for one label" hidden></div>
-    <div class="tiles" id="tiles"></div>
-    <div class="charts">
-      <figure class="chart-card">
-        <h3>Focus per day</h3>
-        <div class="sub">Last 14 days, in minutes. Dashed line is your daily goal.</div>
-        <div class="chart" id="bars"></div>
-      </figure>
-      <figure class="chart-card">
-        <h3>Focus calendar</h3>
-        <div class="sub" id="heatSub">Last 20 weeks</div>
-        <div class="chart heat" id="heat"></div>
-        <div class="legend" aria-hidden="true"><span>Less</span><i style="background:var(--heat0)"></i><i style="background:var(--heat1)"></i><i style="background:var(--heat2)"></i><i style="background:var(--heat3)"></i><i style="background:var(--heat4)"></i><span>More</span></div>
-      </figure>
-    </div>
-    <div class="ledger" id="byLabel" hidden>
-      <div class="sec-head"><h3>Focus by label</h3><div class="label-filter" id="byRange" role="group" aria-label="Period"></div></div>
-      <div class="sub" id="byLabelSub"></div>
-      <div class="table-wrap"><table id="byLabelTable"></table></div>
-    </div>
-    <div class="ledger" id="sessions">
-      <div class="sec-head"><h3>Session log</h3><span class="sub">Label a session, move it to another task, or delete one that shouldn't count</span></div>
-      <div class="table-wrap"><table id="sesTable"></table></div>
-      <div id="sesFoot"></div>
-    </div>
-    <div class="ledger" id="ledger">
-      <div class="sec-head"><h3>Finished tasks</h3><span class="sub">Planned cycles against what it actually took</span></div>
-      <div class="table-wrap"><table id="doneTable"></table></div>
-      <div id="doneFoot"></div>
-    </div>
-  </section>
 </div>
 
 <nav class="tabbar" aria-label="Sections">

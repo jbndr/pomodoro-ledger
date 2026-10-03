@@ -1,7 +1,7 @@
 <script>
   import { flushSync } from "svelte";
   import { groupAt, jump, place, placements, step } from "../lib/order";
-  import { list } from "./list.svelte";
+  import { list } from "../lib/redraw.svelte";
   import { buildList } from "./model.js";
   import TaskRow from "./TaskRow.svelte";
 
