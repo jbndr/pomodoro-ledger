@@ -1210,14 +1210,25 @@ function renderEstPick() {
   out.textContent = plural(est, "cycle");
   out.title = fmtDur(est * dur("focus")) + " focus" + (breaks ? " + " + fmtDur(breaks) + " breaks" : "");
   out.parentElement.classList.toggle("auto", !!parsed.est);
-  $("#newEst .est-pick").outerHTML = estCircles(est, "data-nset");
+  syncEstCircles($("#newEst .est-pick"), est);
   const w = $("#newWhen");
-  w.innerHTML = when === "today" ? ICON.star + "Today" : when === "later" ? ICON.cal + "Later" : ICON.cal + esc(dayName(when));
+  setHTML(w, when === "today" ? ICON.star + "Today" : when === "later" ? ICON.cal + "Later" : ICON.cal + esc(dayName(when)));
   w.classList.toggle("auto", !!parsed.when);
   const hint = $("#newParsed");
   hint.hidden = !parsed.tokens.length;
-  hint.innerHTML = parsed.tokens.map((x) => "<mark>" + esc(x.text) + "</mark> → " + esc(x.label)).join(" · ") + (parsed.tokens.length ? ' <button type="button" id="newKeep">Keep as text</button>' : "");
+  setHTML(hint, parsed.tokens.map((x) => "<mark>" + esc(x.text) + "</mark> → " + esc(x.label)).join(" · ") + (parsed.tokens.length ? ' <button type="button" id="newKeep">Keep as text</button>' : ""));
 }
+// This runs on every keystroke; redrawing unchanged circles would replay the selected one's pop animation.
+function syncEstCircles(pick, est) {
+  const n = Math.min(16, Math.max(8, est + 1));
+  if (pick.children.length !== n) { pick.outerHTML = estCircles(est, "data-nset"); return; }
+  [...pick.children].forEach((b, i) => {
+    b.classList.toggle("on", i < est);
+    b.setAttribute("aria-checked", String(i + 1 === est));
+  });
+}
+const shownHTML = new WeakMap();
+function setHTML(el, html) { if (shownHTML.get(el) !== html) { shownHTML.set(el, html); el.innerHTML = html; } }
 function renderAll() { renderPill(); renderTasks(); renderStats(); renderEstPick(); renderTimer(true); }
 
 // ---------- toast & tooltip ----------
