@@ -834,7 +834,7 @@ body.zen .working { width: min(100%, 420px); }
         </div>
         <small id="workingNote"></small>
       </div>
-      <div class="keys"><kbd>Space</kbd> start or pause · <kbd>S</kbd> skip · <kbd>F</kbd> fill page · <kbd>⇧F</kbd> full screen<br><kbd>T</kbd> <kbd>M</kbd> <kbd>W</kbd> <kbd>L</kbd> move a task · <kbd>D</kbd> when…</div>
+      <div class="keys"><kbd>Space</kbd> start or pause · <kbd>S</kbd> skip · <kbd>F</kbd> fill page · <kbd>⇧F</kbd> full screen<br><kbd>↑</kbd><kbd>↓</kbd> pick a task · <kbd>↵</kbd> open · <kbd>T</kbd> <kbd>M</kbd> <kbd>W</kbd> <kbd>L</kbd> move · <kbd>D</kbd> when…</div>
     </section>
 
     <section class="panel" aria-labelledby="tasksH">
@@ -2942,6 +2942,12 @@ body.zen .working { width: min(100%, 420px); }
       else { S.confirmDel = id; renderTasks(); clearTimeout(delTimer); delTimer = setTimeout(() => { S.confirmDel = null; renderTasks(); }, 3000); }
     }
   });
+  function focusRow(li) {
+    if (!li) return;
+    if (phone() && document.body.dataset.page !== "tasks") showPage("tasks");
+    li.focus({ preventScroll: true });
+    li.scrollIntoView({ block: "nearest" });
+  }
   function toggleCard(id, focusTitle) {
     S.openTask = S.openTask === id ? null : id;
     S.confirmDel = null;
@@ -3066,10 +3072,10 @@ body.zen .working { width: min(100%, 420px); }
     }
     if (e.target !== li) return;
     if (e.key === "Enter") { e.preventDefault(); toggleCard(li.dataset.id, true); }
-    else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
+    else if (["ArrowDown", "ArrowUp", "j", "k"].includes(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault(); e.stopPropagation();
       const rows = [...$("#taskList").querySelectorAll(".task")], i = rows.indexOf(li);
-      rows[i + (e.key === "ArrowDown" ? 1 : -1)]?.focus();
+      focusRow(rows[i + (e.key === "ArrowDown" || e.key === "j" ? 1 : -1)]);
     }
   });
   $("#statsFilter").addEventListener("click", (e) => {
@@ -3214,7 +3220,10 @@ body.zen .working { width: min(100%, 420px); }
     whenInput.value = "";
     whenPop.hidden = false;
     renderWhen();
-    const r = anchor.getBoundingClientRect(), w = whenPop.offsetWidth, h = whenPop.offsetHeight;
+    // Hover-only buttons have no box while hidden; fall back to their row.
+    let r = anchor.getBoundingClientRect();
+    if (!r.width && !r.height) r = (anchor.closest(".task") || $("#taskList")).getBoundingClientRect();
+    const w = whenPop.offsetWidth, h = whenPop.offsetHeight;
     const above = r.bottom + 6 + h > innerHeight - 8 && r.top - 6 - h > 8;
     whenPop.style.left = Math.max(12, Math.min(r.right - w, innerWidth - w - 12)) + "px";
     whenPop.style.top = Math.max(8, above ? r.top - 6 - h : Math.min(r.bottom + 6, innerHeight - h - 8)) + "px";
@@ -3225,7 +3234,10 @@ body.zen .working { width: min(100%, 420px); }
   function closeWhen(refocus) {
     if (whenPop.hidden) return;
     whenPop.hidden = true;
-    if (refocus && WHEN.anchor && WHEN.anchor.isConnected) WHEN.anchor.focus({ preventScroll: true });
+    const a = WHEN.anchor;
+    if (!refocus || !a || !a.isConnected) return;
+    a.focus({ preventScroll: true });
+    if (document.activeElement !== a) a.closest(".task")?.focus({ preventScroll: true });
   }
   function chooseWhen(g) {
     const t = WHEN.task; closeWhen(true);
@@ -3352,6 +3364,13 @@ body.zen .working { width: min(100%, 420px); }
     else if (e.key === "-" && !e.metaKey && !e.ctrlKey) adjust(-1);
     else if (e.key === "Escape" && document.body.classList.contains("zen")) toggleZen(false);
     else if (/^[tmwld]$/i.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && !document.body.classList.contains("zen")) { e.preventDefault(); scheduleShortcut(e.key.toLowerCase()); }
+    else if (["ArrowDown", "ArrowUp", "j", "k"].includes(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey && !document.body.classList.contains("zen") && !$("#taskList").contains(document.activeElement)) {
+      const rows = [...$("#taskList").querySelectorAll(".task")];
+      if (!rows.length) return;
+      e.preventDefault();
+      const start = rows.find((li) => li.dataset.id === (hoverTask || S.activeId));
+      focusRow(start || (e.key === "ArrowUp" || e.key === "k" ? rows.at(-1) : rows[0]));
+    }
   });
 
   // settings
