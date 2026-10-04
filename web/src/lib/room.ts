@@ -34,3 +34,41 @@ export function askOf(prop: Proposal | null, members: Member[], you: string | nu
   const kind = prop.by === you ? "mine" : prop.yes.includes(you as string) ? "accepted" : "asked";
   return { kind, by, count };
 }
+
+export const REACTIONS = ["👋", "🎉", "🔥", "👍", "☕"];
+/** Gentler than the room's own limit, so a normal user never hits it. */
+export const REACT_BURST = 3;
+export const REACT_EVERY_MS = 6000;
+export const REACT_LIFE_MS = 4000;
+export const REACT_MAX = 3;
+
+export type Bucket = { n: number; at: number };
+export type Bubble = { key: number; e: string; names: string[]; n: number; at: number };
+
+const tokens = (b: Bucket | null, now: number) => (b ? Math.min(REACT_BURST, b.n + (now - b.at) / REACT_EVERY_MS) : REACT_BURST);
+
+/** The bucket after sending one reaction, or null when it's empty. */
+export function takeToken(b: Bucket | null, now: number): Bucket | null {
+  const n = tokens(b, now);
+  return n >= 1 ? { n: n - 1, at: now } : null;
+}
+
+/** How long until the next reaction can go out. */
+export const tokenIn = (b: Bucket | null, now: number) => Math.ceil(Math.max(0, 1 - tokens(b, now)) * REACT_EVERY_MS);
+
+let bubbleSeq = 0;
+
+export const liveBubbles =(list: Bubble[], now: number) => list.filter((b) => now - b.at < REACT_LIFE_MS);
+
+/** Adds a reaction; one matching a bubble still showing joins it instead of stacking up. */
+export function addBubble(list: Bubble[], e: string, name: string, now: number): Bubble[] {
+  const live = liveBubbles(list, now), same = live.find((b) => b.e === e);
+  if (same) return live.map((b) => (b === same ? { ...b, names: b.names.includes(name) ? b.names : [...b.names, name], n: b.n + 1, at: now } : b));
+  return [...live, { key: ++bubbleSeq, e, names: [name], n: 1, at: now }].slice(-REACT_MAX);
+}
+
+export function bubbleNames(names: string[]) {
+  if (names.length <= 2) return names.join(" and ");
+  const rest = names.length - 2;
+  return names.slice(0, 2).join(", ") + " and " + rest + (rest === 1 ? " other" : " others");
+}

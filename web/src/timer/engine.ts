@@ -5,7 +5,7 @@ import { fmtDur } from "../format";
 import { MIN } from "../lib/dates";
 import { MODES, type Mode } from "../lib/timer";
 import { renderAll, renderTimer } from "../render";
-import { followRoom, roomFollows, roomTick, RM } from "../room/net";
+import { followRoom, roomFollows, roomRoundEnded, roomTick, RM } from "../room/net";
 import { cancelEnd, ensureAudio, playSound, releaseBell, scheduleEnd, syncTicking } from "../sound";
 import { clone, DEF, ls, replaceTimer, S, T } from "../state";
 import { Store } from "../store";
@@ -125,6 +125,7 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
   const msg = wasFocus ? ("Cycle done" + (t ? " on “" + t.title + "”" : "") + ". " + (next === "long" ? "Take a long break." : "Take a short break.")) : "Break's over. Ready for the next cycle.";
   toast(msg);
   if (!stale) notify(msg);
+  if (wasFocus && !stale) roomRoundEnded();
 }
 
 export const toggle = () => (T.status === "running" ? pause() : start());

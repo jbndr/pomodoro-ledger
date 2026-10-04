@@ -3,11 +3,11 @@ import { toast } from "../chrome/notice.svelte";
 import { setOverlay } from "../layout";
 import { room, roomClock } from "../lib/redraw.svelte";
 import { endedInStep, hhmm, inStep, phaseAt, type Listed, type Rhythm } from "../lib/rhythm";
-import type { Member, Mode, Proposal } from "../lib/room";
+import { addBubble, liveBubbles, othersOf, REACT_LIFE_MS, REACTIONS, takeToken, tokenIn, type Bubble, type Bucket, type Member, type Mode, type Proposal } from "../lib/room";
 import type { Status } from "../lib/timer";
 import { renderTimer } from "../render";
 import { cancelEnd, playSound } from "../sound";
-import { ls, ss, T } from "../state";
+import { ls, S, ss, T } from "../state";
 import { flushPartial, notify, remNow, saveTimer, setMode, start, totalNow, wakeOff } from "../timer/engine";
 
 type Shared = { mode: Mode; status: Status; remaining: number; total: number };
@@ -15,15 +15,17 @@ export type PublicRoom = { title: string; rhythm: Rhythm; house: boolean; max: n
 type RoomMsg =
   | { t: "note"; msg: string }
   | { t: "sync"; s: Shared; by: string; name: string }
+  | { t: "react"; by: string; name: string; e: string }
   | { t: "room"; now: number; you: string; owner?: boolean; members: (Omit<Member, "owner"> & { owner?: boolean })[]; prop: Proposal | null; pub?: PublicRoom | null };
 
 export const RM = {
   owner: false, ws: null as WebSocket | null, code: ss.get("pl.room"), id: ss.get("pl.rid"), name: ls.get("pl.name", ""),
   you: null as string | null, members: [] as Member[], prop: null as Proposal | null, live: false, tries: 0,
   pub: readPub(), fresh: false,
+  bubbles: [] as Bubble[], bucket: null as Bucket | null, cheerUntil: 0,
   /** How far this device's clock is ahead of the server's. */
   skew: 0,
-  timer: undefined as ReturnType<typeof setTimeout> | undefined, ping: undefined as ReturnType<typeof setInterval> | undefined, sent: "",
+  timer: undefined as ReturnType<typeof setTimeout> | undefined, fade: undefined as ReturnType<typeof setTimeout> | undefined, ping: undefined as ReturnType<typeof setInterval> | undefined, sent: "",
 };
 function readPub(): PublicRoom | null { try { return JSON.parse(ss.get("pl.roomPub") || "null"); } catch { return null; } }
 
@@ -43,6 +45,7 @@ export function roomReset() {
   clearTimeout(RM.timer); clearInterval(RM.ping);
   const ws = RM.ws;
   RM.owner = false; RM.ws = null; RM.code = null; RM.live = false; RM.members = []; RM.prop = null; RM.tries = 0; RM.pub = null; RM.fresh = false;
+  RM.bubbles = []; RM.cheerUntil = 0; clearTimeout(RM.fade);
   ss.set("pl.room", null); ss.set("pl.roomPub", null);
   if (ws) try { ws.close(1000); } catch {}
   renderRoom();
@@ -74,6 +77,7 @@ export function roomConnect() {
 function roomMsg(m: RoomMsg) {
   if (m.t === "note") toast(m.msg);
   else if (m.t === "sync") applySync(m);
+  else if (m.t === "react") { if (reactionsOn() && REACTIONS.includes(m.e)) bubble(m.e, m.name); }
   else if (m.t === "room") {
     const skew = Date.now() - m.now, had = RM.prop;
     RM.skew = skew;
@@ -142,6 +146,48 @@ export async function roomList(): Promise<{ now: number; rooms: Listed[] }> {
   const res = await fetch("/api/rooms", { cache: "no-store" });
   if (!res.ok) throw new Error("rooms " + res.status);
   return res.json();
+}
+
+export const reactionsOn = () => S.settings.reactions !== false;
+
+function bubble(e: string, name: string) {
+  RM.bubbles = addBubble(RM.bubbles, e, name, Date.now());
+  fadeBubbles();
+}
+
+function fadeBubbles() {
+  clearTimeout(RM.fade);
+  renderRoom();
+  if (!RM.bubbles.length) return;
+  const next = Math.min(...RM.bubbles.map((b) => b.at + REACT_LIFE_MS)) - Date.now();
+  RM.fade = setTimeout(() => { RM.bubbles = liveBubbles(RM.bubbles, Date.now()); fadeBubbles(); }, Math.max(0, next) + 20);
+}
+
+/** Sends a reaction unless this device is sending them too quickly; returns whether it went out. */
+export function roomReact(e: string) {
+  const b = takeToken(RM.bucket, Date.now());
+  if (!RM.live || !reactionsOn() || !REACTIONS.includes(e) || !b) return false;
+  RM.bucket = b; RM.cheerUntil = 0;
+  roomSend({ t: "react", e });
+  bubble(e, "You");
+  return true;
+}
+
+export const reactWait = () => tokenIn(RM.bucket, Date.now());
+
+export function reactionsChanged() {
+  if (!reactionsOn()) { RM.bubbles = []; RM.cheerUntil = 0; }
+  fadeBubbles();
+}
+
+const CHEER_MS = 12000;
+
+/** Offers a one-tap 🎉 for a moment after a focus round ends with others in the room. */
+export function roomRoundEnded() {
+  if (!RM.live || !reactionsOn() || !othersOf(RM.members, RM.you).length) return;
+  RM.cheerUntil = Date.now() + CHEER_MS;
+  renderRoom();
+  setTimeout(() => { if (RM.cheerUntil && Date.now() >= RM.cheerUntil) { RM.cheerUntil = 0; renderRoom(); } }, CHEER_MS + 20);
 }
 
 // Synchronous like the markup it replaced: a focused field in the dialog has to hide and disable in one go, or Chrome moves focus elsewhere.

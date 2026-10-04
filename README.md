@@ -15,6 +15,7 @@ Worker in `src/` powers shared rooms and account sync.
 - Optional sign-in to sync tasks, history, settings, and the running timer between devices
 - Temporary shared rooms that sync timer status while keeping tasks and history private
 - Public rooms to drop into, where everyone's timer follows the room's clock
+- Quick reactions in rooms (👋 🎉 🔥 👍 ☕), with a one-tap 🎉 after each round
 
 ## Project layout
 
@@ -144,6 +145,14 @@ Joining jumps your timer to the room's current round, and each phase that ends
 with the room clock starts the next one in step. Pausing or skipping takes you
 off the clock until you rejoin. Nobody owns a public room, so there's no
 removing people and nothing to vote on.
+
+Anyone in a room can send a reaction from a fixed set of five emoji. Others see
+it for a few seconds next to the room strip, with the sender's name, and
+matching reactions fold into one bubble. Reactions carry only the member's room
+id, name and emoji. The Room Durable Object drops anything else and limits each
+person to 5 in a burst, then one every 4 seconds. **Settings → Sound & alerts →
+Reactions** turns them off, which ignores incoming reactions and hides the
+button.
 
 **Work together → Public rooms** lists them. A house room for each rhythm is
 always listed, and a full one spills over into "Pomodoro 2". Anyone can also open

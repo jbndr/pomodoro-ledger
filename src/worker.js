@@ -15,6 +15,9 @@ const EMPTY_MS = 10 * 60000;
 const HEARTBEAT_MS = 5 * 60000;
 const LISTED_MS = 12 * 60000;
 const RHYTHMS = ["25/5", "50/10"];
+const REACTIONS = ["👋", "🎉", "🔥", "👍", "☕"];
+const REACT_BURST = 5;
+const REACT_EVERY_MS = 4000;
 const HOUSE = [{ key: "P", rhythm: "25/5", title: "Pomodoro" }, { key: "D", rhythm: "50/10", title: "Deep work" }];
 
 const json = (body, status = 200) =>
@@ -23,6 +26,8 @@ const pick = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((x) => AL
 const room = (env, code) => env.ROOM.get(env.ROOM.idFromName(code));
 const ms = (v) => Math.max(0, Math.min(MAX_RUN_MS, Math.round(Number(v) || 0)));
 const clean = (v, n) => String(v || "").replace(/[\x00-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
+// A token bucket per member: a short burst, then one reaction every few seconds.
+const tokens = (b, now) => (b ? Math.min(REACT_BURST, b.n + (now - b.at) / REACT_EVERY_MS) : REACT_BURST);
 const lobby = (env) => env.LOBBY.get(env.LOBBY.idFromName("lobby"));
 // House rooms are always listed. Their codes contain an O, which random codes never do.
 const houseCode = (h, i) => "OPEN" + h.key + ALPHABET[i];
@@ -157,21 +162,38 @@ export class Room extends DurableObject {
       const id = String(m.id || "").slice(0, 40), name = clean(m.name, 20);
       if (!id || !name) return ws.close(4000, "Bad hello");
       const others = [];
+      let rb = null;
       for (const x of this.members(ws)) {
         if (x.a.id !== id) { others.push(x); continue; }
+        rb = x.a.rb || null;
         x.ws.serializeAttachment(null);
         x.ws.close(4001, "Replaced");
       }
       const ownerToken = await store.get("ownerToken"), cfg = await store.get("cfg");
       if (others.length >= ((cfg && cfg.max) || MAX_MEMBERS)) return ws.close(4003, "Room is full");
       const owner = !cfg && !!ownerToken && m.ownerToken === ownerToken;
-      ws.serializeAttachment({ id, pub: pick(8), name, s: null, asked: 0, owner });
+      ws.serializeAttachment({ id, pub: pick(8), name, s: null, asked: 0, owner, rb });
       await this.broadcast();
       if (!cfg) return;
       await store.setAlarm(now + HEARTBEAT_MS);
       return this.report();
     }
     if (!me) return;
+
+    if (m.t === "react") {
+      if (!REACTIONS.includes(m.e)) return;
+      const n = tokens(me.rb, now);
+      if (n < 1) {
+        if (me.rb.hushed) return;
+        me.rb.hushed = true;
+        ws.serializeAttachment(me);
+        return this.send(ws, { t: "note", msg: "Easy there. Your reactions are paused for a few seconds." });
+      }
+      me.rb = { n: n - 1, at: now };
+      ws.serializeAttachment(me);
+      for (const x of this.members(ws)) this.send(x.ws, { t: "react", by: me.pub, name: me.name, e: m.e });
+      return;
+    }
 
     // Public rooms follow the room clock: nobody owns them and there's nothing to vote on.
     if (m.t !== "state" && (await store.get("cfg"))) return;

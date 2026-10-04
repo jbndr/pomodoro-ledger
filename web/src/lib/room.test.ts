@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { askOf, clock, mateClock, mateProgress, normCode, othersOf, type Member, type MateTimer } from "./room";
+import {
+  addBubble, askOf, bubbleNames, clock, liveBubbles, mateClock, mateProgress, normCode, othersOf, REACT_BURST, REACT_EVERY_MS, REACT_LIFE_MS, REACT_MAX, REACTIONS, takeToken, tokenIn,
+  type Bubble, type Bucket, type Member, type MateTimer,
+} from "./room";
 
 const now = 1_000_000;
 const running = (left: number, total = 1500000): MateTimer => ({ mode: "focus", status: "running", end: now + left, rem: left, total });
@@ -84,5 +87,67 @@ describe("askOf", () => {
   it("asks the rest, naming whoever made the request", () => {
     expect(askOf({ by: "b", yes: ["b"] }, ms, "me")).toMatchObject({ kind: "asked", by: ms[1] });
     expect(askOf({ by: "gone", yes: [] }, ms, "me")).toMatchObject({ kind: "asked", by: null, count: "0 of 3 accepted" });
+  });
+});
+
+describe("takeToken", () => {
+  it("allows a short burst, then waits for the bucket to refill", () => {
+    let b: Bucket | null = null;
+    for (let i = 0; i < REACT_BURST; i++) b = takeToken(b, now) ?? b;
+    expect(takeToken(b, now)).toBeNull();
+    expect(tokenIn(b, now)).toBe(REACT_EVERY_MS);
+    expect(tokenIn(b, now + REACT_EVERY_MS / 2)).toBe(REACT_EVERY_MS / 2);
+    expect(takeToken(b, now + REACT_EVERY_MS - 1)).toBeNull();
+    expect(takeToken(b, now + REACT_EVERY_MS)).toEqual({ n: 0, at: now + REACT_EVERY_MS });
+  });
+  it("never saves up more than a burst", () => {
+    const b = takeToken({ n: 0, at: now - 3_600_000 }, now);
+    expect(b).toEqual({ n: REACT_BURST - 1, at: now });
+    expect(tokenIn(null, now)).toBe(0);
+  });
+  it("stays within the room's limit of 5 at once and one every 4 seconds", () => {
+    let b: Bucket | null = null, sent = 0;
+    for (let t = 0; t <= 60_000; t += 100) { const next = takeToken(b, now + t); if (next) { b = next; sent++; } }
+    expect(sent).toBeLessThanOrEqual(5 + 60_000 / 4000);
+    expect(REACT_BURST).toBeLessThanOrEqual(5);
+  });
+});
+
+describe("addBubble", () => {
+  it("stacks different reactions, newest last", () => {
+    let list = addBubble([], "👋", "Ana", now);
+    list = addBubble(list, "🔥", "Ben", now + 100);
+    expect(list.map((b) => [b.e, b.names])).toEqual([["👋", ["Ana"]], ["🔥", ["Ben"]]]);
+    expect(list[0].key).not.toBe(list[1].key);
+  });
+  it("folds a matching reaction into the bubble still showing", () => {
+    let list = addBubble([], "🎉", "Ana", now);
+    const key = list[0].key;
+    list = addBubble(list, "🎉", "Ben", now + 1000);
+    list = addBubble(list, "🎉", "Ana", now + 2000);
+    expect(list).toEqual([{ key, e: "🎉", names: ["Ana", "Ben"], n: 3, at: now + 2000 }]);
+  });
+  it("starts fresh once the old bubble is gone", () => {
+    let list = addBubble([], "🎉", "Ana", now);
+    list = addBubble(list, "🎉", "Ben", now + REACT_LIFE_MS);
+    expect(list.map((b) => [b.names, b.n])).toEqual([[["Ben"], 1]]);
+  });
+  it("keeps only the newest few on screen", () => {
+    let list: Bubble[] = [];
+    for (const e of REACTIONS) list = addBubble(list, e, "Ana", now);
+    expect(list.map((b) => b.e)).toEqual(REACTIONS.slice(-REACT_MAX));
+  });
+  it("drops bubbles that have run their time", () => {
+    const list = addBubble(addBubble([], "👋", "Ana", now), "☕", "Ben", now + 3000);
+    expect(liveBubbles(list, now + REACT_LIFE_MS).map((b) => b.e)).toEqual(["☕"]);
+  });
+});
+
+describe("bubbleNames", () => {
+  it("names one or two people, then counts the rest", () => {
+    expect(bubbleNames(["Ana"])).toBe("Ana");
+    expect(bubbleNames(["Ana", "Ben"])).toBe("Ana and Ben");
+    expect(bubbleNames(["Ana", "Ben", "Cy"])).toBe("Ana, Ben and 1 other");
+    expect(bubbleNames(["Ana", "Ben", "Cy", "Di"])).toBe("Ana, Ben and 2 others");
   });
 });

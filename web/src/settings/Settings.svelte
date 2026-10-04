@@ -15,6 +15,7 @@
     const s = api.S.settings, out = { workdayEnd: s.workdayEnd || "", tickVolume: s.tickVolume, tickPace: String(s.tickPace) };
     for (const k of Object.values(NUM)) out[k] = s[k];
     for (const k of Object.values(TOGGLE)) out[k] = !!s[k];
+    out.reactions = s.reactions !== false;
     return out;
   };
   const saved = () => { const t = api.ls.get("pl.setTab"); return TABS.some(([name]) => name === t) ? t : "timer"; };
@@ -73,6 +74,7 @@
     else if (id === "sTickVolume") s.tickVolume = tickVolume(el.value);
     else if (id === "sTickPace") s.tickPace = tickPace(el.value);
     else if (id === "sDayEnd") s.workdayEnd = workdayEnd(el.value);
+    else if (id === "sReactions") { s.reactions = el.checked; api.reactionsChanged(); }
     if (["sTicking", "sTickVolume", "sTickPace"].includes(id)) { api.cancelTickPreview(); fillTicking(); api.syncTicking(); }
     note = "Saved.";
     api.Store.saveSettings();
@@ -160,6 +162,12 @@
           </div>
           <p class="hint">Sounds play once you've clicked somewhere on the page.</p>
         </div>
+        <fieldset class="group">
+          <legend>Rooms</legend>
+          <div class="card">
+            <label class="toggle"><span>Reactions<small>See and send quick reactions like 🎉 in a room</small></span><input type="checkbox" id="sReactions" bind:checked={f.reactions}></label>
+          </div>
+        </fieldset>
       </div>
       <div class="set-panel" role="tabpanel" id="setPanel-sync" aria-labelledby="setTab-sync" aria-hidden={String(tab !== "sync")}>
         <SyncPanel {api} version={syncVersion} />
