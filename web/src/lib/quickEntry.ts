@@ -1,18 +1,20 @@
 import { dayKey } from "./dates";
+import { firstDue, parseRepeat, type Repeat } from "./repeat";
 import { parseWhen, type When } from "./when";
 
-export type TitleToken = { text: string; kind: "when"; when: When } | { text: string; kind: "est"; est: number };
+export type TitleToken = { text: string; kind: "when"; when: When } | { text: string; kind: "est"; est: number } | { text: string; kind: "repeat"; repeat: Repeat };
 
 export interface ParsedTitle {
   title: string;
   when?: When;
+  repeat?: Repeat;
   est: number;
   /** What was recognised, in title order. */
   tokens: TitleToken[];
 }
 
 /**
- * Reads "Call the accountant friday 2c" as title + When + estimate. Tokens only count at the end of the title,
+ * Reads "Call the accountant friday 2c" as title + When + estimate, and "Water plants every mon thu" as a repeat that starts on its first day. Tokens only count at the end of the title,
  * at least one word always stays as the title, and anything listed in `keep` (lower case) is left as text.
  */
 export function parseTitle(raw: string, keep: string[] = [], now = Date.now()): ParsedTitle {
@@ -24,10 +26,22 @@ export function parseTitle(raw: string, keep: string[] = [], now = Date.now()): 
     out.tokens.push({ text: m[1], kind: "est", est: out.est });
     t = t.slice(0, m.index).trimEnd();
   }
-  const words = t.split(/\s+/);
+  const words = t.split(/\s+/), kept = (p: string) => keep.some((k) => k === p.toLowerCase() || k.endsWith(" " + p.toLowerCase()));
+  for (let n = Math.min(7, words.length - 1); n >= 1; n--) {
+    const phrase = words.slice(-n).join(" ");
+    if (kept(phrase)) continue;
+    const r = parseRepeat(phrase, now);
+    if (!r) continue;
+    const first = firstDue(r, dayKey(now));
+    out.repeat = r;
+    out.when = first === dayKey(now) ? "today" : first;
+    out.tokens.unshift({ text: phrase, kind: "repeat", repeat: r });
+    out.title = words.slice(0, -n).join(" ").trim();
+    return out;
+  }
   for (let n = Math.min(4, words.length - 1); n >= 1; n--) {
     const phrase = words.slice(-n).join(" ");
-    if (keep.includes(phrase.toLowerCase())) continue;
+    if (kept(phrase)) continue;
     const g = parseWhen(phrase, true, now);
     if (g == null) continue;
     out.when = g === "today" || (g !== "later" && g <= dayKey(now)) ? "today" : g;

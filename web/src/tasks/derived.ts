@@ -51,7 +51,8 @@ export const shortDay = (k: string) => fmtDate(keyTime(k), { weekday: "short" })
 export function placed(t: Task, g: string, order: number) {
   const sec = g.startsWith("sec:") ? g.slice(4) : "";
   const n: Task = { ...clone(t), order, today: g === "today" || !!sec };
-  if (n.today || g === "later") delete n.plan; else n.plan = g;
+  // Today's tasks keep the day they were planned for, so tomorrow they count as leftovers.
+  if (n.today) n.plan = todayKey(); else if (g === "later") delete n.plan; else n.plan = g;
   if (sec) n.section = sec; else delete n.section;
   return n;
 }

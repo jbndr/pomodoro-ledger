@@ -1,4 +1,5 @@
 import { addDays, dayKey, keyTime, nextMonday, sod, type DayKey } from "./dates";
+import { parseRepeat, repeatText, type Repeat } from "./repeat";
 
 /** Where a task goes: today, a future day, or no day at all. */
 export type When = "today" | "later" | DayKey;
@@ -47,7 +48,8 @@ export function parseWhen(raw: string, strict = false, now = Date.now()): When |
 
 export interface WhenOption {
   g?: When;
-  icon: "today" | "day" | "week" | "later";
+  repeat?: Repeat;
+  icon: "today" | "day" | "week" | "later" | "repeat";
   title: string;
   note?: string;
   /** Its scheduling shortcut. */
@@ -70,7 +72,9 @@ export function inDays(k: DayKey, now = Date.now()): string {
 export function whenOptions(typed: string, now = Date.now()): WhenOption[] {
   const items: WhenOption[] = [], tomorrow = dayKey(addDays(now, 1)), week = nextMonday(now);
   typed = typed.trim();
-  if (typed) {
+  const r = typed ? parseRepeat(typed, now) : undefined;
+  if (r) items.push({ repeat: r, icon: "repeat", title: repeatText(r), note: "repeat", parsed: true });
+  else if (typed) {
     const g = parseWhen(typed, false, now);
     if (g === undefined) items.push({ off: true, icon: "day", title: "No day matches “" + typed + "”" });
     else if (g === "later") items.push({ g, icon: "later", title: "Later", note: "no day", parsed: true });

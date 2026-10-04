@@ -1,3 +1,5 @@
+import { cleanRepeat, repeatShort, repeatText } from "../lib/repeat";
+
 /** The task list as plain rows for the current view: headings and tasks, in display order. */
 export function buildList(a) {
   const S = a.S, tk = a.todayKey();
@@ -42,7 +44,7 @@ export function buildList(a) {
 
 function taskRow(a, t, dated, tk) {
   const S = a.S, c = a.cyclesOf(t), est = t.est || 0, n = Math.max(c, est), project = a.projectOf(t), today = a.isToday(t);
-  const subs = a.subsOf(t), open = S.openTask === t.id;
+  const subs = a.subsOf(t), open = S.openTask === t.id, rule = cleanRepeat(t.repeat);
   return {
     kind: "task", key: "t:" + t.id, id: t.id, title: t.title, today, project, hue: project ? a.labelHue(project) : 0,
     active: t.id === S.activeId, open, completing: a.completing.has(t.id),
@@ -51,6 +53,7 @@ function taskRow(a, t, dated, tk) {
     when: dated && t.plan ? a.shortDay(t.plan) : "",
     subs: subs.length ? { done: subs.filter((s) => s.done).length, n: subs.length } : null,
     notes: !!t.notes,
+    repeat: rule ? { short: repeatShort(rule), title: repeatText(rule) } : null,
     carry: today && t.plan && t.plan < tk ? "from " + a.fmtDate(a.keyTime(t.plan), { weekday: "short" }) : "",
     pips: n > 12 ? { mini: est ? Math.min(100, (c / est) * 100) : 100 } : { dots: [...Array(n)].map((_, i) => (i < c ? (i >= est ? "o" : "f") : "")) },
     cycTitle: c + " of " + a.plural(est, "planned cycle"),

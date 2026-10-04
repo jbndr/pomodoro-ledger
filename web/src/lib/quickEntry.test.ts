@@ -43,6 +43,28 @@ describe("parseTitle", () => {
     expect(parse("Review x3", ["x3"])).toMatchObject({ title: "Review x3", est: 0 });
   });
 
+  it("reads a repeat and plans the first due day", () => {
+    expect(parse("Water plants every mon thu 1c")).toEqual({
+      title: "Water plants",
+      when: "2026-10-05",
+      repeat: { every: "week", days: [1, 4] },
+      est: 1,
+      tokens: [{ text: "every mon thu", kind: "repeat", repeat: { every: "week", days: [1, 4] } }, { text: "1c", kind: "est", est: 1 }],
+    });
+    expect(parse("Plan the day every day")).toMatchObject({ title: "Plan the day", when: "today", repeat: { every: "day" } });
+    expect(parse("Inbox zero every weekday")).toMatchObject({ title: "Inbox zero", when: "2026-10-05" });
+    expect(parse("Pay rent every month")).toMatchObject({ title: "Pay rent", repeat: { every: "month", date: 3 }, when: "today" });
+  });
+
+  it.each(["Read every page", "every day", "Write the daily report"])("leaves %j without a repeat", (raw) => {
+    expect(parse(raw).repeat).toBeUndefined();
+  });
+
+  it("keeps a repeat phrase as text when asked", () => {
+    expect(parse("Stretch every day", ["every day"])).toEqual({ title: "Stretch every day", when: undefined, est: 0, tokens: [] });
+    expect(parse("Gym every mon thu", ["every mon thu"]).tokens).toEqual([]);
+  });
+
   it("caps estimates at 24 cycles", () => {
     expect(parse("Thesis 40c").est).toBe(24);
   });
