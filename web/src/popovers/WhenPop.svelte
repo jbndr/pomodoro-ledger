@@ -2,7 +2,7 @@
   import { flushSync } from "svelte";
   import { calMove, monthGrid, monthOf, stepMonth, weekStartOf } from "../lib/calendar";
   import { addDays, dayKey, keyTime } from "../lib/dates";
-  import { cleanRepeat, ordinal } from "../lib/repeat";
+  import { anchored, cleanRepeat, MAX_N, ordinal } from "../lib/repeat";
   import { whenOptions } from "../lib/when";
   import { whenPop } from "./state.svelte";
 
@@ -84,11 +84,13 @@
 
   function pickItem(o) {
     if (!o || o.off) return;
-    if (o.repeat) { setRule(o.repeat); close(true); } else choose(o.g);
+    if (o.repeat) { const { from, ...r } = o.repeat; setRule(r); close(true); } else choose(o.g);
   }
 
+  const startKey = () => { const tk = api.todayKey(); return task && task.plan && task.plan > tk ? task.plan : tk; };
+
   function setRule(r) {
-    rule = r;
+    rule = r = r && anchored(r, startKey());
     if (onRepeat) onRepeat(r);
     else if (task) { api.setRepeat(task.id, r); task = api.S.tasks.get(task.id) || task; }
     flushSync();
@@ -96,13 +98,19 @@
   }
 
   function setKind(every) {
-    const tk = api.todayKey(), base = new Date(keyTime(task && task.plan && task.plan > tk ? task.plan : tk));
-    setRule(!every ? null : every === "week" ? { every, days: [base.getDay()] } : every === "month" ? { every, date: base.getDate() } : { every });
+    const base = new Date(keyTime(startKey()));
+    const n = rule && every in MAX_N ? Math.min(rule.n || 1, MAX_N[every]) : 1;
+    setRule(!every ? null : cleanRepeat(every === "week" ? { every, days: [base.getDay()], n } : every === "month" ? { every, date: base.getDate(), n } : { every, n }));
   }
 
   function toggleDay(d) {
     const days = rule.days.includes(d) ? rule.days.filter((x) => x !== d) : [...rule.days, d];
-    if (days.length) setRule(cleanRepeat({ every: "week", days }));
+    if (days.length) setRule(cleanRepeat({ ...rule, days }));
+  }
+
+  function stepEvery(by) {
+    const { from, ...r } = rule, n = Math.max(1, Math.min(MAX_N[r.every], (r.n || 1) + by));
+    if (n !== (r.n || 1)) setRule(cleanRepeat({ ...r, n }));
   }
 
   function calFocus(k) {
@@ -196,8 +204,20 @@
   <div class="when-repeat">
     <label for="whenRepeat">{@html ICON.repeat}Repeat</label>
     <select id="whenRepeat" value={rule ? rule.every : ""} onchange={(e) => setKind(e.currentTarget.value)}>
-      <option value="">Never</option><option value="day">Every day</option><option value="weekday">Every weekday</option><option value="week">Every week</option><option value="month">Every month</option>
+      <option value="">Never</option><option value="day">Daily</option><option value="weekday">Every weekday</option><option value="week">Weekly</option><option value="month">Monthly</option>
     </select>
+    {#if rule && rule.every !== "weekday"}
+      {@const n = rule.n || 1}
+      <div class="rep-every">
+        Every
+        <div class="stepper">
+          <button type="button" aria-label="Repeat more often" disabled={n <= 1} onclick={() => stepEvery(-1)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+          <output aria-live="polite">{n}</output>
+          <button type="button" aria-label="Repeat less often" disabled={n >= MAX_N[rule.every]} onclick={() => stepEvery(1)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button>
+        </div>
+        {rule.every + (n > 1 ? "s" : "")}{#if rule.every === "month"}&nbsp;on the {ordinal(rule.date)}{/if}
+      </div>
+    {/if}
     {#if rule && rule.every === "week"}
       <div class="rep-days" role="group" aria-label="Repeat on">
         {#each cal.days.slice(0, 7) as d (d.key)}
@@ -205,8 +225,6 @@
           <button type="button" aria-pressed={String(rule.days.includes(wd))} aria-label={api.fmtDate(d.t, { weekday: "long" })} onclick={() => toggleDay(wd)}>{api.fmtDate(d.t, { weekday: "narrow" })}</button>
         {/each}
       </div>
-    {:else if rule && rule.every === "month"}
-      <span class="rep-note">On the {ordinal(rule.date)}</span>
     {/if}
   </div>
 </div>

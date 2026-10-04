@@ -56,7 +56,30 @@ describe("parseTitle", () => {
     expect(parse("Pay rent every month")).toMatchObject({ title: "Pay rent", repeat: { every: "month", date: 3 }, when: "today" });
   });
 
-  it.each(["Read every page", "every day", "Write the daily report"])("leaves %j without a repeat", (raw) => {
+  it("reads an interval and plans its first due day", () => {
+    expect(parse("Review budget every 2 weeks on mon and thu 2c")).toEqual({
+      title: "Review budget",
+      when: "2026-10-05",
+      repeat: { every: "week", days: [1, 4], n: 2, from: "2026-10-05" },
+      est: 2,
+      tokens: [{ text: "every 2 weeks on mon and thu", kind: "repeat", repeat: { every: "week", days: [1, 4], n: 2, from: "2026-10-05" } }, { text: "2c", kind: "est", est: 2 }],
+    });
+    expect(parse("Gym every 2 weeks on mon, wed and fri")).toMatchObject({ title: "Gym", repeat: { days: [1, 3, 5], n: 2 } });
+    expect(parse("Run every other day x2")).toMatchObject({ title: "Run", when: "today", est: 2, repeat: { every: "day", n: 2, from: "2026-10-03" } });
+    expect(parse("Read 3 chapters every 3 days")).toMatchObject({ title: "Read 3 chapters", est: 0, repeat: { every: "day", n: 3 } });
+    expect(parse("Back up photos every 3 months on the 15th")).toMatchObject({ title: "Back up photos", when: "2026-10-15", repeat: { every: "month", date: 15, n: 3 } });
+    expect(parse("Sprint review biweekly 1c")).toMatchObject({ title: "Sprint review", when: "today", est: 1, repeat: { every: "week", days: [6], n: 2 } });
+    expect(parse("Stretch alle 2 Wochen am Montag")).toMatchObject({ title: "Stretch", when: "2026-10-05", repeat: { every: "week", days: [1], n: 2 } });
+    expect(parse("Pflanzen gießen jeden zweiten Tag")).toMatchObject({ title: "Pflanzen gießen", repeat: { every: "day", n: 2 } });
+  });
+
+  it("leaves numbers that aren't an interval alone", () => {
+    expect(parse("Pay rent every 2")).toMatchObject({ title: "Pay rent every 2", est: 0, tokens: [] });
+    expect(parse("Read 2 books every 2 3c")).toMatchObject({ title: "Read 2 books every 2", est: 3, when: undefined, tokens: [{ text: "3c", kind: "est", est: 3 }] });
+    expect(parse("Call mom in 3 days")).toMatchObject({ title: "Call mom", when: "2026-10-06" });
+  });
+
+  it.each(["Read every page", "Read every other page", "every day", "Write the daily report", "every 2 weeks"])("leaves %j without a repeat", (raw) => {
     expect(parse(raw).repeat).toBeUndefined();
   });
 

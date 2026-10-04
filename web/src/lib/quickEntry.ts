@@ -27,7 +27,7 @@ export function parseTitle(raw: string, keep: string[] = [], now = Date.now()): 
     t = t.slice(0, m.index).trimEnd();
   }
   const words = t.split(/\s+/), kept = (p: string) => keep.some((k) => k === p.toLowerCase() || k.endsWith(" " + p.toLowerCase()));
-  for (let n = Math.min(7, words.length - 1); n >= 1; n--) {
+  for (let n = Math.min(9, words.length - 1); n >= 1; n--) {
     const phrase = words.slice(-n).join(" ");
     if (kept(phrase)) continue;
     const r = parseRepeat(phrase, now);
