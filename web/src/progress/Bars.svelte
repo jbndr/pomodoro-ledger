@@ -37,7 +37,7 @@
       {@const x = ml + i * c.band + (c.band - c.bw) / 2}
       {@const isToday = i === n - 1}
       <rect class="hit" data-tip={tipFor(d)} x={ml + i * c.band} y={mt} width={c.band} height={H - mt - mb} fill="transparent" />
-      <rect class="bar" class:today={isToday} x={x} width={c.bw} rx={r} clip-path="url(#{uid}-plot)" style:--i={i} style:y="{c.y(d.min)}px" style:height="{c.base - c.y(d.min) + r}px" />
+      <rect class="bar" class:today={isToday} x={x} width={c.bw} y={c.y(d.min)} height={c.base - c.y(d.min) + r} rx={r} clip-path="url(#{uid}-plot)" style:--i={i} style:y="{c.y(d.min)}px" style:height="{c.base - c.y(d.min) + r}px" />
       <text x={x + c.bw / 2} y={H - 8} text-anchor="middle" class={isToday ? "val" : null}>{new Date(d.t).getDate()}</text>
       {#if isToday && d.min}<text class="val rise" x={x + c.bw / 2} y={c.base - 6} text-anchor="middle" style:--i={i} style:translate="0 {c.y(d.min) - c.base}px">{api.fmtDur(d.min * MIN)}</text>{/if}
     {/each}

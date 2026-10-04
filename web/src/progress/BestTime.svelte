@@ -44,7 +44,7 @@
         {#each c.hours as h, i (h)}
           {@const bh = (g.hours[h] / c.maxH) * (hh - 4)}
           <rect class="hit" data-tip={hourTip(h)} x={c.x(h) - 1} y={mt} width={c.cw + 2} height={hh} fill="transparent" />
-          <rect class="bar" class:peak={inWin(h)} x={c.x(h)} width={c.cw} rx={r} clip-path="url(#{uid}-plot)" style:--i={i} style:y="{mt + hh - bh}px" style:height="{bh + r}px" />
+          <rect class="bar" class:peak={inWin(h)} x={c.x(h)} width={c.cw} y={mt + hh - bh} height={bh + r} rx={r} clip-path="url(#{uid}-plot)" style:--i={i} style:y="{mt + hh - bh}px" style:height="{bh + r}px" />
         {/each}
         {#each WEEKDAYS as day, d (d)}
           {@const y = mt + hh + gap + d * (ch + cg)}
