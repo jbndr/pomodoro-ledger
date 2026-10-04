@@ -121,7 +121,8 @@
       api.S.dropped = cancel ? null : { id, at: Date.now() };
       if (cancel) api.renderTasks(); else save(order);
       flushSync();
-      rowEl(id)?.querySelector(".grip")?.focus({ preventScroll: true });
+      // Focus left on the dropped row would keep its grip showing as if still held.
+      if (ul.contains(document.activeElement)) document.activeElement.blur();
     };
     if (api.calm() || !li || !slot) { done(); return; }
     const to = slot.getBoundingClientRect();
