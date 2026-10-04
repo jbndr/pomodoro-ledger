@@ -1,9 +1,10 @@
 <script>
-  import { clockIn, dayIn, daysIn, daysText, localZone, offsetAt, placeOf } from "../lib/schedule";
+  import { clockIn, dayIn, dayTag, daysIn, daysText, localZone, offsetAt, placeOf } from "../lib/schedule";
 
   let { s, now, reminded, own, onremind, onremove } = $props();
 
   const day = $derived(dayIn(s.start, now));
+  const tag = $derived(dayTag(s.start, now));
   const time = $derived(clockIn(s.start));
   const days = $derived(daysText(daysIn(s, s.start)));
   const away = $derived(offsetAt(s.start, s.tz) !== offsetAt(s.start, localZone()));
@@ -16,7 +17,7 @@
 </script>
 
 <div class="ucard">
-  <span class="when"><small>{day}</small> {time}</span>
+  <span class="when" aria-label="{day} {time}"><small aria-hidden="true">{tag}</small> <span aria-hidden="true">{time}</span></span>
   <span class="rcard-main">
     <b>{s.title}</b>
     <span class="rcard-meta">{time}–{clockIn(s.end)}<i aria-hidden="true">·</i>{days}<i aria-hidden="true">·</i>{s.rhythm}</span>

@@ -96,6 +96,14 @@ export function dayIn(t: number, now: number, tz = localZone()) {
   return n === 0 ? "Today" : n === 1 ? "Tomorrow" : SHORT[new Date(at).getUTCDay()];
 }
 
+/** Like `dayIn`, but short enough for a small badge: "Today" or the weekday. */
+export const dayTag = (t: number, now: number, tz = localZone()) => {
+  const d = dayIn(t, now, tz);
+  if (d !== "Tomorrow") return d;
+  const w = wall(t, tz);
+  return SHORT[new Date(Date.UTC(w.y, w.m - 1, w.d)).getUTCDay()];
+};
+
 /** The weekdays a schedule's sessions start on, as seen in `tz`. */
 export function daysIn(s: Times, now: number, tz = localZone()) {
   const out = new Set<number>();
