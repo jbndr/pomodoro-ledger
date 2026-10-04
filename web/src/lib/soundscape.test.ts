@@ -2,13 +2,14 @@ import { describe, expect, it } from "vitest";
 import { DUCK, FADE_IN, FADE_OUT, previewRamp, QUICK, scapeOf, scapePlan, scapeRamp, scapeVolume } from "./soundscape";
 
 describe("scapeOf", () => {
-  it("knows the three soundscapes", () => {
-    expect(scapeOf("rain")).toBe("rain");
-    expect(scapeOf("cafe")).toBe("cafe");
-    expect(scapeOf("brown")).toBe("brown");
+  it("knows the four soundscapes", () => {
+    for (const k of ["rain", "ocean", "fire", "brown"]) expect(scapeOf(k)).toBe(k);
+  });
+  it("plays ocean for a stored café", () => {
+    expect(scapeOf("cafe")).toBe("ocean");
   });
   it("reads anything else as off", () => {
-    for (const v of [undefined, null, "", "off", "Rain", "white", 3, {}]) expect(scapeOf(v)).toBeNull();
+    for (const v of [undefined, null, "", "off", "Rain", "Cafe", "white", 3, {}]) expect(scapeOf(v)).toBeNull();
   });
 });
 
@@ -32,7 +33,10 @@ describe("scapePlan", () => {
     expect(scapePlan({ soundscape: "rain", soundscapeVolume: 50 }, focus, now)).toEqual({ kind: "rain", gain: 0.5, fadeAt: endsAt, duckAt: 0 });
   });
   it("uses the default volume when unset", () => {
-    expect(scapePlan({ soundscape: "cafe" }, focus, now)?.gain).toBe(0.4);
+    expect(scapePlan({ soundscape: "fire" }, focus, now)?.gain).toBe(0.4);
+  });
+  it("plays ocean for settings saved with café", () => {
+    expect(scapePlan({ soundscape: "cafe", soundscapeVolume: 30 }, focus, now)).toMatchObject({ kind: "ocean", gain: 0.3 });
   });
   it("stays quiet when off, muted, paused, idle or past the end", () => {
     expect(scapePlan({}, focus, now)).toBeNull();
