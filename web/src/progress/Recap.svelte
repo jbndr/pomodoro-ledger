@@ -3,7 +3,7 @@
   import { addDays, dayKey } from "../lib/dates";
   import { firstWeek, recapDue, weekRecap, weekStart } from "../lib/insights";
   import { labelHue } from "../lib/tasks";
-  import { recapCard, shareImage } from "../year/card";
+  import { recapCard } from "../year/card";
 
   const LABELS = 3, DONE = 3;
   const slots = (list, n) => [...list, ...Array(Math.max(0, n - list.length)).fill(null)].slice(0, n);
@@ -51,16 +51,16 @@
     open(week);
   }
 
-  async function share() {
+  function share() {
     if (!r || sharing) return;
     sharing = true;
-    try {
-      const png = await recapCard(r, title, api);
-      if ((await shareImage(png, "focus-week-" + dayKey(start) + ".png", title + " in focus")) === "saved") api.toast("Saved the image to your downloads.");
-    } catch {
-      api.toast("Couldn't make the image. Try again.");
-    }
-    sharing = false;
+    const rr = r, t = title;
+    api.openShare({
+      kind: "recap", theme: "paper", heading: "Share this week", tall: false,
+      name: "focus-week-" + dayKey(start) + ".png", title: t + " in focus",
+      make: (th) => recapCard(rr, t, api, th),
+      onclose: () => { sharing = false; sheet?.focus({ preventScroll: true }); },
+    });
   }
 
   function toggleAuto(e) {
