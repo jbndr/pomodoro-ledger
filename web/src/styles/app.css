@@ -745,7 +745,11 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .rep-days { flex-basis: 100%; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .rep-days button { height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font: 600 12px var(--f-body); }
 .rep-days button[aria-pressed="true"] { background: var(--leaf); border-color: var(--leaf); color: var(--bg); }
-.rep-note { flex-basis: 100%; padding-left: 27px; font-size: 12px; color: var(--faint); }
+.rep-every { flex-basis: 100%; display: flex; align-items: center; gap: 8px; padding-left: 27px; font-size: 13px; color: var(--muted); }
+.rep-every .stepper { padding: 2px; }
+.rep-every .stepper button { width: 26px; height: 26px; }
+.rep-every .stepper button svg { width: 13px; height: 13px; }
+.rep-every .stepper output { font-size: 13.5px; color: var(--fg); }
 .task-meta .repeat { color: var(--leaf); }
 .card-btn .rep { display: inline-flex; color: var(--leaf); }
 .link { background: none; border: 0; padding: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: 13px; }

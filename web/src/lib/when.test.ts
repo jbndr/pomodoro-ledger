@@ -84,6 +84,8 @@ describe("whenOptions", () => {
   it("offers a typed repeat", () => {
     expect(whenOptions("every mon thu", NOW)[0]).toEqual({ repeat: { every: "week", days: [1, 4] }, icon: "repeat", title: "Every Mon, Thu", note: "repeat", parsed: true });
     expect(opts("daily")).toEqual([[null, "repeat", "", true, false], ...fixed]);
+    expect(whenOptions("every 2 weeks on mon thu", NOW)[0].title).toBe("Every 2 weeks · Mon, Thu");
+    expect(whenOptions("every other day", NOW)[0].title).toBe("Every other day");
   });
   it("says when nothing matches, without offering it", () => {
     expect(opts("zzz")[0]).toEqual([null, "day", "", false, true]);

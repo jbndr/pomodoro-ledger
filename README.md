@@ -10,7 +10,7 @@ Worker in `src/` powers shared rooms and account sync.
 - Optional Today sections, a day plan with focus vs. time with breaks, and estimated start times
 - Quick entry that reads days and estimates from the title, a When popover, and keyboard shortcuts (press `?`)
 - Labels, filters, focus history, charts, and finished-task tracking
-- Recurring tasks (daily, weekdays, chosen weekdays, monthly), and unfinished tasks that roll over to today: always, ask, or never
+- Recurring tasks (daily, weekdays, chosen weekdays, monthly, or every few days, weeks or months), and unfinished tasks that roll over to today: always, ask, or never
 - Your best time of day for focus, and a weekly recap that opens on the first visit of a new week
 - Configurable timers, optional gentle ticking, and a floating Picture-in-Picture timer
 - Installable as an app on phones (PWA) that opens offline, with a full-screen timer page and bottom tabs
