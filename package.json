@@ -6,7 +6,8 @@
     "build": "vite build",
     "deploy": "vite build && wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "test": "tsc --noEmit && vitest run && node --test tests/room.cjs tests/sync.cjs"
+    "test": "tsc --noEmit && vitest run && node --test tests/room.cjs tests/sync.cjs tests/push.cjs",
+    "vapid": "node scripts/vapid.mjs"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.4",

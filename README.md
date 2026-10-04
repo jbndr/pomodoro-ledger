@@ -193,7 +193,43 @@ up to 50, three new ones per address and then one every 20 minutes, and removes 
 schedule after three weeks without anyone in its sessions. Only the creator's
 browser can remove one sooner.
 
-The room and sync checks run as part of `npm test`.
+**Reminders when the app is closed.** Once push is set up (below), **Remind me**
+also subscribes the browser to Web Push when notifications are allowed, so the
+reminder arrives with the app closed, including the installed app on phones
+(iOS 16.4 or newer needs it added to the Home Screen first). Tapping it opens the
+app in that session's room. The open tab's reminder and the push share a
+notification tag, so only one shows. Without push, or if anything about it
+fails, reminders work as before while a tab is open.
+
+The `Lobby` keeps one record per schedule and browser (the client id from
+`pl.cid`): the push endpoint and its two keys, nothing else. Turning **Remind
+me** off deletes it, and so does removing the schedule or the push service
+answering 404 or 410. It accepts up to 40 per schedule and 1,000 in total, ten
+subscribe calls per address and then one a minute, and only `https` endpoints
+of the browser push services (Google, Mozilla, Apple, Microsoft). The Lobby's
+alarm wakes at the next start of every schedule that has subscribers and sends
+each one a small encrypted message (title, start time and room code) with
+VAPID. `src/push.js` does this with WebCrypto alone: an ES256 VAPID token,
+RFC 8291 `aes128gcm` encryption and an RFC 8030 request with `TTL` and
+`Urgency`.
+
+To turn push on, generate a VAPID key pair once and store it as secrets:
+
+```sh
+npm run vapid                               # prints VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY
+npx wrangler secret put VAPID_PUBLIC_KEY    # paste the public key
+npx wrangler secret put VAPID_PRIVATE_KEY   # paste the private key
+npx wrangler secret put VAPID_SUBJECT       # mailto:you@example.com
+```
+
+The public key isn't secret (the app reads it from `/api/push`), but keeping it
+next to its private key means nothing in the repository changes. Never commit
+the private key. Changing the keys later makes existing subscriptions useless:
+browsers subscribe again the next time the app opens. For local development put
+the same three lines in `.dev.vars`, which git ignores. Until all three are set,
+`/api/push` returns no key and the app doesn't offer push.
+
+The room, sync and push checks run as part of `npm test`.
 
 ## Custom domain
 
