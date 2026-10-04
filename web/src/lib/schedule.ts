@@ -13,6 +13,16 @@ export const LONGEST = 8 * 60;
 /** 50/10 rounds start on the hour, so its sessions do too. */
 export const startStep = (rhythm: string) => (rhythm === "50/10" ? 60 : STEP);
 
+/** Minutes after midnight for digits typed into a time, like "9", "14", "930" or "1430", or null. */
+export function typedTime(d: string): number | null {
+  if (!/^\d{1,4}$/.test(d)) return null;
+  if (d.length <= 2 && +d < 24) return +d * 60;
+  const h = d.length <= 2 ? +d[0] : +d.slice(0, -2), m = d.length <= 2 ? +d[1] * 10 : +d.slice(-2);
+  return h < 24 && m < 60 ? h * 60 + m : null;
+}
+
+export const spanText = (m: number) => (m < 60 ? m + " min" : Math.floor(m / 60) + " h" + (m % 60 ? " " + (m % 60) : ""));
+
 const DAY = 86400000;
 const CODE = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

@@ -6,23 +6,25 @@
   import { onMount, tick } from "svelte";
   import { flip } from "svelte/animate";
   import { cubicOut } from "svelte/easing";
-  import { calm } from "../dom";
+  import { calm, hold } from "../dom";
   import { pad } from "../lib/dates";
   import { RHYTHMS, SIZE, sortRooms } from "../lib/rhythm";
-  import { LONGEST, STEP, startStep } from "../lib/schedule";
+  import { LONGEST, spanText, STEP, startStep, typedTime } from "../lib/schedule";
+  import { spinValue } from "../lib/settings";
   import RoomCard from "./RoomCard.svelte";
   import UpcomingCard from "./UpcomingCard.svelte";
 
   let { api, busy, onjoin, oncreate } = $props();
 
   const WEEK = [[1, "M", "Monday"], [2, "T", "Tuesday"], [3, "W", "Wednesday"], [4, "T", "Thursday"], [5, "F", "Friday"], [6, "S", "Saturday"], [0, "S", "Sunday"]];
-  const SLOTS = Array.from({ length: 1440 / STEP + 1 }, (_, i) => i * STEP);
+  const MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg>';
+  const PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>';
   const slot = (m) => pad(Math.floor(m / 60)) + ":" + pad(m % 60);
   const nextHour = Math.min(23, new Date().getHours() + 1) * 60;
 
   let data = $state(last), failed = $state(false), skew = lastSkew, now = $state(Date.now() - lastSkew), due = 0;
   let filter = $state("all"), making = $state(false), title = $state(""), rhythm = $state("25/5"), size = $state(6), titleEl;
-  let repeat = $state(false), days = $state([1, 2, 3, 4, 5]), from = $state(nextHour), to = $state(Math.min(1440, nextHour + 120)), saving = $state(false), err = $state("");
+  let repeat = $state(false), days = $state([1, 2, 3, 4, 5]), from = $state(nextHour), want = $state(120), typed = "", typedAt = 0, saving = $state(false), err = $state("");
   let listEl = $state(), above = $state(false), below = $state(false), marks = $state(0);
 
   const shown = (r) => filter === "all" || r.rhythm === filter;
@@ -34,9 +36,10 @@
   const people = $derived(data ? data.rooms.reduce((n, r) => n + r.names.length, 0) : 0);
   const busyRooms = $derived(data ? data.rooms.filter((r) => r.names.length).length : 0);
   const status = $derived(!data ? "Looking for rooms…" : people ? people + " " + (people === 1 ? "person" : "people") + " working in " + busyRooms + " " + (busyRooms === 1 ? "room" : "rooms") : "Quiet right now. Start a round.");
-  const toSlots = $derived(SLOTS.filter((m) => m > from && m - from <= LONGEST));
-  const fromSlots = $derived(SLOTS.slice(0, -1).filter((m) => m % startStep(rhythm) === 0));
-  $effect(() => { if (from % startStep(rhythm)) setFrom(Math.min(1380, Math.ceil(from / 60) * 60)); });
+  const lastStart = $derived(1440 - startStep(rhythm));
+  const longest = $derived(Math.min(LONGEST, 1440 - from));
+  const len = $derived(Math.min(want, longest));
+  $effect(() => { if (from % startStep(rhythm)) from = Math.min(lastStart, Math.ceil(from / 60) * 60); });
   const reminded = (id) => marks >= 0 && api.sched.reminded(id);
   const owns = (id) => marks >= 0 && api.sched.owns(id);
 
@@ -86,9 +89,28 @@
     titleEl.focus();
   }
 
-  function setFrom(m) {
-    from = m;
-    to = Math.min(1440, Math.max(to, m + STEP), m + LONGEST);
+  const setFrom = (m) => { const v = Math.max(0, Math.min(lastStart, m)); if (v === from) return false; from = v; return true; };
+  const setLen = (m) => { const v = Math.max(STEP, Math.min(longest, m)); if (v === len) return false; want = v; return true; };
+
+  function fromKey(e) {
+    let v = spinValue(e.key, from, startStep(rhythm), 120, 0, lastStart);
+    if (v != null) typed = "";
+    else if (/^\d$/.test(e.key)) {
+      typed = e.timeStamp - typedAt < 1000 && typedTime(typed + e.key) != null ? typed + e.key : e.key;
+      typedAt = e.timeStamp;
+      const t = typedTime(typed);
+      v = Math.min(lastStart, t - (t % startStep(rhythm)));
+    }
+    if (v == null) return;
+    e.preventDefault();
+    setFrom(v);
+  }
+
+  function lenKey(e) {
+    const v = /^[1-8]$/.test(e.key) ? +e.key * 60 : spinValue(e.key, len, STEP, 60, STEP, longest);
+    if (v == null) return;
+    e.preventDefault();
+    setLen(v);
   }
 
   const toggleDay = (d) => (days = days.includes(d) ? days.filter((x) => x !== d) : [...days, d]);
@@ -97,7 +119,7 @@
     if (!days.length) { err = "Pick at least one day."; return; }
     saving = true; err = "";
     try {
-      const s = await api.sched.create({ title: title.trim(), rhythm, max: size, days, from, to });
+      const s = await api.sched.create({ title: title.trim(), rhythm, max: size, days, from, to: from + len });
       making = false; repeat = false; title = "";
       await load();
       await tick();
@@ -166,12 +188,12 @@
           <button type="button" role="radio" aria-checked={String(rhythm === r.id)} onclick={() => (rhythm = r.id)}>{r.id} <small>{r.name}</small></button>
         {/each}
       </div>
-      <div class="size">
+      <div class="step-row">
         <span>Room size<small>{size === 2 ? "Just you and one other" : "You and " + (size - 1) + " others"}</small></span>
         <div class="stepper">
-          <button type="button" aria-label="Fewer people" disabled={size <= SIZE.min} onclick={() => (size = Math.max(SIZE.min, size - 1))}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+          <button type="button" aria-label="Fewer people" disabled={size <= SIZE.min} onclick={() => (size = Math.max(SIZE.min, size - 1))}>{@html MINUS}</button>
           <output aria-live="polite">{size}</output>
-          <button type="button" aria-label="More people" disabled={size >= SIZE.max} onclick={() => (size = Math.min(SIZE.max, size + 1))}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button>
+          <button type="button" aria-label="More people" disabled={size >= SIZE.max} onclick={() => (size = Math.min(SIZE.max, size + 1))}>{@html PLUS}</button>
         </div>
       </div>
       <label class="toggle repeat"><span>Repeat</span><input type="checkbox" bind:checked={repeat}></label>
@@ -179,9 +201,21 @@
         <div class="seg days" role="group" aria-label="Days">
           {#each WEEK as [d, letter, name] (d)}<button type="button" aria-pressed={String(days.includes(d))} aria-label={name} onclick={() => toggleDay(d)}>{letter}</button>{/each}
         </div>
-        <div class="rwin">
-          <span>From</span><select aria-label="From" value={from} onchange={(e) => setFrom(Number(e.currentTarget.value))}>{#each fromSlots as m (m)}<option value={m}>{slot(m)}</option>{/each}</select>
-          <span>to</span><select aria-label="To" bind:value={to}>{#each toSlots as m (m)}<option value={m}>{slot(m)}</option>{/each}</select>
+        <div class="step-row">
+          <span>Starts at<small>{rhythm === "50/10" ? "On the hour, like 50/10 rounds" : "In your own time zone"}</small></span>
+          <div class="stepper spin">
+            <button type="button" tabindex="-1" aria-label="Earlier" disabled={from <= 0} {@attach hold(() => setFrom(from - startStep(rhythm)))}>{@html MINUS}</button>
+            <span role="spinbutton" tabindex="0" aria-label="Starts at" aria-valuemin={0} aria-valuemax={lastStart} aria-valuenow={from} aria-valuetext={slot(from)} onkeydown={fromKey}>{slot(from)}</span>
+            <button type="button" tabindex="-1" aria-label="Later" disabled={from >= lastStart} {@attach hold(() => setFrom(from + startStep(rhythm)))}>{@html PLUS}</button>
+          </div>
+        </div>
+        <div class="step-row">
+          <span>Lasts<small>Until {from + len === 1440 ? "midnight" : slot(from + len)}</small></span>
+          <div class="stepper spin">
+            <button type="button" tabindex="-1" aria-label="Shorter" disabled={len <= STEP} {@attach hold(() => setLen(len - STEP))}>{@html MINUS}</button>
+            <span role="spinbutton" tabindex="0" aria-label="Lasts" aria-valuemin={STEP} aria-valuemax={longest} aria-valuenow={len} aria-valuetext={spanText(len) + ", until " + slot(from + len)} onkeydown={lenKey}>{spanText(len)}</span>
+            <button type="button" tabindex="-1" aria-label="Longer" disabled={len >= longest} {@attach hold(() => setLen(len + STEP))}>{@html PLUS}</button>
+          </div>
         </div>
       {/if}
       <p class="hint" class:err role="status">{err || (repeat ? "Listed under Upcoming, in each person's own time." : "Listed while anyone is in it. Rounds follow the clock, so people can drop in any time.")}</p>

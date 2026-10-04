@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clockIn, dayIn, dayTag, daysIn, daysText, isLive, nextSession, offsetAt, readTimes, scheduleOf, sessionCode, startStep, zoned } from "./schedule";
+import { clockIn, dayIn, dayTag, daysIn, daysText, isLive, nextSession, offsetAt, readTimes, scheduleOf, sessionCode, spanText, startStep, typedTime, zoned } from "./schedule";
 
 const MIN = 60000, HOUR = 60 * MIN;
 const berlin = { tz: "Europe/Berlin", days: [1, 2, 3, 4, 5], from: 9 * 60, to: 12 * 60 };
@@ -102,5 +102,32 @@ describe("startStep", () => {
   it("starts 50/10 sessions on the hour and 25/5 on the half hour", () => {
     expect(startStep("50/10")).toBe(60);
     expect(startStep("25/5")).toBe(30);
+  });
+});
+
+describe("typedTime", () => {
+  it("reads hours, and hours with minutes", () => {
+    expect(typedTime("9")).toBe(540);
+    expect(typedTime("14")).toBe(840);
+    expect(typedTime("930")).toBe(570);
+    expect(typedTime("1430")).toBe(870);
+  });
+  it("reads two digits past 23 as an hour and tens of minutes", () => {
+    expect(typedTime("93")).toBe(570);
+    expect(typedTime("24")).toBe(160);
+  });
+  it("rejects times that don't exist", () => {
+    expect(typedTime("2400")).toBeNull();
+    expect(typedTime("960")).toBeNull();
+    expect(typedTime("")).toBeNull();
+    expect(typedTime("12345")).toBeNull();
+  });
+});
+
+describe("spanText", () => {
+  it("says minutes under an hour, and hours with any extra minutes", () => {
+    expect(spanText(30)).toBe("30 min");
+    expect(spanText(120)).toBe("2 h");
+    expect(spanText(150)).toBe("2 h 30");
   });
 });

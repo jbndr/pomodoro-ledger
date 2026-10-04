@@ -10,6 +10,8 @@
   const NUM = { sFocus: "focus", sShort: "short", sLong: "long", sEvery: "longEvery", sGoal: "goal" };
   const TOGGLE = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat", sRecap: "weeklyRecap" };
   const TABS = [["timer", "Timer"], ["auto", "Automation"], ["alerts", "Sound & alerts"], ["sync", "Data & sync"]];
+  const ROLLOVER = [["always", "Move to Today"], ["ask", "Ask"], ["never", "Don't move"]];
+  const PACE = [["1", "1 s", "Every second"], ["2", "2 s", "Every 2 seconds"], ["4", "4 s", "Every 4 seconds"]];
   // A field being typed into keeps its text when settings arrive from another device.
   const HELD = { ...NUM, sDayEnd: "workdayEnd" };
 
@@ -69,7 +71,7 @@
   }
 
   function changed(e) {
-    const el = e.target, id = el.id, s = api.S.settings;
+    const el = e.target, id = el.type === "radio" ? el.name : el.id, s = api.S.settings;
     if (NUM[id]) {
       const v = wholeIn(el.value, +el.min, +el.max);
       if (v == null) { note = "Use a number from " + el.min + " to " + el.max + "."; return; }
@@ -149,7 +151,11 @@
         </fieldset>
         <fieldset class="group">
           <legend>New day</legend>
-          <label class="field">Unfinished tasks from earlier days<select id="sRollover" bind:value={f.rollover}><option value="always">Always move to Today</option><option value="ask">Ask</option><option value="never">Never move</option></select></label>
+          <div class="field"><span id="sRolloverLabel">Unfinished tasks from earlier days</span>
+            <div class="seg-ctl" id="sRollover" role="radiogroup" aria-labelledby="sRolloverLabel">
+              {#each ROLLOVER as [v, name] (v)}<label><input type="radio" name="sRollover" value={v} bind:group={f.rollover}>{name}</label>{/each}
+            </div>
+          </div>
           <p class="hint">They show in Today either way, marked with their day. Ask offers to move them each morning.</p>
         </fieldset>
         <fieldset class="group" id="autoFloatRow" hidden={!api.floatable}>
@@ -173,7 +179,11 @@
             <div class="toggle"><label for="sTicking">Ticking<small>A soft tap during focus, quiet otherwise</small></label><span class="acts"><button class="btn small" type="button" id="testTicking" onclick={testTicking}>Preview</button><input type="checkbox" id="sTicking" aria-controls="tickingOptions" bind:checked={f.ticking}></span></div>
             <div class="nested fields" id="tickingOptions" hidden={!f.ticking}>
               <label class="field"><span class="field-head">Volume<span id="tickVolumeValue">{f.tickVolume}%</span></span><input type="range" id="sTickVolume" min="0" max="100" step="1" aria-label="Tick volume" bind:value={f.tickVolume}></label>
-              <label class="field">Pace<select id="sTickPace" bind:value={f.tickPace}><option value="1">Every second</option><option value="2">Every 2 seconds</option><option value="4">Every 4 seconds</option></select></label>
+              <div class="field"><span id="sTickPaceLabel">Tick every</span>
+                <div class="seg-ctl" id="sTickPace" role="radiogroup" aria-labelledby="sTickPaceLabel">
+                  {#each PACE as [v, name, full] (v)}<label><input type="radio" name="sTickPace" value={v} aria-label={full} bind:group={f.tickPace}>{name}</label>{/each}
+                </div>
+              </div>
             </div>
           </div>
           <p class="hint">Sounds play once you've clicked somewhere on the page.</p>

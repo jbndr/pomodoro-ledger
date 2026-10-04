@@ -213,7 +213,7 @@
   </div>
   <div class="when-repeat">
     <div class="rep-head">{@html ICON.repeat}<span id="repLabel">Repeat</span>{#if rule}<em>Next {next}</em>{/if}</div>
-    <div class="rep-kinds" role="radiogroup" aria-labelledby="repLabel">
+    <div class="seg-ctl rep-kinds" role="radiogroup" aria-labelledby="repLabel">
       {#each KINDS as [k, name], i (k)}
         {@const on = (rule ? rule.every : "") === k}
         <button type="button" role="radio" aria-checked={String(on)} tabindex={on ? 0 : -1} onclick={() => setKind(k)} onkeydown={(e) => kindKey(e, i)}>{name}</button>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rovingIndex, syncCopy, tickPace, tickVolume, wholeIn, workdayEnd } from "./settings";
+import { rovingIndex, spinValue, syncCopy, tickPace, tickVolume, wholeIn, workdayEnd } from "./settings";
 
 describe("wholeIn", () => {
   it("rounds to a whole number inside the range", () => {
@@ -60,6 +60,23 @@ describe("rovingIndex", () => {
   it("ignores other keys", () => {
     expect(rovingIndex("ArrowDown", 1, 4)).toBe(-1);
     expect(rovingIndex("Tab", 1, 4)).toBe(-1);
+  });
+});
+
+describe("spinValue", () => {
+  it("steps with arrows and jumps with Page Up, Page Down, Home and End", () => {
+    expect(spinValue("ArrowUp", 540, 30, 120, 0, 1410)).toBe(570);
+    expect(spinValue("ArrowLeft", 540, 30, 120, 0, 1410)).toBe(510);
+    expect(spinValue("PageDown", 540, 30, 120, 0, 1410)).toBe(420);
+    expect(spinValue("Home", 540, 30, 120, 0, 1410)).toBe(0);
+    expect(spinValue("End", 540, 30, 120, 0, 1410)).toBe(1410);
+  });
+  it("stays within the range", () => {
+    expect(spinValue("PageUp", 1380, 30, 120, 0, 1410)).toBe(1410);
+    expect(spinValue("ArrowDown", 30, 30, 60, 30, 480)).toBe(30);
+  });
+  it("ignores other keys", () => {
+    expect(spinValue("Enter", 540, 30, 120, 0, 1410)).toBeNull();
   });
 });
 
