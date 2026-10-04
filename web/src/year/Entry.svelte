@@ -1,7 +1,8 @@
 <script>
-  import { badges, focusYears, monthsSoFar, yearStats } from "../lib/year";
+  import { badges, focusYears, yearStats } from "../lib/year";
   import { hoursOf, hoursUnit } from "./card";
   import { yearEnabled } from "./flag";
+  import Medal from "./Medal.svelte";
 
   let { api, tasks } = $props();
 
@@ -11,20 +12,24 @@
     return ys.includes(now) ? now : ys.includes(now - 1) ? now - 1 : null;
   });
   const y = $derived(year ? yearStats(tasks, year) : null);
-  const got = $derived(y ? badges(y, api.S.settings.goal).filter((b) => b.earned).length : 0);
-  const max = $derived(y ? Math.max(1, ...y.months) : 1);
+  const got = $derived(y ? badges(y, api.S.settings.goal).filter((b) => b.earned) : []);
+  const fan = $derived(got.slice(0, 4));
 </script>
 
 {#if y}
-  <button class="yr-entry" type="button" id="openYear" onclick={() => api.openYear(year)}>
-    <span class="yr-entry-mark" aria-hidden="true"><svg viewBox="0 0 28 28"><circle cx="5.6" cy="14" r="4.5" fill="var(--tomato)"/><path d="M13.04 20.96L22.16 7.76" fill="none" stroke="var(--leaf)" stroke-width="6" stroke-linecap="round"/></svg></span>
-    <span class="yr-entry-text">
-      <b>Your {year} in focus</b>
-      <span>{y.partial ? "So far: " : ""}{hoursOf(y.ms)} {hoursUnit(y.ms)} · {got} {got === 1 ? "badge" : "badges"}</span>
+  <button class="yr-hero" type="button" id="openYear" onclick={() => api.openYear(year)}
+    aria-label="Your {year} in focus: {hoursOf(y.ms)} {hoursUnit(y.ms)}, {got.length} {got.length === 1 ? 'badge' : 'badges'}. Play">
+    <span class="yr-hero-glow" aria-hidden="true"></span>
+    <span class="yr-hero-text" aria-hidden="true">
+      <span class="yr-hero-eye">{y.partial ? "Your year so far" : "Your year"}</span>
+      <span class="yr-hero-year">{year}<em>in focus</em></span>
+      <span class="yr-hero-stats"><b>{hoursOf(y.ms)}</b> {hoursUnit(y.ms)}<i></i><b>{y.cycles.toLocaleString()}</b> cycles<i></i><b>{got.length}</b> {got.length === 1 ? "badge" : "badges"}</span>
     </span>
-    <span class="yr-entry-months" aria-hidden="true">
-      {#each y.months as ms, m (m)}<i class:best={m === y.bestMonth} class:fut={m >= monthsSoFar(y)} style:height={Math.max(12, (ms / max) * 100) + "%"}></i>{/each}
-    </span>
-    <svg class="yr-entry-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    {#if fan.length}
+      <span class="yr-hero-fan" aria-hidden="true" style:--n={fan.length}>
+        {#each fan as b, k (b.id)}<span style:--k={k - (fan.length - 1) / 2}><Medal id={b.id} d={k} /></span>{/each}
+      </span>
+    {/if}
+    <span class="yr-hero-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8.5 5.8v12.4a1 1 0 0 0 1.5.86l10-6.2a1 1 0 0 0 0-1.72l-10-6.2a1 1 0 0 0-1.5.86z" fill="currentColor"/></svg></span>
   </button>
 {/if}
