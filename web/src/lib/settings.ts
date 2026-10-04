@@ -15,6 +15,12 @@ export function rovingIndex(key: string, i: number, n: number): number {
   return key === "ArrowRight" ? (i + 1) % n : key === "ArrowLeft" ? (i - 1 + n) % n : key === "Home" ? 0 : key === "End" ? n - 1 : -1;
 }
 
+/** Where a spin button's value moves for a key, kept within min and max, or null for other keys. */
+export function spinValue(key: string, v: number, step: number, big: number, min: number, max: number): number | null {
+  const by: Record<string, number> = { ArrowUp: step, ArrowRight: step, ArrowDown: -step, ArrowLeft: -step, PageUp: big, PageDown: -big, Home: -Infinity, End: Infinity };
+  return key in by ? Math.max(min, Math.min(max, v + by[key])) : null;
+}
+
 export type SyncState = "off" | "signedout" | "connecting" | "live" | "offline";
 
 /** What the Sync tab says, and which buttons it offers. */
