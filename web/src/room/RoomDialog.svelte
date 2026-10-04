@@ -122,8 +122,8 @@
           ? "You've been invited to a shared room. Enter your name and press Join. Your tasks and history stay private."
           : v.on ? "Share the code or the invite link. Everyone in the room sees who is focusing or on a break."
           : tab === "public" ? "Drop into a room and your timer joins its round. People in it see your name and timer, never your tasks."
-          : "Start a temporary room and share its code. Everyone in it sees who is focusing or on a break and how much time is left. Your tasks and history stay private."}</div>
-        <label class="field">Your name<input type="text" id="rName" maxlength="20" autocomplete="nickname" placeholder="Shown to people in the room" disabled={v.on} bind:value={name} bind:this={nameEl}></label>
+          : "Focus alongside friends or teammates in a room of your own. Your tasks and history stay private."}</div>
+        <label class="field">Display name<input type="text" id="rName" name="pl-display" maxlength="20" autocomplete="off" data-bwignore="true" data-1p-ignore="true" data-lpignore="true" data-form-type="other" placeholder="Shown to people in the room" disabled={v.on} bind:value={name} bind:this={nameEl}></label>
       {/if}
       <div class="sub room-note" id="roomNote" role="status" hidden={!note}>{note}</div>
       <div id="roomPanel" role={v.on || joining ? undefined : "tabpanel"} aria-labelledby={v.on || joining ? undefined : "roomTab-" + tab}>
@@ -131,11 +131,35 @@
           {#if shown}<Discover {api} {busy} onjoin={(r) => enter(r.code)} oncreate={(pub) => create(pub)} />{/if}
         {:else}
           <div class="room-form" id="roomOut" hidden={v.on}>
-            <button class="btn solid" type="button" id="rCreate" hidden={joining} disabled={busy} bind:this={createBtn} onclick={() => create()}>Start a room</button>
-            <form class="join" id="rJoin" autocomplete="off" onsubmit={join}>
-              <label class="field"><span id="rCodeLabel">{joining ? "Room code" : "Or join with a code"}</span><input type="text" id="rCode" maxlength="6" autocapitalize="characters" spellcheck="false" placeholder="ABC234" bind:value={code} bind:this={codeEl}></label>
-              <button class="btn" class:solid={joining} type="submit" bind:this={joinBtn}>Join</button>
-            </form>
+            {#if joining}
+              <form class="join" id="rJoin" autocomplete="off" onsubmit={join}>
+                <label class="field"><span id="rCodeLabel">Room code</span><input type="text" id="rCode" name="pl-room" maxlength="6" autocomplete="off" data-bwignore="true" data-1p-ignore="true" data-lpignore="true" data-form-type="other" autocapitalize="characters" spellcheck="false" placeholder="ABC234" bind:value={code} bind:this={codeEl}></label>
+                <button class="btn solid" type="submit" bind:this={joinBtn}>Join</button>
+              </form>
+            {:else}
+              <div class="room-opts">
+                <section class="room-opt" aria-labelledby="rStartH">
+                  <span class="room-opt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+                  <h3 id="rStartH">Start a room</h3>
+                  <p>Get a six-letter code to share. The room closes ten minutes after everyone leaves.</p>
+                  <button class="btn solid" type="button" id="rCreate" disabled={busy} bind:this={createBtn} onclick={() => create()}>Start a room</button>
+                </section>
+                <section class="room-opt" aria-labelledby="rJoinH">
+                  <span class="room-opt-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14 21 3M15 3h6v6"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg></span>
+                  <h3 id="rJoinH">Join with a code</h3>
+                  <p>Got a code from someone? Enter it to join their room.</p>
+                  <form class="join" id="rJoin" autocomplete="off" onsubmit={join}>
+                    <label class="field"><span id="rCodeLabel" class="vh">Room code</span><input type="text" id="rCode" name="pl-room" maxlength="6" autocomplete="off" data-bwignore="true" data-1p-ignore="true" data-lpignore="true" data-form-type="other" autocapitalize="characters" spellcheck="false" placeholder="ABC234" bind:value={code} bind:this={codeEl}></label>
+                    <button class="btn" type="submit" bind:this={joinBtn}>Join</button>
+                  </form>
+                </section>
+              </div>
+              <ol class="room-steps" aria-label="How it works">
+                <li><b>1</b><span><strong>Share the code</strong>Send it or copy the invite link.</span></li>
+                <li><b>2</b><span><strong>Focus together</strong>See who's in a round and how long is left.</span></li>
+                <li><b>3</b><span><strong>Stay private</strong>Only your name and timer are shared.</span></li>
+              </ol>
+            {/if}
           </div>
           <div class="room-form" id="roomIn" hidden={!v.on}>
             <div class="big-code" id="bigCode">{v.code}</div>

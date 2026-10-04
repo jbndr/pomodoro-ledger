@@ -46,6 +46,7 @@ body[data-mode="short"] { --accent: var(--leaf); }
 body[data-mode="long"] { --accent: var(--sky); }
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -150,8 +151,21 @@ a.btn { color: inherit; text-decoration: none; }
 .room-sheet.tabbed:has(.lobby > form) { height: auto; }
 .room-sheet.tabbed #roomPanel, .room-sheet.tabbed .lobby { flex: 1 1 auto; }
 .room-sheet.tabbed .lobby > .rlist { flex: 1 1 auto; align-content: start; }
-.room-sheet.tabbed #roomOut { flex: 1 1 auto; grid-template-rows: auto 1fr; }
-.room-sheet.tabbed #roomOut .join { align-self: end; }
+.room-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.room-opt { display: grid; grid-template-rows: auto auto 1fr auto; gap: 8px; align-content: start; min-width: 0; padding: 20px 18px 18px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface-2); }
+.room-opt-ic { width: 40px; height: 40px; display: grid; place-items: center; margin-bottom: 6px; border-radius: 11px; background: var(--surface); border: 1px solid var(--line); color: var(--accent); }
+.room-opt-ic svg { width: 18px; height: 18px; }
+.room-opt h3 { margin: 0; font: 650 16px var(--f-display); letter-spacing: -.01em; }
+.room-opt p { margin: 0 0 12px; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+.room-opt .btn { width: 100%; height: 40px; }
+.room-opt .join { gap: 8px; }
+.room-opt .field input { background: var(--surface); }
+.room-steps { list-style: none; margin: 4px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.room-steps li { display: grid; gap: 10px; align-content: start; min-width: 0; padding: 16px; border-radius: 16px; border: 1px dashed var(--line-2); }
+.room-steps b { flex: none; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font: 650 12px var(--f-mono); }
+.room-steps span { display: grid; gap: 3px; min-width: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.room-steps strong { font-size: 13px; font-weight: 600; color: var(--fg); }
+@media (max-width: 520px) { .room-opts, .room-steps { grid-template-columns: 1fr; } .room-steps { gap: 8px; } .room-steps li { grid-template-columns: auto minmax(0, 1fr); padding: 12px 14px; } }
 .rlist.below { mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); }
 .rlist.above { mask-image: linear-gradient(to bottom, transparent, #000 28px); }
 .rlist.above.below { mask-image: linear-gradient(to bottom, transparent, #000 28px, #000 calc(100% - 36px), transparent); }
