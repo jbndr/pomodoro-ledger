@@ -270,40 +270,46 @@ function ocean(sr: number, rand: Rand): Render {
   };
 }
 
-/** A fireplace: a breathing low roar, sparse crackles and pops, and now and then a hiss of steam. */
+/** A fireplace: a breathing low roar, a faint sizzle, crackles that snap rather than ring, and now and then a hiss of steam. */
 function fire(sr: number, rand: Rand): Render {
   const roar = [new Pink(), new Pink()];
   const roarTone = [0, 1].map(() => [new Biquad(sr, "hp", 70, 0.7), new Biquad(sr, "lp", 500, 0.7)]);
   const breath = new Drift(rand, 0.65, 1.1, 0.4, 1.8, sr / 64), glow = new Drift(rand, 380, 720, 0.6, 2.5, sr / 64), busy = new Drift(rand, 0.45, 1.6, 6, 20, sr / 64);
-  const clicks = new Modes(sr, 64), snaps = new Grains(rand, 24), snapTone = [new Biquad(sr, "hp", 1500, 0.7), new Biquad(sr, "hp", 1500, 0.7)];
+  const grit = new Grains(rand, 96), gritTone = [0, 1].map(() => [new Biquad(sr, "hp", 650, 0.5), new Biquad(sr, "lp", 8500, 0.5)]);
+  const fizz = new Grains(rand, 32), fizzTone = [new Biquad(sr, "hp", 2600, 0.5), new Biquad(sr, "hp", 2600, 0.5)];
+  const thump = new Modes(sr, 8);
   const steamTone = [new Biquad(sr, "bp", 4500, 1.1), new Biquad(sr, "bp", 4500, 1.1)];
   const room = new Room(sr, 0.6, 0.35, 3000);
-  let blk = 0, g = 1, rate = 2.2, burst = 0, burstWait = 0, steamN = 0, steamLen = 0, steamAmp = 0, steamWait = Math.round(between(rand, 8, 25) * sr);
-  const click = (big: boolean) => {
-    const pan = between(rand, 0.3, 0.7);
-    if (big) {
-      const a = between(rand, 0.09, 0.15);
-      clicks.add(between(rand, 700, 1600), a, between(rand, 0.008, 0.015), pan);
-      clicks.add(between(rand, 70, 140), a * 0.6, between(rand, 0.02, 0.045), pan);
-      snaps.add(a * 0.8, between(rand, 0.6, 1.6) * sr / 1000, pan);
-    } else {
-      const f = 1000 * Math.pow(6, rand()), a = between(rand, 0.1, 0.26) * Math.exp(-rand()) * Math.sqrt(1000 / f);
-      clicks.add(f, a, 0.002 * Math.pow(7.5, rand()), pan);
-      snaps.add(a * 0.7, between(rand, 0.1, 0.5) * sr / 1000, pan);
+  const queue: number[] = [];
+  let blk = 0, now = 0, g = 1, rate = 2.2, steamN = 0, steamLen = 0, steamAmp = 0, steamWait = Math.round(between(rand, 8, 25) * sr);
+  const burst = (n: number, spanMs: number, amp: number, lenMs: [number, number], pan: number) => {
+    for (let k = 0; k < n && queue.length < 240; k++) {
+      const at = now + Math.round(Math.pow(rand(), 1.6) * spanMs * sr / 1000);
+      queue.push(at, amp * between(rand, 0.25, 1) * Math.exp(-2 * k / n), between(rand, lenMs[0], lenMs[1]) * sr / 1000, pan + between(rand, -0.06, 0.06));
     }
   };
+  const crackle = () => {
+    const pan = between(rand, 0.3, 0.7);
+    if (rand() < 0.07) {
+      const a = between(rand, 0.16, 0.26);
+      burst(8 + Math.floor(rand() * 12), between(rand, 20, 50), a, [0.08, 0.6], pan);
+      thump.add(between(rand, 70, 140), a * 0.45, between(rand, 0.02, 0.045), pan);
+    } else burst(2 + Math.floor(rand() * 10), between(rand, 3, 25), between(rand, 0.06, 0.2) * Math.exp(-rand()), [0.03, 0.22], pan);
+  };
   return (L, R) => {
-    for (let i = 0; i < L.length; i++) {
+    for (let i = 0; i < L.length; i++, now++) {
       if ((blk++ & 63) === 0) {
         g = breath.run(); rate = 2.2 * busy.run();
         const f = glow.run();
         roarTone[0][1].set("lp", f, 0.7); roarTone[1][1].set("lp", f * 1.04, 0.7);
       }
-      if (rand() < rate / sr) {
-        if (rand() < 0.07) click(true);
-        else { click(false); if (rand() < 0.22) { burst = 1 + Math.floor(rand() * 4); burstWait = Math.round(between(rand, 0.006, 0.05) * sr); } }
+      if (rand() < rate / sr) crackle();
+      if (rand() < 40 * rate / 2.2 / sr) fizz.add(between(rand, 0.004, 0.02), between(rand, 0.02, 0.08) * sr / 1000, between(rand, 0.25, 0.75));
+      for (let q = 0; q < queue.length; q += 4) {
+        if (queue[q] > now) continue;
+        grit.add(queue[q + 1], queue[q + 2], queue[q + 3]);
+        queue.splice(q, 4); q -= 4;
       }
-      if (burst > 0 && --burstWait <= 0) { click(false); burst--; burstWait = Math.round(between(rand, 0.006, 0.05) * sr); }
       let hl = 0, hr = 0;
       if (steamLen) {
         const e = Math.sin(Math.PI * steamN / steamLen), a = steamAmp * e * e;
@@ -314,14 +320,14 @@ function fire(sr: number, rand: Rand): Render {
         const f = between(rand, 3000, 6000);
         steamTone[0].set("bp", f, 1.1); steamTone[1].set("bp", f * 1.08, 1.1);
       }
-      clicks.run(); snaps.run();
+      grit.run(); fizz.run(); thump.run();
       const mid = (rand() * 2 - 1) * 0.6;
       const rl = roarTone[0][1].run(roarTone[0][0].run(roar[0].run((rand() * 2 - 1) * 0.8 + mid))) * g;
       const rr = roarTone[1][1].run(roarTone[1][0].run(roar[1].run((rand() * 2 - 1) * 0.8 + mid))) * g;
-      const dl = clicks.l + snapTone[0].run(snaps.l), dr = clicks.r + snapTone[1].run(snaps.r);
+      const dl = gritTone[0][1].run(gritTone[0][0].run(grit.l)) + thump.l, dr = gritTone[1][1].run(gritTone[1][0].run(grit.r)) + thump.r;
       room.run(dl, dr);
-      L[i] = soft(0.42 * rl + 5 * (dl + 0.3 * room.l) + hl);
-      R[i] = soft(0.42 * rr + 5 * (dr + 0.3 * room.r) + hr);
+      L[i] = soft(0.42 * rl + 3 * (dl + 0.3 * room.l) + fizzTone[0].run(fizz.l) + hl);
+      R[i] = soft(0.42 * rr + 3 * (dr + 0.3 * room.r) + fizzTone[1].run(fizz.r) + hr);
     }
   };
 }
