@@ -4,6 +4,7 @@ import { setOverlay } from "../layout";
 import { room, roomClock } from "../lib/redraw.svelte";
 import { endedInStep, hhmm, inStep, phaseAt, type Listed, type Rhythm } from "../lib/rhythm";
 import { addBubble, liveBubbles, othersOf, REACT_LIFE_MS, REACTIONS, takeToken, tokenIn, type Bubble, type Bucket, type Member, type Mode, type Proposal } from "../lib/room";
+import type { Upcoming } from "../lib/schedule";
 import type { Status } from "../lib/timer";
 import { renderTimer } from "../render";
 import { cancelEnd, playSound } from "../sound";
@@ -142,7 +143,7 @@ export async function roomCreate(pub?: { title: string; rhythm: Rhythm; max: num
   roomEnter(body.code);
 }
 
-export async function roomList(): Promise<{ now: number; rooms: Listed[] }> {
+export async function roomList(): Promise<{ now: number; rooms: Listed[]; upcoming?: Upcoming[] }> {
   const res = await fetch("/api/rooms", { cache: "no-store" });
   if (!res.ok) throw new Error("rooms " + res.status);
   return res.json();

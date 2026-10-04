@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { handleSync } from "./sync.js";
+import { nextSession, readTimes, scheduleOf, sessionCode, startStep } from "../web/src/lib/schedule.ts";
 
 export { Ledger } from "./sync.js";
 
@@ -18,6 +19,14 @@ const RHYTHMS = ["25/5", "50/10"];
 const REACTIONS = ["👋", "🎉", "🔥", "👍", "☕"];
 const REACT_BURST = 5;
 const REACT_EVERY_MS = 4000;
+const SCHEDULES = 50;
+const SCHED_IDLE_MS = 21 * 24 * 3600000;
+const SCHED_BURST = 3;
+const SCHED_EVERY_MS = 20 * 60000;
+const GOING_BURST = 10;
+const GOING_EVERY_MS = 30000;
+const GOING_MAX = 99;
+const EARLY_MS = 60000;
 const HOUSE = [{ key: "P", rhythm: "25/5", title: "Pomodoro" }, { key: "D", rhythm: "50/10", title: "Deep work" }];
 
 const json = (body, status = 200) =>
@@ -27,7 +36,8 @@ const room = (env, code) => env.ROOM.get(env.ROOM.idFromName(code));
 const ms = (v) => Math.max(0, Math.min(MAX_RUN_MS, Math.round(Number(v) || 0)));
 const clean = (v, n) => String(v || "").replace(/[\x00-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
 // A token bucket per member: a short burst, then one reaction every few seconds.
-const tokens = (b, now) => (b ? Math.min(REACT_BURST, b.n + (now - b.at) / REACT_EVERY_MS) : REACT_BURST);
+const tokens = (b, now, burst = REACT_BURST, every = REACT_EVERY_MS) => (b ? Math.min(burst, b.n + (now - b.at) / every) : burst);
+const size = (v) => { const n = Math.round(Number(v ?? MAX_MEMBERS)); return Number.isFinite(n) ? Math.max(MIN_MEMBERS, Math.min(MAX_MEMBERS, n)) : MAX_MEMBERS; };
 const lobby = (env) => env.LOBBY.get(env.LOBBY.idFromName("lobby"));
 // House rooms are always listed. Their codes contain an O, which random codes never do.
 const houseCode = (h, i) => "OPEN" + h.key + ALPHABET[i];
@@ -48,8 +58,7 @@ export default {
       const body = await request.json().catch(() => null);
       let cfg = null;
       if (body && body.pub) {
-        const max = Math.round(Number(body.max ?? MAX_MEMBERS));
-        cfg = { pub: true, house: false, title: clean(body.title, 32), rhythm: body.rhythm, max: Number.isFinite(max) ? Math.max(MIN_MEMBERS, Math.min(MAX_MEMBERS, max)) : MAX_MEMBERS };
+        cfg = { pub: true, house: false, title: clean(body.title, 32), rhythm: body.rhythm, max: size(body.max) };
         if (!cfg.title || !RHYTHMS.includes(cfg.rhythm)) return json({ error: "bad room" }, 400);
       }
       for (let i = 0; i < 5; i++) {
@@ -59,6 +68,10 @@ export default {
         if (res.ok) return json({ code, ownerToken });
       }
       return json({ error: "busy" }, 503);
+    }
+    if (url.pathname === "/api/schedule" || url.pathname.startsWith("/api/schedule/")) {
+      const headers = { "x-ip": request.headers.get("CF-Connecting-IP") || "local" };
+      return lobby(env).fetch("https://lobby" + url.pathname.slice(4), { method: request.method, headers, body: request.method === "GET" ? undefined : await request.text() });
     }
     const m = url.pathname.match(/^\/api\/room\/([A-Z2-9]{6})\/ws$/);
     if (m) {
@@ -90,11 +103,14 @@ export class Room extends DurableObject {
       await store.setAlarm(Date.now() + EMPTY_MS);
       return new Response(null, { status: 204 });
     }
-    const house = houseRoom(path.split("/")[3] || "");
-    if (house && !(await store.get("open"))) {
-      await store.put("open", Date.now());
-      await store.put("cfg", house);
-      await store.setAlarm(Date.now() + EMPTY_MS);
+    const code = path.split("/")[3] || "";
+    if (!(await store.get("open"))) {
+      const cfg = houseRoom(code) || (scheduleOf(code) && (await this.session(code)));
+      if (cfg) {
+        await store.put("open", Date.now());
+        await store.put("cfg", cfg);
+        await store.setAlarm(Date.now() + EMPTY_MS);
+      }
     }
     const [client, server] = Object.values(new WebSocketPair());
     if (await store.get("open")) this.ctx.acceptWebSocket(server);
@@ -103,6 +119,14 @@ export class Room extends DurableObject {
       server.close(4004, "No such room");
     }
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  // A scheduled session's room opens itself while the session is on.
+  async session(code) {
+    try {
+      const res = await lobby(this.env).fetch("https://lobby/session/" + code);
+      return res.ok ? await res.json() : null;
+    } catch { return null; }
   }
 
   members(except) {
@@ -285,22 +309,36 @@ export class Room extends DurableObject {
   }
 }
 
-// Lists the public rooms people are in, plus an open house room for every rhythm.
+// Lists the public rooms people are in, an open house room for every rhythm, and scheduled sessions.
 export class Lobby extends DurableObject {
   async fetch(request) {
-    const store = this.ctx.storage, now = Date.now();
+    const store = this.ctx.storage, now = Date.now(), path = new URL(request.url).pathname;
+    if (path.startsWith("/session/")) return this.session(path.slice(9), now);
+    if (path === "/schedule" || path.startsWith("/schedule/")) return this.schedule(request, path, now);
     if (request.method === "POST") {
       const r = await request.json();
       if (r.names.length) await store.put("r:" + r.code, { ...r, at: now });
       else await store.delete("r:" + r.code);
+      const id = scheduleOf(r.code), s = id && r.names.length && (await store.get("s:" + id));
+      if (s) await store.put("s:" + id, { ...s, used: now });
       return new Response(null, { status: 204 });
     }
-    const rooms = [], stale = [];
-    for (const [k, r] of await store.list({ prefix: "r:" })) {
+    const rooms = [], upcoming = [], stale = [], reported = await store.list({ prefix: "r:" });
+    for (const [k, r] of reported) {
       if (now - r.at > LISTED_MS) stale.push(k);
-      else rooms.push({ code: r.code, title: r.title, rhythm: r.rhythm, house: r.house, max: r.max || MAX_MEMBERS, names: r.names });
+      else if (!scheduleOf(r.code)) rooms.push({ code: r.code, title: r.title, rhythm: r.rhythm, house: r.house, max: r.max || MAX_MEMBERS, names: r.names });
     }
+    for (const [k, s] of await store.list({ prefix: "s:" })) {
+      const o = nextSession(s, now);
+      if (now - s.used > SCHED_IDLE_MS || !o) { stale.push(k); continue; }
+      const going = s.going && s.going.at === o.start ? s.going.ids.length : 0;
+      if (o.start > now) { upcoming.push({ id: s.id, title: s.title, rhythm: s.rhythm, max: s.max, tz: s.tz, days: s.days, from: s.from, to: s.to, start: o.start, end: o.end, going }); continue; }
+      const code = sessionCode(s.id, o.start), r = reported.get("r:" + code);
+      rooms.push({ code, title: s.title, rhythm: s.rhythm, house: false, max: s.max, names: r && now - r.at <= LISTED_MS ? r.names : [], sched: s.id, ends: o.end });
+    }
+    for (const [k, b] of await store.list({ prefix: "ip:" })) if (now >= b.full) stale.push(k);
     if (stale.length) await store.delete(stale);
+    upcoming.sort((a, b) => a.start - b.start || a.title.localeCompare(b.title));
     for (const h of HOUSE) {
       const shards = rooms.filter((r) => r.house && r.rhythm === h.rhythm);
       if (shards.some((r) => r.names.length < r.max)) continue;
@@ -308,6 +346,56 @@ export class Lobby extends DurableObject {
       while (i < ALPHABET.length && shards.some((r) => r.code === houseCode(h, i))) i++;
       if (i < ALPHABET.length) rooms.push({ ...houseRoom(houseCode(h, i)), names: [] });
     }
-    return json({ now, rooms: rooms.map(({ pub, ...r }) => r) });
+    return json({ now, rooms: rooms.map(({ pub, ...r }) => r), upcoming });
+  }
+
+  // The room config for a session that's on now, so its room can open itself.
+  async session(code, now) {
+    const id = scheduleOf(code), s = id && (await this.ctx.storage.get("s:" + id)), o = s && nextSession(s, now);
+    if (!o || o.start > now + EARLY_MS || sessionCode(id, o.start) !== code) return json({ error: "not on" }, 404);
+    return json({ pub: true, house: false, code, title: s.title, rhythm: s.rhythm, max: s.max, sched: id });
+  }
+
+  // A token bucket per client address, kept until it has refilled.
+  async spend(key, burst, every, now) {
+    const store = this.ctx.storage, n = tokens(await store.get(key), now, burst, every);
+    if (n < 1) return false;
+    await store.put(key, { n: n - 1, at: now, full: now + (burst - n + 1) * every });
+    return true;
+  }
+
+  async schedule(request, path, now) {
+    const store = this.ctx.storage, ip = request.headers.get("x-ip") || "local", body = (await request.json().catch(() => null)) || {};
+    const [, , id, going] = path.split("/");
+    if (!id && request.method === "POST") {
+      const times = readTimes(body), title = clean(body.title, 32);
+      if (!times || !title || !RHYTHMS.includes(body.rhythm) || times.from % startStep(body.rhythm)) return json({ error: "bad schedule" }, 400);
+      if (!(await this.spend("ip:s:" + ip, SCHED_BURST, SCHED_EVERY_MS, now))) return json({ error: "slow down" }, 429);
+      const all = await store.list({ prefix: "s:" });
+      if ([...all.values()].filter((s) => now - s.used <= SCHED_IDLE_MS).length >= SCHEDULES) return json({ error: "full" }, 507);
+      let sid = pick(3);
+      while (all.has("s:" + sid)) sid = pick(3);
+      const s = { id: sid, title, rhythm: body.rhythm, max: size(body.max), ...times, token: crypto.randomUUID(), at: now, used: now, going: null };
+      await store.put("s:" + sid, s);
+      const { token, at, used, going: _, ...pub } = s;
+      return json({ ...pub, token }, 201);
+    }
+    const s = id && (await store.get("s:" + id));
+    if (!s) return json({ error: "not found" }, 404);
+    if (!going && request.method === "DELETE") {
+      if (typeof body.token !== "string" || body.token !== s.token) return json({ error: "forbidden" }, 403);
+      await store.delete("s:" + id);
+      return new Response(null, { status: 204 });
+    }
+    if (going === "going" && request.method === "POST") {
+      const cid = clean(body.cid, 40), o = nextSession(s, now);
+      if (!cid || !o) return json({ error: "bad request" }, 400);
+      if (!(await this.spend("ip:g:" + ip, GOING_BURST, GOING_EVERY_MS, now))) return json({ error: "slow down" }, 429);
+      const ids = (s.going && s.going.at === o.start ? s.going.ids : []).filter((x) => x !== cid);
+      if (body.on === true && ids.length < GOING_MAX) ids.push(cid);
+      await store.put("s:" + id, { ...s, going: { at: o.start, ids } });
+      return json({ going: ids.length, start: o.start });
+    }
+    return json({ error: "not found" }, 404);
   }
 }

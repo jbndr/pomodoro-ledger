@@ -178,6 +178,21 @@ from a single `Lobby` Durable Object that public rooms report to whenever someon
 joins or leaves, and every five minutes while occupied. A room that stops
 reporting drops off after twelve minutes.
 
+**Scheduled sessions.** Turn on **Repeat** when opening a public room to plan it
+for set weekdays and a time window, such as weekdays 9:00–12:00. A schedule is
+stored in the creator's time zone (an IANA name, so DST is handled), and
+**Upcoming** shows each one's next session in the viewer's own time, with the
+creator's time when the zones differ. At start time the session becomes a live
+public room on the room clock. Its code is `L`, the schedule's id and two letters
+for the date, so everyone lands in the same room; the Room asks the Lobby whether
+the session is on before it opens. After the window ends it drops back to
+Upcoming. **Remind me** counts you as coming for the next session and, while the
+tab is open, plays a bell and shows a notification (if allowed) when it starts.
+Reminders are kept in this browser. Schedules live in the `Lobby`, which allows
+up to 50, three new ones per address and then one every 20 minutes, and removes a
+schedule after three weeks without anyone in its sessions. Only the creator's
+browser can remove one sooner.
+
 The room and sync checks run as part of `npm test`.
 
 ## Custom domain

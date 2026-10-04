@@ -31,6 +31,7 @@ import { renderAll, renderEstPick, renderPill, renderStats, renderTasks, renderT
 import RoomDialog from "./room/RoomDialog.svelte";
 import RoomStrip from "./room/RoomStrip.svelte";
 import { followRoom, reactionsChanged, reactionsOn, reactWait, renderRoom, RM, roomConnect, roomCreate, roomEnter, roomInStep, roomList, roomReact, roomReset, roomSend } from "./room/net";
+import { Sched, watchReminders } from "./room/sched";
 import { exportLedger, importLedger, planImport } from "./settings/backup";
 import Settings from "./settings/Settings.svelte";
 import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, previewTicking, scheduleEnd, syncTicking } from "./sound";
@@ -80,7 +81,7 @@ mount(Progress, { target: $(".app"), props: { api: {
   S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
   deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap,
 } } });
-const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom,
+const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
   roomReact, reactWait, reactionsOn };
 mount(BarTools, { target: $(".bar-right"), anchor: $(".bar-right").firstChild!, props: { api: {
   RM, ls, S, Cloud, DEMO, preview, openRoom, openKeys,
@@ -92,6 +93,7 @@ timerLayout.observe($("#roomStrip"));
 mount(Tip, { target: document.body });
 mount(Toast, { target: document.body });
 ui.room = mount(RoomDialog, { target: document.body, props: { api: roomApi } }) as Sheet;
+watchReminders(openRoom);
 ui.keys = mount(Keys, { target: document.body, props: { api: { setOverlay } } }) as Sheet;
 ui.recap = mount(Recap, { target: document.body, props: { api: {
   S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, plural,
