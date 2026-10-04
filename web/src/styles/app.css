@@ -143,7 +143,9 @@ a.btn { color: inherit; text-decoration: none; }
 #roomPanel { display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; }
 .lobby { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; }
 .lobby > .rlist { flex: 0 1 auto; min-height: 96px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; margin: -4px; padding: 4px; }
-.room-sheet.tabbed, .settings-sheet, .keys-sheet { height: min(640px, calc(100dvh - var(--dlg-top) - 16px)); }
+.room-sheet.tabbed, .settings-sheet { height: min(720px, calc(100dvh - var(--dlg-top) - 16px)); }
+.sheet, .settings-sheet .set-panels, .lobby > .rlist { scrollbar-width: none; }
+.sheet::-webkit-scrollbar, .settings-sheet .set-panels::-webkit-scrollbar, .lobby > .rlist::-webkit-scrollbar { display: none; }
 .keys-sheet:focus { outline: none; }
 .room-sheet.tabbed:has(.lobby > form) { height: auto; }
 .room-sheet.tabbed #roomPanel, .room-sheet.tabbed .lobby { flex: 1 1 auto; }
@@ -725,10 +727,11 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .pick-menu.pop kbd { flex: none; }
 .keys-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 28px; align-items: start; }
 .keys-grid h3 { margin: 0 0 4px; font: 650 11px var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--faint); }
-.keys-grid dl { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-auto-flow: row dense; align-items: center; }
-.keys-grid dl > * { min-height: 36px; display: flex; align-items: center; gap: 4px; padding: 6px 0; border-top: 1px solid var(--line); }
-.keys-grid dt { grid-column: 2; justify-content: flex-end; padding-left: 12px; white-space: nowrap; }
-.keys-grid dd { grid-column: 1; margin: 0; font-size: 13.5px; line-height: 1.35; color: var(--fg); }
+.keys-grid dl { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-auto-flow: row dense; }
+.keys-grid dl > * { padding: 6px 0; border-top: 1px solid var(--line); }
+.keys-grid dt { grid-column: 2; display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding-left: 12px; white-space: nowrap; }
+.keys-grid dd { grid-column: 1; align-self: stretch; display: flex; align-items: center; margin: 0; font-size: 13.5px; line-height: 1.4; color: var(--fg); }
+.keys-grid dd > span { display: block; }
 .keys-grid dd kbd { margin-inline: 2px; }
 .keys-sheet .hint { margin: 0; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted); }
 @media (hover: none) { .keys-btn { display: none; } }

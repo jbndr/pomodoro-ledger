@@ -20,33 +20,33 @@
     <div class="sec-head"><h2 id="keysH">Keyboard shortcuts</h2><button class="icon-btn" type="button" id="closeKeys" aria-label="Close" onclick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="keys-grid">
       <section><h3>Timer</h3><dl>
-        <dt><kbd>Space</kbd></dt><dd>Start or pause</dd>
-        <dt><kbd>S</kbd></dt><dd>Skip to the next phase</dd>
-        <dt><kbd>+</kbd> <kbd>−</kbd></dt><dd>A minute more or less</dd>
-        <dt><kbd>F</kbd></dt><dd>Fill the page</dd>
-        <dt><kbd>⇧</kbd> <kbd>F</kbd></dt><dd>Full screen</dd>
+        <dt><kbd>Space</kbd></dt><dd><span>Start or pause</span></dd>
+        <dt><kbd>S</kbd></dt><dd><span>Skip to the next phase</span></dd>
+        <dt><kbd>+</kbd> <kbd>−</kbd></dt><dd><span>A minute more or less</span></dd>
+        <dt><kbd>F</kbd></dt><dd><span>Fill the page</span></dd>
+        <dt><kbd>⇧</kbd> <kbd>F</kbd></dt><dd><span>Full screen</span></dd>
       </dl></section>
       <section><h3>Tasks</h3><dl>
-        <dt><kbd>N</kbd></dt><dd>Quick add a task</dd>
-        <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move between tasks (or <kbd>J</kbd> <kbd>K</kbd>)</dd>
-        <dt><kbd>↵</kbd></dt><dd>Open the task</dd>
-        <dt><kbd>Esc</kbd></dt><dd>Close it</dd>
-        <dt><kbd>⌥</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move the task up or down</dd>
-        <dt><kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move it to the previous or next section (a day in Upcoming)</dd>
+        <dt><kbd>N</kbd></dt><dd><span>Quick add a task</span></dd>
+        <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd><span>Move between tasks (or <kbd>J</kbd> <kbd>K</kbd>)</span></dd>
+        <dt><kbd>↵</kbd></dt><dd><span>Open the task</span></dd>
+        <dt><kbd>Esc</kbd></dt><dd><span>Close it</span></dd>
+        <dt><kbd>⌥</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd><span>Move the task up or down</span></dd>
+        <dt><kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd><span>Move it to the previous or next section (a day in Upcoming)</span></dd>
       </dl></section>
       <section><h3>Quick add</h3><dl>
-        <dt><kbd>↓</kbd></dt><dd>Add a note (or type <kbd>//</kbd> in the title)</dd>
-        <dt><kbd>⌥</kbd> <kbd>D</kbd></dt><dd>Pick when (or type fri, next week)</dd>
-        <dt><kbd>⌥</kbd> <kbd>L</kbd></dt><dd>Pick a label (or type #name)</dd>
-        <dt><kbd>⌥</kbd> <kbd>1</kbd>–<kbd>9</kbd></dt><dd>Set cycles (or type 2c)</dd>
-        <dt><kbd>↵</kbd></dt><dd>Add it and start the next one</dd>
+        <dt><kbd>↓</kbd></dt><dd><span>Add a note (or type <kbd>//</kbd> in the title)</span></dd>
+        <dt><kbd>⌥</kbd> <kbd>D</kbd></dt><dd><span>Pick when (or type fri, next week)</span></dd>
+        <dt><kbd>⌥</kbd> <kbd>L</kbd></dt><dd><span>Pick a label (or type #name)</span></dd>
+        <dt><kbd>⌥</kbd> <kbd>1</kbd>–<kbd>9</kbd></dt><dd><span>Set cycles (or type 2c)</span></dd>
+        <dt><kbd>↵</kbd></dt><dd><span>Add it and start the next one</span></dd>
       </dl></section>
       <section><h3>When</h3><dl>
-        <dt><kbd>T</kbd></dt><dd>Today</dd>
-        <dt><kbd>M</kbd></dt><dd>Tomorrow</dd>
-        <dt><kbd>W</kbd></dt><dd>Next week</dd>
-        <dt><kbd>L</kbd></dt><dd>Later</dd>
-        <dt><kbd>D</kbd></dt><dd>Pick a day…</dd>
+        <dt><kbd>T</kbd></dt><dd><span>Today</span></dd>
+        <dt><kbd>M</kbd></dt><dd><span>Tomorrow</span></dd>
+        <dt><kbd>W</kbd></dt><dd><span>Next week</span></dd>
+        <dt><kbd>L</kbd></dt><dd><span>Later</span></dd>
+        <dt><kbd>D</kbd></dt><dd><span>Pick a day…</span></dd>
       </dl></section>
     </div>
     <p class="hint">Scheduling keys act on the task under the pointer or with keyboard focus, otherwise the one you're working on. <kbd>?</kbd> opens this list.</p>
