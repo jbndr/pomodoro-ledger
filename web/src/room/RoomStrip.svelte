@@ -1,6 +1,5 @@
 <script>
   import { tick } from "svelte";
-  import { flip } from "svelte/animate";
   import { backOut, cubicOut } from "svelte/easing";
   import { calm } from "../dom";
   import { bubbleNames, mateClock, mateProgress, MODE_NAME, othersOf, REACTIONS } from "../lib/room";
@@ -23,30 +22,64 @@
   const rise = () => calm() ? { duration: 200, css: (t) => `opacity: ${t}` } : { duration: 320, easing: backOut, css: (t, u) => `opacity: ${Math.min(1, t * 2)}; transform: translateY(${u * 12}px) scale(${0.7 + 0.3 * t})` };
   const drift = () => calm() ? { duration: 300, css: (t) => `opacity: ${t}` } : { duration: 600, css: (t, u) => `opacity: ${t}; transform: translateY(${-u * 16}px)` };
 
-  const move = () => ({ duration: calm() ? 0 : 320, easing: cubicOut });
   const arrive = () => calm() ? { duration: 160, css: (t) => `opacity: ${t}` } : { duration: 260, easing: cubicOut, css: (t) => `opacity: ${t}; scale: ${0.85 + 0.15 * t}` };
   const leave = () => ({ duration: calm() ? 120 : 180, easing: cubicOut, css: (t) => `opacity: ${t}` });
   const settle = () => calm() ? { duration: 120, css: (t) => `opacity: ${t}` } : { duration: 400, css: (t) => `opacity: ${Math.max(0, t - 0.45) / 0.55}` };
+  // Svelte only lifts leaving pills out of the flow when the each block has an animate.
+  const hold = () => ({ duration: 0 });
 
-  let matesEl = $state(), before = new Map();
+  const ease = { duration: 260, easing: "cubic-bezier(.33, 1, .68, 1)" };
+  let matesEl = $state(), before = new Map(), glides = new Map(), raf = 0;
   const shape = $derived(v.others.map((m) => m.id + (m.s ? m.s.status + m.s.mode : "")).join());
-  const states = () => [...matesEl.querySelectorAll(".mate .st")].map((el) => [el.closest(".mate").dataset.member, el]);
+  const pills = () => [...matesEl.querySelectorAll(".mate")].filter((li) => li.style.position !== "absolute");
+  const centre = (li) => {
+    const r = li.getBoundingClientRect(), box = matesEl.getBoundingClientRect();
+    return r.width ? [r.left + r.width / 2 - box.left + matesEl.scrollLeft, r.top + r.height / 2 - box.top + matesEl.scrollTop] : null;
+  };
+
+  function halt() {
+    cancelAnimationFrame(raf);
+    for (const li of glides.keys()) if (li.style.position !== "absolute") li.style.translate = li.style.zIndex = "";
+    glides.clear();
+  }
 
   $effect.pre(() => {
     shape;
-    before = new Map(matesEl ? states().map(([id, el]) => [id, el.offsetWidth]) : []);
+    before = new Map(matesEl ? pills().map((li) => [li.dataset.member, { w: li.querySelector(".st").offsetWidth, at: centre(li) }]) : []);
   });
 
   $effect(() => {
     shape;
-    if (!matesEl || calm()) return;
-    for (const [id, el] of states()) {
-      const from = before.get(id);
-      if (from == null) continue;
-      el.getAnimations().forEach((a) => a.cancel());
-      const to = el.offsetWidth;
-      if (Math.abs(to - from) >= 1) el.animate([{ width: from + "px", opacity: 0.4 }, { width: to + "px", opacity: 1 }], { duration: 260, easing: "cubic-bezier(.33, 1, .68, 1)" });
+    if (!matesEl) return;
+    halt();
+    if (calm()) return;
+    const now = pills().map((li) => [li, li.querySelector(".st")]);
+    for (const [, st] of now) st.getAnimations().forEach((a) => a.cancel());
+    const end = now.map(([li, st]) => [li, st, st.offsetWidth, centre(li)]);
+    for (const [li, st, w, to] of end) {
+      const was = before.get(li.dataset.member);
+      if (!was) continue;
+      if (Math.abs(w - was.w) >= 1) st.animate([{ width: was.w + "px", opacity: 0.4 }, { width: w + "px", opacity: 1 }], ease);
+      if (!was.at || !to || Math.hypot(to[0] - was.at[0], to[1] - was.at[1]) < 1) continue;
+      glides.set(li, { from: was.at, to, off: [0, 0] });
+      if (Math.abs(to[1] - was.at[1]) >= 1) li.style.zIndex = "1";
     }
+    if (!glides.size) return;
+    const clock = new Animation(new KeyframeEffect(null, null, { ...ease, fill: "forwards" }));
+    clock.play();
+    const frame = () => {
+      if (clock.playState === "finished") return halt();
+      const e = clock.effect.getComputedTiming().progress;
+      const at = [...glides].map(([li, g]) => [li, g, centre(li)]);
+      for (const [li, g, c] of at) {
+        if (!c) continue;
+        g.off = [0, 1].map((k) => g.from[k] + (g.to[k] - g.from[k]) * e - c[k] + g.off[k]);
+        li.style.translate = `${g.off[0]}px ${g.off[1]}px`;
+      }
+      raf = requestAnimationFrame(frame);
+    };
+    frame();
+    return () => cancelAnimationFrame(raf);
   });
 
   async function openTray() {
@@ -81,7 +114,7 @@
   });
 </script>
 
-<svelte:window onpointerdown={away} onkeydown={trayKey} />
+<svelte:window onpointerdown={away} onkeydown={trayKey} onresize={halt} />
 
 <section class="room" class:pub={!!v.pub} id="roomStrip" aria-label="Shared room" hidden={!v.on}>
   {#if v.pub}
@@ -94,7 +127,7 @@
     {:else if v.on}
       {#each v.others as m (m.id)}
         {@const ring = mateProgress(m.s, now)}
-        <li class="mate" data-member={m.id} data-mode={m.s ? m.s.mode : ""} data-status={m.s ? m.s.status : "idle"} style:--progress={ring.deg} title={ring.title} animate:flip={move()} in:arrive out:leave><i aria-hidden="true"></i><b>{m.name}</b><span class="st">{#if !m.s || m.s.status === "idle"}<em>Ready to focus</em>{:else}<span data-end={m.s.status === "running" ? m.s.end : undefined}>{mateClock(m.s, now)}</span><em>{MODE_NAME[m.s.mode]}{m.s.status === "paused" ? " · paused" : ""}</em>{/if}</span>{#if v.owner && !m.owner}<button class="kick" type="button" data-kick={m.id} aria-label="Remove {m.name} from room" title="Remove from room" onclick={() => { if (api.RM.owner) api.roomSend({ t: "kick", id: m.id }); }}>×</button>{/if}</li>
+        <li class="mate" data-member={m.id} data-mode={m.s ? m.s.mode : ""} data-status={m.s ? m.s.status : "idle"} style:--progress={ring.deg} title={ring.title} animate:hold in:arrive out:leave><i aria-hidden="true"></i><b>{m.name}</b><span class="st">{#if !m.s || m.s.status === "idle"}<em>Ready to focus</em>{:else}<span data-end={m.s.status === "running" ? m.s.end : undefined}>{mateClock(m.s, now)}</span><em>{MODE_NAME[m.s.mode]}{m.s.status === "paused" ? " · paused" : ""}</em>{/if}</span>{#if v.owner && !m.owner}<button class="kick" type="button" data-kick={m.id} aria-label="Remove {m.name} from room" title="Remove from room" onclick={() => { if (api.RM.owner) api.roomSend({ t: "kick", id: m.id }); }}>×</button>{/if}</li>
       {/each}
       {#if !v.others.length}<li class="hint" in:settle>{v.pub ? "Nobody else is here yet. Others can drop in any time." : "Nobody else is here yet. Share the code or the invite link."}</li>{/if}
     {/if}
