@@ -5,7 +5,7 @@ import { S } from "./state";
 import { focusRow, scheduleTask } from "./tasks/actions";
 import { groupName, guardPreview, quickDays } from "./tasks/derived";
 import { adjust, skip, toggle } from "./timer/engine";
-import { closeKeys, closeRoom, closeSettings, openKeys, openWhen, ui } from "./ui";
+import { closeKeys, closeRecap, closeRoom, closeSettings, openKeys, openWhen, ui } from "./ui";
 import { toggleZen } from "./zen";
 
 // Scheduling shortcuts act on the task under the mouse or keyboard focus, else the one you're working on.
@@ -47,8 +47,8 @@ function scheduleShortcut(key: string) {
 /** The app-wide keyboard shortcuts. */
 export function onKey(e: KeyboardEvent) {
   const tag = ((e.target as Element).tagName || "").toLowerCase();
-  if (tag === "input" || tag === "select" || tag === "textarea" || !$("#settings").hidden || !$("#room").hidden || !$("#keys").hidden) {
-    if (e.key === "Escape") { if (!$("#settings").hidden) closeSettings(); else if (!$("#room").hidden) closeRoom(); else if (!$("#keys").hidden) closeKeys(); }
+  if (tag === "input" || tag === "select" || tag === "textarea" || !$("#settings").hidden || !$("#room").hidden || !$("#keys").hidden || !$("#recap").hidden) {
+    if (e.key === "Escape") { if (!$("#settings").hidden) closeSettings(); else if (!$("#room").hidden) closeRoom(); else if (!$("#keys").hidden) closeKeys(); else if (!$("#recap").hidden) closeRecap(); }
     return;
   }
   const zen = () => document.body.classList.contains("zen");

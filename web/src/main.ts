@@ -24,6 +24,7 @@ import { pop } from "./popovers/state.svelte";
 import WhenPop from "./popovers/WhenPop.svelte";
 import { deleteSession, labelSession, moveItems, moveSession } from "./progress/actions";
 import Progress from "./progress/Progress.svelte";
+import Recap from "./progress/Recap.svelte";
 import { renderAll, renderEstPick, renderPill, renderStats, renderTasks, renderTimer, rethemeFloat } from "./render";
 import RoomDialog from "./room/RoomDialog.svelte";
 import RoomStrip from "./room/RoomStrip.svelte";
@@ -41,7 +42,7 @@ import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
 import { adjust, arm, buzz, complete, dur, flushPartial, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
-import { closeLabelPop, closePop, openKeys, openLabelPop, openPop, openRoom, openSettings, openWhen, renderSyncTab, ui, type LabelUI, type ListUI, type PopUI, type SettingsUI, type Sheet, type WhenUI } from "./ui";
+import { closeLabelPop, closePop, openKeys, openLabelPop, openPop, openRecap, openRoom, openSettings, openWhen, renderSyncTab, ui, type LabelUI, type ListUI, type PopUI, type RecapUI, type SettingsUI, type Sheet, type WhenUI } from "./ui";
 import { fsEl, setZen, toggleZen } from "./zen";
 
 ["pointerdown", "keydown", "touchstart"].forEach((ev) => addEventListener(ev, ensureAudio, { passive: true, capture: true }));
@@ -73,7 +74,7 @@ const view = ss.get("pl.taskView");
 if (view === "today" || view === "upcoming" || view === "later") S.taskView = view;
 mount(Progress, { target: $(".app"), props: { api: {
   S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
-  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask,
+  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap,
 } } });
 const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom,
   roomReact, reactWait, reactionsOn };
@@ -88,6 +89,10 @@ mount(Tip, { target: document.body });
 mount(Toast, { target: document.body });
 ui.room = mount(RoomDialog, { target: document.body, props: { api: roomApi } }) as Sheet;
 ui.keys = mount(Keys, { target: document.body, props: { api: { setOverlay } } }) as Sheet;
+ui.recap = mount(Recap, { target: document.body, props: { api: {
+  S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, plural,
+  overlayHidden: () => !document.querySelector(".overlay:not([hidden])"), syncing: () => Cloud.state === "connecting",
+} } }) as RecapUI;
 if (invite) {
   try { history.replaceState(null, "", location.pathname); } catch {}
   if (invite.length === 6 && invite !== RM.code) {
@@ -130,6 +135,8 @@ renderRoom();
 renderAll();
 measure();
 renderSyncTab();
+setTimeout(() => ui.recap!.maybeOpen(), 1500);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) ui.recap!.maybeOpen(); });
 if (!DEMO) Store.connect().then(() => {
   renderPill();
   newDay();

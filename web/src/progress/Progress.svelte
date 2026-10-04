@@ -4,6 +4,7 @@
   import { dayLabels, dayTotals, estimateAccuracy, streaks, sumDays } from "../lib/stats";
   import { focusTasks, labelHue, matchLabel, progressLabelNames, timeOf } from "../lib/tasks";
   import Bars from "./Bars.svelte";
+  import BestTime from "./BestTime.svelte";
   import ByLabel from "./ByLabel.svelte";
   import Heat from "./Heat.svelte";
   import Ledger from "./Ledger.svelte";
@@ -26,7 +27,7 @@
     const ledger = f ? new Map([...all].filter(([, t]) => matchLabel(t, f))) : all;
     const week = sumDays(days, today, 7), before = sumDays(days, addDays(today, -7), 7);
     return {
-      all, names, f, today, days, chips, ledger,
+      all, names, f, today, vt, days, chips, ledger,
       split: f ? new Map() : dayLabels(vt),
       todayTotal: days.get(dayKey(now)) || { ms: 0, cycles: 0 },
       goal: api.S.settings.goal,
@@ -46,6 +47,7 @@
 <section class="progress" aria-labelledby="progH">
   <div class="sec-head">
     <h2 id="progH">Progress</h2>
+    <button class="btn small recap-btn" type="button" id="openRecap" onclick={() => api.openRecap()}>Weekly recap</button>
     <span class="sub">Every finished focus block counts as one cycle. Stopped sessions over a minute still count toward focus time.</span>
   </div>
   <div class="label-filter" id="statsFilter" role="group" aria-label="Show progress for one label" hidden={!m.names.length}>
@@ -88,6 +90,7 @@
       <div class="legend" aria-hidden="true"><span>Less</span><i style="background:var(--heat0)"></i><i style="background:var(--heat1)"></i><i style="background:var(--heat2)"></i><i style="background:var(--heat3)"></i><i style="background:var(--heat4)"></i><span>More</span></div>
     </figure>
   </div>
+  <BestTime {api} tasks={m.vt} today={m.today} />
   <ByLabel {api} tasks={m.all} today={m.today} />
   <!-- A new filter starts both lists from their first page again. -->
   {#key m.f}
