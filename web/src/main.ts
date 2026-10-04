@@ -14,7 +14,7 @@ import { announce } from "./extension";
 import { autoFloatHandler, floatBtn, initFloat } from "./float";
 import { esc, fmtClock, fmtDate, fmtDur, plural } from "./format";
 import { ICON } from "./icons";
-import { onKey, setHover } from "./keys";
+import { MOD, onKey, setHover } from "./keys";
 import { initLayout, measure, setOverlay, sizeTimer, timerLayout } from "./layout";
 import { addDays, dayKey, keyTime, sod } from "./lib/dates";
 import { normCode } from "./lib/room";
@@ -22,6 +22,9 @@ import { scheduleOf } from "./lib/schedule";
 import { cyclesOf, labelHue, projectOf, timeOf } from "./lib/tasks";
 import { MODES } from "./lib/timer";
 import { initPages } from "./pages";
+import "./palette/commands";
+import Palette from "./palette/Palette.svelte";
+import { commands } from "./palette/registry";
 import LabelPop from "./popovers/LabelPop.svelte";
 import Pop from "./popovers/Pop.svelte";
 import { pop } from "./popovers/state.svelte";
@@ -49,7 +52,7 @@ import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
 import { adjust, arm, buzz, complete, dur, flushPartial, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
-import { closeLabelPop, closePop, openKeys, openLabelPop, openPop, openRecap, openRoom, openSettings, openWhen, renderSyncTab, ui, type LabelUI, type ListUI, type PopUI, type RecapUI, type SettingsUI, type Sheet, type WhenUI } from "./ui";
+import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPop, openRecap, openRoom, openSettings, openWhen, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type Sheet, type WhenUI } from "./ui";
 import { fsEl, setZen, toggleZen } from "./zen";
 
 ["pointerdown", "keydown", "touchstart"].forEach((ev) => addEventListener(ev, ensureAudio, { passive: true, capture: true }));
@@ -87,7 +90,7 @@ mount(Progress, { target: $(".app"), props: { api: {
 const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
   roomReact, reactWait, reactionsOn };
 mount(BarTools, { target: $(".bar-right"), anchor: $(".bar-right").firstChild!, props: { api: {
-  RM, ls, S, Cloud, DEMO, preview, openRoom, openKeys,
+  RM, ls, S, Cloud, DEMO, preview, openRoom, openKeys, openPalette,
   openSync: () => { if (!DEMO) openSettings("sync"); },
   themed: rethemeFloat,
 } } });
@@ -97,7 +100,7 @@ mount(Tip, { target: document.body });
 mount(Toast, { target: document.body });
 ui.room = mount(RoomDialog, { target: document.body, props: { api: roomApi } }) as Sheet;
 watchReminders(openRoom);
-ui.keys = mount(Keys, { target: document.body, props: { api: { setOverlay } } }) as Sheet;
+ui.keys = mount(Keys, { target: document.body, props: { api: { setOverlay, MOD, openPalette } } }) as Sheet;
 ui.recap = mount(Recap, { target: document.body, props: { api: {
   S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, plural,
   overlayHidden: () => !document.querySelector(".overlay:not([hidden])"), syncing: () => Cloud.state === "connecting",
@@ -142,6 +145,10 @@ ui.list = mount(TaskList, { target: panel, anchor: $("#taskFoot"), props: { api:
   saveField, addSubtasks, subDone: (id: string, subid: string, done: boolean) => editSubtask(id, subid, (s) => { s.done = done; }), renameSub: renameSubtask, deleteSub: deleteSubtask,
   addSection, removeSection, renameSection, moveSection,
 } } }) as ListUI;
+ui.palette = mount(Palette, { target: document.body, props: { api: { ls, setOverlay, commands, MOD, closeOthers: () => {
+  closePop(); closeWhen(); closeLabelPop();
+  for (const [id, close] of [["#settings", closeSettings], ["#room", closeRoom], ["#keys", closeKeys], ["#recap", closeRecap]] as const) if (!$(id).hidden) close();
+} } } }) as PaletteUI;
 renderRoom();
 renderAll();
 announce();

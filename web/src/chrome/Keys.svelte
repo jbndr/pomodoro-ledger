@@ -18,6 +18,7 @@
 <div class="overlay" id="keys" hidden onclick={(e) => { if (e.target.id === "keys") close(); }}>
   <div class="sheet keys-sheet" role="dialog" aria-labelledby="keysH" tabindex="-1" bind:this={sheet}>
     <div class="sec-head"><h2 id="keysH">Keyboard shortcuts</h2><button class="icon-btn" type="button" id="closeKeys" aria-label="Close" onclick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <button class="keys-lead" type="button" onclick={api.openPalette}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><span>Search every action and task</span><span class="keys-lead-k"><kbd>{api.MOD}</kbd> <kbd>K</kbd></span></button>
     <div class="keys-grid">
       <section><h3>Timer</h3><dl>
         <dt><kbd>Space</kbd></dt><dd><span>Start or pause</span></dd>
