@@ -35,7 +35,8 @@ import { followRoom, reactionsChanged, reactionsOn, reactWait, renderRoom, RM, r
 import { Sched, watchReminders } from "./room/sched";
 import { exportLedger, importLedger, planImport } from "./settings/backup";
 import Settings from "./settings/Settings.svelte";
-import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, previewTicking, scheduleEnd, syncTicking } from "./sound";
+import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, previewSoundscape, previewTicking, scheduleEnd, syncTicking } from "./sound";
+import { cancelScapePreview, scapePlaying } from "./soundscape";
 import { DEMO, ls, S, ss, T } from "./state";
 import { Store } from "./store";
 import { addSection, addSubtasks, addTask, commitPlacements, completeTask, completing, deleteSubtask, deleteTask, dismissCard, editSubtask, focusOnTask, focusRow, labelTask, moveSection, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
@@ -111,6 +112,7 @@ if (invite) {
 ui.settings = mount(Settings, { target: document.body, props: { api: {
   S, Store, Cloud, ls, toast, setOverlay, floatable: !floatBtn.hidden, T,
   ensureAudio, playSound, scheduleEnd, cancelEnd, cancelTickPreview, syncTicking, previewTicking,
+  previewSoundscape, cancelScapePreview, scapePlaying,
   autoFloatHandler, renderTimer, renderStats, renderEstPick,
   reactionsChanged, DEMO, backup: { exportLedger, planImport, importLedger },
 } } }) as SettingsUI;

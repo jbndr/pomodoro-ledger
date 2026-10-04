@@ -1,6 +1,7 @@
 import type { Label } from "./lib/labels";
 import type { Repeat } from "./lib/repeat";
 import type { Rollover } from "./lib/rollover";
+import type { Scape } from "./lib/soundscape";
 import type { Task } from "./lib/tasks";
 import type { Mode, Status } from "./lib/timer";
 
@@ -19,6 +20,8 @@ export interface Settings {
   /** Off hides room reactions both ways; unset means on. */
   reactions?: boolean;
   rollover?: Rollover;
+  /** Unset means off. */
+  soundscape?: Scape | "off"; soundscapeVolume?: number; soundscapeBreaks?: boolean;
   weeklyRecap: boolean;
   /** The week (its first day) whose visit already showed a recap. */
   recapSeen: string;
