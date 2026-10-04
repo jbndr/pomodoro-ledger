@@ -168,3 +168,68 @@ test('opening a public room keeps its size between 2 and 12', async () => {
   assert.deepEqual(opened.map((c) => c.max), [2, 2, 7, 12, 12, 12]);
   assert.equal((await open({ pub: true, title: 'Focus', rhythm: '30/30', max: 4 })).status, 400);
 });
+
+const reactsOf = (ws) => ws.messages.filter((m) => m.t === 'react');
+const notesOf = (ws) => ws.messages.filter((m) => m.t === 'note');
+
+test('reactions reach everyone else with only the public id, name and emoji', async () => {
+  const { hello, send } = setup();
+  const ana = await hello('ana');
+  const ben = await hello('ben');
+  const cy = await hello('cy');
+  await send(ana, { t: 'state', s: { mode: 'focus', status: 'running', remaining: 60000, total: 60000 } });
+  await send(ana, { t: 'react', e: '🎉' });
+  assert.deepEqual(reactsOf(ben), [{ t: 'react', by: ana.attachment.pub, name: 'ana', e: '🎉' }]);
+  assert.deepEqual(reactsOf(cy), reactsOf(ben));
+  assert.deepEqual(reactsOf(ana), []);
+});
+
+test('reactions only allow the fixed emoji set', async () => {
+  const { hello, send } = setup();
+  const ana = await hello('ana');
+  const ben = await hello('ben');
+  for (const e of ['hello there', '💩', '🎉🎉', '', null, ['🎉'], { e: '🎉' }]) await send(ana, { t: 'react', e });
+  assert.deepEqual(reactsOf(ben), []);
+  assert.equal(ana.attachment.rb, null);
+});
+
+test('a burst of reactions is capped, noted once, then refills slowly', async () => {
+  const { hello, send } = setup();
+  const ana = await hello('ana');
+  const ben = await hello('ben');
+  for (let i = 0; i < 12; i++) await send(ana, { t: 'react', e: '🔥' });
+  assert.equal(reactsOf(ben).length, 5);
+  assert.equal(notesOf(ana).length, 1);
+  ana.attachment.rb.at -= 4000;
+  await send(ana, { t: 'react', e: '👍' });
+  await send(ana, { t: 'react', e: '👍' });
+  assert.deepEqual(reactsOf(ben).slice(5).map((m) => m.e), ['👍']);
+  assert.equal(notesOf(ana).length, 2);
+  assert.equal(notesOf(ben).length, 0);
+});
+
+test('rejoining keeps the reaction limit', async () => {
+  const { hello, send } = setup();
+  await hello('ana').then(async (ana) => { for (let i = 0; i < 5; i++) await send(ana, { t: 'react', e: '👋' }); });
+  const ben = await hello('ben');
+  const again = await hello('ana');
+  await send(again, { t: 'react', e: '👋' });
+  assert.equal(reactsOf(ben).length, 0);
+  assert.equal(notesOf(again).length, 1);
+});
+
+test('public rooms carry reactions too', async () => {
+  const { hello, send } = setup(pub);
+  const ana = await hello('ana');
+  const ben = await hello('ben');
+  await send(ben, { t: 'react', e: '☕' });
+  assert.deepEqual(reactsOf(ana).map((m) => [m.name, m.e]), [['ben', '☕']]);
+});
+
+test('reactions need a hello first', async () => {
+  const { hello, room } = setup();
+  const ben = await hello('ben');
+  const stranger = { deserializeAttachment: () => null, send() {}, close() {} };
+  await room.webSocketMessage(stranger, JSON.stringify({ t: 'react', e: '🎉' }));
+  assert.deepEqual(reactsOf(ben), []);
+});
