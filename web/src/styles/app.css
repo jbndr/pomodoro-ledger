@@ -137,6 +137,12 @@ a.btn { color: inherit; text-decoration: none; }
 #roomPanel { display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; }
 .lobby { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; }
 .lobby > .rlist { flex: 0 1 auto; min-height: 96px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; margin: -4px; padding: 4px; }
+.room-sheet.tabbed { height: min(624px, calc(100% - 32px)); }
+.room-sheet.tabbed:has(.lobby > form) { height: auto; }
+.room-sheet.tabbed #roomPanel, .room-sheet.tabbed .lobby { flex: 1 1 auto; }
+.room-sheet.tabbed .lobby > .rlist { flex: 1 1 auto; align-content: start; }
+.room-sheet.tabbed #roomOut { flex: 1 1 auto; grid-template-rows: auto 1fr; }
+.room-sheet.tabbed #roomOut .join { align-self: end; }
 .rlist.below { mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); }
 .rlist.above { mask-image: linear-gradient(to bottom, transparent, #000 28px); }
 .rlist.above.below { mask-image: linear-gradient(to bottom, transparent, #000 28px, #000 calc(100% - 36px), transparent); }
@@ -858,6 +864,8 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   .tile .s { font-size: 12px; }
   .overlay { top: var(--viewport-top, 0px); bottom: auto; height: var(--viewport-height, 100dvh); padding: 8px; align-items: end; }
   .sheet { width: 100%; max-height: 100%; border-radius: 22px; padding: 16px 16px max(16px, env(safe-area-inset-bottom)); overscroll-behavior: contain; scroll-padding-block: 16px; }
+  .room-sheet.tabbed { height: min(680px, 100%); }
+  .room-sheet.tabbed:has(.lobby > form) { height: auto; }
   .sheet .sec-head { align-items: center; }
   .sheet-foot > .btn { flex: 1; }
   .field input { height: 48px; }
