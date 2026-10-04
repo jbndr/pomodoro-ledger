@@ -19,3 +19,7 @@ export const list = {
 };
 
 export const progress = redraw();
+export const pill = redraw();
+export const room = redraw();
+/** Ticks while in a room so the members' countdowns move. */
+export const roomClock = redraw();
