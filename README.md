@@ -1,7 +1,5 @@
 # Pomodoro Ledger
 
-<img width="939" height="1146" alt="image" src="https://github.com/user-attachments/assets/f1f9dc76-a4f3-429e-a7d5-7ac1523409de" />
-
 A task-focused Pomodoro timer served from Cloudflare's edge. The web app in `web/`
 (Svelte 5 and TypeScript) is built with Vite into `dist/`, which Cloudflare serves as static assets; a small
 Worker in `src/` powers shared rooms and account sync.
