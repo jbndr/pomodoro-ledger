@@ -1,20 +1,27 @@
-import { makeScape } from "./lib/scapeSynth";
-import type { Scape } from "./lib/soundscape";
+import type { Levels } from "./lib/mix";
+import { Mixer } from "./lib/scapeSynth";
 
-declare const sampleRate: number;
+declare const sampleRate: number, currentTime: number;
 declare function registerProcessor(name: string, ctor: unknown): void;
 declare class AudioWorkletProcessor { readonly port: MessagePort; }
 
+export type ScapeMsg = "stop" | { levels: Levels; glide: number; at?: number };
+
 class ScapeProcessor extends AudioWorkletProcessor {
-  private render; private done = false;
-  constructor(o: { processorOptions: { kind: Scape } }) {
+  private mix = new Mixer(sampleRate); private done = false; private next: Exclude<ScapeMsg, "stop"> | null = null;
+  constructor(o: { processorOptions: { levels: Levels } }) {
     super();
-    this.render = makeScape(o.processorOptions.kind, sampleRate);
-    this.port.onmessage = () => { this.done = true; };
+    this.mix.set(o.processorOptions.levels, 0);
+    this.port.onmessage = ({ data }: MessageEvent<ScapeMsg>) => {
+      if (data === "stop") this.done = true;
+      else if ((data.at ?? 0) > currentTime) this.next = data;
+      else { this.next = null; this.mix.set(data.levels, data.glide); }
+    };
   }
   process(_in: Float32Array[][], out: Float32Array[][]) {
+    if (this.next && currentTime >= this.next.at!) { this.mix.set(this.next.levels, this.next.glide); this.next = null; }
     const [l, r] = out[0];
-    this.render(l, r || new Float32Array(l.length));
+    this.mix.render(l, r || new Float32Array(l.length));
     return !this.done;
   }
 }

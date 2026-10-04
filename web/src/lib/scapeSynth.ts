@@ -1,4 +1,4 @@
-import type { Scape } from "./soundscape";
+import { SCAPES, type Scape } from "./soundscape";
 
 /** Fills one block of stereo output. */
 export type Render = (left: Float32Array, right: Float32Array) => void;
@@ -344,4 +344,46 @@ export function makeScape(kind: Scape, sr: number, rand: Rand = Math.random): Re
       if (R[i] > 1) R[i] = 1; else if (R[i] < -1) R[i] = -1;
     }
   };
+}
+
+/** Above 0.8 peaks bend smoothly toward 0.99, so a loud mix never clips. */
+const limit = (x: number) => (x > 0.8 ? 0.8 + 0.19 * Math.tanh((x - 0.8) / 0.19) : x < -0.8 ? -0.8 - 0.19 * Math.tanh((-x - 0.8) / 0.19) : x);
+
+type Voice = { render?: Render; g: number; to: number; step: number };
+
+/** Up to four soundscapes in one stream; each level glides in a straight line to its target, and silent ones stop running. */
+export class Mixer {
+  private voices = new Map<Scape, Voice>();
+  private l = new Float32Array(128); private r = new Float32Array(128);
+  constructor(private sr: number, private rand: Rand = Math.random, private make = makeScape) {}
+
+  /** Moves each layer to its level (0–1, missing means off) over `glide` seconds. */
+  set(levels: Partial<Record<Scape, number>>, glide: number) {
+    const n = Math.max(1, Math.round(glide * this.sr));
+    for (const kind of SCAPES) {
+      const to = Math.max(0, Math.min(1, levels[kind] || 0));
+      let v = this.voices.get(kind);
+      if (!v) { if (!to) continue; this.voices.set(kind, (v = { g: 0, to: 0, step: 0 })); }
+      v.to = to; v.step = (to - v.g) / n;
+    }
+  }
+
+  get playing() { return [...this.voices.keys()]; }
+
+  render(L: Float32Array, R: Float32Array) {
+    const n = L.length;
+    if (this.l.length !== n) { this.l = new Float32Array(n); this.r = new Float32Array(n); }
+    const { l, r } = this;
+    L.fill(0); R.fill(0);
+    for (const [kind, v] of this.voices) {
+      v.render ??= this.make(kind, this.sr, this.rand);
+      v.render(l, r);
+      for (let i = 0; i < n; i++) {
+        if (v.g !== v.to) { v.g += v.step; if ((v.step > 0) === (v.g > v.to)) v.g = v.to; }
+        L[i] += v.g * l[i]; R[i] += v.g * r[i];
+      }
+      if (!v.g && !v.to) this.voices.delete(kind);
+    }
+    for (let i = 0; i < n; i++) { L[i] = limit(L[i]); R[i] = limit(R[i]); }
+  }
 }
