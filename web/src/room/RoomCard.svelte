@@ -19,7 +19,7 @@
   <Ring rhythm={r.rhythm} {now} />
   <span class="rcard-main">
     <b>{r.title}</b>
-    <span class="rcard-meta"><em class:brk={!p.focus}>{p.focus ? "Focus" : "Break"}</em> until {hhmm(p.end)}<i aria-hidden="true">·</i>{r.rhythm}</span>
+    <span class="rcard-meta"><em class:brk={!p.focus}>{p.focus ? "Focus" : "Break"}</em> until {hhmm(p.end)}<i aria-hidden="true">·</i>{r.rhythm}{#if r.ends}<i aria-hidden="true">·</i>Ends {hhmm(r.ends)}{/if}</span>
     <span class="faces">
       {#each r.names.slice(0, 5) as name, k (name + "#" + r.names.slice(0, k).filter((x) => x === name).length)}<i style:--h={hueOf(name)} title={name} in:pop>{initials(name)}</i>{/each}
       {#if n > 5}<i class="more">+{n - 5}</i>{/if}

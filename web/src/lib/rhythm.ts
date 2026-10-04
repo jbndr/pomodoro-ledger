@@ -4,7 +4,7 @@ export type Rhythm = "25/5" | "50/10";
 export const RHYTHMS: { id: Rhythm; name: string }[] = [{ id: "25/5", name: "Classic" }, { id: "50/10", name: "Deep work" }];
 
 /** A public room as the lobby lists it. */
-export interface Listed { code: string; title: string; rhythm: Rhythm; house: boolean; max: number; names: string[] }
+export interface Listed { code: string; title: string; rhythm: Rhythm; house: boolean; max: number; names: string[]; sched?: string; ends?: number }
 
 export const SIZE = { min: 2, max: 12 };
 
