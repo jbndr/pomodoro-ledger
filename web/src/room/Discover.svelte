@@ -182,7 +182,7 @@
 
   {#if making}
     <form class="rnew" autocomplete="off" onsubmit={submit}>
-      <label class="field">Room name<input type="text" maxlength="32" placeholder="Thesis writing, Spanish practice…" bind:value={title} bind:this={titleEl}></label>
+      <label class="field">Room name<input type="text" name="pl-room-title" maxlength="32" autocomplete="off" data-bwignore="true" data-1p-ignore="true" data-lpignore="true" data-form-type="other" placeholder="Thesis writing, Spanish practice…" bind:value={title} bind:this={titleEl}></label>
       <div class="seg" role="radiogroup" aria-label="Rhythm">
         {#each RHYTHMS as r (r.id)}
           <button type="button" role="radio" aria-checked={String(rhythm === r.id)} onclick={() => (rhythm = r.id)}>{r.id} <small>{r.name}</small></button>
