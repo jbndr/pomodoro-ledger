@@ -3,7 +3,7 @@ import type { WeekRecap } from "../lib/insights";
 import { heatLevel } from "../lib/stats";
 import { labelHue } from "../lib/tasks";
 import type { Badge, YearStats } from "../lib/year";
-import { emblem, HUE, type Ink } from "./emblems";
+import { emblem } from "./emblems";
 
 export interface Fmt {
   fmtDur(ms: number): string;
@@ -14,16 +14,6 @@ type Ctx = CanvasRenderingContext2D;
 
 const DISPLAY = "'Bricolage Grotesque', Geist, system-ui, sans-serif", BODY = "Geist, system-ui, sans-serif";
 const font = (c: Ctx, w: number, px: number, fam = BODY) => { c.font = `${w} ${px}px ${fam}`; };
-
-function tokens() {
-  const cs = getComputedStyle(document.body), v = (n: string) => cs.getPropertyValue("--" + n).trim();
-  return {
-    bg: v("bg"), surface: v("surface"), surface2: v("surface-2"), line: v("line"), fg: v("fg"), muted: v("muted"), faint: v("faint"),
-    tomato: v("tomato"), leaf: v("leaf"), sky: v("sky"), warn: v("warn"), on: v("on-accent"),
-    heat: [0, 1, 2, 3, 4].map((i) => v("heat" + i)),
-  };
-}
-type Tok = ReturnType<typeof tokens>;
 
 const rgb = (h: string) => { const n = parseInt(h.replace("#", "").slice(0, 6), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
 /** `a` mixed into `b` by `t`. */
@@ -68,20 +58,37 @@ function mark(c: Ctx, x: number, y: number, s: number, dot: string, tick: string
 
 const img = (svg: string) => new Promise<HTMLImageElement>((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg); });
 
-function inkFor(t: Tok, b: Badge, bg: string, fg: string): Ink {
-  const tint = mix(t[HUE[b.id]], t.surface, 0.17);
-  return { tomato: t.tomato, leaf: t.leaf, sky: t.sky, warn: t.warn, fg: b.earned ? t.fg : fg, face: b.earned ? tint : bg, tint };
+export type CardTheme = "tomato" | "leaf" | "sky" | "night" | "paper";
+
+const LIGHT = { tomato: "#D8421F", leaf: "#1F7D59", sky: "#2A69AD", warn: "#A96300", ink: "#141816", paper: "#FBFCFA", paper2: "#F2F4F1", muted: "#56605A", faint: "#858F88" };
+
+export const CARD_THEMES: { id: CardTheme; name: string; bg: string; fg: string }[] = [
+  { id: "tomato", name: "Tomato", bg: LIGHT.tomato, fg: "#FFFFFF" },
+  { id: "leaf", name: "Leaf", bg: LIGHT.leaf, fg: "#FFFFFF" },
+  { id: "sky", name: "Sky", bg: LIGHT.sky, fg: "#FFFFFF" },
+  { id: "night", name: "Night", bg: "#0E1110", fg: "#E8ECE9" },
+  { id: "paper", name: "Paper", bg: LIGHT.paper, fg: LIGHT.ink },
+];
+
+interface Scheme { bg: string; fg: string; dim: string; rule: string; glow: string; panel: string; chip: string; hot: string; bar: string; heat: string[]; up: string; down: string }
+
+/** Fixed share colours, so an image looks the same whatever mode the app is in. */
+function scheme(th: CardTheme): Scheme {
+  if (th === "paper") return { bg: LIGHT.paper, fg: LIGHT.ink, dim: LIGHT.muted, rule: "#DADED9", glow: "#F6E3DB", panel: LIGHT.paper2, chip: LIGHT.paper2, hot: LIGHT.tomato, bar: "#EE9C81", heat: ["#E1E5E0", "#F6CBBC", "#EE9C81", "#DE5F3C", "#B3331A"], up: LIGHT.leaf, down: LIGHT.warn };
+  if (th === "night") return { bg: "#0E1110", fg: "#E8ECE9", dim: "#A0A9A3", rule: "#353D39", glow: "#1D1512", panel: "#1D2220", chip: "#FBFCFA", hot: "#FF6A48", bar: "#823620", heat: ["#1F2422", "#4B251A", "#823620", "#C84E2B", "#FF7B56"], up: "#4AC492", down: "#E8A33A" };
+  const bg = LIGHT[th], fg = "#FFFFFF";
+  return { bg, fg, dim: mix(fg, bg, 0.74), rule: mix(fg, bg, 0.3), glow: mix(fg, bg, 0.09), panel: mix(fg, bg, 0.13), chip: LIGHT.paper, hot: fg, bar: mix(fg, bg, 0.42), heat: [0.14, 0.32, 0.52, 0.76, 1].map((k) => mix(fg, bg, k)), up: fg, down: fg };
 }
 
-/** Draws emblems on a background `bg`; locked ones take the colour `fg`. */
-async function emblems(c: Ctx, t: Tok, list: Badge[], bg: string, fg: string, at: (i: number) => [number, number, number]) {
-  const imgs = await Promise.all(list.map((b) => img(emblem(b.id, inkFor(t, b, bg, fg), !b.earned, true))));
+/** Draws medals; locked ones are outlines in the colour `fg`. */
+async function emblems(c: Ctx, list: Badge[], fg: string, at: (i: number) => [number, number, number]) {
+  const imgs = await Promise.all(list.map((b) => img(emblem(b.id, { locked: !b.earned, fg, sheen: true, xmlns: true }))));
   imgs.forEach((im, i) => { const [x, y, s] = at(i); c.drawImage(im, x, y, s, s); });
 }
 
-function brand(c: Ctx, t: Tok, x: number, y: number, fg: string, chip: string) {
+function brand(c: Ctx, x: number, y: number, fg: string, chip: string) {
   round(c, x, y, 88, 88, 26, chip);
-  mark(c, x + 14, y + 14, 60, t.tomato, t.leaf);
+  mark(c, x + 14, y + 14, 60, LIGHT.tomato, LIGHT.leaf);
   font(c, 650, 40, DISPLAY);
   text(c, "Pomodoro Ledger", x + 112, y + 58, fg);
 }
@@ -91,13 +98,13 @@ export const hoursUnit = (ms: number) => (ms >= 3600000 ? (ms >= 3600000 * 1.05 
 export { hours as hoursOf };
 
 /** The year's summary as a 1080 × 1920 story card. */
-export async function summaryCard(y: YearStats, list: Badge[], persona: string, f: Fmt): Promise<Blob> {
+export async function summaryCard(y: YearStats, list: Badge[], persona: string, f: Fmt, th: CardTheme = "tomato"): Promise<Blob> {
   await ready();
-  const t = tokens(), W = 1080, H = 1920, P = 96, on = t.on, dim = mix(on, t.tomato, 0.72);
-  const [cv, c] = canvas(W, H, t.tomato);
-  c.fillStyle = mix(on, t.tomato, 0.09);
+  const k = scheme(th), W = 1080, H = 1920, P = 96, on = k.fg, dim = k.dim;
+  const [cv, c] = canvas(W, H, k.bg);
+  c.fillStyle = k.glow;
   c.beginPath(); c.arc(W + 20, 330, 360, 0, Math.PI * 2); c.fill();
-  brand(c, t, P, P, on, t.surface);
+  brand(c, P, P, on, k.chip);
   font(c, 800, 330, DISPLAY);
   text(c, String(y.year), P - 12, 560, on, { track: -14 });
   font(c, 650, 104, DISPLAY);
@@ -112,10 +119,10 @@ export async function summaryCard(y: YearStats, list: Badge[], persona: string, 
     ["Top label", top ? top.name : "–"],
   ];
   const colW = (W - 2 * P - 48) / 2;
-  stats.forEach(([k, v], i) => {
+  stats.forEach(([name, v], i) => {
     const x = P + (i % 2) * (colW + 48), yy = 800 + Math.floor(i / 2) * 196;
-    c.fillStyle = mix(on, t.tomato, 0.28); c.fillRect(x, yy, colW, 3);
-    font(c, 600, 30); text(c, k.toUpperCase(), x, yy + 58, dim, { track: 4 });
+    c.fillStyle = k.rule; c.fillRect(x, yy, colW, 3);
+    font(c, 600, 30); text(c, name.toUpperCase(), x, yy + 58, dim, { track: 4 });
     font(c, 650, 84, DISPLAY); text(c, v, x, yy + 152, on, { max: colW, track: -2 });
   });
   font(c, 650, 50, DISPLAY);
@@ -123,24 +130,24 @@ export async function summaryCard(y: YearStats, list: Badge[], persona: string, 
   const got = list.filter((b) => b.earned), n = Math.min(6, Math.max(1, got.length)), s = 128, gap = (W - 2 * P - n * s) / Math.max(1, n - 1);
   if (got.length) {
     font(c, 600, 30); text(c, (got.length + " OF " + list.length + " BADGES").toUpperCase(), P, 1530, dim, { track: 4 });
-    await emblems(c, t, got.slice(0, 12), t.tomato, on, (i) => [P + (i % 6) * (n > 1 ? s + Math.min(gap, 40) : 0), 1566 + Math.floor(i / 6) * (s + 22), s]);
+    await emblems(c, got.slice(0, 12), on, (i) => [P + (i % 6) * (n > 1 ? s + Math.min(gap, 40) : 0), 1566 + Math.floor(i / 6) * (s + 22), s]);
   }
   font(c, 400, 30); text(c, f.fmtDate(y.start, { day: "numeric", month: "short" }) + " – " + f.fmtDate(Math.min(y.end, addDays(y.start, 364)), { day: "numeric", month: "short", year: "numeric" }), W - P, P + 58, dim, { align: "right" });
   return blob(cv);
 }
 
 /** Earned and locked badges as a 1080 × 1920 story card. */
-export async function badgesCard(y: YearStats, list: Badge[]): Promise<Blob> {
+export async function badgesCard(y: YearStats, list: Badge[], th: CardTheme = "night"): Promise<Blob> {
   await ready();
-  const t = tokens(), W = 1080, H = 1920, P = 96, bg = t.fg, fg = t.bg, dim = mix(t.bg, t.fg, 0.62);
-  const [cv, c] = canvas(W, H, bg);
-  brand(c, t, P, P, fg, t.surface);
+  const k = scheme(th), W = 1080, H = 1920, P = 96, fg = k.fg, dim = k.dim;
+  const [cv, c] = canvas(W, H, k.bg);
+  brand(c, P, P, fg, k.chip);
   const got = list.filter((b) => b.earned).length;
   font(c, 600, 32); text(c, (y.year + " badges").toUpperCase(), P, 380, dim, { track: 5 });
   font(c, 800, 150, DISPLAY); text(c, got + " of " + list.length, P - 6, 530, fg, { track: -5 });
   font(c, 650, 64, DISPLAY); text(c, "earned" + (y.partial ? " so far" : ""), P, 616, fg, { track: -1 });
   const cols = 3, cell = (W - 2 * P) / cols, s = 190, rowH = 288, top = 700;
-  await emblems(c, t, list, bg, fg, (i) => [P + (i % cols) * cell + (cell - s) / 2, top + Math.floor(i / cols) * rowH, s]);
+  await emblems(c, list, fg, (i) => [P + (i % cols) * cell + (cell - s) / 2, top + Math.floor(i / cols) * rowH, s]);
   list.forEach((b, i) => {
     const x = P + (i % cols) * cell + cell / 2, yy = top + Math.floor(i / cols) * rowH + s + 50;
     font(c, 600, 31); text(c, b.name, x, yy, b.earned ? fg : dim, { align: "center", max: cell - 16 });
@@ -150,30 +157,30 @@ export async function badgesCard(y: YearStats, list: Badge[]): Promise<Blob> {
 }
 
 /** A week's recap as a 1080 × 1350 card. */
-export async function recapCard(r: WeekRecap, title: string, f: Fmt): Promise<Blob> {
+export async function recapCard(r: WeekRecap, title: string, f: Fmt, th: CardTheme = "paper"): Promise<Blob> {
   await ready();
-  const t = tokens(), W = 1080, H = 1350, P = 88, bg = t.surface, fg = t.fg;
-  const [cv, c] = canvas(W, H, bg);
-  brand(c, t, P, P, fg, t.surface2);
-  font(c, 400, 30); text(c, f.fmtDate(r.start, { day: "numeric", month: "short" }) + " – " + f.fmtDate(addDays(r.start, 6), { day: "numeric", month: "short", year: "numeric" }), W - P, P + 56, t.muted, { align: "right" });
-  font(c, 600, 32); text(c, title.toUpperCase(), P, 330, t.faint, { track: 5 });
+  const k = scheme(th), W = 1080, H = 1350, P = 88, fg = k.fg;
+  const [cv, c] = canvas(W, H, k.bg);
+  brand(c, P, P, fg, k.chip);
+  font(c, 400, 30); text(c, f.fmtDate(r.start, { day: "numeric", month: "short" }) + " – " + f.fmtDate(addDays(r.start, 6), { day: "numeric", month: "short", year: "numeric" }), W - P, P + 56, k.dim, { align: "right" });
+  font(c, 600, 32); text(c, title.toUpperCase(), P, 330, k.dim, { track: 5 });
   font(c, 800, 190, DISPLAY); text(c, f.fmtDur(r.ms), P - 8, 500, fg, { track: -6, max: W - 2 * P });
   const delta = r.ms - r.before.ms;
   font(c, 400, 36);
-  text(c, r.before.ms ? (delta >= 0 ? "+" : "−") + f.fmtDur(Math.abs(delta)) + " vs the week before" : "Focus this week", P, 570, r.before.ms ? (delta >= 0 ? t.leaf : t.warn) : t.muted);
+  text(c, r.before.ms ? (delta >= 0 ? "+" : "−") + f.fmtDur(Math.abs(delta)) + " vs the week before" : "Focus this week", P, 570, r.before.ms ? (delta >= 0 ? k.up : k.down) : k.dim);
   const stats: [string, string][] = [[String(r.cycles), r.cycles === 1 ? "cycle" : "cycles"], [r.active + "/7", "active days"], [String(r.finished.length), r.finished.length === 1 ? "task finished" : "tasks finished"], [String(r.streak), "day streak"]];
   const sw = (W - 2 * P - 3 * 20) / 4;
-  stats.forEach(([v, k], i) => {
+  stats.forEach(([v, name], i) => {
     const x = P + i * (sw + 20);
-    round(c, x, 630, sw, 150, 28, t.surface2);
+    round(c, x, 630, sw, 150, 28, k.panel);
     font(c, 650, 60, DISPLAY); text(c, v, x + 28, 712, fg);
-    font(c, 400, 26); text(c, k, x + 28, 754, t.muted, { max: sw - 40 });
+    font(c, 400, 26); text(c, name, x + 28, 754, k.dim, { max: sw - 40 });
   });
   const max = Math.max(1, ...r.days.map((d) => d.ms)), bw = (W - 2 * P - 6 * 22) / 7, bh = 230, base = 1090;
   r.days.forEach((d, i) => {
     const x = P + i * (bw + 22), h = d.ms ? Math.max(14, (d.ms / max) * bh) : 10;
-    round(c, x, base - h, bw, h, 14, !d.ms ? t.heat[0] : r.best && d.t === r.best.t ? t.tomato : t.heat[2]);
-    font(c, r.best && d.t === r.best.t ? 600 : 400, 28); text(c, f.fmtDate(d.t, { weekday: "short" }), x + bw / 2, base + 46, r.best && d.t === r.best.t ? fg : t.muted, { align: "center" });
+    round(c, x, base - h, bw, h, 14, !d.ms ? k.heat[0] : r.best && d.t === r.best.t ? k.hot : k.bar);
+    font(c, r.best && d.t === r.best.t ? 600 : 400, 28); text(c, f.fmtDate(d.t, { weekday: "short" }), x + bw / 2, base + 46, r.best && d.t === r.best.t ? fg : k.dim, { align: "center" });
   });
   const labels = r.labels.filter((l) => l.name).slice(0, 3);
   let x = P;
@@ -181,7 +188,7 @@ export async function recapCard(r: WeekRecap, title: string, f: Fmt): Promise<Bl
   for (const l of labels) {
     const s = l.name + "  " + f.fmtDur(l.ms), w = c.measureText(s).width + 70;
     if (x + w > W - P) break;
-    round(c, x, 1200, w, 64, 32, t.surface2);
+    round(c, x, 1200, w, 64, 32, k.panel);
     c.fillStyle = `oklch(.68 .15 ${labelHue(l.name)})`; c.beginPath(); c.arc(x + 32, 1232, 9, 0, Math.PI * 2); c.fill();
     text(c, s, x + 52, 1242, fg, { max: w - 70 });
     x += w + 16;

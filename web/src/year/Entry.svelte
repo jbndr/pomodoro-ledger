@@ -1,11 +1,13 @@
 <script>
   import { badges, focusYears, monthsSoFar, yearStats } from "../lib/year";
   import { hoursOf, hoursUnit } from "./card";
+  import { yearEnabled } from "./flag";
 
   let { api, tasks } = $props();
 
   const year = $derived.by(() => {
     const ys = focusYears(tasks), now = new Date().getFullYear();
+    if (!yearEnabled()) return null;
     return ys.includes(now) ? now : ys.includes(now - 1) ? now - 1 : null;
   });
   const y = $derived(year ? yearStats(tasks, year) : null);

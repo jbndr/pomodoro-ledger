@@ -54,6 +54,7 @@
     <button class="btn small recap-btn" type="button" id="openRecap" onclick={() => api.openRecap()}>Weekly recap</button>
     <span class="sub">Every finished focus block counts as one cycle. Stopped sessions over a minute still count toward focus time.</span>
   </div>
+  <YearEntry {api} tasks={m.all} />
   <div class="label-filter" id="statsFilter" role="group" aria-label="Show progress for one label" hidden={!m.names.length}>
     {#each m.chips as c (c.v)}
       <button type="button" data-filter={c.v} aria-pressed={String(m.f === c.v)} onclick={() => (filter = c.v)}>{#if c.hue != null}<i class="label-dot" style:--h={c.hue}></i>{/if}<span>{c.name}</span><em>{api.fmtDur(c.ms)}</em></button>
@@ -82,7 +83,6 @@
     </div>
   </div>
   {#if m.goals}<WeekGoals {api} week={m.goals} today={m.today} />{/if}
-  <YearEntry {api} tasks={m.all} />
   <div class="charts">
     <figure class="chart-card">
       <h3>Focus per day</h3>

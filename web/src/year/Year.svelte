@@ -6,8 +6,10 @@
   import { heatLevel } from "../lib/stats";
   import { labelHue } from "../lib/tasks";
   import { badges, focusYears, monthsSoFar, yearDue, yearStats } from "../lib/year";
-  import { badgesCard, hoursOf, hoursUnit, shareImage, summaryCard } from "./card";
-  import { cssInk, emblem } from "./emblems";
+  import { badgesCard, hoursOf, hoursUnit, summaryCard } from "./card";
+  import Medal from "./Medal.svelte";
+  import { yearEnabled } from "./flag";
+  import { grid } from "./grid";
   import "./year.css";
 
   let { api } = $props();
@@ -84,6 +86,7 @@
 
   /** Opens on a year, the current one (or the latest with focus) by default. */
   export function open(yr) {
+    if (!yearEnabled()) return;
     version++;
     const ys = focusYears(api.viewTasks()), now = new Date().getFullYear();
     year = yr || (ys.includes(now) || !ys.length ? now : ys.at(-1));
@@ -116,7 +119,7 @@
   /** In December, offers the year once, after settings have synced and nothing else is going on. */
   export function maybeOpen() {
     const s = api.S.settings;
-    if ((api.preview() && !api.DEMO) || !api.overlayHidden()) return;
+    if ((api.preview() && !api.DEMO) || !api.overlayHidden() || !yearEnabled()) return;
     if (api.syncing() && tries++ < 8) { setTimeout(maybeOpen, 1000); return; }
     if (api.T.status === "running" || document.body.classList.contains("zen")) return;
     const due = yearDue(api.viewTasks(), Date.now(), s.yearSeen);
@@ -127,7 +130,7 @@
   }
 
   function key(e) {
-    if (!shown || e.metaKey || e.ctrlKey || document.querySelector("#palette:not([hidden])")) return;
+    if (!shown || e.metaKey || e.ctrlKey || document.querySelector("#palette:not([hidden]), #share:not([hidden])")) return;
     e.stopPropagation();
     const onButton = e.target instanceof HTMLElement && e.target.closest("button, select") && e.target !== card;
     if (e.key === "Escape") close();
@@ -165,17 +168,39 @@
 
   function pcancel() { clearTimeout(holdT); down = null; held = false; }
 
-  async function share(kind) {
+  function share(kind) {
     if (busy || !y) return;
     busy = true;
-    try {
-      const png = kind === "badges" ? await badgesCard(y, list) : await summaryCard(y, list, y.persona ? PERSONA_SHORT[y.persona] + (y.window ? " · best " + view.peak : "") : "", api);
-      const r = await shareImage(png, "focus-" + year + "-" + kind + ".png", "My " + year + " in focus");
-      if (r === "saved") api.toast("Saved the image to your downloads.");
-    } catch {
-      api.toast("Couldn't make the image. Try again.");
-    }
-    busy = false;
+    const yy = y, ll = list, persona = yy.persona ? PERSONA_SHORT[yy.persona] + (yy.window ? " · best " + view.peak : "") : "";
+    api.openShare({
+      kind: "year-" + kind, theme: kind === "badges" ? "night" : "tomato",
+      heading: kind === "badges" ? "Share your badges" : "Share your year",
+      name: "focus-" + year + "-" + kind + ".png", title: "My " + year + " in focus",
+      make: (th) => (kind === "badges" ? badgesCard(yy, ll, th) : summaryCard(yy, ll, persona, api, th)),
+      onclose: () => { busy = false; last = performance.now(); card?.focus({ preventScroll: true }); },
+    });
+  }
+
+  let tilted = null;
+  function tilt(e) {
+    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest(".yr-badge")?.querySelector(".medal:not(.locked)");
+    if (el !== tilted) untilt();
+    if (!el || calm()) return;
+    const r = el.getBoundingClientRect(), x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), yv = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+    el.style.setProperty("--rx", ((0.5 - yv) * 26).toFixed(2) + "deg");
+    el.style.setProperty("--ry", ((x - 0.5) * 26).toFixed(2) + "deg");
+    el.style.setProperty("--px", (x * 100).toFixed(1) + "%");
+    el.style.setProperty("--py", (yv * 100).toFixed(1) + "%");
+    el.style.setProperty("--gx", (x * 100).toFixed(1) + "%");
+    el.style.setProperty("--gy", (yv * 100).toFixed(1) + "%");
+    el.classList.add("on");
+    tilted = el;
+  }
+  function untilt() {
+    if (!tilted) return;
+    for (const p of ["--rx", "--ry", "--px", "--py", "--gx", "--gy"]) tilted.style.removeProperty(p);
+    tilted.classList.remove("on");
+    tilted = null;
   }
 
   function count(node, { to, fmt = (v) => Math.round(v).toLocaleString(), d = 0 }) {
@@ -216,7 +241,7 @@
     <div class="yr-card t-{TONE[cur]}" class:held role="dialog" aria-modal="true" aria-label="Your {year} in focus" aria-roledescription="stories" tabindex="-1" bind:this={card}>
       <div class="yr-top">
         <div class="yr-bars" aria-hidden="true">
-          {#each screens as s, j (s)}<i><b style:width={(j < i ? 100 : j > i ? 0 : isFinite(dur(s)) ? (elapsed / dur(s)) * 100 : 0) + "%"}></b></i>{/each}
+          {#each screens as s, j (s)}<i><b style:scale={(j < i ? 1 : j > i ? 0 : isFinite(dur(s)) ? elapsed / dur(s) : 0) + " 1"}></b></i>{/each}
         </div>
         <div class="yr-head">
           <span class="yr-tag">{@render mark("yr-tag-mark")}{year} in focus</span>
@@ -252,9 +277,7 @@
               <p class="yr-unit" in:rise|global={{ d: 2 }}>{hoursUnit(y.ms)}</p>
               <p class="yr-line" in:rise|global={{ d: 3 }}>{y.cycles.toLocaleString()} {y.cycles === 1 ? "cycle" : "cycles"} across {y.active} {y.active === 1 ? "day" : "days"}.{#if view.workdays >= 2}{" "}That's {view.workdays} full workdays of deep work.{/if}</p>
               <div class="yr-fill"></div>
-              <div class="yr-dots" style:--cols={view.dots > 100 ? 15 : view.dots > 60 ? 12 : view.dots > 24 ? 10 : 8} in:rise|global={{ d: 4 }} aria-hidden="true">
-                {#each Array(view.dots) as _, k (k)}<i style:--k={k}></i>{/each}
-              </div>
+              <canvas class="yr-dots" in:rise|global={{ d: 4 }} aria-hidden="true" use:grid={{ n: view.dots, cols: view.dots > 100 ? 15 : view.dots > 60 ? 12 : view.dots > 24 ? 10 : 8, kind: "dot", gap: (w) => Math.min(w * 0.026, 11), delay: 480 }}></canvas>
               <p class="yr-note" in:rise|global={{ d: 5 }}><i class="yr-key-dot"></i>{view.unit === 1 ? "Each dot is a cycle" : "Each dot is " + view.unit + " cycles"}</p>
 
             {:else if cur === "labels"}
@@ -310,9 +333,7 @@
               <p class="yr-unit" in:rise|global={{ d: 2 }}>days in a row</p>
               <p class="yr-line" in:rise|global={{ d: 3 }}>{day(y.streak.from)} to {day(y.streak.to)}. {streakLine(y.streak.days)}</p>
               <div class="yr-fill"></div>
-              <div class="yr-run" in:rise|global={{ d: 4 }} aria-hidden="true">
-                {#each Array(view.run) as _, k (k)}<i style:--k={k}><svg viewBox="0 0 16 16"><path d="M4.5 8.4l2.3 2.3 4.7-5.2" /></svg></i>{/each}
-              </div>
+              <canvas class="yr-run" in:rise|global={{ d: 4 }} aria-hidden="true" use:grid={{ n: view.run, cols: 7, kind: "tick", gap: (w) => Math.min(w * 0.02, 8), cap: (w, h) => h * (view.run > 35 ? 0.04 : 0.056), delay: 460 }}></canvas>
               {#if y.streak.days > view.run}<p class="yr-note">and {y.streak.days - view.run} more</p>{/if}
 
             {:else if cur === "busiest"}
@@ -339,7 +360,7 @@
                 {#each view.cal as mo (mo.m)}
                   <div class="mo" style:--m={mo.m}>
                     <span>{monthName(mo.m, { month: "short" })}</span>
-                    <div class="days">{#each mo.days as c, k (k)}<i class="l{c.lvl}" class:fut={c.fut} style:grid-column-start={k === 0 ? mo.off + 1 : null} style:--k={k}></i>{/each}</div>
+                    <div class="days">{#each mo.days as c, k (k)}<i class="l{c.lvl}" class:fut={c.fut} style:grid-column-start={k === 0 ? mo.off + 1 : null}></i>{/each}</div>
                   </div>
                 {/each}
               </div>
@@ -349,10 +370,10 @@
               {@render eyebrow(year + " badges")}
               <h2 class="yr-h" in:rise|global={{ d: 1 }}>{earned.length} of {list.length} earned</h2>
               <div class="yr-fill"></div>
-              <div class="yr-badges">
+              <div class="yr-badges" onpointermove={tilt} onpointerleave={untilt} onpointercancel={untilt} onpointerup={(e) => { if (e.pointerType !== "mouse") untilt(); }}>
                 {#each list as b, k (b.id)}
                   <button type="button" class="yr-badge" class:locked={!b.earned} aria-pressed={String(pick === b.id)} onclick={() => (pick = pick === b.id ? null : b.id)} in:rise|global={{ d: 2 + k * 0.35 }}>
-                    <span class="em">{@html emblem(b.id, cssInk(b.id, !b.earned), !b.earned)}</span>
+                    <span class="em"><Medal id={b.id} locked={!b.earned} fg="var(--yr-fg)" d={k} /></span>
                     <b>{b.name}</b>
                     {#if !b.earned}<small>{b.have} of {b.need}</small>{/if}
                   </button>
@@ -379,7 +400,7 @@
               {#if earned.length}
                 <div class="yr-strip" in:rise|global={{ d: 4 }}>
                   <p class="yr-eye">{earned.length} of {list.length} badges</p>
-                  <div>{#each earned as b (b.id)}<span class="em" title={b.name}>{@html emblem(b.id, cssInk(b.id))}</span>{/each}</div>
+                  <div>{#each earned as b, k (b.id)}<span class="em" title={b.name}><Medal id={b.id} d={k} /></span>{/each}</div>
                 </div>
               {/if}
               <div class="yr-fill"></div>

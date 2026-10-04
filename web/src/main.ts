@@ -57,8 +57,9 @@ import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
 import { adjust, arm, buzz, complete, dur, flushPartial, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
-import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, openSettings, openWhen, openYear, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type Sheet, type WhenUI, type YearUI } from "./ui";
+import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, openSettings, openShare, openWhen, openYear, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type ShareUI, type Sheet, type WhenUI, type YearUI } from "./ui";
 import Year from "./year/Year.svelte";
+import ShareSheet from "./year/ShareSheet.svelte";
 import { fsEl, setZen, toggleZen } from "./zen";
 
 ["pointerdown", "keydown", "touchstart"].forEach((ev) => addEventListener(ev, ensureAudio, { passive: true, capture: true }));
@@ -109,7 +110,7 @@ ui.room = mount(RoomDialog, { target: document.body, props: { api: roomApi } }) 
 watchReminders(openRoom);
 ui.keys = mount(Keys, { target: document.body, props: { api: { setOverlay, MOD, openPalette } } }) as Sheet;
 ui.recap = mount(Recap, { target: document.body, props: { api: {
-  S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, plural, toast,
+  S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, plural, toast, openShare,
   overlayHidden: () => !document.querySelector(".overlay:not([hidden])"), syncing: () => Cloud.state === "connecting",
 } } }) as RecapUI;
 ui.plan = mount(PlanSheet, { target: document.body, props: { api: {
@@ -117,9 +118,10 @@ ui.plan = mount(PlanSheet, { target: document.body, props: { api: {
   overlayHidden: () => !document.querySelector(".overlay:not([hidden])"),
 } } }) as Sheet;
 ui.year = mount(Year, { target: document.body, props: { api: {
-  S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, fmtClock, plural, toast,
+  S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, fmtClock, plural, toast, openShare,
   overlayHidden: () => !document.querySelector(".overlay:not([hidden])"), syncing: () => Cloud.state === "connecting",
 } } }) as YearUI;
+ui.share = mount(ShareSheet, { target: document.body, props: { api: { setOverlay, toast } } }) as ShareUI;
 if (invite) {
   try { history.replaceState(null, "", location.pathname); } catch {}
   if (invite.length === 6 && invite !== RM.code) {

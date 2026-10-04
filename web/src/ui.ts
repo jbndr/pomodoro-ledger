@@ -15,10 +15,12 @@ export interface Sheet { open(): void; close(): void }
 export interface PaletteUI extends Sheet { toggle(): void }
 export interface RecapUI { open(week?: number): void; close(): void; maybeOpen(): void }
 export interface YearUI { open(year?: number): void; close(): void; maybeOpen(): void }
+export interface ShareRequest { kind: string; theme: string; heading: string; name: string; title: string; make(theme: string): Promise<Blob>; tall?: boolean; onclose?(): void }
+export interface ShareUI { open(r: ShareRequest): void; close(): void }
 export interface ListUI { moveTask(id: string, up: boolean, far: boolean): { from: string; to: string } | null; dragging(): boolean }
 
 /** What the mounted components expose; set during boot. */
-export const ui: { pop?: PopUI; when?: WhenUI; label?: LabelUI; settings?: SettingsUI; keys?: Sheet; room?: Sheet; list?: ListUI; recap?: RecapUI; palette?: PaletteUI; plan?: Sheet; year?: YearUI } = {};
+export const ui: { pop?: PopUI; when?: WhenUI; label?: LabelUI; settings?: SettingsUI; keys?: Sheet; room?: Sheet; list?: ListUI; recap?: RecapUI; palette?: PaletteUI; plan?: Sheet; year?: YearUI; share?: ShareUI } = {};
 
 export const openPop: PopUI["open"] = (...a) => ui.pop!.open(...a);
 export const closePop = (refocus?: boolean) => ui.pop?.close(refocus);
@@ -41,3 +43,4 @@ export const openPalette = () => ui.palette!.open();
 export const togglePalette = () => ui.palette?.toggle();
 export const openPlan = () => ui.plan!.open();
 export const openYear = (year?: number) => ui.year!.open(year);
+export const openShare = (r: ShareRequest) => ui.share!.open(r);
