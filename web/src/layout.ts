@@ -13,7 +13,7 @@ export function setOverlay(id: string, open: boolean) {
     document.body.classList.add("modal-open");
   }
   overlay.hidden = !open;
-  if (!open && modalScroll !== null && $("#room").hidden && $("#settings").hidden && $("#keys").hidden) {
+  if (!open && modalScroll !== null && !document.querySelector(".overlay:not([hidden])")) {
     const top = modalScroll;
     modalScroll = null;
     document.body.classList.remove("modal-open");

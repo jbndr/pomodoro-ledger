@@ -7,7 +7,7 @@
   let { api } = $props();
 
   const NUM = { sFocus: "focus", sShort: "short", sLong: "long", sEvery: "longEvery", sGoal: "goal" };
-  const TOGGLE = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat" };
+  const TOGGLE = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat", sRecap: "weeklyRecap" };
   const TABS = [["timer", "Timer"], ["auto", "Automation"], ["alerts", "Sound & alerts"], ["sync", "Sync"]];
   // A field being typed into keeps its text when settings arrive from another device.
   const HELD = { ...NUM, sDayEnd: "workdayEnd" };
@@ -154,6 +154,12 @@
           <legend>Floating timer</legend>
           <div class="card">
             <label class="toggle"><span>Open automatically<small>When a session starts or you switch tabs</small></span><input type="checkbox" id="sAutoFloat" bind:checked={f.autoFloat}></label>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>Weekly recap</legend>
+          <div class="card">
+            <label class="toggle"><span>Show each new week<small>Last week at a glance, on your first visit</small></span><input type="checkbox" id="sRecap" bind:checked={f.weeklyRecap}></label>
           </div>
         </fieldset>
       </div>

@@ -9,12 +9,13 @@ export function makeSamples() {
   const now = Date.now(), today = sod(now);
   const at = (ago: number, hour: number) => Math.min(now - 5 * MIN, addDays(today, -ago) + hour * 3600000 + Math.floor(rnd() * 40) * MIN);
   const F = 25 * MIN;
+  const startHour = (ago: number) => [15, 9, 9, 10, 9, 14, 11][new Date(addDays(today, -ago)).getDay()];
   type Day = [ago: number, n: number, partial?: boolean];
   const mk = (id: string, title: string, est: number, created: number, done: number | null, plan: Day[]): Task => {
     const sessions: Session[] = [];
     plan.forEach(([ago, n, partial]) => {
-      for (let i = 0; i < n; i++) sessions.push({ at: at(ago, 9 + i), ms: F, full: true });
-      if (partial) sessions.push({ at: at(ago, 10 + n), ms: (8 + Math.floor(rnd() * 12)) * MIN, full: false });
+      for (let i = 0; i < n; i++) sessions.push({ at: at(ago, startHour(ago) + i), ms: F, full: true });
+      if (partial) sessions.push({ at: at(ago, startHour(ago) + 1 + n), ms: (8 + Math.floor(rnd() * 12)) * MIN, full: false });
     });
     return { id, title, est, done: done != null, createdAt: at(created, 8), doneAt: done != null ? at(done, 17) : null, sessions, sample: true };
   };
@@ -27,9 +28,11 @@ export function makeSamples() {
     mk("x5", "Study for the cloud architect certification", 50, 110, null, spread(110, 1, 0.33, 2)),
     mk("x6", "Write the onboarding guide", 5, 3, null, [[1, 2], [0, 1]]),
     mk("x7", "Prepare the monthly investor update", 3, 0, null, []),
+    mk("x8", "Polish the pricing page", 8, 18, 3, spread(16, 3, 0.85, 3)),
   ];
   list[5].today = list[6].today = true;
+  ["Website", "App", "Planning", "App", "Learning", "Writing", "Admin", "Website"].forEach((name, i) => { list[i].project = name; });
   const daily: Repeat = { every: "day" }, plants: Repeat = { every: "week", days: [1, 4] };
-  list.push({ ...mk("x8", "Plan the day", 1, 6, null, []), today: true, plan: dayKey(now), repeat: daily }, { ...mk("x9", "Water the plants", 1, 9, null, []), plan: firstDue(plants, dayKey(addDays(now, 1))), repeat: plants });
+  list.push({ ...mk("x9", "Plan the day", 1, 6, null, []), today: true, plan: dayKey(now), repeat: daily }, { ...mk("x10", "Water the plants", 1, 9, null, []), plan: firstDue(plants, dayKey(addDays(now, 1))), repeat: plants });
   return new Map(list.map((t) => [t.id, t]));
 }
