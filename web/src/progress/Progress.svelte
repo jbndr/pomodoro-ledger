@@ -10,6 +10,7 @@
   import Ledger from "./Ledger.svelte";
   import Sessions from "./Sessions.svelte";
   import WeekGoals from "./WeekGoals.svelte";
+  import YearEntry from "../year/Entry.svelte";
 
   let { api } = $props();
   let filter = $state("");
@@ -81,6 +82,7 @@
     </div>
   </div>
   {#if m.goals}<WeekGoals {api} week={m.goals} today={m.today} />{/if}
+  <YearEntry {api} tasks={m.all} />
   <div class="charts">
     <figure class="chart-card">
       <h3>Focus per day</h3>

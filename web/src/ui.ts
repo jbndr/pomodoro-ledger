@@ -14,10 +14,11 @@ export interface SettingsUI { fill(): void; open(tab?: string): void; close(): v
 export interface Sheet { open(): void; close(): void }
 export interface PaletteUI extends Sheet { toggle(): void }
 export interface RecapUI { open(week?: number): void; close(): void; maybeOpen(): void }
+export interface YearUI { open(year?: number): void; close(): void; maybeOpen(): void }
 export interface ListUI { moveTask(id: string, up: boolean, far: boolean): { from: string; to: string } | null; dragging(): boolean }
 
 /** What the mounted components expose; set during boot. */
-export const ui: { pop?: PopUI; when?: WhenUI; label?: LabelUI; settings?: SettingsUI; keys?: Sheet; room?: Sheet; list?: ListUI; recap?: RecapUI; palette?: PaletteUI; plan?: Sheet } = {};
+export const ui: { pop?: PopUI; when?: WhenUI; label?: LabelUI; settings?: SettingsUI; keys?: Sheet; room?: Sheet; list?: ListUI; recap?: RecapUI; palette?: PaletteUI; plan?: Sheet; year?: YearUI } = {};
 
 export const openPop: PopUI["open"] = (...a) => ui.pop!.open(...a);
 export const closePop = (refocus?: boolean) => ui.pop?.close(refocus);
@@ -39,3 +40,4 @@ export const closeRecap = () => ui.recap!.close();
 export const openPalette = () => ui.palette!.open();
 export const togglePalette = () => ui.palette?.toggle();
 export const openPlan = () => ui.plan!.open();
+export const openYear = (year?: number) => ui.year!.open(year);
