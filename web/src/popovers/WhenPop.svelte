@@ -17,9 +17,8 @@
   };
   const weekStart = weekStartOf(navigator.language);
 
-  let el, input, grid;
+  let el, panel, input, grid;
   let typed = $state(""), idx = $state(0), month = $state(0), focus = $state(""), preview = $state(""), task = $state.raw(null), opened = $state(0);
-  let left = $state(0), top = $state(0), origin = $state("top right");
   let rule = $state.raw(null);
   let anchor = null, onPick = null, onRepeat = null;
 
@@ -52,17 +51,8 @@
     whenPop.hidden = false;
     sync();
     flushSync();
-    // Hover-only buttons have no box while hidden; fall back to their row.
-    let r = a.getBoundingClientRect();
-    if (!r.width && !r.height) r = (a.closest(".task") || document.getElementById("taskList")).getBoundingClientRect();
-    const w = el.offsetWidth, h = el.offsetHeight;
-    const above = r.bottom + 6 + h > innerHeight - 8 && r.top - 6 - h > 8;
-    left = Math.max(12, Math.min(r.right - w, innerWidth - w - 12));
-    top = Math.max(8, above ? r.top - 6 - h : Math.min(r.bottom + 6, innerHeight - h - 8));
-    origin = (above ? "bottom" : "top") + " right";
-    flushSync();
     // On phones a focused field would pop the keyboard over the calendar.
-    if (matchMedia("(hover: hover)").matches) input.focus({ preventScroll: true }); else el.focus({ preventScroll: true });
+    if (matchMedia("(hover: hover)").matches) input.focus({ preventScroll: true }); else panel.focus({ preventScroll: true });
   }
 
   export function close(refocus) {
@@ -93,8 +83,6 @@
     rule = r = r && anchored(r, startKey());
     if (onRepeat) onRepeat(r);
     else if (task) { api.setRepeat(task.id, r); task = api.S.tasks.get(task.id) || task; }
-    flushSync();
-    top = Math.max(8, Math.min(top, innerHeight - el.offsetHeight - 8));
   }
 
   function setKind(every) {
@@ -156,30 +144,36 @@
     e.preventDefault();
     setKind(KINDS[j][0]);
     flushSync();
-    el.querySelector(".rep-kinds [aria-checked='true']")?.focus();
+    panel.querySelector(".rep-kinds [aria-checked='true']")?.focus();
   }
+
+  const title = $derived(task && task.title ? task.title : "New task");
+  const todayNote = $derived.by(() => { opened; return api.fmtDate(Date.now(), { weekday: "short" }); });
 
   const hovered = (e) => { const li = e.target.closest("li"); return li ? +li.dataset.i : -1; };
   const dayLabel = (d) => api.fmtDate(d.t, { weekday: "long", day: "numeric", month: "long" }) + (cal.load.get(d.key) ? ", " + api.plural(cal.load.get(d.key), "task") + " planned" : "");
 </script>
 
-<svelte:window onresize={() => close()} onscrollcapture={(e) => { if (!el.contains(e.target)) close(); }} />
-<svelte:document onpointerdown={(e) => { if (!whenPop.hidden && !e.target.closest("#whenPop, [data-sched]")) close(); }} />
+<svelte:document onpointerdown={(e) => { if (!whenPop.hidden && e.target === el) close(true); }} />
 
+<div class="when-pop" id="whenPop" hidden={whenPop.hidden} bind:this={el}>
 <div
-  class="when-pop"
-  id="whenPop"
+  class="when-panel"
   role="dialog"
-  aria-label="When"
+  aria-modal="true"
+  aria-labelledby="whenTitle"
   tabindex="-1"
-  hidden={whenPop.hidden}
-  style:left={left + "px"}
-  style:top={top + "px"}
-  style:transform-origin={origin}
-  bind:this={el}
+  bind:this={panel}
   onkeydown={(e) => { if (e.key === "Escape") { e.stopPropagation(); close(true); } }}
 >
-  <input type="text" id="whenInput" placeholder="When? fri, 12 oct, every mon…" autocomplete="off" spellcheck="false" aria-label="When" aria-controls="whenList" aria-autocomplete="list" aria-activedescendant={"when-" + idx} bind:this={input} bind:value={() => typed, (v) => { typed = v; idx = 0; sync(); }} onkeydown={inputKey} />
+  <div class="when-head">
+    <div><span>Schedule</span><strong id="whenTitle">{title}</strong></div>
+    <button class="icon-btn" type="button" aria-label="Close" onclick={() => close(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <label class="when-field">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
+    <input type="text" id="whenInput" placeholder="Type a date: fri, 12 oct, every mon" autocomplete="off" spellcheck="false" aria-label="When" aria-controls="whenList" aria-autocomplete="list" aria-activedescendant={"when-" + idx} bind:this={input} bind:value={() => typed, (v) => { typed = v; idx = 0; sync(); }} onkeydown={inputKey} />
+  </label>
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <ul
     class="when-list"
@@ -190,7 +184,7 @@
     onpointermove={(e) => { const i = hovered(e); if (i >= 0 && !items[i].off && i !== idx) idx = i; }}
   >
     {#each items as o, i (i)}
-      <li role="option" id={"when-" + i} data-i={i} aria-disabled={o.off ? "true" : null} class:parsed={o.parsed} class:act={i === idx} aria-selected={String(i === idx)}>{@html ICON[o.icon]}<span>{o.title}</span>{#if o.note}<em>{o.note}</em>{/if}{#if o.key}<kbd>{o.key}</kbd>{/if}</li>
+      <li role="option" id={"when-" + i} data-i={i} aria-disabled={o.off ? "true" : null} class:parsed={o.parsed || o.off} class:act={i === idx} aria-selected={String(i === idx)} title={o.key ? "Type " + o.key : null}>{@html ICON[o.icon]}<span>{o.title}</span><em>{o.note || (o.g === "today" && !o.parsed ? todayNote : "")}</em>{#if o.parsed}<kbd aria-hidden="true">↵</kbd>{/if}</li>
     {/each}
   </ul>
   <div class="cal-head">
@@ -242,4 +236,5 @@
       </div>
     {/if}
   </div>
+</div>
 </div>

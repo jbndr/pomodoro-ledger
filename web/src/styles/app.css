@@ -717,23 +717,48 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .keys-sheet .hint { margin: 0; font-size: 12.5px; color: var(--faint); }
 @media (hover: none) { .keys-btn { display: none; } }
 @media (max-width: 640px) { .keys-grid { grid-template-columns: 1fr; } }
-.when-pop { position: fixed; z-index: 46; width: min(300px, calc(100vw - 24px)); padding: 8px; border-radius: 18px; border: 1px solid var(--line-2); background: var(--surface); box-shadow: 0 24px 60px -24px rgba(0,0,0,.35), var(--shadow); transform-origin: top right; }
-.when-pop:not([hidden]) { animation: when-in .16s cubic-bezier(.2, .8, .2, 1); }
-@keyframes when-in { from { opacity: 0; transform: scale(.96) translateY(-4px); } }
-#whenInput { width: 100%; height: 38px; padding: 0 12px; border: 0; border-radius: 11px; background: var(--surface-2); color: var(--fg); font: 500 14px var(--f-body); }
-#whenInput:focus { outline: 2px solid color-mix(in oklab, var(--accent) 45%, transparent); outline-offset: 0; }
-.when-list { list-style: none; margin: 6px 0 4px; padding: 0; display: grid; gap: 1px; }
-.when-list li { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 0 10px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 550; }
-.when-list li.act { background: var(--surface-2); }
-.when-list li[aria-disabled="true"] { cursor: default; color: var(--faint); font-weight: 450; }
-.when-list li svg { width: 17px; height: 17px; flex: none; }
-.when-list li span { flex: 1; min-width: 0; }
-.when-list li em { font-style: normal; font: 12px var(--f-mono); color: var(--faint); }
+.when-pop { position: fixed; inset: 0; z-index: 46; display: grid; justify-items: center; align-items: start; padding: max(12px, min(10vh, 96px)) 12px 12px; background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); overflow-y: auto; overscroll-behavior: contain; }
+.when-pop:not([hidden]) { animation: when-fade .18s ease-out; }
+.when-panel { width: min(340px, 100%); padding: 6px 10px 10px; border-radius: 22px; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 30px 70px -28px rgba(0,0,0,.45), var(--shadow); }
+.when-panel:focus { outline: none; }
+.when-pop:not([hidden]) .when-panel { animation: when-in .22s cubic-bezier(.2, .8, .2, 1); }
+@keyframes when-fade { from { opacity: 0; } }
+@keyframes when-in { from { opacity: 0; transform: translateY(-6px) scale(.98); } }
+.when-head { display: flex; align-items: center; gap: 8px; padding: 6px 0 8px 4px; }
+.when-head > div { flex: 1; min-width: 0; display: grid; }
+.when-head span { font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); }
+.when-head strong { font-family: var(--f-display); font-size: 16px; font-weight: 650; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.when-head .icon-btn { width: 32px; height: 32px; border-radius: 10px; color: var(--muted); }
+.when-head .icon-btn svg { width: 16px; height: 16px; }
+.when-field { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; border-radius: 12px; background: var(--surface-2); color: var(--faint); transition: box-shadow .15s; }
+.when-field:focus-within { box-shadow: inset 0 0 0 1px var(--line-2); }
+.when-field svg { width: 16px; height: 16px; flex: none; }
+#whenInput { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: transparent; color: var(--fg); font: 500 14px var(--f-body); outline: none; }
+#whenInput::placeholder { color: var(--faint); }
+.when-list { list-style: none; margin: 8px 0 10px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.when-list li { display: grid; justify-items: center; align-content: center; gap: 3px; min-height: 70px; padding: 8px 4px; border-radius: 14px; border: 1px solid var(--line); cursor: pointer; text-align: center; transition: background .15s, border-color .15s; }
+.when-list li svg { width: 20px; height: 20px; margin-bottom: 2px; }
+.when-list li span { font-size: 12.5px; font-weight: 600; line-height: 1.2; }
+.when-list li em { min-height: 1.2em; font: 500 11px/1.2 var(--f-body); font-style: normal; color: var(--faint); }
+.when-list li.act { background: var(--surface-2); border-color: var(--line-2); }
+.when-list li.parsed { grid-column: 1 / -1; grid-template-columns: auto minmax(0, 1fr) auto auto; justify-items: start; align-items: center; gap: 10px; min-height: 46px; padding: 0 12px; text-align: left; background: var(--accent-soft); border-color: transparent; }
+.when-list li.parsed svg { margin: 0; }
+.when-list li.parsed span { font-size: 14px; }
+.when-list li.parsed em { font-size: 12px; color: var(--muted); }
+.when-list li.parsed kbd { font: 600 11px var(--f-body); padding: 2px 6px; border-radius: 6px; background: var(--surface); color: var(--muted); }
+.when-list li[aria-disabled="true"] { cursor: default; background: transparent; border: 1px dashed var(--line-2); color: var(--faint); }
+.when-list li[aria-disabled="true"] span { font-weight: 450; }
 .when-list li .ic-today { color: #E8A800; }
 .when-list li .ic-day { color: var(--accent); }
 .when-list li .ic-week { color: var(--sky); }
 .when-list li .ic-later { color: var(--faint); }
-.when-list li.parsed { color: var(--fg); }
+.when-list li .ic-repeat { color: var(--leaf); }
+@media (max-width: 640px) {
+  .when-pop { align-items: end; padding: 0; }
+  .when-panel { width: 100%; max-height: calc(100dvh - 24px); overflow-y: auto; border-radius: 22px 22px 0 0; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .when-pop:not([hidden]) .when-panel { animation: when-up .26s cubic-bezier(.2, .8, .2, 1); }
+  @keyframes when-up { from { transform: translateY(24px); opacity: .6; } }
+}
 .when-pop .cal-head { padding: 10px 2px 0 8px; border-top: 1px solid var(--line); }
 .cal-head { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; }
 .cal-head strong { flex: 1; font-family: var(--f-display); font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
