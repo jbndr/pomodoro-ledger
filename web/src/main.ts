@@ -17,6 +17,7 @@ import { onKey, setHover } from "./keys";
 import { initLayout, measure, setOverlay, sizeTimer, timerLayout } from "./layout";
 import { addDays, dayKey, keyTime, sod } from "./lib/dates";
 import { normCode } from "./lib/room";
+import { scheduleOf } from "./lib/schedule";
 import { cyclesOf, labelHue, projectOf, timeOf } from "./lib/tasks";
 import { MODES } from "./lib/timer";
 import { initPages } from "./pages";
@@ -103,7 +104,8 @@ if (invite) {
   try { history.replaceState(null, "", location.pathname); } catch {}
   if (invite.length === 6 && invite !== RM.code) {
     roomReset();
-    openRoom();
+    if (scheduleOf(invite) && RM.name) roomEnter(invite);
+    else openRoom();
   } else if (RM.code) roomConnect();
 } else if (RM.code) roomConnect();
 ui.settings = mount(Settings, { target: document.body, props: { api: {

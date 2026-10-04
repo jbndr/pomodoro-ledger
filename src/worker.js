@@ -1,4 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
+import { pushBody, pushReady, readSub, sendPush } from "./push.js";
 import { handleSync } from "./sync.js";
 import { nextSession, readTimes, scheduleOf, sessionCode, startStep } from "../web/src/lib/schedule.ts";
 
@@ -27,6 +28,12 @@ const GOING_BURST = 10;
 const GOING_EVERY_MS = 30000;
 const GOING_MAX = 99;
 const EARLY_MS = 60000;
+const PUSH_PER_SCHED = 40;
+const PUSH_TOTAL = 1000;
+const PUSH_BURST = 10;
+const PUSH_EVERY_MS = 60000;
+const PUSH_LATE_MS = 5 * 60000;
+const PUSH_TTL_S = 3600;
 const HOUSE = [{ key: "P", rhythm: "25/5", title: "Pomodoro" }, { key: "D", rhythm: "50/10", title: "Deep work" }];
 
 const json = (body, status = 200) =>
@@ -39,6 +46,15 @@ const clean = (v, n) => String(v || "").replace(/[\x00-\x1f\x7f]/g, "").replace(
 const tokens = (b, now, burst = REACT_BURST, every = REACT_EVERY_MS) => (b ? Math.min(burst, b.n + (now - b.at) / every) : burst);
 const size = (v) => { const n = Math.round(Number(v ?? MAX_MEMBERS)); return Number.isFinite(n) ? Math.max(MIN_MEMBERS, Math.min(MAX_MEMBERS, n)) : MAX_MEMBERS; };
 const lobby = (env) => env.LOBBY.get(env.LOBBY.idFromName("lobby"));
+// When subscribers are next owed a push: the next start, or now if a session just began unannounced.
+function pushAt(s, now) {
+  const o = nextSession(s, now);
+  if (!o) return null;
+  if (o.start > now) return o.start;
+  if (s.pushed !== o.start && now - o.start < PUSH_LATE_MS) return now;
+  const n = nextSession(s, o.end);
+  return n && n.start;
+}
 // House rooms are always listed. Their codes contain an O, which random codes never do.
 const houseCode = (h, i) => "OPEN" + h.key + ALPHABET[i];
 function houseRoom(code) {
@@ -54,6 +70,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/api/rooms" && request.method === "GET") return lobby(env).fetch("https://lobby/rooms");
+    if (url.pathname === "/api/push" && request.method === "GET") return json({ key: pushReady(env) ? env.VAPID_PUBLIC_KEY.trim() : null });
     if (url.pathname === "/api/room" && request.method === "POST") {
       const body = await request.json().catch(() => null);
       let cfg = null;
@@ -328,9 +345,10 @@ export class Lobby extends DurableObject {
       if (now - r.at > LISTED_MS) stale.push(k);
       else if (!scheduleOf(r.code)) rooms.push({ code: r.code, title: r.title, rhythm: r.rhythm, house: r.house, max: r.max || MAX_MEMBERS, names: r.names });
     }
+    const gone = [];
     for (const [k, s] of await store.list({ prefix: "s:" })) {
       const o = nextSession(s, now);
-      if (now - s.used > SCHED_IDLE_MS || !o) { stale.push(k); continue; }
+      if (now - s.used > SCHED_IDLE_MS || !o) { stale.push(k); gone.push(s.id); continue; }
       const going = s.going && s.going.at === o.start ? s.going.ids.length : 0;
       if (o.start > now) { upcoming.push({ id: s.id, title: s.title, rhythm: s.rhythm, max: s.max, tz: s.tz, days: s.days, from: s.from, to: s.to, start: o.start, end: o.end, going }); continue; }
       const code = sessionCode(s.id, o.start), r = reported.get("r:" + code);
@@ -338,6 +356,8 @@ export class Lobby extends DurableObject {
     }
     for (const [k, b] of await store.list({ prefix: "ip:" })) if (now >= b.full) stale.push(k);
     if (stale.length) await store.delete(stale);
+    if (gone.length) await this.unsubscribe(gone, now);
+    else if (pushReady(this.env) && (await store.getAlarm()) == null) await this.arm(now);
     upcoming.sort((a, b) => a.start - b.start || a.title.localeCompare(b.title));
     for (const h of HOUSE) {
       const shards = rooms.filter((r) => r.house && r.rhythm === h.rhythm);
@@ -385,8 +405,10 @@ export class Lobby extends DurableObject {
     if (!going && request.method === "DELETE") {
       if (typeof body.token !== "string" || body.token !== s.token) return json({ error: "forbidden" }, 403);
       await store.delete("s:" + id);
+      await this.unsubscribe([id], now);
       return new Response(null, { status: 204 });
     }
+    if (going === "push" && (request.method === "POST" || request.method === "DELETE")) return this.subscribe(request.method, s, body, ip, now);
     if (going === "going" && request.method === "POST") {
       const cid = clean(body.cid, 40), o = nextSession(s, now);
       if (!cid || !o) return json({ error: "bad request" }, 400);
@@ -397,5 +419,69 @@ export class Lobby extends DurableObject {
       return json({ going: ids.length, start: o.start });
     }
     return json({ error: "not found" }, 404);
+  }
+
+  async subscribe(method, s, body, ip, now) {
+    const store = this.ctx.storage, cid = clean(body.cid, 40), key = "p:" + s.id + ":" + cid, sub = method === "POST" && readSub(body.sub);
+    if (!cid) return json({ error: "bad request" }, 400);
+    if (method === "POST" && !pushReady(this.env)) return json({ error: "push off" }, 503);
+    if (method === "POST" && !sub) return json({ error: "bad subscription" }, 400);
+    if (!(await this.spend("ip:p:" + ip, PUSH_BURST, PUSH_EVERY_MS, now))) return json({ error: "slow down" }, 429);
+    if (!sub) await store.delete(key);
+    else {
+      if (!(await store.get(key))) {
+        const all = [...(await store.list({ prefix: "p:" })).keys()];
+        if (all.length >= PUSH_TOTAL || all.filter((k) => k.startsWith("p:" + s.id + ":")).length >= PUSH_PER_SCHED) return json({ error: "full" }, 507);
+      }
+      await store.put(key, sub);
+    }
+    await this.arm(now);
+    return new Response(null, { status: 204 });
+  }
+
+  async unsubscribe(ids, now) {
+    const store = this.ctx.storage, keys = [];
+    for (const id of ids) keys.push(...(await store.list({ prefix: "p:" + id + ":" })).keys());
+    for (let i = 0; i < keys.length; i += 128) await store.delete(keys.slice(i, i + 128));
+    await this.arm(now);
+  }
+
+  // Wakes the lobby at the next session start that has push subscribers.
+  async arm(now) {
+    const store = this.ctx.storage, ids = new Set([...(await store.list({ prefix: "p:" })).keys()].map((k) => k.slice(2, 5)));
+    let next = Infinity;
+    for (const id of pushReady(this.env) ? ids : []) {
+      const s = await store.get("s:" + id), t = s && pushAt(s, now);
+      if (t && t < next) next = t;
+    }
+    if (next < Infinity) await store.setAlarm(next);
+    else if ((await store.getAlarm()) != null) await store.deleteAlarm();
+  }
+
+  // One schedule per run keeps each run within the subrequest limit; the next due one re-arms for now.
+  async alarm() {
+    const store = this.ctx.storage, now = Date.now(), by = new Map();
+    for (const [k, sub] of await store.list({ prefix: "p:" })) {
+      const id = k.slice(2, 5);
+      by.set(id, [...(by.get(id) || []), [k, sub]]);
+    }
+    for (const [id, subs] of pushReady(this.env) ? by : []) {
+      const s = await store.get("s:" + id);
+      if (!s) { await this.unsubscribe([id], now); continue; }
+      if (pushAt(s, now) !== now) continue;
+      const o = nextSession(s, now), text = pushBody(s.title, o.start, sessionCode(id, o.start));
+      const ttl = Math.max(60, Math.min(PUSH_TTL_S, Math.round((o.end - now) / 1000)));
+      await store.put("s:" + id, { ...s, pushed: o.start });
+      const dead = [];
+      await Promise.all(subs.map(async ([k, sub]) => {
+        try {
+          const status = await sendPush(sub, text, this.env, { ttl, now });
+          if (status === 404 || status === 410) dead.push(k);
+        } catch {}
+      }));
+      if (dead.length) await store.delete(dead);
+      break;
+    }
+    await this.arm(now);
   }
 }

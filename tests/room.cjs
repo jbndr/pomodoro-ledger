@@ -5,27 +5,36 @@ const vm = require('node:vm');
 const { webcrypto } = require('node:crypto');
 
 const { transformSync } = require('esbuild');
+const { receiver, decrypt, vapidEnv, verifyJwt } = require('./receiver.cjs');
 
 const schedule = transformSync(fs.readFileSync('web/src/lib/schedule.ts', 'utf8'), { loader: 'ts' }).code.replace(/^export /gm, '');
+const push = fs.readFileSync('src/push.js', 'utf8').replace(/^export /gm, '');
 const source = fs.readFileSync('src/worker.js', 'utf8')
   .replace(/^(import|export \{).*$/gm, '')
   .replace('export default', 'const worker =')
   .replace(/^export class /gm, 'class ');
 const clock = { now: null };
 const FakeDate = class extends Date { static now() { return clock.now ?? Date.now(); } };
-const { Room, Lobby, worker } = vm.runInNewContext(schedule + source + '\n({ Room, Lobby, worker })', {
+const net = { fetch: async () => { throw new Error('no network in tests'); } };
+const { Room, Lobby, worker } = vm.runInNewContext(schedule + push + source + '\n({ Room, Lobby, worker })', {
   DurableObject: class { constructor(ctx, env) { this.ctx = ctx; this.env = env; } },
-  WebSocketRequestResponsePair: class {}, crypto: webcrypto, Date: FakeDate, Intl, Request, JSON, URL,
+  WebSocketRequestResponsePair: class {}, crypto: webcrypto, Date: FakeDate, Intl, Request, JSON, URL, TextEncoder, btoa, atob,
+  fetch: (...a) => net.fetch(...a),
   Response: class extends Response { constructor(body, init = {}) { super(body, init.status === 101 ? { status: 200 } : init); } },
   WebSocketPair: class { constructor() { this[0] = {}; this[1] = { accept() {}, close(code) { this.closed = code; } }; } },
 });
 const { nextSession, sessionCode } = vm.runInNewContext(schedule + '\n({ nextSession, sessionCode })', { Date, Intl });
 
-const storage = (data) => ({
-  get: async (k) => data.get(k), put: async (k, v) => data.set(k, v),
-  delete: async (k) => [].concat(k).forEach((x) => data.delete(x)), setAlarm: async () => {},
-  list: async ({ prefix }) => new Map([...data].filter(([k]) => k.startsWith(prefix))),
-});
+const storage = (data) => {
+  const s = {
+    alarm: null,
+    get: async (k) => data.get(k), put: async (k, v) => data.set(k, v),
+    delete: async (k) => [].concat(k).forEach((x) => data.delete(x)),
+    setAlarm: async (t) => { s.alarm = t; }, getAlarm: async () => s.alarm, deleteAlarm: async () => { s.alarm = null; },
+    list: async ({ prefix }) => new Map([...data].filter(([k]) => k.startsWith(prefix))),
+  };
+  return s;
+};
 
 function setup(cfg) {
   const data = new Map([['ownerToken', 'private-creator-token']]);
@@ -123,16 +132,16 @@ test('private rooms stay off the lobby', async () => {
   assert.equal(host.messages.at(-1).pub, null);
 });
 
-function lobby() {
-  const data = new Map();
-  const l = new Lobby({ storage: storage(data) });
+function lobby(env = {}, data = new Map()) {
+  const store = storage(data);
+  const l = new Lobby({ storage: store }, env);
   const put = (r) => l.fetch(new Request('https://lobby/rooms', { method: 'POST', body: JSON.stringify(r) }));
   const list = async () => (await l.fetch(new Request('https://lobby/rooms'))).json();
   const call = async (method, path, body, ip = '10.0.0.1') => {
     const res = await l.fetch(new Request('https://lobby' + path, { method, body: body && JSON.stringify(body), headers: { 'x-ip': ip } }));
     return { status: res.status, body: res.status === 204 ? null : await res.json() };
   };
-  return { data, put, list, call, l };
+  return { data, put, list, call, l, store };
 }
 
 test('lobby always offers one open house room per rhythm', async () => {
@@ -394,3 +403,153 @@ test('the Worker passes schedule requests to the lobby with the client address',
   await worker.fetch(new Request('https://x/api/schedule/ABC/going', { method: 'POST', body: '{}' }), env);
   assert.deepEqual(seen, [['https://lobby/schedule', 'POST', '203.0.113.9', '{"a":1}'], ['https://lobby/schedule/ABC/going', 'POST', 'local', '{}']]);
 });
+
+const START = Date.parse('2026-10-05T07:00:00Z');
+const subOf = (r, host = 'fcm.googleapis.com') => ({ endpoint: 'https://' + host + '/fcm/send/' + r.keys.auth, keys: r.keys, expirationTime: null });
+const offline = (fn) => async () => { const real = net.fetch; try { await fn(); } finally { net.fetch = real; } };
+
+test('push subscriptions are checked, kept minimal, and removed when Remind me is off', at(START - 2 * 60 * MIN, async () => {
+  const { call, data } = lobby(await vapidEnv());
+  const { id } = (await call('POST', '/schedule', deepWork)).body;
+  const r = receiver(), path = '/schedule/' + id + '/push';
+  assert.equal((await call('POST', path, { cid: 'ana', sub: { ...subOf(r), endpoint: 'http://fcm.googleapis.com/x' } })).status, 400);
+  assert.equal((await call('POST', path, { cid: 'ana', sub: subOf(r, 'evil.example') })).status, 400);
+  assert.equal((await call('POST', path, { cid: 'ana', sub: { ...subOf(r), keys: { p256dh: r.keys.p256dh } } })).status, 400);
+  assert.equal((await call('POST', path, { cid: '', sub: subOf(r) })).status, 400);
+  assert.equal((await call('POST', '/schedule/NOP/push', { cid: 'ana', sub: subOf(r) })).status, 404);
+  assert.equal((await call('POST', path, { cid: 'ana', sub: subOf(r) })).status, 204);
+  assert.deepEqual({ ...data.get('p:' + id + ':ana') }, { endpoint: subOf(r).endpoint, p256dh: r.keys.p256dh, auth: r.keys.auth });
+  assert.equal((await call('DELETE', path, { cid: 'ana' })).status, 204);
+  assert.equal(data.has('p:' + id + ':ana'), false);
+}));
+
+test('push stays off without the VAPID secret', at(START - 2 * 60 * MIN, async () => {
+  const { call, data } = lobby({ VAPID_PUBLIC_KEY: (await vapidEnv()).VAPID_PUBLIC_KEY });
+  const { id } = (await call('POST', '/schedule', deepWork)).body;
+  assert.equal((await call('POST', '/schedule/' + id + '/push', { cid: 'ana', sub: subOf(receiver()) })).status, 503);
+  assert.equal([...data.keys()].some((k) => k.startsWith('p:')), false);
+  const key = async (env) => (await worker.fetch(new Request('https://x/api/push'), env)).json();
+  assert.deepEqual(await key({}), { key: null });
+  assert.deepEqual(await key({ VAPID_PUBLIC_KEY: 'BAAA', VAPID_PRIVATE_KEY: 'x' }), { key: null });
+  const env = await vapidEnv();
+  assert.deepEqual(await key(env), { key: env.VAPID_PUBLIC_KEY });
+  assert.equal(JSON.stringify(await key(env)).includes(env.VAPID_PRIVATE_KEY), false);
+}));
+
+test('push subscribe calls are rate limited per address and capped per schedule and in total', at(START - 2 * 60 * MIN, async () => {
+  const env = await vapidEnv(), { call, data } = lobby(env);
+  const { id } = (await call('POST', '/schedule', deepWork)).body, path = '/schedule/' + id + '/push', r = receiver();
+  for (let i = 0; i < 10; i++) assert.equal((await call('POST', path, { cid: 'c' + i, sub: subOf(r) }, 'z')).status, 204);
+  assert.equal((await call('POST', path, { cid: 'c10', sub: subOf(r) }, 'z')).status, 429);
+  assert.equal((await call('DELETE', path, { cid: 'c0' }, 'z')).status, 429);
+  clock.now += 60000;
+  assert.equal((await call('POST', path, { cid: 'c10', sub: subOf(r) }, 'z')).status, 204);
+  for (let i = 11; i < 40; i++) data.set('p:' + id + ':c' + i, { endpoint: 'x' });
+  assert.equal((await call('POST', path, { cid: 'c40', sub: subOf(r) }, 'y')).status, 507);
+  assert.equal((await call('POST', path, { cid: 'c3', sub: subOf(receiver()) }, 'y')).status, 204);
+  const other = lobby(env);
+  const b = (await other.call('POST', '/schedule', deepWork)).body;
+  for (let i = 0; i < 1000; i++) other.data.set('p:ZZZ:' + i, { endpoint: 'x' });
+  assert.equal((await other.call('POST', '/schedule/' + b.id + '/push', { cid: 'ana', sub: subOf(r) })).status, 507);
+}));
+
+test('at session start the lobby pushes to that schedule\'s subscribers and drops dead ones', at(START - 2 * 60 * MIN, offline(async () => {
+  const env = await vapidEnv(), { call, l, data, store } = lobby(env);
+  const a = (await call('POST', '/schedule', deepWork)).body;
+  const b = (await call('POST', '/schedule', { ...deepWork, title: 'Writing', from: 10 * 60, to: 11 * 60 })).body;
+  const ana = receiver(), ben = receiver(), cy = receiver();
+  await call('POST', '/schedule/' + a.id + '/push', { cid: 'ana', sub: subOf(ana) });
+  await call('POST', '/schedule/' + a.id + '/push', { cid: 'ben', sub: subOf(ben, 'web.push.apple.com') });
+  await call('POST', '/schedule/' + b.id + '/push', { cid: 'cy', sub: subOf(cy) });
+  assert.equal(store.alarm, START);
+  const sent = [];
+  net.fetch = async (url, init) => { sent.push({ url, init }); return new Response(null, { status: url.includes('apple') ? 410 : 201 }); };
+  clock.now = START + 1500;
+  await l.alarm();
+  assert.deepEqual(sent.map((s) => s.url).sort(), [subOf(ana).endpoint, subOf(ben, 'web.push.apple.com').endpoint].sort());
+  const msg = sent.find((s) => s.url === subOf(ana).endpoint).init;
+  assert.deepEqual(JSON.parse(decrypt(ana, msg.body).text), { title: 'Deep work', start: START, code: sessionCode(a.id, START) });
+  assert.equal(msg.headers.TTL, '3600');
+  assert.equal(msg.headers.Urgency, 'high');
+  const [, jwt] = msg.headers.Authorization.match(/^vapid t=([^,]+), k=(.+)$/);
+  assert.equal(verifyJwt(jwt, env.VAPID_PUBLIC_KEY).ok, true);
+  assert.equal(data.has('p:' + a.id + ':ben'), false);
+  assert.equal(data.has('p:' + a.id + ':ana'), true);
+  assert.equal(store.alarm, Date.parse('2026-10-05T08:00:00Z'));
+  sent.length = 0;
+  await l.alarm();
+  assert.equal(sent.length, 0);
+  clock.now = Date.parse('2026-10-05T08:00:00Z');
+  await l.alarm();
+  assert.deepEqual(sent.map((s) => s.url), [subOf(cy).endpoint]);
+  assert.equal(JSON.parse(decrypt(cy, sent[0].init.body).text).title, 'Writing');
+  assert.equal(store.alarm, Date.parse('2026-10-06T07:00:00Z'));
+})));
+
+test('two schedules starting together are pushed in separate alarm runs', at(START - 60 * MIN, offline(async () => {
+  const { call, l, store } = lobby(await vapidEnv());
+  for (const title of ['One', 'Two']) {
+    const { id } = (await call('POST', '/schedule', { ...deepWork, title })).body;
+    await call('POST', '/schedule/' + id + '/push', { cid: 'ana', sub: subOf(receiver()) });
+  }
+  const sent = [];
+  net.fetch = async (url) => { sent.push(url); return new Response(null, { status: 201 }); };
+  clock.now = START;
+  await l.alarm();
+  assert.equal(sent.length, 1);
+  assert.equal(store.alarm, START);
+  await l.alarm();
+  assert.equal(sent.length, 2);
+  assert.equal(store.alarm, Date.parse('2026-10-06T07:00:00Z'));
+})));
+
+test('a late alarm still pushes within five minutes, but not after', at(START - 60 * MIN, offline(async () => {
+  const { call, l, store } = lobby(await vapidEnv());
+  const { id } = (await call('POST', '/schedule', deepWork)).body;
+  await call('POST', '/schedule/' + id + '/push', { cid: 'ana', sub: subOf(receiver()) });
+  const sent = [];
+  net.fetch = async (url) => { sent.push(url); return new Response(null, { status: 201 }); };
+  clock.now = START + 6 * MIN;
+  await l.alarm();
+  assert.equal(sent.length, 0);
+  assert.equal(store.alarm, Date.parse('2026-10-06T07:00:00Z'));
+  clock.now = Date.parse('2026-10-06T07:04:00Z');
+  await l.alarm();
+  assert.equal(sent.length, 1);
+})));
+
+test('a restarted lobby without an alarm sets it again; removing the schedule clears it', at(START - 60 * MIN, async () => {
+  const env = await vapidEnv(), data = new Map(), first = lobby(env, data);
+  const { id, token } = (await first.call('POST', '/schedule', deepWork)).body;
+  await first.call('POST', '/schedule/' + id + '/push', { cid: 'ana', sub: subOf(receiver()) });
+  const again = lobby(env, data);
+  assert.equal(again.store.alarm, null);
+  await again.list();
+  assert.equal(again.store.alarm, START);
+  assert.equal((await again.call('DELETE', '/schedule/' + id, { token })).status, 204);
+  assert.equal([...data.keys()].some((k) => k.startsWith('p:')), false);
+  assert.equal(again.store.alarm, null);
+}));
+
+test('without the secret the alarm sends nothing and stands down', at(START - 60 * MIN, offline(async () => {
+  const data = new Map(), on = lobby(await vapidEnv(), data);
+  const { id } = (await on.call('POST', '/schedule', deepWork)).body;
+  await on.call('POST', '/schedule/' + id + '/push', { cid: 'ana', sub: subOf(receiver()) });
+  const off = lobby({}, data), sent = [];
+  off.store.alarm = START;
+  net.fetch = async (url) => { sent.push(url); return new Response(null, { status: 201 }); };
+  clock.now = START;
+  await off.l.alarm();
+  assert.equal(sent.length, 0);
+  assert.equal(off.store.alarm, null);
+})));
+
+test('subscriptions go with a schedule that drops off for lack of use', at(START - 60 * MIN, async () => {
+  const { call, list, data } = lobby(await vapidEnv());
+  const { id } = (await call('POST', '/schedule', deepWork)).body;
+  await call('POST', '/schedule/' + id + '/push', { cid: 'ana', sub: subOf(receiver()) });
+  clock.now += 22 * DAY;
+  await list();
+  assert.equal(data.has('s:' + id), false);
+  assert.equal(data.has('p:' + id + ':ana'), false);
+}));
