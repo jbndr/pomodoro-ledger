@@ -3,6 +3,7 @@ import { $, calm, taskRow, taskRows } from "../dom";
 import { fmtDur, plural } from "../format";
 import { addDays, dayKey } from "../lib/dates";
 import type { Placement } from "../lib/order";
+import { nextOccurrence, repeatText, seriesOf, withRepeat, type Repeat } from "../lib/repeat";
 import { cyclesOf, projectOf, timeOf, type Subtask } from "../lib/tasks";
 import { phone, showPage } from "../pages";
 import { whenPop } from "../popovers/state.svelte";
@@ -12,7 +13,7 @@ import { clone, S, T, type Section, type Task } from "../state";
 import { Labels, Store } from "../store";
 import { saveTimer, setMode, start } from "../timer/engine";
 import { closeWhen, openLabelPop, openWhen } from "../ui";
-import { dayName, guardPreview, inGroup, inProject, markStarted, openOf, ord, placed, preview, sections, subsOf, todayKey, viewOf } from "./derived";
+import { dayName, guardPreview, inGroup, inProject, isToday, markStarted, openOf, ord, placed, preview, sections, shortDay, subsOf, todayKey, viewOf } from "./derived";
 
 /** Slides rows out of the list before `done` saves the change that removes them. */
 function leaveRows(ids: string[], done: () => void) {
@@ -31,7 +32,7 @@ export function scheduleTask(id: string, g: string) {
   if (!t) return;
   if (g !== "today" && g !== "later" && g <= todayKey()) g = "today";
   const where = g === "later" ? "Later" : dayName(g === "today" ? todayKey() : g);
-  if (inGroup(t, g)) { toast("“" + t.title + "” is already in " + where + "."); return; }
+  if (inGroup(t, g) && !(g === "today" && t.plan && t.plan < todayKey())) { toast("“" + t.title + "” is already in " + where + "."); return; }
   const last = Math.max(-1, ...openOf(S.tasks).filter((x) => x.id !== id && inGroup(x, g)).map(ord));
   const save = () => { Store.saveTask(placed(t, g, last + 1)); toast("Moved “" + t.title + "” to " + where + "."); };
   if (viewOf(g) !== S.taskView) leaveRows([id], save); else save();
@@ -54,17 +55,19 @@ export function commitPlacements(order: Placement[]) {
     const t = S.tasks.get(p.id);
     if (!t) continue;
     const n = placed(t, p.end && t.plan && t.plan >= p.g && t.plan <= p.end ? t.plan : p.g, p.order);
+    if (n.today && isToday(t)) { if (t.plan) n.plan = t.plan; else delete n.plan; }
     if (t.order !== p.order || !!t.today !== n.today || (t.plan || "") !== (n.plan || "") || (t.section || "") !== (n.section || "")) changed.push(n);
   }
   if (changed.length) Store.saveTasks(changed); else renderTasks();
 }
 
-export function addTask(title: string, est: number, into: string, notes: string) {
+export function addTask(title: string, est: number, into: string, notes: string, repeat?: Repeat | null) {
   markStarted(true);
   const id = "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const last = Math.max(-1, ...openOf(S.tasks).filter((x) => inGroup(x, into)).map(ord));
   const t = placed({ id, title, est, done: false, createdAt: Date.now(), doneAt: null, sessions: [], subtasks: [], ...(notes ? { notes } : {}) }, into, last + 1);
   if (S.newLabel) t.project = Labels.use(S.newLabel);
+  if (repeat) t.repeat = repeat;
   if (!S.activeId || !S.tasks.get(S.activeId) || S.tasks.get(S.activeId)!.done) { S.activeId = id; saveTimer(); }
   if (!inProject(t)) S.projectFilter = "";
   Store.saveTask(t);
@@ -161,8 +164,10 @@ export function completeTask(id: string) {
     leaveRows([id], () => {
       const n = clone(cur); n.done = true; n.doneAt = Date.now();
       if (S.activeId === id) { S.activeId = openOf(S.tasks).find((task) => task.id !== id)?.id || null; saveTimer(); }
-      Store.saveTask(n);
-      toast("Finished “" + cur.title + "” in " + plural(cyclesOf(cur), "cycle") + " · " + fmtDur(timeOf(cur)) + " of focus.");
+      const next = nextOccurrence(n, todayKey());
+      const fresh = next && !S.tasks.has(next.id) && !openOf(S.tasks).some((x) => x.id !== id && seriesOf(x) === next.series);
+      Store.saveTasks(fresh ? [n, next!] : [n]);
+      toast("Finished “" + cur.title + "” in " + plural(cyclesOf(cur), "cycle") + " · " + fmtDur(timeOf(cur)) + " of focus." + (fresh ? " Next: " + shortDay(next!.plan!) + "." : ""));
     });
   }, 900));
   renderTasks();
@@ -206,6 +211,14 @@ export function deleteTask(id: string) {
   else { S.confirmDel = id; renderTasks(); delTimer = setTimeout(() => { S.confirmDel = null; renderTasks(); }, 3000); }
 }
 
+export function setRepeat(id: string, r: Repeat | null) {
+  const t = S.tasks.get(id);
+  if (guardPreview() || !t) return;
+  const n = withRepeat(clone(t), r, todayKey());
+  Store.saveTask(n);
+  toast(r ? "“" + t.title + "” repeats e" + repeatText(r).slice(1) + "." + (n.plan === todayKey() ? "" : " Next: " + shortDay(n.plan!) + ".") : "“" + t.title + "” no longer repeats.");
+}
+
 export function setEstimate(id: string, est: number) {
   const t = S.tasks.get(id);
   if (guardPreview() || !t || (t.est || 0) === est) return;
@@ -216,6 +229,8 @@ export function reopenTask(id: string) {
   const t = S.tasks.get(id);
   if (guardPreview() || !t) return;
   const n = clone(t); n.done = false; n.doneAt = null;
+  const next = t.repeat ? nextOccurrence(t, todayKey()) : null, unused = next && S.tasks.get(next.id);
+  if (unused && !unused.done && !(unused.sessions || []).length) Store.deleteTask(unused.id);
   Store.saveTask(n);
   toast("Moved “" + t.title + "” back to open tasks.");
 }

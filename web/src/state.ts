@@ -1,4 +1,6 @@
 import type { Label } from "./lib/labels";
+import type { Repeat } from "./lib/repeat";
+import type { Rollover } from "./lib/rollover";
 import type { Task } from "./lib/tasks";
 import type { Mode, Status } from "./lib/timer";
 
@@ -16,6 +18,7 @@ export interface Settings {
   workdayEnd: string; sections: Section[];
   /** Off hides room reactions both ways; unset means on. */
   reactions?: boolean;
+  rollover?: Rollover;
 }
 
 export const DEF: Settings = { focus: 25, short: 5, long: 15, longEvery: 4, autoBreak: true, autoFocus: false, sound: true, notify: false, goal: 8, ticking: false, tickVolume: 20, tickPace: 2, autoFloat: false, workdayEnd: "", sections: [] };
@@ -36,6 +39,7 @@ export const ss = {
 export interface AppState {
   tasks: Map<string, Task>; settings: Settings; activeId: string | null; started: boolean; storeMode: "local" | "db";
   newEst: number; newWhen: string | null; newKeep: string[]; confirmDel: string | null;
+  newRepeat: Repeat | null;
   subtaskDrafts: Map<string, string>; openTask: string | null; taskView: View; projectFilter: string; labels: Label[]; newLabel: string;
   /** The task just dropped after a drag, so its row can flash. */
   dropped?: { id: string; at: number } | null;
@@ -44,7 +48,7 @@ export interface AppState {
 export const S: AppState = {
   tasks: new Map(), settings: { ...DEF }, activeId: ls.get("pl.active", null),
   started: ls.get("pl.started", false), storeMode: "local", newEst: 2, newWhen: null, newKeep: [],
-  confirmDel: null,
+  confirmDel: null, newRepeat: null,
   subtaskDrafts: new Map(), openTask: null, taskView: "today", projectFilter: "", labels: [], newLabel: "",
 };
 

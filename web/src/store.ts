@@ -6,6 +6,7 @@ import { projectOf, sessionProject } from "./lib/tasks";
 import { renderAll, renderPill, renderStats, renderTimer } from "./render";
 import { clone, DEF, ls, S, type Settings, type Task } from "./state";
 import { markStarted } from "./tasks/derived";
+import { newDay } from "./tasks/rollover";
 import { fillSettings, refreshLabelPop } from "./ui";
 
 export interface Profile { settings?: Partial<Settings>; labels?: Label[] }
@@ -49,7 +50,7 @@ export const Store = {
     this.prof = prof; this.col = col;
     let first = true;
     col.onSnapshot((snap) => {
-      const next = new Map<string, Task>();
+      const next = new Map<string, Task>(), synced = first;
       snap.docs.forEach((d) => { if (d.exists) next.set(d.id, clone(d.data())); });
       if (first) {
         first = false;
@@ -63,6 +64,7 @@ export const Store = {
       S.tasks = next;
       if (S.tasks.size) markStarted(true);
       this.cache(); renderAll();
+      if (synced) newDay();
     }, (e) => { S.storeMode = "local"; renderPill(); if (e && e.code !== "revoked") toast("Sync paused. Your changes are kept in this browser for now."); });
     prof.onSnapshot((d) => {
       if (!d.exists) return;

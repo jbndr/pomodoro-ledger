@@ -1,4 +1,5 @@
-import { addDays, MIN, sod } from "../lib/dates";
+import { addDays, dayKey, MIN, sod } from "../lib/dates";
+import { firstDue, type Repeat } from "../lib/repeat";
 import type { Session, Task } from "../lib/tasks";
 
 /** Example tasks for the preview and demo; kept in memory, never saved. */
@@ -28,5 +29,7 @@ export function makeSamples() {
     mk("x7", "Prepare the monthly investor update", 3, 0, null, []),
   ];
   list[5].today = list[6].today = true;
+  const daily: Repeat = { every: "day" }, plants: Repeat = { every: "week", days: [1, 4] };
+  list.push({ ...mk("x8", "Plan the day", 1, 6, null, []), today: true, plan: dayKey(now), repeat: daily }, { ...mk("x9", "Water the plants", 1, 9, null, []), plan: firstDue(plants, dayKey(addDays(now, 1))), repeat: plants });
   return new Map(list.map((t) => [t.id, t]));
 }

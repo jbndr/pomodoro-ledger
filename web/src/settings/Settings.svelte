@@ -1,5 +1,6 @@
 <script>
   import { flushSync } from "svelte";
+  import { rolloverMode } from "../lib/rollover";
   import { rovingIndex, tickPace, tickVolume, wholeIn, workdayEnd } from "../lib/settings";
   import SyncPanel from "./SyncPanel.svelte";
 
@@ -16,6 +17,7 @@
     for (const k of Object.values(NUM)) out[k] = s[k];
     for (const k of Object.values(TOGGLE)) out[k] = !!s[k];
     out.reactions = s.reactions !== false;
+    out.rollover = rolloverMode(s.rollover);
     return out;
   };
   const saved = () => { const t = api.ls.get("pl.setTab"); return TABS.some(([name]) => name === t) ? t : "timer"; };
@@ -75,6 +77,7 @@
     else if (id === "sTickPace") s.tickPace = tickPace(el.value);
     else if (id === "sDayEnd") s.workdayEnd = workdayEnd(el.value);
     else if (id === "sReactions") { s.reactions = el.checked; api.reactionsChanged(); }
+    else if (id === "sRollover") s.rollover = rolloverMode(el.value);
     if (["sTicking", "sTickVolume", "sTickPace"].includes(id)) { api.cancelTickPreview(); fillTicking(); api.syncTicking(); }
     note = "Saved.";
     api.Store.saveSettings();
@@ -141,6 +144,11 @@
             <label class="toggle"><span>Breaks<small>Right after a focus cycle ends</small></span><input type="checkbox" id="sAutoBreak" bind:checked={f.autoBreak}></label>
             <label class="toggle"><span>Focus cycles<small>Right after a break ends</small></span><input type="checkbox" id="sAutoFocus" bind:checked={f.autoFocus}></label>
           </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>New day</legend>
+          <label class="field">Unfinished tasks from earlier days<select id="sRollover" bind:value={f.rollover}><option value="always">Always move to Today</option><option value="ask">Ask</option><option value="never">Never move</option></select></label>
+          <p class="hint">They show in Today either way, marked with their day. Ask offers to move them each morning.</p>
         </fieldset>
         <fieldset class="group" id="autoFloatRow" hidden={!api.floatable}>
           <legend>Floating timer</legend>

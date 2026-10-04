@@ -2,6 +2,7 @@
   import { flushSync } from "svelte";
   import { addDays, dayKey } from "../lib/dates";
   import { labelMatches } from "../lib/labels";
+  import { firstDue, repeatText } from "../lib/repeat";
   import { breaksBetween, dropToken, hashToken, parseTitle } from "../lib/quickEntry";
   import { labelHue } from "../lib/tasks";
   import { LP, labelPop } from "../popovers/state.svelte";
@@ -15,7 +16,7 @@
   /** The title parser's result, with each recognised token in the words the hint shows. */
   function parseNew(raw) {
     const parsed = parseTitle(raw, api.S.newKeep);
-    return { ...parsed, tokens: parsed.tokens.map((x) => ({ text: x.text, label: x.kind === "est" ? api.plural(x.est, "cycle") : x.when === "later" ? "Later" : api.dayName(x.when === "today" ? api.todayKey() : x.when) })) };
+    return { ...parsed, tokens: parsed.tokens.map((x) => ({ text: x.text, label: x.kind === "est" ? api.plural(x.est, "cycle") : x.kind === "repeat" ? repeatText(x.repeat) : x.when === "later" ? "Later" : api.dayName(x.when === "today" ? api.todayKey() : x.when) })) };
   }
   const whenNow = (parsed) => parsed.when || api.S.newWhen || (api.S.taskView === "upcoming" ? dayKey(addDays(Date.now(), 1)) : api.S.taskView);
 
@@ -23,7 +24,7 @@
     composer.version;
     const parsed = parseNew(title), est = parsed.est || api.S.newEst, breaks = breaksBetween(est, api.S.settings.longEvery, api.dur("short"), api.dur("long"));
     return {
-      parsed, est, when: whenNow(parsed), label: api.S.newLabel,
+      parsed, est, when: whenNow(parsed), label: api.S.newLabel, repeat: parsed.repeat || api.S.newRepeat,
       circles: Math.min(16, Math.max(8, est + 1)),
       estTitle: api.fmtDur(est * api.dur("focus")) + " focus" + (breaks ? " + " + api.fmtDur(breaks) + " breaks" : ""),
     };
@@ -48,10 +49,14 @@
 
   function pickWhen(e) {
     const when = whenNow(parseNew(input.value));
-    api.openWhen(e.currentTarget, { plan: when !== "today" && when !== "later" ? when : undefined }, (g) => {
-      const p = parseNew(input.value);
-      if (p.when) drop(p.tokens[0].text);
-      api.S.newWhen = g; composer.refresh(); input.focus();
+    const typed = () => { const p = parseNew(input.value); if (p.when) drop(p.tokens[0].text); };
+    api.openWhen(e.currentTarget, { plan: when !== "today" && when !== "later" ? when : undefined, repeat: v.repeat }, (g) => {
+      typed();
+      api.S.newWhen = g; api.S.newRepeat = null; composer.refresh(); input.focus();
+    }, (r) => {
+      typed();
+      const first = r && firstDue(r, api.todayKey());
+      api.S.newRepeat = r; api.S.newWhen = first ? (first === api.todayKey() ? "today" : first) : null; composer.refresh();
     });
   }
 
@@ -93,7 +98,7 @@
     if (LP.key === "new" || LP.key === "hash") api.closeLabelPop();
     if (form.contains(document.activeElement)) document.activeElement.blur();
     open = false;
-    if (!input.value.trim()) { api.S.newLabel = api.filterLabel(); api.S.newWhen = null; api.S.newKeep = []; notes.value = ""; composer.refresh(); }
+    if (!input.value.trim()) { api.S.newLabel = api.filterLabel(); api.S.newWhen = null; api.S.newRepeat = null; api.S.newKeep = []; notes.value = ""; composer.refresh(); }
     flushSync();
   }
 
@@ -102,9 +107,9 @@
     if (hashOpen()) api.closeLabelPop();
     const parsed = parseNew(input.value), name = parsed.title.slice(0, 140);
     if (!name) { input.focus(); return; }
-    const into = whenNow(parsed), text = notes.value.trim(), est = parsed.est || api.S.newEst;
-    setTitle(""); notes.value = ""; api.S.newWhen = null; api.S.newKeep = [];
-    api.addTask(name, est, into, text);
+    const into = whenNow(parsed), text = notes.value.trim(), est = parsed.est || api.S.newEst, repeat = parsed.repeat || api.S.newRepeat;
+    setTitle(""); notes.value = ""; api.S.newWhen = null; api.S.newRepeat = null; api.S.newKeep = [];
+    api.addTask(name, est, into, text, repeat);
     input.focus();
   }
 
@@ -132,7 +137,7 @@
       <div class="new-parsed" id="newParsed" aria-live="polite" hidden={!v.parsed.tokens.length}>{#each v.parsed.tokens as x, i (i)}{i ? " · " : ""}<mark>{x.text}</mark> → {x.label}{/each}{#if v.parsed.tokens.length}{" "}<button type="button" id="newKeep" onclick={keep}>Keep as text</button>{/if}</div>
       <textarea id="newNotes" rows="1" maxlength="4000" placeholder="Notes" aria-label="Notes" bind:this={notes}></textarea>
       <div class="card-bar">
-        <button class="card-btn set" class:auto={!!v.parsed.when} type="button" id="newWhen" data-sched aria-haspopup="dialog" title="When? Or type it: tomorrow, fri, next week, 12 oct" onclick={pickWhen}>{@html v.when === "today" ? api.ICON.star : api.ICON.cal}{v.when === "today" ? "Today" : v.when === "later" ? "Later" : api.dayName(v.when)}</button>
+        <button class="card-btn set" class:auto={!!v.parsed.when} type="button" id="newWhen" data-sched aria-haspopup="dialog" title="When? Or type it: tomorrow, fri, next week, 12 oct" onclick={pickWhen}>{@html v.when === "today" ? api.ICON.star : api.ICON.cal}{v.when === "today" ? "Today" : v.when === "later" ? "Later" : api.dayName(v.when)}{#if v.repeat}<span class="rep" title={repeatText(v.repeat)}>{@html api.ICON.repeat}</span>{/if}</button>
         <button class="card-btn" class:set={!!v.label} type="button" id="newLabel" aria-haspopup="listbox" aria-expanded="false" title="Label, or type #name" aria-label={api.labelChipName(v.label)} bind:this={labelBtn} onclick={pickLabel}>{#if v.label}<i class="label-dot" style:--h={labelHue(v.label)}></i>{:else}{@html api.ICON.tag}{/if}<span>{v.label || "Label"}</span></button>
         <span class="card-est" class:auto={!!v.parsed.est} id="newEst">
           <span class="est-pick" role="radiogroup" aria-label="Estimated cycles">

@@ -1,4 +1,5 @@
 import type { DayKey } from "./dates";
+import type { Repeat } from "./repeat";
 
 export interface Session {
   at: number;
@@ -35,6 +36,9 @@ export interface Task {
   updatedAt?: number;
   sessions?: Session[];
   subtasks?: Subtask[];
+  repeat?: Repeat;
+  /** The first occurrence's id, shared by every occurrence of a recurring task. */
+  series?: string;
 }
 
 export type Tasks = Map<string, Task>;

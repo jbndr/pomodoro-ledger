@@ -1,9 +1,10 @@
+import type { Repeat } from "./lib/repeat";
 import type { Task } from "./state";
 
 export interface PopItem { id: string; title: string; key?: string }
 
 export interface PopUI { open(anchor: Element, items: PopItem[], cur: string, pick: (id: string) => void): void; close(refocus?: boolean): void }
-export interface WhenUI { open(anchor: Element, t: Partial<Task>, pick?: (g: string) => void): void; close(refocus?: boolean): void }
+export interface WhenUI { open(anchor: Element, t: Partial<Task>, pick?: (g: string) => void, repeat?: (r: Repeat | null) => void): void; close(refocus?: boolean): void }
 export interface LabelUI {
   open(key: string, find: () => Element | null | undefined, value: string, pick: (name: string) => void): void;
   close(refocus?: boolean): void; refresh(): void; place(): void; anchor(): Element | null | undefined;
