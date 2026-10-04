@@ -1,6 +1,8 @@
 <script>
   import { flushSync } from "svelte";
   import { refreshNudge } from "../chrome/backupNudge.svelte";
+  import { extensionVersion } from "../extension";
+  import { EXTENSION_URL } from "../lib/extension";
   import { rolloverMode } from "../lib/rollover";
   import { rovingIndex, tickPace, tickVolume, wholeIn, workdayEnd } from "../lib/settings";
   import { scapeOf, scapeVolume } from "../lib/soundscape";
@@ -34,6 +36,7 @@
   let tab = $state("timer");
   let note = $state("Changes save as you type.");
   let syncVersion = $state(0);
+  let extOn = $state(false);
   show(saved());
 
   export function fill() {
@@ -44,6 +47,7 @@
 
   export function open(name) {
     fill();
+    extOn = !!extensionVersion();
     refreshNudge();
     api.setOverlay("#settings", true);
     if (name) show(name, true);
@@ -184,6 +188,17 @@
           <div class="card">
             <label class="toggle"><span>Show each new week<small>Last week at a glance, on your first visit</small></span><input type="checkbox" id="sRecap" bind:checked={f.weeklyRecap}></label>
           </div>
+        </fieldset>
+        <fieldset class="group" id="blockRow">
+          <legend>Block distracting sites</legend>
+          <div class="card">
+            {#if extOn}
+              <div class="toggle"><span>Site blocker<small>Extension connected · blocks sites during focus</small></span><span class="in-step"><i></i>On</span></div>
+            {:else}
+              <div class="toggle"><span>Site blocker<small>A browser extension that blocks the sites you choose during focus</small></span><a class="btn small" href={EXTENSION_URL} target="_blank" rel="noopener">Install</a></div>
+            {/if}
+          </div>
+          <p class="hint">{extOn ? "Manage the site list in the extension's options." : "For Chrome, Edge, Brave and Arc. Not in the Chrome Web Store yet."}</p>
         </fieldset>
       </div>
       <div class="set-panel" role="tabpanel" id="setPanel-alerts" aria-labelledby="setTab-alerts" aria-hidden={String(tab !== "alerts")}>

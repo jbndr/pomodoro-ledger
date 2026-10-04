@@ -1,5 +1,6 @@
 import { toast } from "../chrome/notice.svelte";
 import { Cloud } from "../cloud";
+import { announce } from "../extension";
 import { autoFloat } from "../float";
 import { fmtDur } from "../format";
 import { MIN } from "../lib/dates";
@@ -31,7 +32,7 @@ export const arm = () => { if (W) W.postMessage(T.status === "running" ? Math.ma
 // Quiet saves (late catch-up completions, states received from another device) aren't new changes, so they don't sync out.
 let timerQuiet = false;
 export const saveTimer = () => {
-  ls.set("pl.timer", T); ls.set("pl.active", S.activeId); arm(); syncTicking();
+  ls.set("pl.timer", T); ls.set("pl.active", S.activeId); arm(); syncTicking(); announce();
   if (!timerQuiet) { ls.set("pl.timerAt", Date.now()); Cloud.pushTimer(); }
 };
 
