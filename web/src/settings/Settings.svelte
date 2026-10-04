@@ -1,5 +1,6 @@
 <script>
   import { flushSync } from "svelte";
+  import { refreshNudge } from "../chrome/backupNudge.svelte";
   import { rolloverMode } from "../lib/rollover";
   import { rovingIndex, tickPace, tickVolume, wholeIn, workdayEnd } from "../lib/settings";
   import SyncPanel from "./SyncPanel.svelte";
@@ -36,6 +37,7 @@
 
   export function open(name) {
     fill();
+    refreshNudge();
     api.setOverlay("#settings", true);
     if (name) show(name, true);
     else document.getElementById("setTab-" + tab).focus({ preventScroll: true });

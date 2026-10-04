@@ -1,4 +1,6 @@
 import { mount } from "svelte";
+import BackupPrompt from "./chrome/BackupPrompt.svelte";
+import { maybeRemind } from "./chrome/backupNudge.svelte";
 import BarTools from "./chrome/BarTools.svelte";
 import Keys from "./chrome/Keys.svelte";
 import { toast } from "./chrome/notice.svelte";
@@ -57,6 +59,7 @@ setInterval(tick, 250);
 setInterval(newDay, 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { sizeTimer(); tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); Cloud.wake(); newDay(); } });
 mount(PreviewBanner, { target: $(".app"), anchor: $("main.top"), props: { api: { DEMO, preview, markStarted } } });
+mount(BackupPrompt, { target: $(".app"), anchor: $("main.top"), props: { api: { exportLedger, toast } } });
 initLayout();
 if ("serviceWorker" in navigator && !DEMO) addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -141,6 +144,9 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) ui.r
 if (!DEMO) Store.connect().then(() => {
   renderPill();
   newDay();
+  setTimeout(maybeRemind, 2500);
+  setInterval(maybeRemind, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) maybeRemind(); });
   if (!new URLSearchParams(location.search).has("synced")) return;
   history.replaceState(null, "", location.pathname + location.hash);
   if (Cloud.email) toast("Signed in as " + Cloud.email + ". This device now stays in sync.");

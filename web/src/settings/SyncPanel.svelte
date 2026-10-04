@@ -1,6 +1,8 @@
 <script>
   import { flushSync } from "svelte";
+  import { nudge, setReminders, signedIn } from "../chrome/backupNudge.svelte";
   import { parseFile, summary } from "../lib/backup";
+  import { lastBackup } from "../lib/backupReminder";
   import { syncCopy } from "../lib/settings";
 
   let { api, version } = $props();
@@ -22,6 +24,7 @@
 
   const plan = $derived.by(() => { version; return picked ? api.backup.planImport(picked.data, mode) : null; });
   const synced = $derived.by(() => { version; return !!api.Cloud.email; });
+  const kept = $derived.by(() => { version; return signedIn(); });
 
   function signOut() {
     api.ls.set("pl.syncEmail", "");
@@ -86,7 +89,8 @@
 <fieldset class="group backup" oninput={(e) => e.stopPropagation()}>
   <legend>Backup</legend>
   <div class="card">
-    <div class="toggle"><span>Export<small>Tasks, history, labels and settings in one file</small></span><span class="acts"><button class="btn small" type="button" id="exportData" disabled={api.DEMO} onclick={exportFile}>Export</button></span></div>
+    <div class="toggle"><span>Export<small>Tasks, history, labels and settings in one file</small>{#if !api.DEMO}<small id="lastBackup">{lastBackup(nudge.memo.at, nudge.now)}</small>{/if}</span><span class="acts"><button class="btn small" type="button" id="exportData" disabled={api.DEMO} onclick={exportFile}>Export</button></span></div>
+    <label class="toggle"><span>Remind me to back up<small>{kept ? "Not needed while signed in: sync keeps a copy." : "When it's been 30 days since an export"}</small></span><input type="checkbox" id="sBackupRemind" disabled={api.DEMO || kept} checked={!api.DEMO && !kept && !nudge.memo.off} onchange={(e) => setReminders(e.currentTarget.checked)}></label>
     <div class="toggle"><span>Import<small>Merge or replace from an exported file</small></span><span class="acts"><button class="btn small" type="button" id="importPick" disabled={api.DEMO} onclick={() => fileInput.click()}>Choose file…</button></span></div>
     <input type="file" id="importFile" accept=".json,application/json" hidden bind:this={fileInput} onchange={choose}>
     {#if picked && plan}
