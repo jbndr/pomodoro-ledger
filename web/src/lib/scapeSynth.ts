@@ -200,130 +200,133 @@ function rain(sr: number, rand: Rand): Render {
   };
 }
 
-const VOWELS = [[730, 1090, 2440], [530, 1840, 2480], [270, 2290, 3010], [570, 840, 2410], [300, 870, 2240], [500, 1500, 2500], [660, 1720, 2410], [440, 1020, 2240]];
+const smooth = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+/** Rounds off the rare peak above 0.7, never passing 0.85. */
+const soft = (x: number) => (x > 0.7 ? 0.7 + 0.15 * Math.tanh((x - 0.7) / 0.15) : x < -0.7 ? -0.7 - 0.15 * Math.tanh((-x - 0.7) / 0.15) : x);
 
-/** One distant talker: a buzzy source through gliding vowel formants, in syllables and phrases. */
-class Talker {
-  private phase = 0; private f0 = 120; private base = 120; private scale = 1; private tilt: OnePole; private far: OnePole;
-  private fs = [new Float64Array(3), new Float64Array(3)]; private bp: Biquad[];
-  private syl = 0; private sylLen = 1; private sylAmp = 0; private floor = 0; private talking = false; private phrase = 0; private gap = 0;
-  private intonation = 1; private accent = 1; private accentTo = 1; private level = 1; gl = 0; gr = 0; private block = 0;
-  constructor(private sr: number, private rand: Rand) {
-    this.tilt = new OnePole(sr, 1100); this.far = new OnePole(sr, 1500);
-    this.bp = [0, 1, 2].map(() => new Biquad(sr, "bp", 1000, 5));
-    this.meet();
-    this.vowel(); this.fs[0].set(this.fs[1]);
-    this.gap = Math.round(between(rand, 0, 4) * sr);
+/** One wave: a low swell that builds, breaks into a wash and recedes into foam. */
+class Wave {
+  n = 0; len = 0; rise = 1; amp = 0; tBody = 1; tWash = 1; tFoam = 1; top = 0; gl = 0; gr = 0;
+  level = 0; wash = 0; foam = 0; l = 0; r = 0;
+  private src = [new Pink(), new Pink()]; private lp: Biquad[];
+  constructor(private sr: number) { this.lp = [0, 1].map(() => new Biquad(sr, "lp", 200, 0.7)); }
+  start(rand: Rand, secs: number, side: number) {
+    this.n = 0; this.len = Math.round(secs * this.sr);
+    this.rise = between(rand, 3.2, 5.2); this.amp = between(rand, 0.7, 1);
+    this.tBody = between(rand, 2.4, 3.6); this.tWash = between(rand, 0.9, 1.6); this.tFoam = between(rand, 3, 4.5);
+    this.top = between(rand, 1500, 2600);
+    const pan = 0.5 + side * between(rand, 0.08, 0.16);
+    this.gl = Math.cos(pan * Math.PI / 2) * Math.SQRT2; this.gr = Math.sin(pan * Math.PI / 2) * Math.SQRT2;
   }
-  /** A new person at a new table. */
-  private meet() {
-    const r = this.rand, high = r() < 0.45;
-    this.base = high ? between(r, 175, 235) : between(r, 95, 140);
-    this.scale = high ? 1.14 : 1;
-    this.level = between(r, 0.35, 1);
-    this.far = new OnePole(this.sr, 1200 + 1600 * this.level);
-    const pan = between(r, 0.1, 0.9);
-    this.gl = Math.cos(pan * Math.PI / 2); this.gr = Math.sin(pan * Math.PI / 2);
+  shape(step: number) {
+    if (this.n >= this.len) { this.level = this.wash = this.foam = 0; return; }
+    const t = this.n / this.sr, after = t - this.rise, fade = this.amp * smooth((this.len - this.n) / this.sr / 1.5);
+    this.n += step;
+    this.level = fade * (after < 0 ? smooth(t / this.rise) : Math.exp(-after / this.tBody));
+    this.wash = fade * (after < 0 ? smooth(1 + after) : Math.exp(-after / this.tWash));
+    this.foam = fade * smooth((after + 0.2) / 0.9) * Math.exp(-Math.max(0, after) / this.tFoam);
+    const f = 150 + (this.top - 150) * Math.pow(this.level / this.amp, 1.5);
+    this.lp[0].set("lp", f, 0.7); this.lp[1].set("lp", f, 0.7);
   }
-  private vowel() {
-    const v = VOWELS[Math.floor(this.rand() * VOWELS.length)];
-    for (let k = 0; k < 3; k++) this.fs[1][k] = v[k] * this.scale * between(this.rand, 0.92, 1.08);
-  }
-  private nextSyllable() {
-    const r = this.rand;
-    this.sylLen = Math.round(between(r, 0.11, 0.26) * this.sr); this.syl = 0;
-    const wordEnd = r() < 0.3;
-    this.floor = wordEnd ? 0 : 0.3;
-    this.sylAmp = between(r, 0.45, 1);
-    this.accentTo = between(r, 0.86, 1.16);
-    this.vowel();
-  }
-  run() {
-    if (!this.talking) {
-      if (--this.gap > 0) return 0;
-      this.talking = true;
-      this.phrase = Math.round(between(this.rand, 1.2, 4.5) * this.sr);
-      this.intonation = between(this.rand, 1.02, 1.12);
-      this.nextSyllable();
-    }
-    if (this.syl >= this.sylLen) {
-      if (this.phrase <= 0) {
-        this.talking = false;
-        this.gap = Math.round((this.rand() < 0.25 ? between(this.rand, 3, 9) : between(this.rand, 0.3, 2.5)) * this.sr);
-        if (this.rand() < 0.04) this.meet();
-        return 0;
-      }
-      this.nextSyllable();
-    }
-    if ((this.block++ & 63) === 0) {
-      for (let k = 0; k < 3; k++) this.fs[0][k] += (this.fs[1][k] - this.fs[0][k]) * 0.06;
-      this.bp[0].set("bp", this.fs[0][0], this.fs[0][0] / 90);
-      this.bp[1].set("bp", this.fs[0][1], this.fs[0][1] / 120);
-      this.bp[2].set("bp", this.fs[0][2], this.fs[0][2] / 160);
-      this.intonation += (0.97 - this.intonation) * 0.0008;
-      this.accent += (this.accentTo - this.accent) * 0.04;
-    }
-    const t = this.syl++ / this.sylLen;
-    this.phrase--;
-    const shape = t < 0.25 ? Math.sin(t * 2 * Math.PI) : Math.cos((t - 0.25) / 0.75 * Math.PI / 2);
-    const env = this.sylAmp * (this.floor + (1 - this.floor) * shape * shape);
-    this.f0 = this.base * this.intonation * this.accent * (1 + 0.012 * (this.rand() - 0.5));
-    this.phase += this.f0 / this.sr;
-    if (this.phase >= 1) this.phase -= 1;
-    const src = this.tilt.run(1 - 2 * this.phase) * 3 + (this.rand() * 2 - 1) * 0.2;
-    const voice = this.bp[0].run(src) + 1.5 * this.bp[1].run(src) + this.bp[2].run(src);
-    return this.far.run(voice) * env * this.level;
+  run(rand: Rand) {
+    const s = rand() * 2 - 1;
+    this.l = this.lp[0].run(this.src[0].run(0.6 * s + 0.8 * (rand() * 2 - 1))) * this.level * this.gl;
+    this.r = this.lp[1].run(this.src[1].run(0.6 * s + 0.8 * (rand() * 2 - 1))) * this.level * this.gr;
   }
 }
 
-/** A café: room tone, a murmur of distant talkers and a crowd bed, and now and then a cup or spoon. */
-function cafe(sr: number, rand: Rand): Render {
-  const tone = [new Brown(), new Brown()], toneLp = [new OnePole(sr, 260), new OnePole(sr, 260)];
-  const crowdSrc = [new Pink(), new Pink()];
-  const crowd = [new Biquad(sr, "bp", 500, 1.2), new Biquad(sr, "bp", 500, 1.2), new Biquad(sr, "bp", 1400, 1.6), new Biquad(sr, "bp", 1400, 1.6)];
-  const f1 = new Drift(rand, 380, 720, 0.15, 0.5, sr / 64), f2 = new Drift(rand, 1000, 1800, 0.15, 0.5, sr / 64), swell = new Drift(rand, 0.55, 1, 0.6, 2.5, sr);
-  const talkers = Array.from({ length: 7 }, () => new Talker(sr, rand));
-  const cups = new Modes(sr, 48), cupTone = [new Biquad(sr, "lp", 6500, 0.7), new Biquad(sr, "lp", 6500, 0.7)];
-  const room = new Room(sr, 1.4, 1.1, 2600);
-  let wait = Math.round(between(rand, 2, 6) * sr), blk = 0;
-  const strike = (f: number, ratios: number[], a: number, tau: number, pan: number, delay: number) => {
-    ratios.forEach((m, k) => cups.add(f * m * between(rand, 0.985, 1.015), a / (1 + k * 0.9), tau / (1 + k * 0.8), pan, delay));
+/** Calm surf: overlapping waves on an irregular cycle over a low, distant sea. */
+function ocean(sr: number, rand: Rand): Render {
+  const waves = [new Wave(sr), new Wave(sr)], sea = [new Brown(), new Brown(), new Brown()], seaLp = [new OnePole(sr, 110), new OnePole(sr, 110)];
+  const washSrc = [new Pink(), new Pink()], washTone = [0, 1].map(() => [new Biquad(sr, "hp", 400, 0.6), new Biquad(sr, "lp", 6500, 0.6)]);
+  const fizz = new Grains(rand, 32), foamTone = [0, 1].map(() => [new Biquad(sr, "hp", 2600, 0.7), new Biquad(sr, "lp", 9500, 0.7)]);
+  const lowCut = [0, 1].map(() => [new Biquad(sr, "hp", 60, 0.7), new Biquad(sr, "hp", 30, 0.7)]);
+  let wait = Math.round(between(rand, 0.3, 1.5) * sr), k = 0, side = rand() < 0.5 ? -1 : 1, blk = 0, wash = 0, foam = 0;
+  return (L, R) => {
+    for (let i = 0; i < L.length; i++) {
+      if (--wait <= 0) {
+        const gap = between(rand, 8, 14);
+        waves[k].start(rand, gap + between(rand, 2.5, 4), side);
+        wait = Math.round(gap * sr); k ^= 1; side = -side;
+      }
+      if ((blk++ & 63) === 0) {
+        wash = 0; foam = 0;
+        for (const w of waves) { w.shape(64); wash += w.wash * w.wash; foam += w.foam; }
+        wash = Math.sqrt(wash);
+      }
+      if (rand() < (1500 * foam) / sr) fizz.add(between(rand, 0.02, 0.08) * foam, between(rand, 0.15, 1) * sr / 1000, between(rand, 0.1, 0.9));
+      fizz.run();
+      let bl = 0, br = 0;
+      for (const w of waves) if (w.level > 0) { w.run(rand); bl += w.l; br += w.r; }
+      const mid = sea[2].run(rand() * 2 - 1) * 0.5;
+      const sl = seaLp[0].run(sea[0].run(rand() * 2 - 1) * 0.8 + mid), sr2 = seaLp[1].run(sea[1].run(rand() * 2 - 1) * 0.8 + mid);
+      const wl = washTone[0][1].run(washTone[0][0].run(washSrc[0].run(rand() * 2 - 1))) * wash;
+      const wr = washTone[1][1].run(washTone[1][0].run(washSrc[1].run(rand() * 2 - 1))) * wash;
+      const fl = foamTone[0][1].run(foamTone[0][0].run((rand() * 2 - 1) * foam * 0.5 + fizz.l));
+      const fr = foamTone[1][1].run(foamTone[1][0].run((rand() * 2 - 1) * foam * 0.5 + fizz.r));
+      L[i] = soft(0.62 * (0.9 * lowCut[0][0].run(bl) + wl + 0.7 * fl + 0.75 * lowCut[0][1].run(sl)));
+      R[i] = soft(0.62 * (0.9 * lowCut[1][0].run(br) + wr + 0.7 * fr + 0.75 * lowCut[1][1].run(sr2)));
+    }
   };
-  const clink = () => {
-    const pan = between(rand, 0.12, 0.88), a = between(rand, 0.02, 0.055), kind = rand();
-    if (kind < 0.4) {
-      const f = between(rand, 2300, 3600), hits = 2 + Math.floor(rand() * 4);
-      let at = 0;
-      for (let h = 0; h < hits; h++) { strike(f, [1, 2.32, 4.25], a * between(rand, 0.5, 1), between(rand, 0.06, 0.12), pan, at); at += between(rand, 0.1, 0.19); }
-    } else if (kind < 0.75) {
-      const f = between(rand, 1100, 1900);
-      strike(f, [1, 1.58, 2.71, 4.13], a * 1.3, between(rand, 0.12, 0.3), pan, 0);
-      if (rand() < 0.4) strike(f * between(rand, 1.4, 1.9), [1, 2.32], a * 0.6, 0.08, pan, between(rand, 0.04, 0.09));
-    } else strike(between(rand, 3200, 5200), [1, 2.76, 5.4], a * 0.8, between(rand, 0.04, 0.08), pan, 0);
+}
+
+/** A fireplace: a breathing low roar, sparse crackles and pops, and now and then a hiss of steam. */
+function fire(sr: number, rand: Rand): Render {
+  const roar = [new Pink(), new Pink()];
+  const roarTone = [0, 1].map(() => [new Biquad(sr, "hp", 70, 0.7), new Biquad(sr, "lp", 500, 0.7)]);
+  const breath = new Drift(rand, 0.65, 1.1, 0.4, 1.8, sr / 64), glow = new Drift(rand, 380, 720, 0.6, 2.5, sr / 64), busy = new Drift(rand, 0.45, 1.6, 6, 20, sr / 64);
+  const clicks = new Modes(sr, 64), snaps = new Grains(rand, 24), snapTone = [new Biquad(sr, "hp", 1500, 0.7), new Biquad(sr, "hp", 1500, 0.7)];
+  const steamTone = [new Biquad(sr, "bp", 4500, 1.1), new Biquad(sr, "bp", 4500, 1.1)];
+  const room = new Room(sr, 0.6, 0.35, 3000);
+  let blk = 0, g = 1, rate = 2.2, burst = 0, burstWait = 0, steamN = 0, steamLen = 0, steamAmp = 0, steamWait = Math.round(between(rand, 8, 25) * sr);
+  const click = (big: boolean) => {
+    const pan = between(rand, 0.3, 0.7);
+    if (big) {
+      const a = between(rand, 0.09, 0.15);
+      clicks.add(between(rand, 700, 1600), a, between(rand, 0.008, 0.015), pan);
+      clicks.add(between(rand, 70, 140), a * 0.6, between(rand, 0.02, 0.045), pan);
+      snaps.add(a * 0.8, between(rand, 0.6, 1.6) * sr / 1000, pan);
+    } else {
+      const f = 1000 * Math.pow(6, rand()), a = between(rand, 0.1, 0.26) * Math.exp(-rand()) * Math.sqrt(1000 / f);
+      clicks.add(f, a, 0.002 * Math.pow(7.5, rand()), pan);
+      snaps.add(a * 0.7, between(rand, 0.1, 0.5) * sr / 1000, pan);
+    }
   };
   return (L, R) => {
     for (let i = 0; i < L.length; i++) {
-      if (--wait <= 0) { clink(); wait = Math.round((1.5 + -Math.log(1 - rand()) * 6) * sr); }
       if ((blk++ & 63) === 0) {
-        const a = f1.run(), b = f2.run();
-        crowd[0].set("bp", a, 1.2); crowd[1].set("bp", a * 1.07, 1.2); crowd[2].set("bp", b, 1.6); crowd[3].set("bp", b * 0.94, 1.6);
+        g = breath.run(); rate = 2.2 * busy.run();
+        const f = glow.run();
+        roarTone[0][1].set("lp", f, 0.7); roarTone[1][1].set("lp", f * 1.04, 0.7);
       }
-      const s = swell.run();
-      let vl = 0, vr = 0;
-      for (const t of talkers) { const v = t.run(); vl += v * t.gl; vr += v * t.gr; }
-      cups.run();
-      const cl = cupTone[0].run(cups.l), cr = cupTone[1].run(cups.r);
-      const nl = crowdSrc[0].run(rand() * 2 - 1), nr = crowdSrc[1].run(rand() * 2 - 1);
-      const bedL = toneLp[0].run(tone[0].run(rand() * 2 - 1)) * 0.3 + (crowd[0].run(nl) + 0.5 * crowd[2].run(nl)) * 0.3 * s;
-      const bedR = toneLp[1].run(tone[1].run(rand() * 2 - 1)) * 0.3 + (crowd[1].run(nr) + 0.5 * crowd[3].run(nr)) * 0.3 * s;
-      room.run(vl * 0.5 + cl * 0.8, vr * 0.5 + cr * 0.8);
-      L[i] = 0.8 * (bedL + vl * 0.35 + cl * 0.6 + room.l * 0.5);
-      R[i] = 0.8 * (bedR + vr * 0.35 + cr * 0.6 + room.r * 0.5);
+      if (rand() < rate / sr) {
+        if (rand() < 0.07) click(true);
+        else { click(false); if (rand() < 0.22) { burst = 1 + Math.floor(rand() * 4); burstWait = Math.round(between(rand, 0.006, 0.05) * sr); } }
+      }
+      if (burst > 0 && --burstWait <= 0) { click(false); burst--; burstWait = Math.round(between(rand, 0.006, 0.05) * sr); }
+      let hl = 0, hr = 0;
+      if (steamLen) {
+        const e = Math.sin(Math.PI * steamN / steamLen), a = steamAmp * e * e;
+        hl = steamTone[0].run(rand() * 2 - 1) * a; hr = steamTone[1].run(rand() * 2 - 1) * a;
+        if (++steamN >= steamLen) { steamLen = 0; steamWait = Math.round(between(rand, 12, 40) * sr); }
+      } else if (--steamWait <= 0) {
+        steamN = 0; steamLen = Math.round(between(rand, 1, 3) * sr); steamAmp = between(rand, 0.05, 0.1);
+        const f = between(rand, 3000, 6000);
+        steamTone[0].set("bp", f, 1.1); steamTone[1].set("bp", f * 1.08, 1.1);
+      }
+      clicks.run(); snaps.run();
+      const mid = (rand() * 2 - 1) * 0.6;
+      const rl = roarTone[0][1].run(roarTone[0][0].run(roar[0].run((rand() * 2 - 1) * 0.8 + mid))) * g;
+      const rr = roarTone[1][1].run(roarTone[1][0].run(roar[1].run((rand() * 2 - 1) * 0.8 + mid))) * g;
+      const dl = clicks.l + snapTone[0].run(snaps.l), dr = clicks.r + snapTone[1].run(snaps.r);
+      room.run(dl, dr);
+      L[i] = soft(0.42 * rl + 5 * (dl + 0.3 * room.l) + hl);
+      R[i] = soft(0.42 * rr + 5 * (dr + 0.3 * room.r) + hr);
     }
   };
 }
 
-const MAKERS: Record<Scape, (sr: number, rand: Rand) => Render> = { brown, rain, cafe };
+const MAKERS: Record<Scape, (sr: number, rand: Rand) => Render> = { brown, rain, ocean, fire };
 
 /** A soundscape generator that never repeats; output is clamped to ±1. */
 export function makeScape(kind: Scape, sr: number, rand: Rand = Math.random): Render {

@@ -15,7 +15,7 @@
   const TABS = [["timer", "Timer"], ["auto", "Automation"], ["alerts", "Sound & alerts"], ["sync", "Data & sync"]];
   const ROLLOVER = [["always", "Move to Today"], ["ask", "Ask"], ["never", "Don't move"]];
   const PACE = [["1", "1 s", "Every second"], ["2", "2 s", "Every 2 seconds"], ["4", "4 s", "Every 4 seconds"]];
-  const SCAPE = [["off", "Off", "Off"], ["rain", "Rain", "Rain"], ["cafe", "Café", "Café"], ["brown", "Brown", "Brown noise"]];
+  const SCAPE = [["off", "Off", "Off"], ["rain", "Rain", "Rain"], ["ocean", "Ocean", "Ocean waves"], ["fire", "Fire", "Fireplace"], ["brown", "Brown", "Brown noise"]];
   const SCAPE_IDS = ["sScape", "sScapeVolume", "sScapeBreaks"];
   // A field being typed into keeps its text when settings arrive from another device.
   const HELD = { ...NUM, sDayEnd: "workdayEnd" };
@@ -215,7 +215,7 @@
                 </div>
               </div>
             </div>
-            <div class="toggle"><span id="sScapeLabel">Soundscape<small>Rain, café or brown noise during focus</small></span><span class="acts"><button class="btn small" type="button" id="testScape" onclick={testScape}>Preview</button></span></div>
+            <div class="toggle"><span id="sScapeLabel">Soundscape<small>Rain, waves, fire or brown noise during focus</small></span><span class="acts"><button class="btn small" type="button" id="testScape" onclick={testScape}>Preview</button></span></div>
             <div class="seg-ctl scape-pick" id="sScape" role="radiogroup" aria-labelledby="sScapeLabel">
               {#each SCAPE as [v, name, full] (v)}<label><input type="radio" name="sScape" value={v} aria-label={full} bind:group={f.soundscape}>{name}</label>{/each}
             </div>

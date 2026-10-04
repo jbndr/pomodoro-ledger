@@ -1,10 +1,11 @@
 import type { Mode, Status } from "./timer";
 
-export type Scape = "rain" | "cafe" | "brown";
-export const SCAPES: readonly Scape[] = ["rain", "cafe", "brown"];
+export type Scape = "rain" | "ocean" | "fire" | "brown";
+export const SCAPES: readonly Scape[] = ["rain", "ocean", "fire", "brown"];
 export const FADE_IN = 3, FADE_OUT = 2, QUICK = 0.25, DUCK = 0.4;
 
-export const scapeOf = (v: unknown): Scape | null => (SCAPES.includes(v as Scape) ? (v as Scape) : null);
+/** The soundscape a stored value names, or null for off; the retired café plays ocean. */
+export const scapeOf = (v: unknown): Scape | null => (v === "cafe" ? "ocean" : SCAPES.includes(v as Scape) ? (v as Scape) : null);
 
 export const scapeVolume = (v: unknown) => (v == null || v === "" || isNaN(+v) ? 40 : Math.max(0, Math.min(100, Math.round(+v))));
 

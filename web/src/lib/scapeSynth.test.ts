@@ -18,12 +18,25 @@ function band(x: Float32Array, lo: number, hi: number) {
   return Float32Array.from(x, (v) => b.run(a.run(v)));
 }
 
+function levels(x: Float32Array, ms: number) {
+  const n = SR * ms / 1000, out: number[] = [];
+  for (let i = 0; i + n <= x.length; i += n) out.push(rms(x.subarray(i, i + n)));
+  return out;
+}
+
+const pct = (xs: number[], p: number) => [...xs].sort((a, b) => a - b)[Math.floor((xs.length - 1) * p)];
+
 /** How far the loud frames rise above the median, in dB. */
-function burstiness(x: Float32Array, ms = 10) {
-  const n = SR * ms / 1000, frames: number[] = [];
-  for (let i = 0; i + n <= x.length; i += n) frames.push(rms(x.subarray(i, i + n)));
-  frames.sort((a, b) => a - b);
-  return db(frames[Math.floor(frames.length * 0.98)] / frames[frames.length >> 1]);
+const burstiness = (x: Float32Array, ms = 10) => { const f = levels(x, ms); return db(pct(f, 0.98) / pct(f, 0.5)); };
+
+/** Times the level climbs `rise` dB above its median after dropping back below it. */
+function swells(env: number[], rise: number) {
+  const mid = db(pct(env, 0.5));
+  let n = 0, up = false;
+  for (const v of env.map(db)) {
+    if (!up && v > mid + rise) { n++; up = true; } else if (up && v < mid) up = false;
+  }
+  return n;
 }
 
 describe("makeScape", () => {
@@ -67,12 +80,41 @@ describe("makeScape", () => {
     expect(burstiness(band(L, 7000, 14000))).toBeGreaterThan(burstiness(band(out.brown.L, 7000, 14000)) + 2);
   });
 
-  it("café murmur rises and falls like speech", () => {
-    expect(burstiness(band(out.cafe.L, 250, 1000), 60)).toBeGreaterThan(burstiness(band(out.brown.L, 250, 1000), 60) + 2);
+  it("depends only on its random source", () => {
+    for (const k of ["ocean", "fire"] as const) {
+      expect(render(k, 2, 3).L).toEqual(render(k, 2, 3).L);
+      expect(render(k, 2, 3).L).not.toEqual(render(k, 2, 4).L);
+    }
+  });
+});
+
+describe("ocean and fire", () => {
+  const long = { rain: render("rain", 30), ocean: render("ocean", 30), fire: render("fire", 30) };
+
+  it.each(["ocean", "fire"] as const)("%s is about as loud as rain", (k) => {
+    expect(Math.abs(db(rms(long[k].L)) - db(rms(long.rain.L)))).toBeLessThan(2);
+    expect(Math.abs(db(rms(long[k].R)) - db(rms(long.rain.R)))).toBeLessThan(2);
   });
 
-  it("depends only on its random source", () => {
-    expect(render("cafe", 0.2, 3).L).toEqual(render("cafe", 0.2, 3).L);
-    expect(render("cafe", 0.2, 3).L).not.toEqual(render("cafe", 0.2, 4).L);
+  it("ocean rises and falls in waves", () => {
+    const env = levels(long.ocean.L, 500);
+    expect(swells(env, 3)).toBeGreaterThanOrEqual(2);
+    expect(db(pct(env, 0.9) / pct(env, 0.1))).toBeGreaterThan(6);
+  });
+
+  it("ocean stays calm, with no sudden jumps or loud peaks", () => {
+    const { L } = long.ocean, env = levels(L, 250).map(db);
+    let jump = 0, peak = 0;
+    for (let i = 1; i < env.length; i++) jump = Math.max(jump, env[i] - env[i - 1]);
+    for (const v of L) peak = Math.max(peak, Math.abs(v));
+    expect(jump).toBeLessThan(4);
+    expect(db(peak / rms(L))).toBeLessThan(20);
+    expect(db(pct(levels(L, 500), 1) / rms(L))).toBeLessThan(8);
+  });
+
+  it("fire is a low roar with sparse crackles", () => {
+    const { L } = long.fire;
+    expect(db(rms(band(L, 60, 700))) - db(rms(band(L, 1000, 3000)))).toBeGreaterThan(8);
+    expect(burstiness(band(L, 3000, 7000), 5)).toBeGreaterThan(burstiness(band(long.rain.L, 3000, 7000), 5) + 10);
   });
 });

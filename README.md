@@ -13,7 +13,7 @@ Worker in `src/` powers shared rooms and account sync.
 - Recurring tasks (daily, weekdays, chosen weekdays, monthly, or every few days, weeks or months), and unfinished tasks that roll over to today: always, ask, or never
 - Your best time of day for focus, and a weekly recap that opens on the first visit of a new week
 - Configurable timers, optional gentle ticking, and a floating Picture-in-Picture timer
-- Optional soundscapes during focus (rain, café or brown noise), generated in the browser so nothing loops
+- Optional soundscapes during focus (rain, ocean waves, a fireplace or brown noise), generated in the browser so nothing loops
 - Installable as an app on phones (PWA) that opens offline, with a full-screen timer page and bottom tabs
 - Optional sign-in to sync tasks, history, settings, and the running timer between devices
 - Temporary shared rooms that sync timer status while keeping tasks and history private
