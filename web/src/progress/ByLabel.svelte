@@ -1,4 +1,7 @@
 <script>
+  import { flip } from "svelte/animate";
+  import { quintOut } from "svelte/easing";
+  import { calm } from "../dom";
   import { addDays } from "../lib/dates";
   import { focusByLabel } from "../lib/stats";
   import { labelHue, progressLabelNames } from "../lib/tasks";
@@ -14,6 +17,7 @@
   const total = $derived(rows.reduce((a, r) => a + r.ms, 0));
   const max = $derived(Math.max(1, ...rows.map((r) => r.ms)));
 
+  const move = () => ({ duration: calm() ? 0 : 500, easing: quintOut });
   const share = (r) => (total ? Math.round((r.ms / total) * 100) + "%" : "–");
   const tip = (r) => "<b>" + api.esc(r.name || "No label") + "</b><br>" + api.fmtDur(r.ms) + " · " + api.plural(r.cycles, "cycle") + " · " + share(r) + " of focus";
 </script>
@@ -32,7 +36,7 @@
         <thead><tr>{#each COLS as col, i (i)}<th class={i > 1 ? "num" : null}>{col}</th>{/each}</tr></thead>
         <tbody>
           {#each rows as r (r.name)}
-            <tr data-tip={tip(r)}>
+            <tr data-tip={tip(r)} animate:flip={move()}>
               <td class="t" data-label={COLS[0]}><span class="by-name" class:none={!r.name}><i class="label-dot" class:none={!r.name} style:--h={r.name ? labelHue(r.name) : null}></i><span>{r.name || "No label"}</span></span></td>
               <td class="barcell" data-label={COLS[1]}><div class="hbar">{#if r.ms}<b style:width={(r.ms / max) * 100 + "%"}></b>{/if}</div></td>
               <td class="num" data-label={COLS[2]}>{api.fmtDur(r.ms)}</td>

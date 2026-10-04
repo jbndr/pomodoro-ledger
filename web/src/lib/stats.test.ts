@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays, sod } from "./dates";
-import { barPath, dayLabels, dayTotals, estimateAccuracy, focusByLabel, heatLevel, minuteScale, spanDays, streaks, sumDays } from "./stats";
+import { dayLabels, dayTotals, estimateAccuracy, focusByLabel, heatLevel, minuteScale, spanDays, streaks, sumDays } from "./stats";
 import type { Session, Task, Tasks } from "./tasks";
 
 // Saturday, 3 October 2026.
@@ -92,10 +92,6 @@ describe("chart helpers", () => {
     expect(minuteScale(60)).toEqual({ step: 15, top: 60 });
     expect(minuteScale(200)).toEqual({ step: 60, top: 240 });
     expect(minuteScale(2000)).toEqual({ step: 480, top: 2400 });
-  });
-  it("draws nothing for an empty bar and rounds the top otherwise", () => {
-    expect(barPath(0, 10, 20, 0.2, 4)).toBe("");
-    expect(barPath(0, 10, 20, 50, 4)).toBe("M0,60V14Q0,10 4,10H16Q20,10 20,14V60Z");
   });
   it.each([[0, 0], [10, 1], [30, 2], [100, 3], [200, 4]])("shades %i minutes as level %i", (min, lv) => {
     expect(heatLevel(min)).toBe(lv);

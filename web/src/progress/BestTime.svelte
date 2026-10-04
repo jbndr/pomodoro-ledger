@@ -1,14 +1,14 @@
 <script>
   import { addDays } from "../lib/dates";
   import { bestWindow, hourGrid, hourSpan, relLevel, WEEKDAYS } from "../lib/insights";
-  import { barPath } from "../lib/stats";
 
   let { api, tasks, today } = $props();
+  const uid = $props.id();
   let range = $state("90");
   let width = $state(0);
 
   const RANGES = [["30", "30 days"], ["90", "90 days"], ["all", "All time"]];
-  const ml = 34, mr = 4, mt = 6, hh = 54, gap = 12, ch = 17, cg = 3, mb = 22;
+  const ml = 34, mr = 4, mt = 6, hh = 54, r = 3, gap = 12, ch = 17, cg = 3, mb = 22;
   const H = mt + hh + gap + 7 * (ch + cg) - cg + mb;
 
   const g = $derived(hourGrid(tasks, range === "all" ? 0 : addDays(today, 1 - +range)));
@@ -38,18 +38,19 @@
   </p>
   {#if g.sessions}
     <div class="chart heat" bind:clientWidth={width}>
-      <svg viewBox="0 0 {c.W} {H}" role="img" aria-label={"Focus by hour of day and weekday. " + (best ? best.text : "")}>
+      <svg viewBox="0 0 {c.W} {H}" role="img" aria-label={"Focus by hour of day and weekday. " + (best ? best.text : "")} style:--base="{mt + hh}px">
+        <clipPath id="{uid}-plot"><rect width={c.W} height={mt + hh} /></clipPath>
         <line class="base" x1={ml} x2={c.W - mr} y1={mt + hh} y2={mt + hh} />
-        {#each c.hours as h (h)}
+        {#each c.hours as h, i (h)}
           {@const bh = (g.hours[h] / c.maxH) * (hh - 4)}
           <rect class="hit" data-tip={hourTip(h)} x={c.x(h) - 1} y={mt} width={c.cw + 2} height={hh} fill="transparent" />
-          <path class="bar" class:peak={inWin(h)} d={barPath(c.x(h), mt + hh - bh, c.cw, bh, 3)} />
+          <rect class="bar" class:peak={inWin(h)} x={c.x(h)} width={c.cw} rx={r} clip-path="url(#{uid}-plot)" style:--i={i} style:y="{mt + hh - bh}px" style:height="{bh + r}px" />
         {/each}
         {#each WEEKDAYS as day, d (d)}
           {@const y = mt + hh + gap + d * (ch + cg)}
           <text x="0" y={y + 12.5}>{day.slice(0, 3)}</text>
-          {#each c.hours as h (h)}
-            <rect class="cell l{relLevel(g.ms[d][h], c.maxCell)}" data-tip={cellTip(d, h)} x={c.x(h)} y={y} width={c.cw} height={ch} rx="3" />
+          {#each c.hours as h, i (h)}
+            <rect class="cell l{relLevel(g.ms[d][h], c.maxCell)}" data-tip={cellTip(d, h)} x={c.x(h)} y={y} width={c.cw} height={ch} rx="3" style:--i={i} />
           {/each}
         {/each}
         {#each c.hours as h (h)}
