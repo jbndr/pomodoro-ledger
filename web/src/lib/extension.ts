@@ -1,6 +1,5 @@
 import type { Mode, Status } from "./timer";
 
-export const EXTENSION_URL = "https://github.com/jbndr/pomodoro-ledger/tree/main/extension";
 
 export interface TimerMessage { source: "pomodoro-ledger"; type: "timer"; mode: Mode; status: Status; endsAt: number | null; task: string | null }
 
