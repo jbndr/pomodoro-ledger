@@ -4,6 +4,9 @@
 
 <script>
   import { onMount, tick } from "svelte";
+  import { flip } from "svelte/animate";
+  import { cubicOut } from "svelte/easing";
+  import { calm } from "../dom";
   import { RHYTHMS, SIZE, sortRooms } from "../lib/rhythm";
   import RoomCard from "./RoomCard.svelte";
 
@@ -16,6 +19,12 @@
   const rooms = $derived(data ? sortRooms(data.rooms.filter((r) => filter === "all" || r.rhythm === filter)) : []);
   const people = $derived(data ? data.rooms.reduce((n, r) => n + r.names.length, 0) : 0);
   const busyRooms = $derived(data ? data.rooms.filter((r) => r.names.length).length : 0);
+  const status = $derived(!data ? "Looking for rooms…" : people ? people + " " + (people === 1 ? "person" : "people") + " working in " + busyRooms + " " + (busyRooms === 1 ? "room" : "rooms") : "Quiet right now. Start a round.");
+
+  const move = () => ({ duration: calm() ? 0 : 320, easing: cubicOut });
+  const arrive = () => calm() ? { duration: 160, css: (t) => `opacity: ${t}` } : { duration: 260, easing: cubicOut, css: (t, u) => `opacity: ${t}; transform: translateY(${u * 8}px) scale(${0.98 + 0.02 * t})` };
+  const leave = () => calm() ? { duration: 120, css: (t) => `opacity: ${t}` } : { duration: 180, easing: cubicOut, css: (t, u) => `opacity: ${t}; transform: scale(${0.97 + 0.03 * t})` };
+  const appear = () => ({ duration: calm() ? 120 : 220, css: (t) => `opacity: ${t}` });
 
   async function load() {
     try {
@@ -60,7 +69,7 @@
 
 <div class="lobby">
   <div class="lobby-head">
-    <span class="live" class:on={people > 0}><i aria-hidden="true"></i>{#if !data}Looking for rooms…{:else if people}{people} {people === 1 ? "person" : "people"} working in {busyRooms} {busyRooms === 1 ? "room" : "rooms"}{:else}Quiet right now. Start a round.{/if}</span>
+    <span class="live" class:on={people > 0}><i aria-hidden="true"></i>{#key status}<span in:appear>{status}</span>{/key}</span>
     <div class="chips" role="radiogroup" aria-label="Rhythm">
       {#each [["all", "All"], ...RHYTHMS.map((r) => [r.id, r.id])] as [id, name] (id)}
         <button type="button" role="radio" aria-checked={String(filter === id)} onclick={() => (filter = id)}>{name}</button>
@@ -71,10 +80,10 @@
   {#if failed}
     <div class="lobby-empty"><p>Couldn't load public rooms.</p><button class="btn small" type="button" onclick={load}>Try again</button></div>
   {:else if !data}
-    <ul class="rlist" aria-hidden="true">{#each [0, 1, 2] as k (k)}<li class="rcard ghost"><span></span></li>{/each}</ul>
+    <ul class="rlist" aria-hidden="true">{#each [0, 1] as k (k)}<li class="rcard ghost"><span></span></li>{/each}</ul>
   {:else}
-    <ul class="rlist" class:above class:below aria-label="Public rooms" aria-busy={busy} bind:this={listEl} onscroll={edges}>
-      {#each rooms as r (r.code)}<RoomCard {r} {now} {onjoin} />{/each}
+    <ul class="rlist" class:above class:below aria-label="Public rooms" aria-busy={busy} bind:this={listEl} onscroll={edges} in:appear>
+      {#each rooms as r (r.code)}<li class="rcard" animate:flip={move()} in:arrive out:leave><RoomCard {r} {now} {onjoin} /></li>{/each}
     </ul>
   {/if}
 
