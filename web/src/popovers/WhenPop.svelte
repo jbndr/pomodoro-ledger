@@ -2,7 +2,7 @@
   import { flushSync } from "svelte";
   import { calMove, monthGrid, monthOf, stepMonth, weekStartOf } from "../lib/calendar";
   import { addDays, dayKey, keyTime } from "../lib/dates";
-  import { anchored, cleanRepeat, MAX_N, ordinal } from "../lib/repeat";
+  import { anchored, cleanRepeat, firstDue, MAX_N, ordinal } from "../lib/repeat";
   import { whenOptions } from "../lib/when";
   import { whenPop } from "./state.svelte";
 
@@ -142,6 +142,23 @@
     e.preventDefault();
   }
 
+  const KINDS = [["", "Never"], ["day", "Daily"], ["weekday", "Weekdays"], ["week", "Weekly"], ["month", "Monthly"]];
+  const UNIT = { day: "day", week: "week", month: "month" };
+  const every = (r) => {
+    const n = r.n || 1, unit = n > 1 ? n + " " + UNIT[r.every] + "s" : UNIT[r.every];
+    return (n === 2 && r.every === "day" ? "Every other day" : "Every " + unit) + (r.every === "month" ? " on the " + ordinal(r.date) : "");
+  };
+  const next = $derived(rule ? api.fmtDate(keyTime(firstDue(rule, startKey())), { weekday: "short", day: "numeric", month: "short" }) : "");
+
+  function kindKey(e, i) {
+    const j = e.key === "ArrowRight" ? (i + 1) % KINDS.length : e.key === "ArrowLeft" ? (i - 1 + KINDS.length) % KINDS.length : -1;
+    if (j < 0) return;
+    e.preventDefault();
+    setKind(KINDS[j][0]);
+    flushSync();
+    el.querySelector(".rep-kinds [aria-checked='true']")?.focus();
+  }
+
   const hovered = (e) => { const li = e.target.closest("li"); return li ? +li.dataset.i : -1; };
   const dayLabel = (d) => api.fmtDate(d.t, { weekday: "long", day: "numeric", month: "long" }) + (cal.load.get(d.key) ? ", " + api.plural(cal.load.get(d.key), "task") + " planned" : "");
 </script>
@@ -177,8 +194,8 @@
     {/each}
   </ul>
   <div class="cal-head">
-    <button class="icon-btn" type="button" data-cal-step="-1" aria-label="Previous month" onclick={() => (month = stepMonth(month, -1))}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
     <strong id="calMonth" aria-live="polite">{api.fmtDate(month, { month: "long", year: "numeric" })}</strong>
+    <button class="icon-btn" type="button" data-cal-step="-1" aria-label="Previous month" onclick={() => (month = stepMonth(month, -1))}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
     <button class="icon-btn" type="button" data-cal-step="1" aria-label="Next month" onclick={() => (month = stepMonth(month, 1))}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
   </div>
   <div class="cal-grid" id="calGrid" bind:this={grid}>
@@ -186,7 +203,7 @@
       <span class="wd" aria-hidden="true">{api.fmtDate(d.t, { weekday: "narrow" })}</span>
     {/each}
     {#each cal.days as d, i (i)}
-      {@const n = Math.min(3, cal.load.get(d.key) || 0)}
+      {@const n = cal.load.get(d.key) || 0}
       <button
         type="button"
         data-day={d.key}
@@ -197,32 +214,30 @@
         aria-label={dayLabel(d)}
         onclick={() => choose(d.key)}
         onkeydown={dayKeydown}
-      >{d.date}{#if n}<i>{#each { length: n } as _, j (j)}<b></b>{/each}</i>{/if}</button>
+      >{d.date}{#if n}<i class:busy={n > 2}></i>{/if}</button>
     {/each}
   </div>
-  <div class="cal-foot"><i aria-hidden="true"></i>Tasks already planned that day</div>
   <div class="when-repeat">
-    <label for="whenRepeat">{@html ICON.repeat}Repeat</label>
-    <select id="whenRepeat" value={rule ? rule.every : ""} onchange={(e) => setKind(e.currentTarget.value)}>
-      <option value="">Never</option><option value="day">Daily</option><option value="weekday">Every weekday</option><option value="week">Weekly</option><option value="month">Monthly</option>
-    </select>
+    <div class="rep-head">{@html ICON.repeat}<span id="repLabel">Repeat</span>{#if rule}<em>Next {next}</em>{/if}</div>
+    <div class="rep-kinds" role="radiogroup" aria-labelledby="repLabel">
+      {#each KINDS as [k, name], i (k)}
+        {@const on = (rule ? rule.every : "") === k}
+        <button type="button" role="radio" aria-checked={String(on)} tabindex={on ? 0 : -1} onclick={() => setKind(k)} onkeydown={(e) => kindKey(e, i)}>{name}</button>
+      {/each}
+    </div>
     {#if rule && rule.every !== "weekday"}
       {@const n = rule.n || 1}
       <div class="rep-every">
-        Every
-        <div class="stepper">
-          <button type="button" aria-label="Repeat more often" disabled={n <= 1} onclick={() => stepEvery(-1)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
-          <output aria-live="polite">{n}</output>
-          <button type="button" aria-label="Repeat less often" disabled={n >= MAX_N[rule.every]} onclick={() => stepEvery(1)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button>
-        </div>
-        {rule.every + (n > 1 ? "s" : "")}{#if rule.every === "month"}&nbsp;on the {ordinal(rule.date)}{/if}
+        <button type="button" aria-label="Repeat more often" disabled={n <= 1} onclick={() => stepEvery(-1)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg></button>
+        <output aria-live="polite">{every(rule)}</output>
+        <button type="button" aria-label="Repeat less often" disabled={n >= MAX_N[rule.every]} onclick={() => stepEvery(1)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button>
       </div>
     {/if}
     {#if rule && rule.every === "week"}
       <div class="rep-days" role="group" aria-label="Repeat on">
         {#each cal.days.slice(0, 7) as d (d.key)}
           {@const wd = new Date(d.t).getDay()}
-          <button type="button" aria-pressed={String(rule.days.includes(wd))} aria-label={api.fmtDate(d.t, { weekday: "long" })} onclick={() => toggleDay(wd)}>{api.fmtDate(d.t, { weekday: "narrow" })}</button>
+          <button type="button" aria-pressed={String(rule.days.includes(wd))} aria-label={api.fmtDate(d.t, { weekday: "long" })} onclick={() => toggleDay(wd)}>{api.fmtDate(d.t, { weekday: "short" }).slice(0, 2)}</button>
         {/each}
       </div>
     {/if}
