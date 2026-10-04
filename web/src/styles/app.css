@@ -617,7 +617,7 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .recap-stats div { display: grid; gap: 2px; align-content: start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); min-width: 0; }
 .recap-stats b { font-family: var(--f-display); font-size: 23px; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .recap-stats b small { font-size: 13px; font-weight: 500; color: var(--faint); }
-.recap-stats span { font-size: 12px; line-height: 1.25; color: var(--muted); }
+.recap-stats span { font-size: 12px; line-height: 1.25; min-height: 2.5em; color: var(--muted); }
 .recap-days { display: grid; gap: 10px; }
 .recap-bars { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; height: 96px; }
 .recap-day { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 6px; min-width: 0; }
@@ -631,10 +631,12 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .recap-days p b { color: var(--fg); font-weight: 600; }
 .recap-list { display: grid; gap: 8px; }
 .recap-list h3 { font: 650 11px var(--f-body); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
-.recap-label { display: grid; grid-template-columns: minmax(0, 10em) minmax(0, 1fr) 5.5em; align-items: center; gap: 12px; font-size: 14px; font-weight: 550; }
+.recap-label { display: grid; grid-template-columns: minmax(0, 10em) minmax(0, 1fr) 5.5em; align-items: center; gap: 12px; font-size: 14px; font-weight: 550; line-height: 1.5; min-height: 1.5em; }
+.recap-label > .by-name:only-child { grid-column: 1 / -1; }
+.recap-label .by-name > span, .recap-list li > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recap-label em { font: normal 12.5px var(--f-mono); color: var(--muted); text-align: right; }
 .recap-list ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
-.recap-list li { display: flex; gap: 10px; font-size: 14px; min-width: 0; }
+.recap-list li { display: flex; gap: 10px; font-size: 14px; line-height: 1.5; min-height: 1.5em; min-width: 0; }
 .recap-list li::before { content: "✓"; flex: none; width: 1em; color: var(--good); font-weight: 700; }
 .recap-list li.more { color: var(--muted); }
 .recap-list li.more::before { content: ""; }

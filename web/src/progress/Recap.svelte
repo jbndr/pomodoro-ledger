@@ -4,6 +4,9 @@
   import { firstWeek, recapDue, weekRecap, weekStart } from "../lib/insights";
   import { labelHue } from "../lib/tasks";
 
+  const LABELS = 3, DONE = 4;
+  const slots = (list, n) => [...list, ...Array(Math.max(0, n - list.length)).fill(null)].slice(0, n);
+
   let { api } = $props();
   let start = $state(0), version = $state(0), sheet, back = null, tries = 0;
 
@@ -14,6 +17,7 @@
   const maxDay = $derived(r ? Math.max(1, ...r.days.map((d) => d.ms)) : 1);
   const title = $derived(start === thisWeek() ? "This week so far" : start === addDays(thisWeek(), -7) ? "Last week" : "Week of " + api.fmtDate(start, { day: "numeric", month: "long" }));
   const range = $derived(api.fmtDate(start, { weekday: "short", day: "numeric", month: "short" }) + " – " + api.fmtDate(addDays(start, 6), { weekday: "short", day: "numeric", month: "short" }));
+  const done = $derived(r ? r.finished.slice(0, r.finished.length > DONE ? DONE - 1 : DONE) : []);
   let auto = $state(true);
 
   /** Opens on a week, last week by default. */
@@ -68,7 +72,7 @@
         <button class="icon-btn" type="button" aria-label="Close" onclick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
     </div>
-    {#if r && r.ms}
+    {#if r}
       <div class="recap-hero">
         <div class="k">Focus</div>
         <div class="v">{#each parts(r.ms) as [n, unit], i (i)}{i ? " " : ""}{n}<small>{unit}</small>{/each}</div>
@@ -89,31 +93,35 @@
             </div>
           {/each}
         </div>
-        {#if r.best}<p>Best day: <b>{api.fmtDate(r.best.t, { weekday: "long" })}</b>, {api.fmtDur(r.best.ms)}</p>{/if}
+        <p>{#if r.best}Best day: <b>{api.fmtDate(r.best.t, { weekday: "long" })}</b>, {api.fmtDur(r.best.ms)}{:else}No focus this week{/if}</p>
       </div>
-      {#if r.labels.length}
-        <section class="recap-list">
-          <h3>Top labels</h3>
-          {#each r.labels as l (l.name)}
+      <section class="recap-list">
+        <h3>Top labels</h3>
+        {#each slots(r.labels, LABELS) as l, i (i)}
+          {#if l}
             <div class="recap-label">
               <span class="by-name" class:none={!l.name}><i class="label-dot" class:none={!l.name} style:--h={l.name ? labelHue(l.name) : null}></i><span>{l.name || "No label"}</span></span>
               <div class="hbar"><b style:width={(l.ms / r.labels[0].ms) * 100 + "%"}></b></div>
               <em>{api.fmtDur(l.ms)}</em>
             </div>
+          {:else if i === 0}
+            <div class="recap-label"><span class="by-name none">No labels this week</span></div>
+          {:else}
+            <div class="recap-label" aria-hidden="true">&nbsp;</div>
+          {/if}
+        {/each}
+      </section>
+      <section class="recap-list">
+        <h3>Finished</h3>
+        <ul>
+          {#each slots(done, DONE) as title, i (i)}
+            {#if title}<li><span>{title}</span></li>
+            {:else if i === 0}<li class="more">Nothing finished</li>
+            {:else if i === DONE - 1 && r.finished.length > DONE}<li class="more">and {r.finished.length - DONE + 1} more</li>
+            {:else}<li class="more" aria-hidden="true">&nbsp;</li>{/if}
           {/each}
-        </section>
-      {/if}
-      {#if r.finished.length}
-        <section class="recap-list">
-          <h3>Finished</h3>
-          <ul>
-            {#each r.finished.slice(0, 4) as title, i (i)}<li>{title}</li>{/each}
-            {#if r.finished.length > 4}<li class="more">and {r.finished.length - 4} more</li>{/if}
-          </ul>
-        </section>
-      {/if}
-    {:else}
-      <div class="empty"><strong>No focus this week</strong><span>Weeks with focus show their totals, best day and finished tasks here.</span></div>
+        </ul>
+      </section>
     {/if}
     <div class="sheet-foot">
       <label class="toggle recap-auto"><span>Show each new week</span><input type="checkbox" checked={auto} onchange={toggleAuto}></label>
