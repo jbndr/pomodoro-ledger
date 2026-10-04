@@ -832,7 +832,7 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .field { display: grid; gap: 5px; font-size: 13px; color: var(--muted); }
 .field input { height: 40px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface-2); padding: 0 12px; font-family: var(--f-mono); font-size: 14px; color: var(--fg); width: 100%; min-width: 0; }
 .field-head { display: flex; justify-content: space-between; gap: 8px; }
-#tickVolumeValue { font-family: var(--f-mono); color: var(--faint); }
+#tickVolumeValue, #scapeVolumeValue { font-family: var(--f-mono); color: var(--faint); }
 .unit { position: relative; display: block; }
 .unit input { padding-right: 52px; -moz-appearance: textfield; appearance: textfield; }
 .unit input::-webkit-inner-spin-button, .unit input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -853,8 +853,10 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .nested { margin: 0 0 12px; padding: 2px 0 2px 12px; border-left: 2px solid var(--line-2); }
 .settings-sheet .seg-ctl { background: var(--bg); box-shadow: inset 0 0 0 1px var(--line); }
 .settings-sheet .seg-ctl > label { height: 34px; font-size: 13px; }
-#tickingOptions input[type="range"] { height: 40px; padding: 0; border: 0; background: transparent; accent-color: var(--accent); cursor: pointer; }
+#tickingOptions input[type="range"], #scapeOptions input[type="range"] { height: 40px; padding: 0; border: 0; background: transparent; accent-color: var(--accent); cursor: pointer; }
 .settings-sheet { gap: 18px; }
+.scape-pick { margin: 0 0 12px; }
+#scapeOptions .toggle { padding-top: 4px; }
 .seg { display: flex; padding: 4px; gap: 2px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
 .seg button { flex: 1; border: 0; background: transparent; padding: 7px 10px; border-radius: 999px; font-size: 13px; font-weight: 550; color: var(--muted); white-space: nowrap; transition: background .2s, color .2s; }
 @media (hover: hover) { .seg button:hover { color: var(--fg); } }

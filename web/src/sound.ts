@@ -1,3 +1,4 @@
+import { previewScape, syncScape } from "./soundscape";
 import { S, T } from "./state";
 
 // Sound: the end-of-phase bell is scheduled on the audio clock when a phase starts,
@@ -5,7 +6,10 @@ import { S, T } from "./state";
 let AC: AudioContext | null = null, pending: OscillatorNode[] = [], pendingAt = 0;
 
 export function ensureAudio() {
-  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext!)(); if (AC.state === "suspended") AC.resume().catch(() => {}); } catch {}
+  try {
+    if (!AC) { AC = new (window.AudioContext || window.webkitAudioContext!)(); AC.onstatechange = () => syncScape(AC); }
+    if (AC.state === "suspended") AC.resume().catch(() => {});
+  } catch {}
   syncTicking();
 }
 
@@ -102,7 +106,11 @@ function tickingNode(seconds: number): Ticker | null {
 
 export function previewTicking() { tickPreview = tickingNode(6); }
 
+export function previewSoundscape() { ensureAudio(); try { if (AC) previewScape(AC); } catch {} }
+
+/** Keeps the ticking and the soundscape in step with the timer. */
 export function syncTicking() {
+  try { syncScape(AC); } catch {}
   const on = AC && S.settings.ticking && T.mode === "focus" && T.status === "running" && T.endsAt > Date.now();
   const key = on ? [T.endsAt, S.settings.tickVolume, S.settings.tickPace].join(":") : "";
   if (key === tickingKey) return;

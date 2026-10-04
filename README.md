@@ -13,6 +13,7 @@ Worker in `src/` powers shared rooms and account sync.
 - Recurring tasks (daily, weekdays, chosen weekdays, monthly, or every few days, weeks or months), and unfinished tasks that roll over to today: always, ask, or never
 - Your best time of day for focus, and a weekly recap that opens on the first visit of a new week
 - Configurable timers, optional gentle ticking, and a floating Picture-in-Picture timer
+- Optional soundscapes during focus (rain, café or brown noise), generated in the browser so nothing loops
 - Installable as an app on phones (PWA) that opens offline, with a full-screen timer page and bottom tabs
 - Optional sign-in to sync tasks, history, settings, and the running timer between devices
 - Temporary shared rooms that sync timer status while keeping tasks and history private
@@ -32,6 +33,7 @@ web/                 the app (Vite root)
   src/ui.ts          handles to the mounted dialogs and popovers
   src/keys.ts        app-wide keyboard shortcuts
   src/sound.ts       bells and the optional ticking
+  src/soundscape.ts  soundscapes during focus, made in an AudioWorklet (scapeWorklet.ts, lib/scapeSynth.ts)
   src/float.ts       the floating Picture-in-Picture timer
   src/layout.ts      dialog overlays and fitting the timer dial to the window
   src/pages.ts       phone pages; src/zen.ts full screen
