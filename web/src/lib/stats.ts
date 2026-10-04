@@ -98,13 +98,6 @@ export function minuteScale(max: number): { step: number; top: number } {
   return { step, top: Math.ceil(max / step) * step };
 }
 
-/** An SVG path for a bar with rounded top corners; empty when it would be invisible. */
-export function barPath(x: number, y: number, w: number, h: number, r: number): string {
-  if (h <= 0.5) return "";
-  r = Math.min(r, h, w / 2);
-  return "M" + x + "," + (y + h) + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y + "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + (y + h) + "Z";
-}
-
 /** Calendar shade for a day's focus minutes, 0 to 4. */
 export const heatLevel = (min: number) => (min === 0 ? 0 : min < 30 ? 1 : min < 75 ? 2 : min < 150 ? 3 : 4);
 

@@ -23,7 +23,7 @@
         if (t > today) continue;
         const o = days.get(dayKey(t)) || { ms: 0, cycles: 0 }, min = o.ms / 60000;
         const tip = "<b>" + api.fmtDate(t, { weekday: "short", day: "numeric", month: "short" }) + "</b><br>" + (min ? api.fmtDur(o.ms) + " · " + api.plural(o.cycles, "cycle") + labelTip(api, split.get(dayKey(t))) : "No focus");
-        cells.push({ key: col * 7 + row, x: ml + col * (cs + gap), y: mt + row * (cs + gap), level: heatLevel(min), today: t === today, tip });
+        cells.push({ key: col * 7 + row, col, x: ml + col * (cs + gap), y: mt + row * (cs + gap), level: heatLevel(min), today: t === today, tip });
       }
     }
     return { months, cells };
@@ -34,7 +34,7 @@
   <svg viewBox="0 0 {W} {H}" role="img" aria-label="Focus calendar for the last 20 weeks">
     {#each c.months as mo (mo.x)}<text x={mo.x} y="11">{mo.name}</text>{/each}
     {#each c.cells as cell (cell.key)}
-      <rect class="cell l{cell.level}" class:today={cell.today} data-tip={cell.tip} x={cell.x} y={cell.y} width={cs} height={cs} rx="3" />
+      <rect class="cell l{cell.level}" class:today={cell.today} data-tip={cell.tip} x={cell.x} y={cell.y} width={cs} height={cs} rx="3" style:--i={cell.col} />
     {/each}
     {#each DAYS as label, r (r)}{#if label}<text x="0" y={mt + r * (cs + gap) + 10}>{label}</text>{/if}{/each}
   </svg>
