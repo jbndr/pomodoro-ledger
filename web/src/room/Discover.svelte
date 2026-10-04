@@ -44,8 +44,8 @@
   const owns = (id) => marks >= 0 && api.sched.owns(id);
 
   const move = () => ({ duration: calm() ? 0 : 320, easing: cubicOut });
-  const arrive = () => calm() ? { duration: 160, css: (t) => `opacity: ${t}` } : { duration: 260, easing: cubicOut, css: (t, u) => `opacity: ${t}; transform: translateY(${u * 8}px) scale(${0.98 + 0.02 * t})` };
-  const leave = () => calm() ? { duration: 120, css: (t) => `opacity: ${t}` } : { duration: 180, easing: cubicOut, css: (t, u) => `opacity: ${t}; transform: scale(${0.97 + 0.03 * t})` };
+  const arrive = () => calm() ? { duration: 160, css: (t) => `opacity: ${t}` } : { duration: 260, easing: cubicOut, css: (t, u) => `opacity: ${t}; translate: 0 ${u * 8}px; scale: ${0.98 + 0.02 * t}` };
+  const leave = () => calm() ? { duration: 120, css: (t) => `opacity: ${t}` } : { duration: 180, easing: cubicOut, css: (t) => `opacity: ${t}; scale: ${0.97 + 0.03 * t}` };
   const appear = () => ({ duration: calm() ? 120 : 220, css: (t) => `opacity: ${t}` });
 
   async function load() {

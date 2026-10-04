@@ -6,7 +6,7 @@
 
   let { r, now, onjoin } = $props();
 
-  const pop = () => calm() ? { duration: 0 } : { duration: 260, easing: backOut, css: (t) => `transform: scale(${t}); opacity: ${Math.min(1, t * 2)}` };
+  const pop = () => calm() ? { duration: 0 } : { duration: 260, easing: backOut, css: (t) => `scale: ${t}; opacity: ${Math.min(1, t * 2)}` };
 
   const p = $derived(phaseAt(r.rhythm, now));
   const n = $derived(r.names.length);
