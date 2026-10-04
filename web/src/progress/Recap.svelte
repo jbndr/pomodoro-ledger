@@ -86,8 +86,8 @@
       </div>
       <div class="recap-days">
         <div class="recap-bars">
-          {#each r.days as d (d.t)}
-            <div class="recap-day" class:best={r.best && d.t === r.best.t} data-tip={dayTip(d)}>
+          {#each r.days as d, i (i)}
+            <div class="recap-day" class:best={r.best && d.t === r.best.t} style:--i={i} data-tip={dayTip(d)}>
               <i class:on={d.ms} style:height={d.ms ? Math.max(6, (d.ms / maxDay) * 100) + "%" : null}></i>
               <span>{api.fmtDate(d.t, { weekday: "narrow" })}</span>
             </div>
