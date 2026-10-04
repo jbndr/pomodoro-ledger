@@ -96,6 +96,12 @@ of each task as sync does, and keeps sessions from both copies. Replace makes
 this browser match the file and asks again first. The demo (`?demo=1`) can't
 export or import.
 
+Without an account, the app offers a backup once a visit when the ledger has
+real use (20 sessions, or 5 tasks over a week) and this device hasn't exported
+in 30 days. **Later** waits 7 days. **Remind me to back up** in Data & sync
+turns it off. It stays quiet while the timer runs, in full screen, or with a
+dialog open, and while signed in.
+
 ## Sync between devices
 
 Signing in syncs tasks, history, labels, settings, and the timer itself across

@@ -1,3 +1,4 @@
+import { noteExport } from "../chrome/backupNudge.svelte";
 import { Cloud } from "../cloud";
 import { autoFloatHandler } from "../float";
 import { applyImport, buildFile, fileName, type Imported, type ImportMode } from "../lib/backup";
@@ -19,6 +20,7 @@ export function exportLedger() {
   const a = Object.assign(document.createElement("a"), { href: url, download: fileName(now) });
   document.body.append(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  noteExport();
 }
 
 export const planImport = (d: Imported, mode: ImportMode) => applyImport(current(), d, mode, DEF as unknown as Loose);
