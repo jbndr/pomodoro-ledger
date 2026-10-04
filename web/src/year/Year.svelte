@@ -10,6 +10,7 @@
   import Medal from "./Medal.svelte";
   import { yearEnabled } from "./flag";
   import { grid } from "./grid";
+  import { dim, light } from "./holo";
   import "./year.css";
 
   let { api } = $props();
@@ -185,21 +186,12 @@
   function tilt(e) {
     const el = document.elementFromPoint(e.clientX, e.clientY)?.closest(".yr-badge")?.querySelector(".medal:not(.locked)");
     if (el !== tilted) untilt();
-    if (!el || calm()) return;
-    const r = el.getBoundingClientRect(), x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), yv = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
-    el.style.setProperty("--rx", ((0.5 - yv) * 26).toFixed(2) + "deg");
-    el.style.setProperty("--ry", ((x - 0.5) * 26).toFixed(2) + "deg");
-    el.style.setProperty("--px", (x * 100).toFixed(1) + "%");
-    el.style.setProperty("--py", (yv * 100).toFixed(1) + "%");
-    el.style.setProperty("--gx", (x * 100).toFixed(1) + "%");
-    el.style.setProperty("--gy", (yv * 100).toFixed(1) + "%");
-    el.classList.add("on");
+    if (!el) return;
+    light(el, e.clientX, e.clientY);
     tilted = el;
   }
   function untilt() {
-    if (!tilted) return;
-    for (const p of ["--rx", "--ry", "--px", "--py", "--gx", "--gy"]) tilted.style.removeProperty(p);
-    tilted.classList.remove("on");
+    if (tilted) dim(tilted);
     tilted = null;
   }
 

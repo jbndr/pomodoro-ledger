@@ -220,7 +220,7 @@
 @media (hover: hover) {
   .yr-hero:hover { translate: 0 -2px; box-shadow: 0 28px 54px -26px rgba(20, 24, 22, .75); }
   .yr-hero:hover .yr-hero-glow { translate: 4% -6%; scale: 1.08; }
-  .yr-hero:hover .yr-hero-year { background-position: 100% 0; }
+  .yr-hero:hover .yr-hero-year { background-position: var(--hx, 100%) 0; transition-duration: .5s; }
   .yr-hero:hover .yr-hero-fan > span { rotate: 0deg; translate: 0 0; margin-left: 6px; }
   .yr-hero:hover .yr-hero-fan > span:first-child { margin-left: 0; }
   .yr-hero:hover .yr-hero-play { scale: 1.08; }

@@ -2,6 +2,7 @@
   import { badges, focusYears, yearStats } from "../lib/year";
   import { hoursOf, hoursUnit } from "./card";
   import { yearEnabled } from "./flag";
+  import { dim, light } from "./holo";
   import Medal from "./Medal.svelte";
 
   let { api, tasks } = $props();
@@ -14,10 +15,22 @@
   const y = $derived(year ? yearStats(tasks, year) : null);
   const got = $derived(y ? badges(y, api.S.settings.goal).filter((b) => b.earned) : []);
   const fan = $derived(got.slice(0, 4));
+
+  function move(e) {
+    if (e.pointerType !== "mouse") return;
+    const btn = e.currentTarget, r = btn.getBoundingClientRect();
+    btn.style.setProperty("--hx", (((e.clientX - r.left) / r.width) * 100).toFixed(1) + "%");
+    for (const m of btn.querySelectorAll(".medal")) light(m, e.clientX, e.clientY, 16);
+  }
+
+  function leave(e) {
+    e.currentTarget.style.removeProperty("--hx");
+    for (const m of e.currentTarget.querySelectorAll(".medal")) dim(m);
+  }
 </script>
 
 {#if y}
-  <button class="yr-hero" type="button" id="openYear" onclick={() => api.openYear(year)}
+  <button class="yr-hero" type="button" id="openYear" onclick={() => api.openYear(year)} onpointermove={move} onpointerleave={leave}
     aria-label="Your {year} in focus: {hoursOf(y.ms)} {hoursUnit(y.ms)}, {got.length} {got.length === 1 ? 'badge' : 'badges'}. Play">
     <span class="yr-hero-glow" aria-hidden="true"></span>
     <span class="yr-hero-text" aria-hidden="true">
