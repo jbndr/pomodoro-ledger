@@ -204,7 +204,7 @@
   <div class="when-repeat">
     <label for="whenRepeat">{@html ICON.repeat}Repeat</label>
     <select id="whenRepeat" value={rule ? rule.every : ""} onchange={(e) => setKind(e.currentTarget.value)}>
-      <option value="">Never</option><option value="day">Every day</option><option value="weekday">Every weekday</option><option value="week">Every week</option><option value="month">Every month</option>
+      <option value="">Never</option><option value="day">Daily</option><option value="weekday">Every weekday</option><option value="week">Weekly</option><option value="month">Monthly</option>
     </select>
     {#if rule && rule.every !== "weekday"}
       {@const n = rule.n || 1}
