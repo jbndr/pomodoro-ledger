@@ -4,7 +4,7 @@
   import { firstWeek, recapDue, weekRecap, weekStart } from "../lib/insights";
   import { labelHue } from "../lib/tasks";
 
-  const LABELS = 3, DONE = 4;
+  const LABELS = 3, DONE = 3;
   const slots = (list, n) => [...list, ...Array(Math.max(0, n - list.length)).fill(null)].slice(0, n);
 
   let { api } = $props();
