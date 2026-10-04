@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clockIn, dayIn, daysIn, daysText, isLive, nextSession, offsetAt, readTimes, scheduleOf, sessionCode, startStep, zoned } from "./schedule";
+import { clockIn, dayIn, dayTag, daysIn, daysText, isLive, nextSession, offsetAt, readTimes, scheduleOf, sessionCode, startStep, zoned } from "./schedule";
 
 const MIN = 60000, HOUR = 60 * MIN;
 const berlin = { tz: "Europe/Berlin", days: [1, 2, 3, 4, 5], from: 9 * 60, to: 12 * 60 };
@@ -80,6 +80,9 @@ describe("labels", () => {
     expect([dayIn(start, now, "America/Los_Angeles"), clockIn(start, "America/Los_Angeles")]).toEqual(["Tomorrow", "00:00"]);
     expect(dayIn(start, now, "Pacific/Honolulu")).toBe("Today");
     expect(dayIn(at("2026-10-08T12:00:00Z"), now, "UTC")).toBe("Thu");
+    expect([dayTag(start, now, "Europe/Berlin"), dayTag(start, now, "America/Los_Angeles")]).toEqual(["Tue", "Tue"]);
+    expect(dayTag(start, now, "Pacific/Honolulu")).toBe("Today");
+    expect(dayTag(at("2026-10-08T12:00:00Z"), now, "UTC")).toBe("Thu");
   });
   it("names the days sessions fall on where the viewer is", () => {
     const evening = { tz: "America/New_York", days: [2, 4], from: 20 * 60, to: 22 * 60 };
