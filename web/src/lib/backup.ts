@@ -152,7 +152,7 @@ export function applyImport(cur: Ledger, d: Imported, mode: ImportMode, defaults
     tasks.set(t.id, t); changed.push(t); updated++;
   }
 
-  const untouched = Object.entries(cur.settings).every(([k, v]) => k === "recapSeen" || JSON.stringify(v) === JSON.stringify(defaults[k]));
+  const untouched = Object.entries(cur.settings).every(([k, v]) => k === "recapSeen" || k === "planSeen" || JSON.stringify(v) === JSON.stringify(defaults[k]));
   const fileProfileWins = !!d.profile && (d.profile.at > (cur.profileAt || 0) || untouched);
   const settings = fileProfileWins && fileSettings ? fileSettings : cur.settings;
   const labels = d.profile ? mergeLabels(cur.labels, d.profile.labels) : cur.labels;

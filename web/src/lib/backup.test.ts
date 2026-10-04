@@ -128,6 +128,11 @@ describe("cleanSettings", () => {
   it("drops values of the wrong type and keeps extra plain ones", () => {
     expect(cleanSettings({ focus: "lots", short: 10, sound: 1, sections: {}, rollover: "ask", weird: { a: 1 } }, DEF)).toEqual({ short: 10, rollover: "ask" });
   });
+  it("keeps weekly plans, which default to a list", () => {
+    const plans = [{ week: "2026-09-28", objectives: [{ label: "Writing", target: 6, name: "Ship the guide" }], at: 1 }];
+    expect(cleanSettings({ plans, planSeen: "2026-09-28" }, { ...DEF, plans: [], planSeen: "" })).toEqual({ plans, planSeen: "2026-09-28" });
+    expect(cleanSettings({ plans: "lots" }, { ...DEF, plans: [] })).toEqual({});
+  });
 });
 
 describe("merge", () => {
@@ -182,7 +187,7 @@ describe("merge", () => {
     expect(newer.settingsFromFile).toBe(true);
   });
   it("takes the file's settings when the ones here were never changed", () => {
-    const here = ledger([], { settings: { ...DEF, recapSeen: "2026-09-28" }, profileAt: 500 });
+    const here = ledger([], { settings: { ...DEF, recapSeen: "2026-09-28", planSeen: "2026-09-28" }, profileAt: 500 });
     const r = applyImport(here, imported([], { settings: { focus: 50 }, labels: [], at: 50 }), "merge", DEF);
     expect(r.settings.focus).toBe(50);
   });

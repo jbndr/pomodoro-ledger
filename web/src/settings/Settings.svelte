@@ -10,7 +10,7 @@
   let { api } = $props();
 
   const NUM = { sFocus: "focus", sShort: "short", sLong: "long", sEvery: "longEvery", sGoal: "goal" };
-  const TOGGLE = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat", sRecap: "weeklyRecap" };
+  const TOGGLE = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat", sRecap: "weeklyRecap", sPlanOffer: "weeklyPlan" };
   const TABS = [["timer", "Timer"], ["auto", "Automation"], ["alerts", "Sound & alerts"], ["sync", "Data & sync"]];
   const ROLLOVER = [["always", "Move to Today"], ["ask", "Ask"], ["never", "Don't move"]];
   const PACE = [["1", "1 s", "Every second"], ["2", "2 s", "Every 2 seconds"], ["4", "4 s", "Every 4 seconds"]];
@@ -173,6 +173,12 @@
           <legend>Weekly recap</legend>
           <div class="card">
             <label class="toggle"><span>Show each new week<small>Last week at a glance, on your first visit</small></span><input type="checkbox" id="sRecap" bind:checked={f.weeklyRecap}></label>
+          </div>
+        </fieldset>
+        <fieldset class="group">
+          <legend>Weekly plan</legend>
+          <div class="card">
+            <label class="toggle"><span>Offer to plan the week<small>A quiet prompt from Sunday to Tuesday · P opens it any time</small></span><input type="checkbox" id="sPlanOffer" bind:checked={f.weeklyPlan}></label>
           </div>
         </fieldset>
         {#if extOn}
