@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Pomodoro Ledger Site Blocker",
+  "short_name": "Site Blocker",
+  "version": "1.0.0",
+  "description": "Blocks the sites you choose while a Pomodoro Ledger focus round runs.",
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" },
+  "permissions": ["declarativeNetRequest", "storage", "alarms"],
+  "host_permissions": ["https://pomodoro.jbndr.com/*", "http://localhost/*"],
+  "optional_host_permissions": ["*://*/*"],
+  "background": { "service_worker": "background.js", "scripts": ["background.js"], "type": "module" },
+  "content_scripts": [{
+    "matches": ["https://pomodoro.jbndr.com/*", "http://localhost/*"],
+    "js": ["content.js"],
+    "run_at": "document_start"
+  }],
+  "action": {
+    "default_title": "Pomodoro Ledger Site Blocker",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/16.png", "32": "icons/32.png" }
+  },
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "web_accessible_resources": [{
+    "resources": ["blocked.html"],
+    "matches": ["<all_urls>"]
+  }],
+  "browser_specific_settings": {
+    "gecko": { "id": "site-blocker@pomodoro.jbndr.com", "strict_min_version": "140.0", "data_collection_permissions": { "required": ["none"] } }
+  }
+}

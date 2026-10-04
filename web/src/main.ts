@@ -10,6 +10,7 @@ import Toast from "./chrome/Toast.svelte";
 import { Cloud } from "./cloud";
 import Composer from "./composer/Composer.svelte";
 import { $, calm } from "./dom";
+import { announce } from "./extension";
 import { autoFloatHandler, floatBtn, initFloat } from "./float";
 import { esc, fmtClock, fmtDate, fmtDur, plural } from "./format";
 import { ICON } from "./icons";
@@ -143,6 +144,7 @@ ui.list = mount(TaskList, { target: panel, anchor: $("#taskFoot"), props: { api:
 } } }) as ListUI;
 renderRoom();
 renderAll();
+announce();
 measure();
 renderSyncTab();
 setTimeout(() => ui.recap!.maybeOpen(), 1500);
