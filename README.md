@@ -3,7 +3,7 @@
 <img width="939" height="1146" alt="image" src="https://github.com/user-attachments/assets/f1f9dc76-a4f3-429e-a7d5-7ac1523409de" />
 
 A task-focused Pomodoro timer served from Cloudflare's edge. The web app in `web/`
-is built with Vite into `dist/`, which Cloudflare serves as static assets; a small
+(Svelte 5 and TypeScript) is built with Vite into `dist/`, which Cloudflare serves as static assets; a small
 Worker in `src/` powers shared rooms and account sync.
 
 ## Features
@@ -21,11 +21,27 @@ Worker in `src/` powers shared rooms and account sync.
 
 ```
 web/                 the app (Vite root)
-  index.html         markup
-  src/app.js         app logic (being split into modules)
-  src/lib/*.ts       pure, tested logic: dates, the When parser, quick entry, list order, stats
-  src/tasks/         the task list, in Svelte 5
-  src/progress/      the Progress page, in Svelte 5
+  index.html         page shell the components mount into
+  src/main.ts        boot: global listeners, mounting the components, first render
+  src/state.ts       shared state (tasks, settings, the timer) and the local/session storage helpers
+  src/store.ts       saving tasks, settings and labels: this browser, or the account when signed in
+  src/cloud.ts       account sync over a WebSocket, last write wins
+  src/render.ts      redraws the components after a change
+  src/ui.ts          handles to the mounted dialogs and popovers
+  src/keys.ts        app-wide keyboard shortcuts
+  src/sound.ts       bells and the optional ticking
+  src/float.ts       the floating Picture-in-Picture timer
+  src/layout.ts      dialog overlays and fitting the timer dial to the window
+  src/pages.ts       phone pages; src/zen.ts full screen
+  src/lib/*.ts       pure, tested logic: dates, the When parser, quick entry, list order, stats, settings, the timer dial, rooms
+  src/timer/         the timer engine (engine.ts) and the timer card
+  src/tasks/         task helpers, actions, start-time plan and the task list
+  src/progress/      the Progress page and its session actions
+  src/composer/      the new-task box
+  src/popovers/      the When, label and menu popovers
+  src/settings/      the Settings dialog
+  src/room/          shared-room networking (net.ts) and its dialog and strip
+  src/chrome/        top bar tools, banner, shortcut sheet, toast and tooltip
   src/styles/app.css styles
   public/            copied as-is: service worker, manifest, icons
 src/                 Cloudflare Worker: rooms (worker.js) and sync (sync.js)

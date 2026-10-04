@@ -29,103 +29,19 @@
       <span>Pomodoro Ledger</span>
     </div>
     <div class="bar-right">
-      <button class="pill" id="syncPill" type="button" data-state="local" title="Sync settings"><i></i><span>Saved in this browser</span></button>
-      <button class="icon-btn" id="openRoom" type="button" aria-label="Work together" title="Work together"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.2.2 3.6 1.6 4 3.8"/></svg></button>
-      <button class="icon-btn" id="themeBtn" type="button"></button>
-      <button class="icon-btn keys-btn" id="openKeys" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/></svg></button>
       <button class="icon-btn" id="openSettings" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     </div>
   </header>
 
-  <section class="room" id="roomStrip" aria-label="Shared room" hidden>
-    <button class="room-code" type="button" id="stripCode" title="Copy invite link"></button>
-    <ul class="mates" id="mates"></ul>
-    <div class="room-actions">
-      <button class="btn small" type="button" id="syncAll" title="Ask everyone to switch to your timer. It only happens if all of them accept.">Sync timers</button>
-      <button class="link" type="button" id="stripLeave">Leave</button>
-    </div>
-  </section>
-
-  <div class="banner" id="previewBanner" hidden>
-    <span><strong>You're looking at example data.</strong> Add your first task or start the timer, and the examples disappear.</span>
-    <button class="btn" type="button" id="startOwn">Start my own ledger</button>
-  </div>
-
   <main class="top">
     <section class="timer-card" aria-label="Timer">
-      <div class="glow" aria-hidden="true"></div>
-      <div class="modes" role="tablist" aria-label="Timer mode">
-        <button type="button" role="tab" data-mode="focus" aria-selected="true">Focus</button>
-        <button type="button" role="tab" data-mode="short" aria-selected="false">Short break</button>
-        <button type="button" role="tab" data-mode="long" aria-selected="false">Long break</button>
-      </div>
-      <div class="dial-wrap">
-        <svg class="dial" viewBox="0 0 300 300" aria-hidden="true">
-          <g id="ticks"></g>
-          <circle class="track" cx="150" cy="150" r="112"/>
-          <circle class="arc" id="arc" cx="150" cy="150" r="112" transform="rotate(-90 150 150)"/>
-          <circle class="knob" id="knob" cx="150" cy="38" r="9"/>
-        </svg>
-        <div class="dial-center" aria-live="off">
-          <div class="dial-label" id="modeLabel">Focus</div>
-          <div class="time" id="time" role="timer" aria-label="Time remaining"></div>
-          <div class="dial-sub" id="dialSub"></div>
-        </div>
-        <button class="icon-btn full-btn" type="button" id="fullBtn"></button>
-        <button class="icon-btn float-btn" type="button" id="floatBtn" aria-label="Open floating timer" title="Open floating timer" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><rect x="11" y="11" width="8" height="7" rx="1" fill="currentColor" stroke="none"/></svg></button>
-      </div>
-      <div class="adjust" id="adjust" role="group" aria-label="Adjust this session">
-        <button type="button" data-adj="-1" title="1 minute less (−)">−1 min</button>
-        <button type="button" data-adj="1" title="1 minute more (+)">+1 min</button>
-        <button type="button" data-adj="5" title="5 minutes more">+5 min</button>
-      </div>
-      <div class="set-dots" id="setDots" aria-label="Cycles until long break"></div>
-      <div class="controls">
-        <button class="round" type="button" id="resetBtn" aria-label="Reset timer" title="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg></button>
-        <button class="go" type="button" id="startBtn"></button>
-        <button class="round" type="button" id="skipBtn" aria-label="Skip to next phase" title="Skip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/></svg></button>
-      </div>
-      <div class="working">
-        <span id="pickLabel">Working on</span>
-        <div class="pick" id="pick">
-          <button class="pick-btn" type="button" id="taskPick" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="pickLabel pickValue"><span id="pickValue"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10l4-4 4 4M8 14l4 4 4-4"/></svg></button>
-          <ul class="pick-menu" id="pickMenu" role="listbox" aria-labelledby="pickLabel" hidden></ul>
-        </div>
-        <small id="workingNote"></small>
-      </div>
+      <button class="icon-btn float-btn" type="button" id="floatBtn" aria-label="Open floating timer" title="Open floating timer" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><rect x="11" y="11" width="8" height="7" rx="1" fill="currentColor" stroke="none"/></svg></button>
     </section>
 
     <section class="panel" aria-labelledby="tasksH">
       <div class="sec-head tasks-head">
         <h2 id="tasksH">Tasks</h2>
-        <span class="sub" id="taskCount" hidden></span>
-        <div class="seg task-views" id="taskViews" role="group" aria-label="Which tasks to show">
-          <button type="button" data-view="today" aria-pressed="true">Today<em></em></button>
-          <button type="button" data-view="upcoming" aria-pressed="false">Upcoming<em></em></button>
-          <button type="button" data-view="later" aria-pressed="false">Later<em></em></button>
-        </div>
       </div>
-      <form class="add" id="addForm" autocomplete="off">
-        <span class="add-check" aria-hidden="true"></span>
-        <div class="add-body">
-          <input type="text" id="newTitle" maxlength="160" placeholder="New task" aria-label="New task title" aria-describedby="newParsed">
-          <div class="new-task-options" id="newTaskOptions" hidden>
-            <div class="new-parsed" id="newParsed" aria-live="polite" hidden></div>
-            <textarea id="newNotes" rows="1" maxlength="4000" placeholder="Notes" aria-label="Notes"></textarea>
-            <div class="card-bar">
-              <button class="card-btn set" type="button" id="newWhen" data-sched aria-haspopup="dialog" title="When? Or type it: tomorrow, fri, next week, 12 oct"></button>
-              <button class="card-btn" type="button" id="newLabel" aria-haspopup="listbox" aria-expanded="false" title="Label, or type #name"></button>
-              <span class="card-est" id="newEst"><span class="est-pick"></span><output id="estOut"></output></span>
-              <span class="spacer"></span>
-              <button class="btn small solid" type="submit">Add <kbd>↵</kbd></button>
-            </div>
-          </div>
-        </div>
-      </form>
-      <div class="label-filter" id="projectFilter" role="group" aria-label="Filter tasks by label" hidden></div>
-      <div class="day-fit" id="dayFit" role="status" hidden><span id="dayFitText"></span><button class="btn small" type="button" id="dayFitMove">Move to tomorrow</button></div>
-      <div class="sub" id="projectSummary" hidden></div>
-      <div id="taskFoot"></div>
     </section>
   </main>
 
@@ -136,148 +52,6 @@
   <button type="button" data-page="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg><span>Tasks</span></button>
   <button type="button" data-page="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/></svg><span>Progress</span></button>
 </nav>
-<div class="tip" id="tip" hidden></div>
-<ul class="pick-menu pop" id="pop" role="listbox" tabindex="-1" hidden></ul>
-<div class="when-pop" id="whenPop" role="dialog" aria-label="When" hidden>
-  <input type="text" id="whenInput" placeholder="When? tomorrow, fri, in 3 days, 12 oct…" autocomplete="off" spellcheck="false" aria-label="When" aria-controls="whenList" aria-autocomplete="list">
-  <ul class="when-list" id="whenList" role="listbox" aria-label="Suggestions"></ul>
-  <div class="cal-head">
-    <button class="icon-btn" type="button" data-cal-step="-1" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-    <strong id="calMonth" aria-live="polite"></strong>
-    <button class="icon-btn" type="button" data-cal-step="1" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
-  </div>
-  <div class="cal-grid" id="calGrid"></div>
-  <div class="cal-foot"><i aria-hidden="true"></i>Tasks already planned that day</div>
-</div>
-<div class="label-pop" id="labelPop" hidden>
-  <input type="text" id="labelSearch" maxlength="80" placeholder="Find or create a label" role="combobox" aria-expanded="true" aria-controls="labelOpts" aria-autocomplete="list" aria-label="Find or create a label" autocomplete="off" spellcheck="false">
-  <ul id="labelOpts" role="listbox" aria-label="Labels"></ul>
-  <div class="label-pop-foot" id="labelPopFoot"><span id="labelPopHint"></span><button class="link" type="button" id="labelManage"></button></div>
-</div>
-<div class="toast" id="toast" role="status" hidden></div>
-
-<div class="ask" id="ask" role="alert" hidden></div>
-
-<div class="overlay" id="room" hidden>
-  <div class="sheet" role="dialog" aria-labelledby="roomH">
-    <div class="sec-head"><h2 id="roomH">Work together</h2><button class="icon-btn" type="button" id="closeRoom" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="sub" id="roomIntro">Start a temporary room and share its code. Everyone in it sees who is focusing or on a break and how much time is left. Your tasks and history stay private.</div>
-    <label class="field">Your name<input type="text" id="rName" maxlength="20" autocomplete="nickname" placeholder="Shown to people in the room"></label>
-    <div class="room-form" id="roomOut">
-      <button class="btn solid" type="button" id="rCreate">Start a room</button>
-      <form class="join" id="rJoin" autocomplete="off">
-        <label class="field"><span id="rCodeLabel">Or join with a code</span><input type="text" id="rCode" maxlength="6" autocapitalize="characters" spellcheck="false" placeholder="ABC234"></label>
-        <button class="btn" type="submit">Join</button>
-      </form>
-    </div>
-    <div class="room-form" id="roomIn" hidden>
-      <div class="big-code" id="bigCode"></div>
-      <div class="sheet-foot"><button class="btn" type="button" id="rLeave">Leave room</button><button class="btn solid" type="button" id="rCopy">Copy invite link</button></div>
-    </div>
-    <div class="sub" id="roomNote" role="status"></div>
-  </div>
-</div>
-
-<div class="overlay" id="keys" hidden>
-  <div class="sheet keys-sheet" role="dialog" aria-labelledby="keysH">
-    <div class="sec-head"><h2 id="keysH">Keyboard shortcuts</h2><button class="icon-btn" type="button" id="closeKeys" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="keys-grid">
-      <section><h3>Timer</h3><dl>
-        <dt><kbd>Space</kbd></dt><dd>Start or pause</dd>
-        <dt><kbd>S</kbd></dt><dd>Skip to the next phase</dd>
-        <dt><kbd>+</kbd> <kbd>−</kbd></dt><dd>A minute more or less</dd>
-        <dt><kbd>F</kbd></dt><dd>Fill the page</dd>
-        <dt><kbd>⇧</kbd> <kbd>F</kbd></dt><dd>Full screen</dd>
-      </dl></section>
-      <section><h3>Tasks</h3><dl>
-        <dt><kbd>N</kbd></dt><dd>New task</dd>
-        <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move between tasks (or <kbd>J</kbd> <kbd>K</kbd>)</dd>
-        <dt><kbd>↵</kbd></dt><dd>Open the task</dd>
-        <dt><kbd>Esc</kbd></dt><dd>Close it</dd>
-        <dt><kbd>⌥</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move the task up or down</dd>
-        <dt><kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move it to the previous or next section (a day in Upcoming)</dd>
-      </dl></section>
-      <section><h3>When</h3><dl>
-        <dt><kbd>T</kbd></dt><dd>Today</dd>
-        <dt><kbd>M</kbd></dt><dd>Tomorrow</dd>
-        <dt><kbd>W</kbd></dt><dd>Next week</dd>
-        <dt><kbd>L</kbd></dt><dd>Later</dd>
-        <dt><kbd>D</kbd></dt><dd>Pick a day…</dd>
-      </dl></section>
-    </div>
-    <p class="hint">Scheduling keys act on the task under the pointer or with keyboard focus, otherwise the one you're working on. <kbd>?</kbd> opens this list.</p>
-  </div>
-</div>
-<div class="overlay" id="settings" hidden>
-  <form class="sheet settings-sheet" id="settingsForm" aria-labelledby="setH">
-    <div class="sec-head"><h2 id="setH">Settings</h2><button class="icon-btn" type="button" id="closeSettings" aria-label="Close settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="seg" role="tablist" aria-label="Settings categories">
-      <button type="button" role="tab" id="setTab-timer" data-tab="timer" aria-controls="setPanel-timer" aria-selected="true">Timer</button>
-      <button type="button" role="tab" id="setTab-auto" data-tab="auto" aria-controls="setPanel-auto" aria-selected="false" tabindex="-1">Automation</button>
-      <button type="button" role="tab" id="setTab-alerts" data-tab="alerts" aria-controls="setPanel-alerts" aria-selected="false" tabindex="-1">Sound &amp; alerts</button>
-      <button type="button" role="tab" id="setTab-sync" data-tab="sync" aria-controls="setPanel-sync" aria-selected="false" tabindex="-1">Sync</button>
-    </div>
-    <div class="set-panels">
-      <div class="set-panel" role="tabpanel" id="setPanel-timer" aria-labelledby="setTab-timer">
-        <fieldset class="group">
-          <legend>Durations</legend>
-          <div class="fields three">
-            <label class="field">Focus<span class="unit"><input type="number" id="sFocus" min="1" max="120" inputmode="numeric"><i>min</i></span></label>
-            <label class="field">Short break<span class="unit"><input type="number" id="sShort" min="1" max="60" inputmode="numeric"><i>min</i></span></label>
-            <label class="field">Long break<span class="unit"><input type="number" id="sLong" min="1" max="90" inputmode="numeric"><i>min</i></span></label>
-          </div>
-        </fieldset>
-        <fieldset class="group">
-          <legend>Your day</legend>
-          <div class="fields">
-            <label class="field">Long break every<span class="unit"><input type="number" id="sEvery" min="2" max="12" inputmode="numeric"><i>cycles</i></span></label>
-            <label class="field">Daily goal<span class="unit"><input type="number" id="sGoal" min="1" max="30" inputmode="numeric"><i>cycles</i></span></label>
-            <label class="field">Workday ends <span class="opt">optional</span><input type="time" id="sDayEnd" step="900"></label>
-          </div>
-          <p class="hint">Optional. When set, Today points out tasks that won't finish before then, and after hours offers to move the rest to tomorrow.</p>
-        </fieldset>
-      </div>
-      <div class="set-panel" role="tabpanel" id="setPanel-auto" aria-labelledby="setTab-auto">
-        <fieldset class="group">
-          <legend>Start automatically</legend>
-          <div class="card">
-            <label class="toggle"><span>Breaks<small>Right after a focus cycle ends</small></span><input type="checkbox" id="sAutoBreak"></label>
-            <label class="toggle"><span>Focus cycles<small>Right after a break ends</small></span><input type="checkbox" id="sAutoFocus"></label>
-          </div>
-        </fieldset>
-        <fieldset class="group" id="autoFloatRow" hidden>
-          <legend>Floating timer</legend>
-          <div class="card">
-            <label class="toggle"><span>Open automatically<small>When a session starts or you switch tabs</small></span><input type="checkbox" id="sAutoFloat"></label>
-          </div>
-        </fieldset>
-      </div>
-      <div class="set-panel" role="tabpanel" id="setPanel-alerts" aria-labelledby="setTab-alerts">
-        <div class="group">
-          <div class="card">
-            <label class="toggle"><span>Notification<small>When a cycle or break ends</small></span><input type="checkbox" id="sNotify"></label>
-            <div class="toggle"><label for="sSound">Sound<small>When a cycle, break or task finishes</small></label><span class="acts"><button class="btn small" type="button" id="testSound">Test</button><input type="checkbox" id="sSound"></span></div>
-            <div class="toggle"><label for="sTicking">Ticking<small>A soft tap during focus, quiet otherwise</small></label><span class="acts"><button class="btn small" type="button" id="testTicking">Preview</button><input type="checkbox" id="sTicking" aria-controls="tickingOptions"></span></div>
-            <div class="nested fields" id="tickingOptions" hidden>
-              <label class="field"><span class="field-head">Volume<span id="tickVolumeValue"></span></span><input type="range" id="sTickVolume" min="0" max="100" step="1" aria-label="Tick volume"></label>
-              <label class="field">Pace<select id="sTickPace"><option value="1">Every second</option><option value="2">Every 2 seconds</option><option value="4">Every 4 seconds</option></select></label>
-            </div>
-          </div>
-          <p class="hint">Sounds play once you've clicked somewhere on the page.</p>
-        </div>
-      </div>
-      <div class="set-panel" role="tabpanel" id="setPanel-sync" aria-labelledby="setTab-sync">
-        <div class="group">
-          <div class="card">
-            <div class="toggle sync-row"><span><b id="syncTitle"></b><small id="syncDetail"></small></span><span class="acts" id="syncActs"></span></div>
-          </div>
-          <p class="hint" id="syncHint"></p>
-        </div>
-      </div>
-    </div>
-    <div class="sheet-foot"><span class="sub" id="setNote">Changes save as you type.</span><button class="btn solid" type="submit">Done</button></div>
-  </form>
-</div>
 
 <script type="module" src="/src/main.ts"></script>
 </body>
