@@ -2,24 +2,31 @@ import { flushSync } from "svelte";
 import { toast } from "../chrome/notice.svelte";
 import { setOverlay } from "../layout";
 import { room, roomClock } from "../lib/redraw.svelte";
+import { endedInStep, hhmm, inStep, phaseAt, type Listed, type Rhythm } from "../lib/rhythm";
 import type { Member, Mode, Proposal } from "../lib/room";
 import type { Status } from "../lib/timer";
 import { renderTimer } from "../render";
 import { cancelEnd, playSound } from "../sound";
 import { ls, ss, T } from "../state";
-import { notify, remNow, saveTimer, setMode, start, totalNow, wakeOff } from "../timer/engine";
+import { flushPartial, notify, remNow, saveTimer, setMode, start, totalNow, wakeOff } from "../timer/engine";
 
 type Shared = { mode: Mode; status: Status; remaining: number; total: number };
+export type PublicRoom = { title: string; rhythm: Rhythm; house: boolean; max: number };
 type RoomMsg =
   | { t: "note"; msg: string }
   | { t: "sync"; s: Shared; by: string; name: string }
-  | { t: "room"; now: number; you: string; owner?: boolean; members: (Omit<Member, "owner"> & { owner?: boolean })[]; prop: Proposal | null };
+  | { t: "room"; now: number; you: string; owner?: boolean; members: (Omit<Member, "owner"> & { owner?: boolean })[]; prop: Proposal | null; pub?: PublicRoom | null };
 
 export const RM = {
   owner: false, ws: null as WebSocket | null, code: ss.get("pl.room"), id: ss.get("pl.rid"), name: ls.get("pl.name", ""),
   you: null as string | null, members: [] as Member[], prop: null as Proposal | null, live: false, tries: 0,
+  pub: readPub(), fresh: false,
+  /** How far this device's clock is ahead of the server's. */
+  skew: 0,
   timer: undefined as ReturnType<typeof setTimeout> | undefined, ping: undefined as ReturnType<typeof setInterval> | undefined, sent: "",
 };
+function readPub(): PublicRoom | null { try { return JSON.parse(ss.get("pl.roomPub") || "null"); } catch { return null; } }
+
 if (!RM.id) { RM.id = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); ss.set("pl.rid", RM.id); }
 
 export const roomSend = (o: object) => { try { if (RM.ws && RM.ws.readyState === 1) RM.ws.send(JSON.stringify(o)); } catch {} };
@@ -35,8 +42,8 @@ export function roomPush(force?: boolean) {
 export function roomReset() {
   clearTimeout(RM.timer); clearInterval(RM.ping);
   const ws = RM.ws;
-  RM.owner = false; RM.ws = null; RM.code = null; RM.live = false; RM.members = []; RM.prop = null; RM.tries = 0;
-  ss.set("pl.room", null);
+  RM.owner = false; RM.ws = null; RM.code = null; RM.live = false; RM.members = []; RM.prop = null; RM.tries = 0; RM.pub = null; RM.fresh = false;
+  ss.set("pl.room", null); ss.set("pl.roomPub", null);
   if (ws) try { ws.close(1000); } catch {}
   renderRoom();
 }
@@ -69,12 +76,17 @@ function roomMsg(m: RoomMsg) {
   else if (m.t === "sync") applySync(m);
   else if (m.t === "room") {
     const skew = Date.now() - m.now, had = RM.prop;
+    RM.skew = skew;
     RM.you = m.you; RM.owner = !!m.owner;
     RM.members = m.members.map((x) => ({ id: x.id, name: x.name, owner: !!x.owner, s: x.s && { ...x.s, end: x.s.end ? x.s.end + skew : 0 } }));
     RM.prop = m.prop;
+    RM.pub = m.pub || null;
+    ss.set("pl.roomPub", RM.pub && JSON.stringify(RM.pub));
     if (!RM.live) {
       RM.live = true; RM.tries = 0;
       clearInterval(RM.ping); RM.ping = setInterval(() => { try { RM.ws && RM.ws.send("ping"); } catch {} }, 25000);
+      if (RM.fresh && RM.pub) followRoom(true);
+      RM.fresh = false;
       roomPush(true);
     }
     if (RM.prop && !had && RM.prop.by !== RM.you) { playSound("task"); notify("Someone in your room wants to sync timers."); }
@@ -82,29 +94,54 @@ function roomMsg(m: RoomMsg) {
   }
 }
 
+/** Jumps the current phase to `remaining`, keeping the time already done in it. */
+function snap(remaining: number, running: boolean) {
+  const done = T.status === "idle" ? 0 : (T.total || 0) - remNow();
+  cancelEnd();
+  delete T.adj[T.mode];
+  T.total = done + remaining; T.remaining = remaining; T.endsAt = 0; T.status = "paused";
+  if (running) start(); else { wakeOff(); saveTimer(); renderTimer(true); }
+}
+
 function applySync(m: Extract<RoomMsg, { t: "sync" }>) {
   const s = m.s;
   if (m.by === RM.you && T.status !== "idle") { toast("Everyone accepted. Your timers are in sync."); return; }
   if (T.mode !== s.mode) setMode(s.mode, true);
-  const done = T.status === "idle" ? 0 : (T.total || 0) - remNow();
-  cancelEnd();
-  delete T.adj[T.mode];
-  T.total = done + s.remaining; T.remaining = s.remaining; T.endsAt = 0; T.status = "paused";
-  if (s.status === "running") start(); else { wakeOff(); saveTimer(); renderTimer(true); }
+  snap(s.remaining, s.status === "running");
   toast(m.by === RM.you ? "Everyone accepted. Starting together." : "Synced to " + m.name + "'s timer.");
 }
 
+/** Puts this timer on the public room's clock. */
+export function followRoom(announce?: boolean) {
+  if (!RM.pub) return;
+  const now = Date.now() - RM.skew, p = phaseAt(RM.pub.rhythm, now), mode: Mode = p.focus ? "focus" : "short";
+  if (T.mode !== mode) { flushPartial(); setMode(mode); }
+  snap(p.end - now, true);
+  if (announce) toast((p.focus ? "Focusing with " : "On a break with ") + RM.pub.title + " until " + hhmm(p.end + RM.skew) + ".");
+}
+
+/** Whether a phase that just ended was on the room clock, so the next one should be too. */
+export const roomFollows = (at: number) => !!(RM.code && RM.pub && endedInStep(RM.pub.rhythm, T.mode, at - RM.skew));
+
+export const roomInStep = () => !!RM.pub && inStep(RM.pub.rhythm, { ...T, endsAt: T.endsAt - RM.skew }, Date.now() - RM.skew);
+
 export function roomEnter(code: string) {
-  RM.code = code; RM.tries = 0; ss.set("pl.room", code);
+  RM.code = code; RM.tries = 0; RM.fresh = true; ss.set("pl.room", code);
   setOverlay("#room", false);
   renderRoom(); roomConnect();
 }
 
-export async function roomCreate() {
-  const res = await fetch("/api/room", { method: "POST" }), body = res.ok ? await res.json() : null;
+export async function roomCreate(pub?: { title: string; rhythm: Rhythm; max: number }) {
+  const res = await fetch("/api/room", { method: "POST", body: pub ? JSON.stringify({ pub: true, ...pub }) : undefined }), body = res.ok ? await res.json() : null;
   if (!body || !body.code) throw 0;
   ss.set("pl.owner." + body.code, body.ownerToken);
   roomEnter(body.code);
+}
+
+export async function roomList(): Promise<{ now: number; rooms: Listed[] }> {
+  const res = await fetch("/api/rooms", { cache: "no-store" });
+  if (!res.ok) throw new Error("rooms " + res.status);
+  return res.json();
 }
 
 // Synchronous like the markup it replaced: a focused field in the dialog has to hide and disable in one go, or Chrome moves focus elsewhere.

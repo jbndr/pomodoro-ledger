@@ -16,6 +16,7 @@ Worker in `src/` powers shared rooms and account sync.
 - Installable as an app on phones (PWA) that opens offline, with a full-screen timer page and bottom tabs
 - Optional sign-in to sync tasks, history, settings, and the running timer between devices
 - Temporary shared rooms that sync timer status while keeping tasks and history private
+- Public rooms to drop into, where everyone's timer follows the room's clock
 
 ## Project layout
 
@@ -44,7 +45,7 @@ web/                 the app (Vite root)
   src/chrome/        top bar tools, banner, shortcut sheet, toast and tooltip
   src/styles/app.css styles
   public/            copied as-is: service worker, manifest, icons
-src/                 Cloudflare Worker: rooms (worker.js) and sync (sync.js)
+src/                 Cloudflare Worker: rooms and the public room lobby (worker.js) and sync (sync.js)
 tests/               Worker tests (node:test)
 ```
 
@@ -138,6 +139,20 @@ DEV_USER_EMAIL=you@example.com
 "Work together" creates a temporary room with a six-character invite code. Room
 members share timer state, but never tasks or history. Each room uses one Durable
 Object and is deleted ten minutes after the last person leaves.
+
+Public rooms hold up to 12 people and run on a shared clock instead of sync
+requests: 25/5 rounds start on the hour and half hour, 50/10 rounds on the hour.
+Joining jumps your timer to the room's current round, and each phase that ends
+with the room clock starts the next one in step. Pausing or skipping takes you
+off the clock until you rejoin. Nobody owns a public room, so there's no
+removing people and nothing to vote on.
+
+**Work together → Public rooms** lists them. A house room for each rhythm is
+always listed, and a full one spills over into "Pomodoro 2". Anyone can also open
+a named public room for 2 to 12 people, which stays listed while someone is in it. The list comes
+from a single `Lobby` Durable Object that public rooms report to whenever someone
+joins or leaves, and every five minutes while occupied. A room that stops
+reporting drops off after twelve minutes.
 
 The room and sync checks run as part of `npm test`.
 

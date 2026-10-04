@@ -5,7 +5,7 @@ import { fmtDur } from "../format";
 import { MIN } from "../lib/dates";
 import { MODES, type Mode } from "../lib/timer";
 import { renderAll, renderTimer } from "../render";
-import { roomTick, RM } from "../room/net";
+import { followRoom, roomFollows, roomTick, RM } from "../room/net";
 import { cancelEnd, ensureAudio, playSound, releaseBell, scheduleEnd, syncTicking } from "../sound";
 import { clone, DEF, ls, replaceTimer, S, T } from "../state";
 import { Store } from "../store";
@@ -103,10 +103,13 @@ export function complete(at: number) {
 }
 
 function advance(at: number, wasFocus: boolean, stale: boolean) {
+  // Public rooms have no long breaks; their clock decides what comes next.
+  const follow = roomFollows(at);
   let next: Mode;
   if (wasFocus) {
     logFocus(T.total || dur("focus"), true, at, T.run);
     T.setIndex = (T.setIndex || 0) + 1;
+    if (follow && T.setIndex >= S.settings.longEvery) T.setIndex = 0;
     next = T.setIndex >= S.settings.longEvery ? "long" : "short";
     delete T.saved[next];
   } else next = "focus";
@@ -115,8 +118,9 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
   if (!stale && !document.hidden) buzz([60, 80, 60]);
   setMode(next);
   const auto = wasFocus ? S.settings.autoBreak : S.settings.autoFocus;
+  if (follow && !stale) followRoom();
   // Starting from the end time, not now, lets every synced device arrive at the same next phase.
-  if (auto && !stale) start(at);
+  else if (auto && !stale) start(at);
   const t = S.activeId && S.tasks.get(S.activeId);
   const msg = wasFocus ? ("Cycle done" + (t ? " on “" + t.title + "”" : "") + ". " + (next === "long" ? "Take a long break." : "Take a short break.")) : "Break's over. Ready for the next cycle.";
   toast(msg);
