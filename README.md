@@ -19,7 +19,6 @@ Worker in `src/` powers shared rooms and account sync.
 - Temporary shared rooms that sync timer status while keeping tasks and history private
 - Public rooms to drop into, where everyone's timer follows the room's clock
 - Quick reactions in rooms (👋 🎉 🔥 👍 ☕), with a one-tap 🎉 after each round
-- An optional [browser extension](extension/README.md) that blocks the sites you choose during focus rounds
 
 ## Project layout
 
@@ -50,7 +49,7 @@ web/                 the app (Vite root)
   src/styles/app.css styles
   public/            copied as-is: service worker, manifest, icons
 src/                 Cloudflare Worker: rooms and the public room lobby (worker.js) and sync (sync.js)
-extension/           the site blocker browser extension (see extension/README.md)
+extension/           an experimental site blocker browser extension, not released (see extension/README.md)
 tests/               Worker tests (node:test)
 ```
 
