@@ -34,6 +34,7 @@
         <dt><kbd>Esc</kbd></dt><dd><span>Close it</span></dd>
         <dt><kbd>⌥</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd><span>Move the task up or down</span></dd>
         <dt><kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd><span>Move it to the previous or next section (a day in Upcoming)</span></dd>
+        <dt><kbd>P</kbd></dt><dd><span>Plan the week</span></dd>
       </dl></section>
       <section><h3>Quick add</h3><dl>
         <dt><kbd>↓</kbd></dt><dd><span>Add a note (or type <kbd>//</kbd> in the title)</span></dd>

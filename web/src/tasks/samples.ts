@@ -1,6 +1,8 @@
 import { addDays, dayKey, MIN, sod } from "../lib/dates";
+import { weekStart } from "../lib/insights";
 import { firstDue, type Repeat } from "../lib/repeat";
 import type { Session, Task } from "../lib/tasks";
+import type { WeekPlan } from "../lib/weekPlan";
 
 /** Example tasks for the preview and demo; kept in memory, never saved. */
 export function makeSamples() {
@@ -35,4 +37,13 @@ export function makeSamples() {
   const daily: Repeat = { every: "day" }, plants: Repeat = { every: "week", days: [1, 4] };
   list.push({ ...mk("x9", "Plan the day", 1, 6, null, []), today: true, plan: dayKey(now), repeat: daily }, { ...mk("x10", "Water the plants", 1, 9, null, []), plan: firstDue(plants, dayKey(addDays(now, 1))), repeat: plants });
   return new Map(list.map((t) => [t.id, t]));
+}
+
+/** Weekly objectives for the demo: last week's to look back on, and this week's in progress. */
+export function samplePlans(): WeekPlan[] {
+  const week = weekStart(Date.now());
+  return [
+    { week: dayKey(addDays(week, -7)), at: 1, objectives: [{ label: "Website", target: 8, name: "Polish the pricing page" }, { label: "Learning", target: 4 }] },
+    { week: dayKey(week), at: 1, objectives: [{ label: "Writing", target: 6, name: "Ship the onboarding guide" }, { label: "Learning", target: 5, name: "Cert: networking module" }, { label: "Website", target: 4 }] },
+  ];
 }

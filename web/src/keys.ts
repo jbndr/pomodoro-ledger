@@ -6,7 +6,7 @@ import { S } from "./state";
 import { focusRow, scheduleTask } from "./tasks/actions";
 import { groupName, guardPreview, quickDays } from "./tasks/derived";
 import { adjust, skip, toggle } from "./timer/engine";
-import { closeKeys, closeRecap, closeRoom, closeSettings, openKeys, openWhen, togglePalette, ui } from "./ui";
+import { closeKeys, closeRecap, closeRoom, closeSettings, openKeys, openPlan, openWhen, togglePalette, ui } from "./ui";
 import { toggleZen } from "./zen";
 
 // Scheduling shortcuts act on the task under the mouse or keyboard focus, else the one you're working on.
@@ -76,6 +76,7 @@ export function onKey(e: KeyboardEvent) {
   if (e.code === "Space" && tag !== "button") { e.preventDefault(); toggle(); }
   else if ((e.key === "s" || e.key === "S") && !e.metaKey && !e.ctrlKey) skip();
   else if ((e.key === "f" || e.key === "F") && !e.metaKey && !e.ctrlKey && !e.altKey) toggleZen(e.shiftKey);
+  else if ((e.key === "p" || e.key === "P") && !e.metaKey && !e.ctrlKey && !e.altKey && !zen()) { e.preventDefault(); openPlan(); }
   else if ((e.key === "+" || e.key === "=") && !e.metaKey && !e.ctrlKey) adjust(1);
   else if (e.key === "-" && !e.metaKey && !e.ctrlKey) adjust(-1);
   else if (e.key === "Escape" && zen()) toggleZen(false);

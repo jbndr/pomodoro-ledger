@@ -25,6 +25,10 @@ import { initPages } from "./pages";
 import "./palette/commands";
 import Palette from "./palette/Palette.svelte";
 import { commands } from "./palette/registry";
+import { goalLookup, planDue, plans, savePlan, stopOffering, waveOff, weekGoals } from "./plan/actions";
+import "./plan/commands";
+import PlanPrompt from "./plan/PlanPrompt.svelte";
+import PlanSheet from "./plan/PlanSheet.svelte";
 import LabelPop from "./popovers/LabelPop.svelte";
 import Pop from "./popovers/Pop.svelte";
 import { pop } from "./popovers/state.svelte";
@@ -42,7 +46,7 @@ import Settings from "./settings/Settings.svelte";
 import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, previewSoundscape, previewTicking, scheduleEnd, syncTicking } from "./sound";
 import { cancelScapePreview, scapePlaying } from "./soundscape";
 import { DEMO, ls, S, ss, T } from "./state";
-import { Store } from "./store";
+import { Labels, Store } from "./store";
 import { addSection, addSubtasks, addTask, commitPlacements, completeTask, completing, deleteSubtask, deleteTask, dismissCard, editSubtask, focusOnTask, focusRow, labelTask, moveSection, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
 import { bucketOf, dayName, enterDemo, filterLabel, groupName, guardPreview, inProject, isToday, labelChipName, labelHidden, listHead, markStarted, openOf, preview, sections, shortDay, subsOf, todayKey, viewTasks } from "./tasks/derived";
 import ListFoot from "./tasks/ListFoot.svelte";
@@ -52,7 +56,7 @@ import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
 import { adjust, arm, buzz, complete, dur, flushPartial, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
-import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPop, openRecap, openRoom, openSettings, openWhen, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type Sheet, type WhenUI } from "./ui";
+import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, openSettings, openWhen, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type Sheet, type WhenUI } from "./ui";
 import { fsEl, setZen, toggleZen } from "./zen";
 
 ["pointerdown", "keydown", "touchstart"].forEach((ev) => addEventListener(ev, ensureAudio, { passive: true, capture: true }));
@@ -67,6 +71,7 @@ setInterval(newDay, 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { sizeTimer(); tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); Cloud.wake(); newDay(); } });
 mount(PreviewBanner, { target: $(".app"), anchor: $("main.top"), props: { api: { DEMO, preview, markStarted } } });
 mount(BackupPrompt, { target: $(".app"), anchor: $("main.top"), props: { api: { exportLedger, toast } } });
+mount(PlanPrompt, { target: $(".app"), anchor: $("main.top"), props: { api: { planDue, waveOff, stopOffering, openPlan } } });
 initLayout();
 if ("serviceWorker" in navigator && !DEMO) addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -85,7 +90,7 @@ const view = ss.get("pl.taskView");
 if (view === "today" || view === "upcoming" || view === "later") S.taskView = view;
 mount(Progress, { target: $(".app"), props: { api: {
   S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
-  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap,
+  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap, openPlan, weekGoals,
 } } });
 const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
   roomReact, reactWait, reactionsOn };
@@ -105,6 +110,10 @@ ui.recap = mount(Recap, { target: document.body, props: { api: {
   S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, plural,
   overlayHidden: () => !document.querySelector(".overlay:not([hidden])"), syncing: () => Cloud.state === "connecting",
 } } }) as RecapUI;
+ui.plan = mount(PlanSheet, { target: document.body, props: { api: {
+  S, viewTasks, setOverlay, fmtDur, fmtDate, plural, plans, savePlan, addLabel: (name: string) => Labels.add(name),
+  overlayHidden: () => !document.querySelector(".overlay:not([hidden])"),
+} } }) as Sheet;
 if (invite) {
   try { history.replaceState(null, "", location.pathname); } catch {}
   if (invite.length === 6 && invite !== RM.code) {
@@ -140,7 +149,7 @@ ui.list = mount(TaskList, { target: panel, anchor: $("#taskFoot"), props: { api:
   S, ICON, completing, calm, guardPreview,
   todayKey, bucketOf, isToday, sections, openOf, viewTasks, inProject, cyclesOf, timeOf, projectOf, labelHue, labelChipName, subsOf,
   plural, fmtDur, fmtDate, fmtClock, shortDay, dayName, keyTime, dayKey, addDays, sod, dur, groupName,
-  renderTasks, commit: commitPlacements, focusRow, hover: setHover,
+  renderTasks, commit: commitPlacements, focusRow, hover: setHover, goalLookup,
   open: toggleCard, complete: completeTask, focus: focusOnTask, label: labelTask, sched: schedTask, del: deleteTask, setEst: setEstimate,
   saveField, addSubtasks, subDone: (id: string, subid: string, done: boolean) => editSubtask(id, subid, (s) => { s.done = done; }), renameSub: renameSubtask, deleteSub: deleteSubtask,
   addSection, removeSection, renameSection, moveSection,

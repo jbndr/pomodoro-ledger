@@ -9,6 +9,7 @@
   import Heat from "./Heat.svelte";
   import Ledger from "./Ledger.svelte";
   import Sessions from "./Sessions.svelte";
+  import WeekGoals from "./WeekGoals.svelte";
 
   let { api } = $props();
   let filter = $state("");
@@ -34,6 +35,7 @@
       week, before,
       streak: streaks(days, today),
       estimates: estimateAccuracy(ledger.values()),
+      goals: api.weekGoals(all),
     };
   });
 
@@ -47,6 +49,7 @@
 <section class="progress" aria-labelledby="progH">
   <div class="sec-head">
     <h2 id="progH">Progress</h2>
+    <button class="btn small recap-btn" type="button" id="openPlan" onclick={() => api.openPlan()}>Plan the week</button>
     <button class="btn small recap-btn" type="button" id="openRecap" onclick={() => api.openRecap()}>Weekly recap</button>
     <span class="sub">Every finished focus block counts as one cycle. Stopped sessions over a minute still count toward focus time.</span>
   </div>
@@ -77,6 +80,7 @@
       <div class="s">{#if m.estimates.ratio == null}Finish a task to compare plan and reality{:else}{Math.abs(m.estimates.diff) < 5 ? "Finished tasks land close to plan" : "Tasks take " + Math.abs(m.estimates.diff) + "% " + (m.estimates.diff > 0 ? "more" : "fewer") + " cycles than planned"} · {api.plural(m.estimates.count, "task")}{/if}</div>
     </div>
   </div>
+  {#if m.goals}<WeekGoals {api} week={m.goals} today={m.today} />{/if}
   <div class="charts">
     <figure class="chart-card">
       <h3>Focus per day</h3>

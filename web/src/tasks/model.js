@@ -10,7 +10,8 @@ export function buildList(a) {
   const shown = byView[S.taskView], items = [];
   const left = (list) => list.reduce((n, t) => n + Math.max(0, (t.est || 0) - a.cyclesOf(t)), 0);
   const summary = (list) => (list.length ? a.plural(list.length, "task") + (left(list) ? " · " + a.fmtDur(left(list) * a.dur("focus")) + " focus" : "") : "");
-  const add = (t, dated) => items.push(taskRow(a, t, dated, tk));
+  const goalOf = a.goalLookup(a.viewTasks());
+  const add = (t, dated) => items.push(taskRow(a, t, dated, tk, goalOf));
 
   if (S.taskView === "today" && (shown.length || a.sections().length)) items.push({ kind: "today", key: "g:today", g: "today", tasks: shown.length, cycles: left(shown) });
   if (S.taskView === "upcoming") {
@@ -42,7 +43,7 @@ export function buildList(a) {
   return items;
 }
 
-function taskRow(a, t, dated, tk) {
+function taskRow(a, t, dated, tk, goalOf) {
   const S = a.S, c = a.cyclesOf(t), est = t.est || 0, n = Math.max(c, est), project = a.projectOf(t), today = a.isToday(t);
   const subs = a.subsOf(t), open = S.openTask === t.id, rule = cleanRepeat(t.repeat);
   return {
@@ -54,6 +55,7 @@ function taskRow(a, t, dated, tk) {
     subs: subs.length ? { done: subs.filter((s) => s.done).length, n: subs.length } : null,
     notes: !!t.notes,
     repeat: rule ? { short: repeatShort(rule), title: repeatText(rule) } : null,
+    goal: today ? goalOf(t) : null,
     carry: today && t.plan && t.plan < tk ? "from " + a.fmtDate(a.keyTime(t.plan), { weekday: "short" }) : "",
     pips: n > 12 ? { mini: est ? Math.min(100, (c / est) * 100) : 100 } : { dots: [...Array(n)].map((_, i) => (i < c ? (i >= est ? "o" : "f") : "")) },
     cycTitle: c + " of " + a.plural(est, "planned cycle"),
