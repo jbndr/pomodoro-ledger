@@ -9,7 +9,7 @@
   import { calm } from "../dom";
   import { pad } from "../lib/dates";
   import { RHYTHMS, SIZE, sortRooms } from "../lib/rhythm";
-  import { LONGEST, STEP } from "../lib/schedule";
+  import { LONGEST, STEP, startStep } from "../lib/schedule";
   import RoomCard from "./RoomCard.svelte";
   import UpcomingCard from "./UpcomingCard.svelte";
 
@@ -35,6 +35,8 @@
   const busyRooms = $derived(data ? data.rooms.filter((r) => r.names.length).length : 0);
   const status = $derived(!data ? "Looking for rooms…" : people ? people + " " + (people === 1 ? "person" : "people") + " working in " + busyRooms + " " + (busyRooms === 1 ? "room" : "rooms") : "Quiet right now. Start a round.");
   const toSlots = $derived(SLOTS.filter((m) => m > from && m - from <= LONGEST));
+  const fromSlots = $derived(SLOTS.slice(0, -1).filter((m) => m % startStep(rhythm) === 0));
+  $effect(() => { if (from % startStep(rhythm)) setFrom(Math.min(1380, Math.ceil(from / 60) * 60)); });
   const reminded = (id) => marks >= 0 && api.sched.reminded(id);
   const owns = (id) => marks >= 0 && api.sched.owns(id);
 
@@ -178,7 +180,7 @@
           {#each WEEK as [d, letter, name] (d)}<button type="button" aria-pressed={String(days.includes(d))} aria-label={name} onclick={() => toggleDay(d)}>{letter}</button>{/each}
         </div>
         <div class="rwin">
-          <span>From</span><select aria-label="From" value={from} onchange={(e) => setFrom(Number(e.currentTarget.value))}>{#each SLOTS.slice(0, -1) as m (m)}<option value={m}>{slot(m)}</option>{/each}</select>
+          <span>From</span><select aria-label="From" value={from} onchange={(e) => setFrom(Number(e.currentTarget.value))}>{#each fromSlots as m (m)}<option value={m}>{slot(m)}</option>{/each}</select>
           <span>to</span><select aria-label="To" bind:value={to}>{#each toSlots as m (m)}<option value={m}>{slot(m)}</option>{/each}</select>
         </div>
       {/if}

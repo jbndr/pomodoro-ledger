@@ -1,6 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { handleSync } from "./sync.js";
-import { nextSession, readTimes, scheduleOf, sessionCode } from "../web/src/lib/schedule.ts";
+import { nextSession, readTimes, scheduleOf, sessionCode, startStep } from "../web/src/lib/schedule.ts";
 
 export { Ledger } from "./sync.js";
 
@@ -369,7 +369,7 @@ export class Lobby extends DurableObject {
     const [, , id, going] = path.split("/");
     if (!id && request.method === "POST") {
       const times = readTimes(body), title = clean(body.title, 32);
-      if (!times || !title || !RHYTHMS.includes(body.rhythm)) return json({ error: "bad schedule" }, 400);
+      if (!times || !title || !RHYTHMS.includes(body.rhythm) || times.from % startStep(body.rhythm)) return json({ error: "bad schedule" }, 400);
       if (!(await this.spend("ip:s:" + ip, SCHED_BURST, SCHED_EVERY_MS, now))) return json({ error: "slow down" }, 429);
       const all = await store.list({ prefix: "s:" });
       if ([...all.values()].filter((s) => now - s.used <= SCHED_IDLE_MS).length >= SCHEDULES) return json({ error: "full" }, 507);

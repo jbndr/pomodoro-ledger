@@ -276,7 +276,7 @@ test('creating a schedule checks the title, rhythm, size and times', at(MON_10_B
   const made = await call('POST', '/schedule', { ...deepWork, title: '  Thesis\u0000 writing\n\n with a much longer name than fits ', max: 40 }, 'a');
   assert.equal(made.body.title, 'Thesis writing with a much longe');
   assert.equal(made.body.max, 12);
-  for (const bad of [{ title: '\u0007 ' }, { rhythm: '30/30' }, { tz: 'Nowhere/Land' }, { days: [] }, { from: 600, to: 600 }, { from: 0, to: 600 }, { from: 545 }]) {
+  for (const bad of [{ title: '\u0007 ' }, { rhythm: '30/30' }, { tz: 'Nowhere/Land' }, { days: [] }, { from: 600, to: 600 }, { from: 0, to: 600 }, { from: 545 }, { rhythm: '50/10', from: 570, to: 690 }]) {
     assert.equal((await call('POST', '/schedule', { ...deepWork, ...bad }, 'b')).status, 400);
   }
   assert.equal([...data.keys()].filter((k) => k.startsWith('s:')).length, 1);

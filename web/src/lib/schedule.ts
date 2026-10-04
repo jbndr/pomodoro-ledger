@@ -10,6 +10,8 @@ export interface Session { start: number; end: number }
 
 export const STEP = 30;
 export const LONGEST = 8 * 60;
+/** 50/10 rounds start on the hour, so its sessions do too. */
+export const startStep = (rhythm: string) => (rhythm === "50/10" ? 60 : STEP);
 
 const DAY = 86400000;
 const CODE = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";

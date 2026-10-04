@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clockIn, dayIn, daysIn, daysText, isLive, nextSession, offsetAt, readTimes, scheduleOf, sessionCode, zoned } from "./schedule";
+import { clockIn, dayIn, daysIn, daysText, isLive, nextSession, offsetAt, readTimes, scheduleOf, sessionCode, startStep, zoned } from "./schedule";
 
 const MIN = 60000, HOUR = 60 * MIN;
 const berlin = { tz: "Europe/Berlin", days: [1, 2, 3, 4, 5], from: 9 * 60, to: 12 * 60 };
@@ -92,5 +92,12 @@ describe("labels", () => {
     expect(daysText([0, 1, 2, 3, 4, 5, 6])).toBe("Every day");
     expect(daysText([3])).toBe("Every Wed");
     expect(daysText([0, 1, 5])).toBe("Mon, Fri, Sun");
+  });
+});
+
+describe("startStep", () => {
+  it("starts 50/10 sessions on the hour and 25/5 on the half hour", () => {
+    expect(startStep("50/10")).toBe(60);
+    expect(startStep("25/5")).toBe(30);
   });
 });
