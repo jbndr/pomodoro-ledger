@@ -35,13 +35,13 @@ web/                 the app (Vite root)
   src/float.ts       the floating Picture-in-Picture timer
   src/layout.ts      dialog overlays and fitting the timer dial to the window
   src/pages.ts       phone pages; src/zen.ts full screen
-  src/lib/*.ts       pure, tested logic: dates, the When parser, quick entry, list order, stats, settings, the timer dial, rooms
+  src/lib/*.ts       pure, tested logic: dates, the When parser, quick entry, list order, stats, settings, the timer dial, rooms, export files
   src/timer/         the timer engine (engine.ts) and the timer card
   src/tasks/         task helpers, actions, start-time plan and the task list
   src/progress/      the Progress page and its session actions
   src/composer/      the new-task box
   src/popovers/      the When, label and menu popovers
-  src/settings/      the Settings dialog
+  src/settings/      the Settings dialog, and export and import
   src/room/          shared-room networking (net.ts) and its dialog and strip
   src/chrome/        top bar tools, banner, shortcut sheet, toast and tooltip
   src/styles/app.css styles
@@ -88,6 +88,14 @@ example data automatically.
 Tasks, history, labels, and settings are always kept in the browser's local
 storage, so the app works offline. Without sign-in they stay on that device.
 
+**Settings → Data & sync → Export** downloads all of it as one JSON file
+(`pomodoro-ledger-YYYY-MM-DD.json`), with or without an account. **Import** reads
+that file, or one from the account export, and shows what it holds before
+changing anything. Merge is the default: it adds new tasks, keeps the newer copy
+of each task as sync does, and keeps sessions from both copies. Replace makes
+this browser match the file and asks again first. The demo (`?demo=1`) can't
+export or import.
+
 ## Sync between devices
 
 Signing in syncs tasks, history, labels, settings, and the timer itself across
@@ -95,8 +103,9 @@ devices: start on your laptop, pause on your phone. When a cycle ends on two ope
 devices, it's logged once. Login is handled by Cloudflare Access, and each
 person's data lives in its own Durable Object (plain SQLite, one `docs` table),
 keyed by email. Conflicts resolve last-write-wins per task. Changes made offline
-merge when the device reconnects. **Settings → Sync → Export** downloads
-everything as JSON.
+merge when the device reconnects. Export works the same signed in and reflects
+the synced ledger. An import while signed in is saved like any other change, so
+it reaches your other devices, and Replace deletes the missing tasks there too.
 
 Sync stays off until Access is configured:
 

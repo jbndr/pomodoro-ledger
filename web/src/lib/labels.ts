@@ -34,3 +34,14 @@ export function labelOptions(labels: Label[], o: { query: string; value: string;
   if (idx < 0 && opts.length && !(o.hash && /^\d+$/.test(q))) idx = opts.findIndex((x) => !x.clear);
   return { opts, idx };
 }
+
+/** Labels from both lists by name, the newer edit winning. */
+export function mergeLabels(a: Label[], b: Label[]): Label[] {
+  const byName = new Map<string, Label>();
+  for (const label of [...a, ...b]) {
+    if (!label || typeof label.name !== "string" || !label.name.trim()) continue;
+    const name = label.name.trim().slice(0, 80), key = name.toLocaleLowerCase(), old = byName.get(key);
+    if (!old || (label.updatedAt || 0) >= (old.updatedAt || 0)) byName.set(key, { name, lastUsed: Number(label.lastUsed) || 0, archived: !!label.archived, updatedAt: Number(label.updatedAt) || 0 });
+  }
+  return [...byName.values()];
+}

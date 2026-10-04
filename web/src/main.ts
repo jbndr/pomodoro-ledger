@@ -29,6 +29,7 @@ import { renderAll, renderEstPick, renderPill, renderStats, renderTasks, renderT
 import RoomDialog from "./room/RoomDialog.svelte";
 import RoomStrip from "./room/RoomStrip.svelte";
 import { followRoom, reactionsChanged, reactionsOn, reactWait, renderRoom, RM, roomConnect, roomCreate, roomEnter, roomInStep, roomList, roomReact, roomReset, roomSend } from "./room/net";
+import { exportLedger, importLedger, planImport } from "./settings/backup";
 import Settings from "./settings/Settings.svelte";
 import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, previewTicking, scheduleEnd, syncTicking } from "./sound";
 import { DEMO, ls, S, ss, T } from "./state";
@@ -104,7 +105,7 @@ ui.settings = mount(Settings, { target: document.body, props: { api: {
   S, Store, Cloud, ls, toast, setOverlay, floatable: !floatBtn.hidden, T,
   ensureAudio, playSound, scheduleEnd, cancelEnd, cancelTickPreview, syncTicking, previewTicking,
   autoFloatHandler, renderTimer, renderStats, renderEstPick,
-  reactionsChanged,
+  reactionsChanged, DEMO, backup: { exportLedger, planImport, importLedger },
 } } }) as SettingsUI;
 mount(TimerCard, { target: $(".timer-card"), props: { api: {
   T, S, ICON, floatBtn, fmtClock, fmtDur, plural, viewTasks, openOf,
