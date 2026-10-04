@@ -88,7 +88,7 @@
 <!-- Escape is handled by the app-wide keydown handler. -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div class="overlay" id="room" hidden onclick={(e) => { if (e.target.id === "room") close(); }}>
-  <div class="sheet room-sheet" role="dialog" aria-labelledby="roomH">
+  <div class="sheet room-sheet" class:tabbed={!v.on && !joining} role="dialog" aria-labelledby="roomH">
     <div class="sec-head"><h2 id="roomH">{v.pub ? v.pub.title : joining ? "Join a room" : "Work together"}</h2><button class="icon-btn" type="button" id="closeRoom" aria-label="Close" onclick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 
     {#if v.on && v.pub}
