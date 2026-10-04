@@ -94,8 +94,6 @@ export interface EmblemOpts {
   locked?: boolean;
   /** Ink for a locked badge's outline and silhouette. */
   fg?: string;
-  /** A fixed rainbow sheen, for images where the live foil can't follow the pointer. */
-  sheen?: boolean;
   xmlns?: boolean;
 }
 
@@ -117,14 +115,12 @@ export function emblem(id: BadgeId, o: EmblemOpts = {}): string {
   return head + `<defs>` +
     `<linearGradient id="${k}b" x1="0" y1="0" x2=".7" y2="1"><stop offset="0" stop-color="${look.from}"/><stop offset="1" stop-color="${look.to}"/></linearGradient>` +
     `<radialGradient id="${k}g" cx=".32" cy=".18" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></radialGradient>` +
-    (o.sheen ? `<linearGradient id="${k}s" x1="0" y1="0" x2="1" y2="1"><stop offset=".18" stop-color="#ff8a8a" stop-opacity="0"/><stop offset=".34" stop-color="#ffd36b" stop-opacity=".34"/><stop offset=".46" stop-color="#7cf2b0" stop-opacity=".38"/><stop offset=".58" stop-color="#6fc8ff" stop-opacity=".36"/><stop offset=".7" stop-color="#c39bff" stop-opacity=".3"/><stop offset=".86" stop-color="#ff8ac8" stop-opacity="0"/></linearGradient>` : "") +
     `</defs>` +
     `<path d="${d}" fill="url(#${k}b)"/>` +
     `<path d="${d}" fill="none" stroke="#000" stroke-opacity=".16" stroke-width="2.4" transform="translate(50 50) scale(.975) translate(-50 -50)"/>` +
     `<path d="${d}" fill="none" stroke="#fff" stroke-opacity=".34" stroke-width="1.6" transform="translate(50 50) scale(.86) translate(-50 -50)"/>` +
     GLYPH[id](pen) +
     `<path d="${d}" fill="url(#${k}g)"/>` +
-    (o.sheen ? `<path d="${d}" fill="url(#${k}s)"/>` : "") +
     `</svg>`;
 }
 

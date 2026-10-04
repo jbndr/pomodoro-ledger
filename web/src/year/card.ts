@@ -82,7 +82,7 @@ function scheme(th: CardTheme): Scheme {
 
 /** Draws medals; locked ones are outlines in the colour `fg`. */
 async function emblems(c: Ctx, list: Badge[], fg: string, at: (i: number) => [number, number, number]) {
-  const imgs = await Promise.all(list.map((b) => img(emblem(b.id, { locked: !b.earned, fg, sheen: true, xmlns: true }))));
+  const imgs = await Promise.all(list.map((b) => img(emblem(b.id, { locked: !b.earned, fg, xmlns: true }))));
   imgs.forEach((im, i) => { const [x, y, s] = at(i); c.drawImage(im, x, y, s, s); });
 }
 
@@ -127,10 +127,12 @@ export async function summaryCard(y: YearStats, list: Badge[], persona: string, 
   });
   font(c, 650, 50, DISPLAY);
   text(c, persona, P, 1440, on, { max: W - 2 * P, track: -1 });
-  const got = list.filter((b) => b.earned), n = Math.min(6, Math.max(1, got.length)), s = 128, gap = (W - 2 * P - n * s) / Math.max(1, n - 1);
+  const got = list.filter((b) => b.earned), s = 124, gap = 28;
   if (got.length) {
-    font(c, 600, 30); text(c, (got.length + " OF " + list.length + " BADGES").toUpperCase(), P, 1530, dim, { track: 4 });
-    await emblems(c, got.slice(0, 12), on, (i) => [P + (i % 6) * (n > 1 ? s + Math.min(gap, 40) : 0), 1566 + Math.floor(i / 6) * (s + 22), s]);
+    const tray = th !== "night" && th !== "paper", rows = Math.ceil(Math.min(12, got.length) / 6), top = 1490, pad = tray ? 36 : 0;
+    if (tray) round(c, P - pad, top, W - 2 * P + 2 * pad, 92 + rows * s + (rows - 1) * 22 + pad, 40, LIGHT.paper);
+    font(c, 600, 30); text(c, (got.length + " OF " + list.length + " BADGES").toUpperCase(), P, top + 58, tray ? LIGHT.muted : dim, { track: 4 });
+    await emblems(c, got.slice(0, 12), on, (i) => [P + (i % 6) * (s + gap), top + 92 + Math.floor(i / 6) * (s + 22), s]);
   }
   font(c, 400, 30); text(c, f.fmtDate(y.start, { day: "numeric", month: "short" }) + " – " + f.fmtDate(Math.min(y.end, addDays(y.start, 364)), { day: "numeric", month: "short", year: "numeric" }), W - P, P + 58, dim, { align: "right" });
   return blob(cv);
