@@ -1,10 +1,10 @@
 <script>
   let { api } = $props();
-  let closeBtn;
+  let sheet;
 
   export function open() {
     api.setOverlay("#keys", true);
-    closeBtn.focus({ preventScroll: true });
+    sheet.focus({ preventScroll: true });
   }
 
   export function close() {
@@ -16,8 +16,8 @@
 <!-- Escape is handled by the app-wide keydown handler. -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div class="overlay" id="keys" hidden onclick={(e) => { if (e.target.id === "keys") close(); }}>
-  <div class="sheet keys-sheet" role="dialog" aria-labelledby="keysH">
-    <div class="sec-head"><h2 id="keysH">Keyboard shortcuts</h2><button class="icon-btn" type="button" id="closeKeys" aria-label="Close" bind:this={closeBtn} onclick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="sheet keys-sheet" role="dialog" aria-labelledby="keysH" tabindex="-1" bind:this={sheet}>
+    <div class="sec-head"><h2 id="keysH">Keyboard shortcuts</h2><button class="icon-btn" type="button" id="closeKeys" aria-label="Close" onclick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="keys-grid">
       <section><h3>Timer</h3><dl>
         <dt><kbd>Space</kbd></dt><dd>Start or pause</dd>
