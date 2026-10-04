@@ -2,7 +2,7 @@
   import { hhmm, hueOf, initials, phaseAt } from "../lib/rhythm";
   import Ring from "./Ring.svelte";
 
-  let { r, now, i, onjoin } = $props();
+  let { r, now, onjoin } = $props();
 
   const p = $derived(phaseAt(r.rhythm, now));
   const n = $derived(r.names.length);
@@ -11,7 +11,7 @@
   const label = $derived("Join " + r.title + ". " + n + " of " + max + " people. " + (p.focus ? "Focus" : "Break") + " until " + hhmm(p.end) + ".");
 </script>
 
-<li class="rcard" style:--i={i}>
+<li class="rcard">
   <button type="button" disabled={full} aria-label={full ? r.title + " is full" : label} onclick={() => onjoin(r)}>
     <Ring rhythm={r.rhythm} {now} />
     <span class="rcard-main">

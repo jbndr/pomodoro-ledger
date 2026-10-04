@@ -1,3 +1,7 @@
+<script module>
+  let last = null, lastSkew = 0;
+</script>
+
 <script>
   import { onMount, tick } from "svelte";
   import { RHYTHMS, SIZE, sortRooms } from "../lib/rhythm";
@@ -5,7 +9,7 @@
 
   let { api, busy, onjoin, oncreate } = $props();
 
-  let data = $state(null), failed = $state(false), skew = 0, now = $state(Date.now());
+  let data = $state(last), failed = $state(false), skew = lastSkew, now = $state(Date.now() - lastSkew);
   let filter = $state("all"), making = $state(false), title = $state(""), rhythm = $state("25/5"), size = $state(6), titleEl;
   let listEl = $state(), above = $state(false), below = $state(false);
 
@@ -16,7 +20,7 @@
   async function load() {
     try {
       const d = await api.roomList();
-      skew = Date.now() - d.now; now = d.now; data = d; failed = false;
+      skew = lastSkew = Date.now() - d.now; now = d.now; data = last = d; failed = false;
     } catch { failed = !data; }
   }
 
@@ -70,7 +74,7 @@
     <ul class="rlist" aria-hidden="true">{#each [0, 1, 2] as k (k)}<li class="rcard ghost"><span></span></li>{/each}</ul>
   {:else}
     <ul class="rlist" class:above class:below aria-label="Public rooms" aria-busy={busy} bind:this={listEl} onscroll={edges}>
-      {#each rooms as r, i (r.code)}<RoomCard {r} {now} {i} {onjoin} />{/each}
+      {#each rooms as r (r.code)}<RoomCard {r} {now} {onjoin} />{/each}
     </ul>
   {/if}
 
