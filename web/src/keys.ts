@@ -6,7 +6,7 @@ import { S } from "./state";
 import { focusRow, scheduleTask } from "./tasks/actions";
 import { groupName, guardPreview, quickDays } from "./tasks/derived";
 import { adjust, skip, toggle } from "./timer/engine";
-import { closeKeys, closeRecap, closeRoom, closeSettings, openKeys, openWhen, ui } from "./ui";
+import { closeKeys, closeRecap, closeRoom, closeSettings, openKeys, openWhen, togglePalette, ui } from "./ui";
 import { toggleZen } from "./zen";
 
 // Scheduling shortcuts act on the task under the mouse or keyboard focus, else the one you're working on.
@@ -45,8 +45,22 @@ function scheduleShortcut(key: string) {
   scheduleTask(t.id, ({ t: q.today, m: q.tomorrow, w: q.week, l: q.later } as Record<string, string>)[key]);
 }
 
+export const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+export const MOD = mac ? "⌘" : "Ctrl";
+
+// ⌘K on a Mac, Ctrl+K elsewhere; the physical key when the layout has no K.
+const paletteKey = (e: KeyboardEvent) => (e.key.toLowerCase() === "k" || (!/^[a-z]$/i.test(e.key) && e.code === "KeyK"))
+  && (mac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey) && !e.altKey && !e.shiftKey;
+
+export function quickAdd() {
+  if (phone()) { showPage("tasks"); $("#newTitle").focus(); }
+  else composer.quick = true;
+}
+
 /** The app-wide keyboard shortcuts. */
 export function onKey(e: KeyboardEvent) {
+  if (paletteKey(e)) { e.preventDefault(); if (!e.repeat) togglePalette(); return; }
+  if (document.querySelector("#palette:not([hidden])")) return;
   const tag = ((e.target as Element).tagName || "").toLowerCase();
   if (tag === "input" || tag === "select" || tag === "textarea" || !$("#settings").hidden || !$("#room").hidden || !$("#keys").hidden || !$("#recap").hidden) {
     if (e.key === "Escape") { if (!$("#settings").hidden) closeSettings(); else if (!$("#room").hidden) closeRoom(); else if (!$("#keys").hidden) closeKeys(); else if (!$("#recap").hidden) closeRecap(); }
@@ -56,8 +70,7 @@ export function onKey(e: KeyboardEvent) {
   if (e.key === "?" && !e.metaKey && !e.ctrlKey) { e.preventDefault(); openKeys(); return; }
   if ((e.key === "n" || e.key === "N") && !e.metaKey && !e.ctrlKey && !e.altKey && !zen()) {
     e.preventDefault();
-    if (phone()) { showPage("tasks"); $("#newTitle").focus(); }
-    else composer.quick = true;
+    quickAdd();
     return;
   }
   if (e.code === "Space" && tag !== "button") { e.preventDefault(); toggle(); }
