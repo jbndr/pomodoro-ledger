@@ -74,7 +74,7 @@ export const Cloud = {
   signedOut() {
     this.email = ""; ls.set("pl.syncEmail", ""); this.set("signedout");
     if (this.subs.err) this.subs.err({ code: "revoked" });
-    toast("You're signed out, so changes stay in this browser. Sign in again under Settings → Sync.");
+    toast("You're signed out, so changes stay in this browser. Sign in again under Settings → Data & sync.");
   },
   push(m: Doc) {
     if (this.ws && this.ws.readyState === 1) { try { this.ws.send(JSON.stringify(m)); return; } catch {} }

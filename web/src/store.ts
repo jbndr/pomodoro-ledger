@@ -1,7 +1,7 @@
 import { toast } from "./chrome/notice.svelte";
 import { Cloud } from "./cloud";
 import { autoFloatHandler } from "./float";
-import type { Label } from "./lib/labels";
+import { mergeLabels, type Label } from "./lib/labels";
 import { projectOf, sessionProject } from "./lib/tasks";
 import { renderAll, renderPill, renderStats, renderTimer } from "./render";
 import { clone, DEF, ls, S, type Settings, type Task } from "./state";
@@ -99,13 +99,13 @@ export const Store = {
     list.forEach((t) => { t.updatedAt = now; S.tasks.set(t.id, t); if (S.storeMode === "db") this.write(t); else dirty.add(t.id); });
     this.cache(); renderAll();
   },
-  deleteTask(id: string) {
+  deleteTask(id: string, render = true) {
     S.tasks.delete(id); dirty.delete(id); this.cache();
     const col = this.col;
     if (S.storeMode === "db" && col) {
       this.chains[id] = (this.chains[id] || Promise.resolve()).then(() => col.doc(id).delete()).catch((e) => this.fail(e));
     } else if (Cloud.email) Cloud.queueDelete(id, Date.now());
-    renderAll();
+    if (render) renderAll();
   },
   saveSettings() {
     this.cache(); ls.set("pl.profileAt", Date.now());
@@ -120,15 +120,7 @@ export const Store = {
 };
 
 export const Labels = {
-  merge(list: Label[]) {
-    const byName = new Map<string, Label>();
-    for (const label of [...S.labels, ...list]) {
-      if (!label || typeof label.name !== "string" || !label.name.trim()) continue;
-      const name = label.name.trim().slice(0, 80), key = name.toLocaleLowerCase(), old = byName.get(key);
-      if (!old || (label.updatedAt || 0) >= (old.updatedAt || 0)) byName.set(key, { name, lastUsed: Number(label.lastUsed) || 0, archived: !!label.archived, updatedAt: Number(label.updatedAt) || 0 });
-    }
-    S.labels = [...byName.values()];
-  },
+  merge(list: Label[]) { S.labels = mergeLabels(S.labels, list); },
   importTasks(tasks: Map<string, Task>) {
     let changed = false;
     for (const t of tasks.values()) {

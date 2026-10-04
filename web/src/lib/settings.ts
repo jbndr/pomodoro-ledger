@@ -30,6 +30,6 @@ export function syncCopy(state: SyncState, viaAccount: boolean, email: string) {
   return {
     title, detail,
     acts: state === "signedout" ? "signin" : account ? "account" : "",
-    hint: account ? "The timer and the task you're working on sync too. Export downloads everything as JSON." : "",
+    hint: account ? "The timer and the task you're working on sync too." : "",
   };
 }
