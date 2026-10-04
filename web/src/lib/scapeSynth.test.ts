@@ -24,6 +24,24 @@ function levels(x: Float32Array, ms: number) {
   return out;
 }
 
+/** How tonal the loudest 4 ms moments in 1–8 kHz are: 1 is a pure ping, plain noise sits near 0.35. */
+function ringing(x: Float32Array) {
+  const hi = band(x, 1000, 8000), n = SR * 4 / 1000, frames = levels(hi, 4), cut = pct(frames, 0.995), out: number[] = [];
+  frames.forEach((v, f) => {
+    if (v < cut) return;
+    const s = hi.subarray(f * n, f * n + n);
+    let e = 0, best = 0;
+    for (let i = 0; i < s.length; i++) e += s[i] * s[i];
+    for (let lag = Math.round(SR / 6000); lag <= Math.round(SR / 1000); lag++) {
+      let c = 0;
+      for (let i = 0; i + lag < s.length; i++) c += s[i] * s[i + lag];
+      best = Math.max(best, c / e);
+    }
+    out.push(best);
+  });
+  return out.reduce((a, b) => a + b, 0) / out.length;
+}
+
 const pct = (xs: number[], p: number) => [...xs].sort((a, b) => a - b)[Math.floor((xs.length - 1) * p)];
 
 /** How far the loud frames rise above the median, in dB. */
@@ -110,6 +128,11 @@ describe("ocean and fire", () => {
     expect(jump).toBeLessThan(4);
     expect(db(peak / rms(L))).toBeLessThan(20);
     expect(db(pct(levels(L, 500), 1) / rms(L))).toBeLessThan(8);
+  });
+
+  it("fire crackles snap like wood instead of ringing like drops", () => {
+    expect(ringing(long.fire.L)).toBeLessThan(0.5);
+    expect(ringing(long.fire.L)).toBeLessThan(ringing(render("brown", 30).L) + 0.1);
   });
 
   it("fire is a low roar with sparse crackles", () => {
