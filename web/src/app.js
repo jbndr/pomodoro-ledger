@@ -14,6 +14,15 @@ import LabelPop from "./popovers/LabelPop.svelte";
 import Pop from "./popovers/Pop.svelte";
 import WhenPop from "./popovers/WhenPop.svelte";
 import { LP, labelPop, pop, whenPop } from "./popovers/state.svelte";
+import { pill, room, roomClock } from "./lib/redraw.svelte";
+import { normCode } from "./lib/room";
+import { toast } from "./chrome/notice.svelte";
+import BarTools from "./chrome/BarTools.svelte";
+import Keys from "./chrome/Keys.svelte";
+import Tip from "./chrome/Tip.svelte";
+import Toast from "./chrome/Toast.svelte";
+import RoomDialog from "./room/RoomDialog.svelte";
+import RoomStrip from "./room/RoomStrip.svelte";
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -966,11 +975,7 @@ function renderTasks() {
 // ---------- rendering: stats ----------
 function renderStats() { progress.refresh(); }
 function renderPill() {
-  const p = $("#syncPill");
-  const offline = S.storeMode === "db" && Cloud.state === "offline";
-  const st = preview() ? "preview" : offline ? "offline" : S.storeMode;
-  p.dataset.state = st;
-  p.querySelector("span").textContent = DEMO ? "Demo mode" : st === "preview" ? "Example data" : offline ? "Offline · will sync" : st === "db" ? "Synced to your account" : Cloud.state === "signedout" ? "Saved in this browser · Sign in to sync" : "Saved in this browser";
+  pill.refresh();
   $("#previewBanner").hidden = !preview();
   $("#previewBanner span").innerHTML = DEMO
     ? "<strong>Interactive demo.</strong> Changes reset when you reload and never affect your saved ledger."
@@ -979,36 +984,6 @@ function renderPill() {
 }
 function renderEstPick() { composer.refresh(); }
 function renderAll() { renderPill(); renderTasks(); renderStats(); renderEstPick(); renderTimer(true); }
-
-// ---------- toast & tooltip ----------
-let toastT = null;
-function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 3600); }
-const tip = $("#tip");
-let hoverBar = null;
-function hideTip() {
-  tip.hidden = true;
-  if (hoverBar) { hoverBar.classList.remove("hover"); hoverBar = null; }
-}
-function showTip(e) {
-  const el = e.target.closest && e.target.closest("[data-tip]");
-  hideTip();
-  if (!el) return;
-  if (el.classList.contains("hit")) { const b = el.nextElementSibling; if (b) { b.classList.add("hover"); hoverBar = b; } }
-  tip.innerHTML = el.dataset.tip; tip.hidden = false;
-  const w = tip.offsetWidth, h = tip.offsetHeight;
-  let x = e.clientX + 14, y = e.clientY - h - 12;
-  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
-  if (x < 8) x = 8;
-  if (y < 8) y = e.clientY + 16;
-  tip.style.left = x + "px"; tip.style.top = y + "px";
-}
-// A finger that starts scrolling fires pointermove but never pointerleave, which left tips stranded; touch shows them on tap.
-let tipPointer = "mouse";
-document.addEventListener("pointerdown", (e) => { tipPointer = e.pointerType; }, true);
-document.addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") showTip(e); });
-document.addEventListener("click", (e) => { if (tipPointer !== "mouse") showTip(e); });
-document.addEventListener("pointerleave", hideTip);
-document.addEventListener("scroll", hideTip, true);
 
 // ---------- events ----------
 const guardPreview = () => { if (preview() && !DEMO) { toast("These are examples. Add a task to start your own ledger."); return true; } return false; };
@@ -1312,41 +1287,9 @@ function setOverlay(id, open) {
     requestAnimationFrame(sizeTimer);
   }
 }
-$("#syncPill").addEventListener("click", () => { if (!DEMO) openSettings("sync"); });
-// ---------- theme: system, light or dark, remembered per device ----------
-const THEMES = ["system", "light", "dark"];
-const THEME_ICON = {
-  system: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/></svg>',
-  light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>',
-  dark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
-};
-function applyTheme(t) {
-  if (!THEMES.includes(t)) t = "system";
-  if (t === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
-  // Keep the browser's tab and status bar colour in step with a forced theme.
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
-    const own = m.media.includes("dark") ? "#0E1110" : "#EDEFEC";
-    m.content = t === "system" ? own : t === "dark" ? "#0E1110" : "#EDEFEC";
-  });
-  const next = THEMES[(THEMES.indexOf(t) + 1) % THEMES.length], name = (x) => x[0].toUpperCase() + x.slice(1);
-  const b = $("#themeBtn");
-  b.innerHTML = THEME_ICON[t];
-  b.setAttribute("aria-label", "Theme: " + name(t) + ". Switch to " + name(next));
-  b.title = "Theme: " + name(t) + " · click for " + name(next);
-  if (floatWindow && !floatWindow.closed) renderFloating(lastTxt, 0);
-}
-$("#themeBtn").addEventListener("click", () => {
-  const cur = ls.get("pl.theme", "system"), next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
-  ls.set("pl.theme", next);
-  applyTheme(next);
-  toast("Theme: " + next[0].toUpperCase() + next.slice(1) + (next === "system" ? " (follows your device)" : "") + ".");
-});
-applyTheme(ls.get("pl.theme", "system"));
-function openKeys() { setOverlay("#keys", true); $("#closeKeys").focus({ preventScroll: true }); }
-function closeKeys() { setOverlay("#keys", false); $("#openKeys").focus({ preventScroll: true }); }
-$("#openKeys").addEventListener("click", openKeys);
-$("#closeKeys").addEventListener("click", closeKeys);
-$("#keys").addEventListener("click", (e) => { if (e.target.id === "keys") closeKeys(); });
+let keysSheet = null;
+function openKeys() { keysSheet.open(); }
+function closeKeys() { keysSheet.close(); }
 $("#openSettings").addEventListener("click", () => openSettings());
 
 // ---------- shared room ----------
@@ -1354,9 +1297,8 @@ const ss = {
   get(k) { if (DEMO) return null; try { return sessionStorage.getItem(k); } catch { return null; } },
   set(k, v) { if (DEMO) return; try { if (v == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch {} },
 };
-const RM = { owner: false, ws: null, code: ss.get("pl.room"), id: ss.get("pl.rid"), name: ls.get("pl.name", ""), you: null, members: [], prop: null, live: false, tries: 0, timer: null, ping: null, sent: "", askHTML: "" };
+const RM = { owner: false, ws: null, code: ss.get("pl.room"), id: ss.get("pl.rid"), name: ls.get("pl.name", ""), you: null, members: [], prop: null, live: false, tries: 0, timer: null, ping: null, sent: "" };
 if (!RM.id) { RM.id = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); ss.set("pl.rid", RM.id); }
-const normCode = (v) => String(v).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
 const roomSend = (o) => { try { if (RM.ws && RM.ws.readyState === 1) RM.ws.send(JSON.stringify(o)); } catch {} };
 function roomPush(force) {
   if (!RM.live) return;
@@ -1428,112 +1370,18 @@ function roomEnter(code) {
   setOverlay("#room", false);
   renderRoom(); roomConnect();
 }
-function roomName() {
-  const name = $("#rName").value.trim().slice(0, 20);
-  if (!name) { $("#roomNote").textContent = "Add a name so the others know who you are."; $("#rName").focus(); return false; }
-  RM.name = name; ls.set("pl.name", name);
-  return true;
+async function roomCreate() {
+  const res = await fetch("/api/room", { method: "POST" }), body = res.ok ? await res.json() : null;
+  if (!body || !body.code) throw 0;
+  ss.set("pl.owner." + body.code, body.ownerToken);
+  roomEnter(body.code);
 }
-function mateState(s, withName) {
-  if (!s) return withName ? "<em>Ready to focus</em>" : "";
-  if (s.status === "idle") return withName ? "<em>Ready to focus</em>" : "start a " + Math.round(s.total / MIN) + " min " + MODE_NAME[s.mode].toLowerCase() + " together now";
-  const t = s.status === "running" ? '<span data-end="' + s.end + '"></span>' : "<span>" + clock(Math.ceil(s.rem / 1000)) + "</span>";
-  if (withName) return t + "<em>" + MODE_NAME[s.mode] + (s.status === "paused" ? " · paused" : "") + "</em>";
-  return MODE_NAME[s.mode].toLowerCase() + ", " + (s.status === "paused" ? "paused at " + t : t + " left");
-}
-function renderRoom() {
-  const on = !!RM.code, ask = $("#ask");
-  if ($("#roomStrip").hidden === on) requestAnimationFrame(sizeTimer);
-  $("#roomStrip").hidden = !on;
-  $("#openRoom").classList.toggle("on", on);
-  $("#roomOut").hidden = on; $("#roomIn").hidden = !on; $("#rName").disabled = on;
-  $("#bigCode").textContent = RM.code || "";
-  let html = "";
-  if (on) {
-    const others = RM.members.filter((m) => m.id !== RM.you), p = RM.live && RM.prop;
-    $("#stripCode").innerHTML = "<small>Room</small>" + esc(RM.code);
-    $("#mates").innerHTML = !RM.live ? '<li class="hint">Connecting…</li>'
-      : !others.length ? '<li class="hint">Nobody else is here yet. Share the code or the invite link.</li>'
-      : others.map((m) => '<li class="mate" data-member="' + esc(m.id) + '" data-mode="' + (m.s ? m.s.mode : "") + '" data-status="' + (m.s ? m.s.status : "idle") + '"><i aria-hidden="true"></i><b>' + esc(m.name) + "</b>" + mateState(m.s, true) + (RM.owner && !m.owner ? '<button class="kick" type="button" data-kick="' + esc(m.id) + '" aria-label="Remove ' + esc(m.name) + ' from room" title="Remove from room">×</button>' : "") + "</li>").join("");
-    $("#syncAll").disabled = !RM.live || !others.length || !!RM.prop;
-    if (p) {
-      const by = RM.members.find((m) => m.id === p.by), count = p.yes.length + " of " + RM.members.length + " accepted";
-      if (p.by === RM.you) html = "<p>You asked everyone to sync to your timer. " + count + '.</p><div><button class="btn small" type="button" data-ask="cancel">Cancel</button></div>';
-      else if (p.yes.includes(RM.you)) html = "<p>You accepted. Waiting for the others: " + count + ".</p>";
-      else html = "<p><b>" + esc(by ? by.name : "Someone") + "</b> wants everyone to sync to their timer: " + mateState(by && by.s) + '. Your timer would jump to theirs.</p><div><button class="btn small" type="button" data-ask="no">Decline</button><button class="btn small solid" type="button" data-ask="yes">Accept</button></div>';
-    }
-  }
-  if (html !== RM.askHTML) { RM.askHTML = html; ask.innerHTML = html; }
-  ask.hidden = !html;
-  roomTick();
-}
-function roomTick() {
-  document.querySelectorAll("#mates .mate").forEach((el) => {
-    const member = RM.members.find((m) => m.id === el.dataset.member), s = member && member.s;
-    const remaining = s ? Math.max(0, s.status === "running" ? s.end - Date.now() : s.rem) : 0;
-    const progress = !s || s.status === "idle" || !s.total ? 0 : Math.min(1, Math.max(0, 1 - remaining / s.total));
-    el.style.setProperty("--progress", progress * 360 + "deg");
-    el.title = s && s.status !== "idle" ? Math.floor(progress * 100) + "% complete" : "Ready to focus";
-  });
-  document.querySelectorAll("#mates [data-end], #ask [data-end]").forEach((el) => {
-    const t = clock(Math.max(0, Math.ceil((+el.dataset.end - Date.now()) / 1000)));
-    if (el.textContent !== t) el.textContent = t;
-  });
-}
-function copyInvite() {
-  const link = location.origin + "/?room=" + RM.code;
-  const done = () => toast("Invite link copied."), fail = () => toast("Share this code: " + RM.code);
-  try { navigator.clipboard.writeText(link).then(done, fail); } catch { fail(); }
-}
-function openRoom() {
-  const joining = invite.length === 6 && !RM.code;
-  $("#roomH").textContent = joining ? "Join a room" : "Work together";
-  $("#roomIntro").textContent = joining
-    ? "You've been invited to a shared room. Enter your name and press Join. Your tasks and history stay private."
-    : "Start a temporary room and share its code. Everyone in it sees who is focusing or on a break and how much time is left. Your tasks and history stay private.";
-  $("#rCreate").hidden = joining;
-  $("#rCodeLabel").textContent = joining ? "Room code" : "Or join with a code";
-  $("#rJoin button").classList.toggle("solid", joining);
-  if (joining) $("#rCode").value = invite;
-  $("#rName").value = RM.name;
-  $("#roomNote").textContent = "";
-  setOverlay("#room", true);
-  (RM.code ? $("#rCopy") : !RM.name ? $("#rName") : joining ? $("#rJoin button") : $("#rCreate")).focus({ preventScroll: true });
-}
-function closeRoom() { setOverlay("#room", false); $("#openRoom").focus({ preventScroll: true }); }
-$("#openRoom").addEventListener("click", openRoom);
-$("#closeRoom").addEventListener("click", closeRoom);
-$("#room").addEventListener("click", (e) => { if (e.target.id === "room") closeRoom(); });
-$("#rCreate").addEventListener("click", async () => {
-  if (!roomName()) return;
-  $("#rCreate").disabled = true;
-  try {
-    const res = await fetch("/api/room", { method: "POST" }), body = res.ok ? await res.json() : null;
-    if (!body || !body.code) throw 0;
-    ss.set("pl.owner." + body.code, body.ownerToken);
-    roomEnter(body.code);
-  } catch { $("#roomNote").textContent = "Couldn't start a room. Check your connection and try again."; }
-  $("#rCreate").disabled = false;
-});
-$("#rJoin").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const code = normCode($("#rCode").value);
-  if (code.length !== 6) { $("#roomNote").textContent = "Room codes have six letters and digits."; $("#rCode").focus(); return; }
-  if (roomName()) roomEnter(code);
-});
-$("#mates").addEventListener("click", (e) => {
-  const button = e.target.closest("[data-kick]");
-  if (button && RM.owner) roomSend({ t: "kick", id: button.dataset.kick });
-});
-$("#rLeave").addEventListener("click", () => { roomReset(); closeRoom(); });
-$("#stripLeave").addEventListener("click", roomReset);
-$("#rCopy").addEventListener("click", copyInvite);
-$("#stripCode").addEventListener("click", copyInvite);
-$("#syncAll").addEventListener("click", () => roomSend({ t: "propose" }));
-$("#ask").addEventListener("click", (e) => {
-  const b = e.target.closest("[data-ask]"); if (!b) return;
-  roomSend(b.dataset.ask === "cancel" ? { t: "cancel" } : { t: "vote", ok: b.dataset.ask === "yes" });
-});
+let roomDialog = null;
+// Synchronous like the markup it replaced: a focused field in the dialog has to hide and disable in one go, or Chrome moves focus elsewhere.
+function renderRoom() { room.refresh(); flushSync(); }
+function roomTick() { roomClock.refresh(); }
+function openRoom() { roomDialog.open(); }
+function closeRoom() { roomDialog.close(); }
 
 // ---------- phone pages ----------
 const PAGES = ["timer", "tasks", "progress"], pageScroll = {};
@@ -1605,7 +1453,7 @@ function sizeTimer() {
 new ResizeObserver(() => document.documentElement.style.setProperty("--bar-h", $(".bar").offsetHeight + "px")).observe($(".bar"));
 addEventListener("scroll", () => document.body.classList.toggle("scrolled", scrollY > 4), { passive: true });
 const timerLayout = new ResizeObserver(sizeTimer);
-[$(".bar"), $("#roomStrip"), $("#previewBanner")].forEach((el) => timerLayout.observe(el));
+[$(".bar"), $("#previewBanner")].forEach((el) => timerLayout.observe(el));
 addEventListener("resize", sizeTimer);
 // The observer above doesn't run in background tabs, and web fonts change heights after the first measure.
 if (document.fonts) document.fonts.ready.then(sizeTimer);
@@ -1630,6 +1478,23 @@ if (T.status === "running" && Date.now() >= T.endsAt) complete(T.endsAt);
 if (T.status === "running") addEventListener("pointerdown", () => { if (T.status === "running" && !pending.length) scheduleEnd(); }, { once: true });
 setZen(false);
 const invite = normCode(new URLSearchParams(location.search).get("room") || "");
+if (["today", "upcoming", "later"].includes(ss.get("pl.taskView"))) S.taskView = ss.get("pl.taskView");
+mount(Progress, { target: $(".app"), props: { api: {
+  S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
+  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask,
+} } });
+const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate };
+mount(BarTools, { target: $(".bar-right"), anchor: $(".bar-right").firstChild, props: { api: {
+  RM, ls, S, Cloud, DEMO, preview, openRoom, openKeys,
+  openSync: () => { if (!DEMO) openSettings("sync"); },
+  themed: () => { if (floatWindow && !floatWindow.closed) renderFloating(lastTxt, 0); },
+} } });
+mount(RoomStrip, { target: $(".app"), anchor: $(".bar").nextSibling, props: { api: roomApi } });
+timerLayout.observe($("#roomStrip"));
+mount(Tip, { target: document.body });
+mount(Toast, { target: document.body });
+roomDialog = mount(RoomDialog, { target: document.body, props: { api: roomApi } });
+keysSheet = mount(Keys, { target: document.body, props: { api: { setOverlay } } });
 if (invite) {
   try { history.replaceState(null, "", location.pathname); } catch {}
   if (invite.length === 6 && invite !== RM.code) {
@@ -1637,11 +1502,6 @@ if (invite) {
     openRoom();
   } else if (RM.code) roomConnect();
 } else if (RM.code) roomConnect();
-if (["today", "upcoming", "later"].includes(ss.get("pl.taskView"))) S.taskView = ss.get("pl.taskView");
-mount(Progress, { target: $(".app"), props: { api: {
-  S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
-  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask,
-} } });
 settingsUI = mount(Settings, { target: document.body, props: { api: {
   S, Store, Cloud, ls, toast, setOverlay, floatable: !floatBtn.hidden, get T() { return T; },
   ensureAudio, playSound, scheduleEnd, cancelEnd, cancelTickPreview, syncTicking, previewTicking: () => { tickPreview = tickingNode(6); },

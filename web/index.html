@@ -29,22 +29,9 @@
       <span>Pomodoro Ledger</span>
     </div>
     <div class="bar-right">
-      <button class="pill" id="syncPill" type="button" data-state="local" title="Sync settings"><i></i><span>Saved in this browser</span></button>
-      <button class="icon-btn" id="openRoom" type="button" aria-label="Work together" title="Work together"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.2.2 3.6 1.6 4 3.8"/></svg></button>
-      <button class="icon-btn" id="themeBtn" type="button"></button>
-      <button class="icon-btn keys-btn" id="openKeys" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/></svg></button>
       <button class="icon-btn" id="openSettings" type="button" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     </div>
   </header>
-
-  <section class="room" id="roomStrip" aria-label="Shared room" hidden>
-    <button class="room-code" type="button" id="stripCode" title="Copy invite link"></button>
-    <ul class="mates" id="mates"></ul>
-    <div class="room-actions">
-      <button class="btn small" type="button" id="syncAll" title="Ask everyone to switch to your timer. It only happens if all of them accept.">Sync timers</button>
-      <button class="link" type="button" id="stripLeave">Leave</button>
-    </div>
-  </section>
 
   <div class="banner" id="previewBanner" hidden>
     <span><strong>You're looking at example data.</strong> Add your first task or start the timer, and the examples disappear.</span>
@@ -80,61 +67,6 @@
   <button type="button" data-page="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg><span>Tasks</span></button>
   <button type="button" data-page="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/></svg><span>Progress</span></button>
 </nav>
-<div class="tip" id="tip" hidden></div>
-<div class="toast" id="toast" role="status" hidden></div>
-
-<div class="ask" id="ask" role="alert" hidden></div>
-
-<div class="overlay" id="room" hidden>
-  <div class="sheet" role="dialog" aria-labelledby="roomH">
-    <div class="sec-head"><h2 id="roomH">Work together</h2><button class="icon-btn" type="button" id="closeRoom" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="sub" id="roomIntro">Start a temporary room and share its code. Everyone in it sees who is focusing or on a break and how much time is left. Your tasks and history stay private.</div>
-    <label class="field">Your name<input type="text" id="rName" maxlength="20" autocomplete="nickname" placeholder="Shown to people in the room"></label>
-    <div class="room-form" id="roomOut">
-      <button class="btn solid" type="button" id="rCreate">Start a room</button>
-      <form class="join" id="rJoin" autocomplete="off">
-        <label class="field"><span id="rCodeLabel">Or join with a code</span><input type="text" id="rCode" maxlength="6" autocapitalize="characters" spellcheck="false" placeholder="ABC234"></label>
-        <button class="btn" type="submit">Join</button>
-      </form>
-    </div>
-    <div class="room-form" id="roomIn" hidden>
-      <div class="big-code" id="bigCode"></div>
-      <div class="sheet-foot"><button class="btn" type="button" id="rLeave">Leave room</button><button class="btn solid" type="button" id="rCopy">Copy invite link</button></div>
-    </div>
-    <div class="sub" id="roomNote" role="status"></div>
-  </div>
-</div>
-
-<div class="overlay" id="keys" hidden>
-  <div class="sheet keys-sheet" role="dialog" aria-labelledby="keysH">
-    <div class="sec-head"><h2 id="keysH">Keyboard shortcuts</h2><button class="icon-btn" type="button" id="closeKeys" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="keys-grid">
-      <section><h3>Timer</h3><dl>
-        <dt><kbd>Space</kbd></dt><dd>Start or pause</dd>
-        <dt><kbd>S</kbd></dt><dd>Skip to the next phase</dd>
-        <dt><kbd>+</kbd> <kbd>−</kbd></dt><dd>A minute more or less</dd>
-        <dt><kbd>F</kbd></dt><dd>Fill the page</dd>
-        <dt><kbd>⇧</kbd> <kbd>F</kbd></dt><dd>Full screen</dd>
-      </dl></section>
-      <section><h3>Tasks</h3><dl>
-        <dt><kbd>N</kbd></dt><dd>New task</dd>
-        <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move between tasks (or <kbd>J</kbd> <kbd>K</kbd>)</dd>
-        <dt><kbd>↵</kbd></dt><dd>Open the task</dd>
-        <dt><kbd>Esc</kbd></dt><dd>Close it</dd>
-        <dt><kbd>⌥</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move the task up or down</dd>
-        <dt><kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move it to the previous or next section (a day in Upcoming)</dd>
-      </dl></section>
-      <section><h3>When</h3><dl>
-        <dt><kbd>T</kbd></dt><dd>Today</dd>
-        <dt><kbd>M</kbd></dt><dd>Tomorrow</dd>
-        <dt><kbd>W</kbd></dt><dd>Next week</dd>
-        <dt><kbd>L</kbd></dt><dd>Later</dd>
-        <dt><kbd>D</kbd></dt><dd>Pick a day…</dd>
-      </dl></section>
-    </div>
-    <p class="hint">Scheduling keys act on the task under the pointer or with keyboard focus, otherwise the one you're working on. <kbd>?</kbd> opens this list.</p>
-  </div>
-</div>
 
 <script type="module" src="/src/main.ts"></script>
 </body>
