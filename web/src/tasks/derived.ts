@@ -10,7 +10,7 @@ let SAMPLES: Map<string, Task> | null = null;
 export const preview = () => DEMO || (!S.started && S.tasks.size === 0);
 export const viewTasks = () => (preview() ? (SAMPLES || (SAMPLES = makeSamples())) : S.tasks);
 
-export function enterDemo() { SAMPLES = makeSamples(); S.tasks = SAMPLES; S.activeId = "x6"; S.started = true; S.settings.plans = samplePlans(); }
+export function enterDemo() { SAMPLES = makeSamples(true); S.tasks = SAMPLES; S.activeId = "x6"; S.started = true; S.settings.plans = samplePlans(); }
 
 export function markStarted(silent?: boolean) {
   if (S.started) return;

@@ -23,6 +23,7 @@ import { cyclesOf, labelHue, projectOf, timeOf } from "./lib/tasks";
 import { MODES } from "./lib/timer";
 import { initPages } from "./pages";
 import "./palette/commands";
+import "./year/commands";
 import Palette from "./palette/Palette.svelte";
 import { commands } from "./palette/registry";
 import { goalLookup, planDue, plans, savePlan, stopOffering, waveOff, weekGoals } from "./plan/actions";
@@ -56,7 +57,8 @@ import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
 import { adjust, arm, buzz, complete, dur, flushPartial, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
-import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, openSettings, openWhen, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type Sheet, type WhenUI } from "./ui";
+import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, openSettings, openWhen, openYear, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type Sheet, type WhenUI, type YearUI } from "./ui";
+import Year from "./year/Year.svelte";
 import { fsEl, setZen, toggleZen } from "./zen";
 
 ["pointerdown", "keydown", "touchstart"].forEach((ev) => addEventListener(ev, ensureAudio, { passive: true, capture: true }));
@@ -90,7 +92,7 @@ const view = ss.get("pl.taskView");
 if (view === "today" || view === "upcoming" || view === "later") S.taskView = view;
 mount(Progress, { target: $(".app"), props: { api: {
   S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
-  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap, openPlan, weekGoals,
+  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap, openPlan, weekGoals, openYear,
 } } });
 const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
   roomReact, reactWait, reactionsOn };
@@ -107,13 +109,17 @@ ui.room = mount(RoomDialog, { target: document.body, props: { api: roomApi } }) 
 watchReminders(openRoom);
 ui.keys = mount(Keys, { target: document.body, props: { api: { setOverlay, MOD, openPalette } } }) as Sheet;
 ui.recap = mount(Recap, { target: document.body, props: { api: {
-  S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, plural,
+  S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, plural, toast,
   overlayHidden: () => !document.querySelector(".overlay:not([hidden])"), syncing: () => Cloud.state === "connecting",
 } } }) as RecapUI;
 ui.plan = mount(PlanSheet, { target: document.body, props: { api: {
   S, viewTasks, setOverlay, fmtDur, fmtDate, plural, plans, savePlan, addLabel: (name: string) => Labels.add(name),
   overlayHidden: () => !document.querySelector(".overlay:not([hidden])"),
 } } }) as Sheet;
+ui.year = mount(Year, { target: document.body, props: { api: {
+  S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, fmtClock, plural, toast,
+  overlayHidden: () => !document.querySelector(".overlay:not([hidden])"), syncing: () => Cloud.state === "connecting",
+} } }) as YearUI;
 if (invite) {
   try { history.replaceState(null, "", location.pathname); } catch {}
   if (invite.length === 6 && invite !== RM.code) {
@@ -164,7 +170,8 @@ announce();
 measure();
 renderSyncTab();
 setTimeout(() => ui.recap!.maybeOpen(), 1500);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) ui.recap!.maybeOpen(); });
+setTimeout(() => ui.year!.maybeOpen(), 2500);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { ui.recap!.maybeOpen(); ui.year!.maybeOpen(); } });
 if (!DEMO) Store.connect().then(() => {
   renderPill();
   newDay();

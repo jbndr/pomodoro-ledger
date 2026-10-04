@@ -32,6 +32,8 @@ export interface Settings {
   weeklyPlan: boolean; plans: WeekPlan[];
   /** The week whose planning prompt was answered or waved off. */
   planSeen: string;
+  /** The year whose Year in focus was already offered in December. */
+  yearSeen?: number;
 }
 
 export const DEF: Settings = { focus: 25, short: 5, long: 15, longEvery: 4, autoBreak: true, autoFocus: false, sound: true, notify: false, goal: 8, ticking: false, tickVolume: 20, tickPace: 2, autoFloat: false, workdayEnd: "", sections: [], scapeMixes: [], weeklyRecap: true, recapSeen: "", weeklyPlan: true, plans: [], planSeen: "" };

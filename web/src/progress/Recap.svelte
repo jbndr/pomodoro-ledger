@@ -3,6 +3,7 @@
   import { addDays, dayKey } from "../lib/dates";
   import { firstWeek, recapDue, weekRecap, weekStart } from "../lib/insights";
   import { labelHue } from "../lib/tasks";
+  import { recapCard, shareImage } from "../year/card";
 
   const LABELS = 3, DONE = 3;
   const slots = (list, n) => [...list, ...Array(Math.max(0, n - list.length)).fill(null)].slice(0, n);
@@ -18,7 +19,7 @@
   const title = $derived(start === thisWeek() ? "This week so far" : start === addDays(thisWeek(), -7) ? "Last week" : "Week of " + api.fmtDate(start, { day: "numeric", month: "long" }));
   const range = $derived(api.fmtDate(start, { weekday: "short", day: "numeric", month: "short" }) + " – " + api.fmtDate(addDays(start, 6), { weekday: "short", day: "numeric", month: "short" }));
   const done = $derived(r ? r.finished.slice(0, r.finished.length > DONE ? DONE - 1 : DONE) : []);
-  let auto = $state(true);
+  let auto = $state(true), sharing = $state(false);
 
   /** Opens on a week, last week by default. */
   export function open(week) {
@@ -50,6 +51,18 @@
     open(week);
   }
 
+  async function share() {
+    if (!r || sharing) return;
+    sharing = true;
+    try {
+      const png = await recapCard(r, title, api);
+      if ((await shareImage(png, "focus-week-" + dayKey(start) + ".png", title + " in focus")) === "saved") api.toast("Saved the image to your downloads.");
+    } catch {
+      api.toast("Couldn't make the image. Try again.");
+    }
+    sharing = false;
+  }
+
   function toggleAuto(e) {
     api.S.settings.weeklyRecap = auto = e.currentTarget.checked;
     api.Store.saveSettings();
@@ -69,6 +82,7 @@
       <div class="recap-nav">
         <button class="icon-btn" type="button" aria-label="Previous week" disabled={first == null || start <= first} onclick={() => go(-1)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
         <button class="icon-btn" type="button" aria-label="Next week" disabled={start >= thisWeek()} onclick={() => go(1)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button class="icon-btn" type="button" aria-label="Share this week" title="Share" disabled={!r || !r.ms || sharing} onclick={share}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>
         <button class="icon-btn" type="button" aria-label="Close" onclick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
     </div>
