@@ -1,4 +1,5 @@
 import type { Label } from "./lib/labels";
+import type { SavedMix } from "./lib/mix";
 import type { Repeat } from "./lib/repeat";
 import type { Rollover } from "./lib/rollover";
 import type { Scape } from "./lib/soundscape";
@@ -20,14 +21,16 @@ export interface Settings {
   /** Off hides room reactions both ways; unset means on. */
   reactions?: boolean;
   rollover?: Rollover;
-  /** Unset means off. */
+  /** Unset means off. Superseded by scapeFocus and scapeBreak once either is set. */
   soundscape?: Scape | "off"; soundscapeVolume?: number; soundscapeBreaks?: boolean;
+  /** Mixes like "rain:70,fire:40"; empty is off. */
+  scapeFocus?: string; scapeBreak?: string; scapeMixes: SavedMix[];
   weeklyRecap: boolean;
   /** The week (its first day) whose visit already showed a recap. */
   recapSeen: string;
 }
 
-export const DEF: Settings = { focus: 25, short: 5, long: 15, longEvery: 4, autoBreak: true, autoFocus: false, sound: true, notify: false, goal: 8, ticking: false, tickVolume: 20, tickPace: 2, autoFloat: false, workdayEnd: "", sections: [], weeklyRecap: true, recapSeen: "" };
+export const DEF: Settings = { focus: 25, short: 5, long: 15, longEvery: 4, autoBreak: true, autoFocus: false, sound: true, notify: false, goal: 8, ticking: false, tickVolume: 20, tickPace: 2, autoFloat: false, workdayEnd: "", sections: [], scapeMixes: [], weeklyRecap: true, recapSeen: "" };
 
 export const clone = <V>(o: V): V => JSON.parse(JSON.stringify(o));
 

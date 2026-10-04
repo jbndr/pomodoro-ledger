@@ -1,3 +1,4 @@
+import type { Layer } from "./lib/mix";
 import { previewScape, syncScape } from "./soundscape";
 import { S, T } from "./state";
 
@@ -106,7 +107,7 @@ function tickingNode(seconds: number): Ticker | null {
 
 export function previewTicking() { tickPreview = tickingNode(6); }
 
-export function previewSoundscape() { ensureAudio(); try { if (AC) previewScape(AC); } catch {} }
+export function previewSoundscape(layers: Layer[]) { ensureAudio(); try { if (AC) previewScape(AC, layers); } catch {} }
 
 /** Keeps the ticking and the soundscape in step with the timer. */
 export function syncTicking() {

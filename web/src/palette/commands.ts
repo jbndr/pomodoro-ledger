@@ -5,7 +5,7 @@ import { plural } from "../format";
 import { ICON } from "../icons";
 import { quickAdd } from "../keys";
 import { nextTheme, normTheme, themeName } from "../lib/chrome";
-import { scapeOf, type Scape } from "../lib/soundscape";
+import { choose, describeMix, mixCode, parseMix, phaseMix, PRESETS, savedMixes, type SavedMix } from "../lib/mix";
 import { labelHue, projectOf } from "../lib/tasks";
 import { MODE_NAME, MODES } from "../lib/timer";
 import { phone, showPage } from "../pages";
@@ -49,7 +49,6 @@ const G = {
 };
 const dot = (name: string) => `<i class="label-dot" style="--h:${labelHue(name)}" aria-hidden="true"></i>`;
 
-const SCAPES: [Scape | "off", string][] = [["rain", "Rain"], ["ocean", "Ocean waves"], ["fire", "Fireplace"], ["brown", "Brown noise"], ["off", "Off"]];
 const VIEWS: [View, string, string][] = [["today", "Today", ICON.star], ["upcoming", "Upcoming", ICON.cal], ["later", "Later", G.later]];
 
 const smooth = (): ScrollBehavior => (calm() ? "auto" : "smooth");
@@ -76,11 +75,12 @@ function saveSound(note: string) {
   toast(note);
 }
 
-function setScape(v: Scape | "off", name: string) {
-  S.settings.soundscape = v;
+function setScape(m: SavedMix | null) {
   cancelScapePreview();
-  if (v !== "off" && !scapePlaying()) previewSoundscape();
-  saveSound(v === "off" ? "Soundscape off." : name + (scapePlaying() ? " is playing." : " plays while you focus. Here's a taste."));
+  if (!m) { choose(S.settings, "focus", ""); choose(S.settings, "break", ""); saveSound("Soundscape off."); return; }
+  choose(S.settings, "focus", m.mix);
+  if (!scapePlaying()) previewSoundscape(parseMix(m.mix));
+  saveSound(m.name + (scapePlaying() ? " is playing." : " plays while you focus. Here's a taste."));
 }
 
 addCommands(() => {
@@ -145,12 +145,12 @@ addCommands(() => {
     }
   }
 
-  const scape = scapeOf(S.settings.soundscape) || "off";
-  for (const [v, name] of SCAPES) {
-    if (v === "off" && scape === "off") continue;
-    out.push({ id: "sound.scape." + v, group: "Sound", title: v === "off" ? "Turn the soundscape off" : "Soundscape: " + name, words: "soundscape ambient noise background music",
-      on: scape === v, icon: v === "off" ? G.mute : G.wave, run: () => setScape(v, name) });
+  const focusMix = mixCode(phaseMix(S.settings, "focus")), anyMix = focusMix || phaseMix(S.settings, "break").length;
+  for (const m of [...PRESETS, ...savedMixes(S.settings.scapeMixes)]) {
+    out.push({ id: "sound.scape." + m.id, group: "Sound", title: "Soundscape: " + m.name, words: "soundscape mix ambient noise background music " + describeMix(parseMix(m.mix)),
+      on: focusMix === m.mix, icon: G.wave, run: () => setScape(m) });
   }
+  if (anyMix) out.push({ id: "sound.scape.off", group: "Sound", title: "Turn the soundscape off", words: "soundscape ambient noise background music mute", icon: G.mute, run: () => setScape(null) });
   out.push({ id: "sound.ticking", group: "Sound", title: S.settings.ticking ? "Turn ticking off" : "Turn ticking on", words: "tick clock metronome", icon: G.tick,
     run: () => { S.settings.ticking = !S.settings.ticking; cancelTickPreview(); saveSound(S.settings.ticking ? "Ticking on. It plays while you focus." : "Ticking off."); } });
   out.push({ id: "sound.bell", group: "Sound", title: S.settings.sound ? "Mute the end sounds" : "Turn the end sounds on", words: "bell chime alert sound mute", icon: S.settings.sound ? G.mute : G.bell,

@@ -880,11 +880,44 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .nested { margin: 0 0 12px; padding: 2px 0 2px 12px; border-left: 2px solid var(--line-2); }
 .settings-sheet .seg-ctl { background: var(--bg); box-shadow: inset 0 0 0 1px var(--line); }
 .settings-sheet .seg-ctl > label { height: 34px; font-size: 13px; }
-#tickingOptions input[type="range"], #scapeOptions input[type="range"] { height: 40px; padding: 0; border: 0; background: transparent; accent-color: var(--accent); cursor: pointer; }
+#tickingOptions input[type="range"], .mixer input[type="range"] { height: 40px; padding: 0; border: 0; background: transparent; accent-color: var(--accent); cursor: pointer; }
 .settings-sheet { display: flex; flex-direction: column; overflow: hidden; }
 .settings-sheet .set-panels { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 calc(-1 * var(--pad)) calc(-1 * var(--pad)); padding: 2px var(--pad) var(--pad); }
-.scape-pick { margin: 0 0 12px; }
-#scapeOptions .toggle { padding-top: 4px; }
+.mixer { display: grid; gap: 12px; padding-bottom: 10px; }
+.mixer .seg-ctl > label { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.mix-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line-2); transition: background .15s; }
+.mix-dot.on { background: var(--accent); }
+.mix-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.mix-chips label { position: relative; display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font: 550 12.5px var(--f-body); white-space: nowrap; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+.mix-chips label:has(:checked) { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.mix-chips label:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mix-chips input { position: absolute; inset: 0; margin: 0; opacity: 0; pointer-events: none; }
+@media (hover: hover) { .mix-chips label:not(:has(:checked)):hover { border-color: var(--line-2); color: var(--fg); } }
+.scape-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.scape-tile { display: grid; grid-template-columns: minmax(0, 1fr); padding: 0 10px; border-radius: 12px; border: 1px solid var(--line); transition: background .15s, border-color .15s, box-shadow .15s; }
+.scape-tile.on { background: var(--surface); border-color: color-mix(in oklab, var(--accent) 35%, var(--line)); box-shadow: 0 1px 2px rgba(0,0,0,.05); }
+.scape-tile:has(button:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.scape-tile button { display: grid; gap: 6px; padding: 10px 0 0; border: 0; background: none; color: var(--muted); text-align: left; }
+.scape-tile button:focus-visible { outline: none; }
+.scape-tile button:disabled { cursor: default; opacity: .55; }
+.tile-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.tile-top svg { width: 20px; height: 20px; color: var(--faint); transition: color .15s; }
+.tile-top em { font: 500 11.5px var(--f-mono); font-style: normal; color: var(--faint); }
+.tile-name { font-size: 13.5px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scape-tile.on .tile-top svg { color: var(--accent); }
+.scape-tile.on .tile-top em { color: var(--muted); }
+.scape-tile.on .tile-name { color: var(--fg); }
+.mixer .scape-tile input[type="range"] { width: 100%; min-width: 0; height: 30px; margin: 0; }
+.scape-tile input:disabled { opacity: .3; cursor: default; }
+@media (hover: hover) { .scape-tile:not(.on):has(button:not(:disabled):hover) { border-color: var(--line-2); } .scape-tile:not(.on) button:not(:disabled):hover .tile-name { color: var(--fg); } }
+.mix-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; font-size: 12.5px; color: var(--faint); }
+.mix-foot .acts { display: flex; gap: 2px; }
+.mix-foot .btn.quiet { border-color: transparent; background: none; color: var(--muted); padding-inline: 10px; }
+@media (hover: hover) { .mix-foot .btn.quiet:hover { background: var(--surface); color: var(--fg); } }
+.mix-foot.naming { gap: 6px; animation: mix-name .18s cubic-bezier(.2, .8, .2, 1); }
+.mix-foot.naming input { flex: 1; min-width: 0; height: 32px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface); color: var(--fg); font-size: 13.5px; transition: border-color .15s, box-shadow .15s; }
+.mix-foot.naming input:focus-visible { outline: none; border-color: color-mix(in oklab, var(--accent) 55%, var(--line-2)); box-shadow: 0 0 0 3px var(--accent-soft); }
+@keyframes mix-name { from { opacity: 0; translate: 0 4px; } }
 .seg { display: flex; padding: 4px; gap: 2px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
 .seg button { flex: 1; border: 0; background: transparent; padding: 7px 10px; border-radius: 999px; font-size: 13px; font-weight: 550; color: var(--muted); white-space: nowrap; transition: background .2s, color .2s; }
 @media (hover: hover) { .seg button:hover { color: var(--fg); } }
@@ -995,6 +1028,10 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   .sheet-foot > .btn { flex: 1; }
   .field input { height: 48px; }
   .settings-sheet .seg-ctl > label { height: 42px; font-size: 14px; }
+  .scape-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mix-chips label { height: 36px; padding-inline: 14px; font-size: 13px; }
+  .mix-foot.naming input { height: 44px; font-size: 16px; }
+  .mixer .scape-tile input[type="range"] { height: 36px; }
   .toggle { min-height: 52px; }
   .pick-menu li { min-height: 44px; }
   .chips button { min-height: 36px; }

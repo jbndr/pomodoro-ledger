@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Biquad, makeScape, seeded } from "./scapeSynth";
+import { Biquad, makeScape, Mixer, seeded } from "./scapeSynth";
 import { SCAPES, type Scape } from "./soundscape";
 
 const SR = 48000;
@@ -57,8 +57,10 @@ function swells(env: number[], rise: number) {
   return n;
 }
 
+const out6 = Object.fromEntries(SCAPES.map((k) => [k, render(k, 6)])) as Record<Scape, { L: Float32Array; R: Float32Array }>;
+
 describe("makeScape", () => {
-  const out = Object.fromEntries(SCAPES.map((k) => [k, render(k, 6)])) as Record<Scape, { L: Float32Array; R: Float32Array }>;
+  const out = out6;
 
   it.each(SCAPES)("%s stays finite, within ±1 and at a gentle level", (k) => {
     const { L, R } = out[k];
@@ -139,5 +141,62 @@ describe("ocean and fire", () => {
     const { L } = long.fire;
     expect(db(rms(band(L, 60, 700))) - db(rms(band(L, 1000, 3000)))).toBeGreaterThan(8);
     expect(burstiness(band(L, 3000, 7000), 5)).toBeGreaterThan(burstiness(band(long.rain.L, 3000, 7000), 5) + 10);
+  });
+});
+
+describe("Mixer", () => {
+  const steady = () => (L: Float32Array, R: Float32Array) => { L.fill(0.5); R.fill(-0.5); };
+  const run = (m: Mixer, secs: number) => {
+    const n = Math.round(secs * SR / 128) * 128, L = new Float32Array(n), R = new Float32Array(n);
+    for (let i = 0; i < n; i += 128) m.render(L.subarray(i, i + 128), R.subarray(i, i + 128));
+    return { L, R };
+  };
+
+  it("glides a layer in and out in a straight line, without steps", () => {
+    const m = new Mixer(SR, seeded(1), steady);
+    m.set({ rain: 1 }, 0.5);
+    const up = run(m, 1).L;
+    expect(up[0]).toBeCloseTo(0.5 / (SR / 2), 6);
+    expect(up[SR / 4]).toBeCloseTo(0.25, 3);
+    expect(up[SR - 1]).toBe(0.5);
+    m.set({}, 0.5);
+    const down = run(m, 1).L;
+    let step = 0;
+    for (let i = 1; i < down.length; i++) step = Math.max(step, Math.abs(down[i] - down[i - 1]));
+    expect(step).toBeLessThan(0.5 / (SR / 2) + 1e-6);
+    expect(down[SR - 1]).toBe(0);
+    expect(m.playing).toEqual([]);
+  });
+
+  it("only runs the layers that sound", () => {
+    const m = new Mixer(SR, seeded(1), steady);
+    m.set({ rain: 0.7, fire: 0.4, brown: 0 }, 0);
+    run(m, 0.01);
+    expect(m.playing.sort()).toEqual(["fire", "rain"]);
+  });
+
+  it("mixes real layers without clipping, even all loud at once", () => {
+    const m = new Mixer(SR, seeded(5));
+    m.set({ rain: 1, ocean: 1, fire: 1 }, 0);
+    const { L, R } = run(m, 6);
+    let peak = 0;
+    for (let i = 0; i < L.length; i++) peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
+    expect(L.every(Number.isFinite)).toBe(true);
+    expect(peak).toBeLessThan(1);
+    expect(db(rms(L))).toBeGreaterThan(db(rms(out6.rain.L)));
+  });
+
+  it("adds and drops layers without clicks", () => {
+    const m = new Mixer(SR, seeded(9));
+    m.set({ rain: 0.7 }, 0);
+    const before = run(m, 2).L;
+    m.set({ rain: 0.7, fire: 0.4 }, 0.8);
+    const add = run(m, 2).L;
+    m.set({ fire: 0.4 }, 0.8);
+    const drop = run(m, 2).L;
+    const jump = (x: Float32Array) => { let j = 0; for (let i = 1; i < x.length; i++) j = Math.max(j, Math.abs(x[i] - x[i - 1])); return j; };
+    const base = jump(before) + jump(render("fire", 2, 9).L) * 0.4;
+    expect(jump(add)).toBeLessThan(base);
+    expect(jump(drop)).toBeLessThan(base);
   });
 });

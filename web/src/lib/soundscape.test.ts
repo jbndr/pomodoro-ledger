@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DUCK, FADE_IN, FADE_OUT, previewRamp, QUICK, scapeOf, scapePlan, scapeRamp, scapeVolume } from "./soundscape";
+import { DUCK, FADE_IN, FADE_OUT, PHASE_FADE, previewRamp, QUICK, scapeOf, scapeRamp, scapeVolume, swapRamp } from "./soundscape";
 
 describe("scapeOf", () => {
   it("knows the four soundscapes", () => {
@@ -25,38 +25,6 @@ describe("scapeVolume", () => {
   });
 });
 
-describe("scapePlan", () => {
-  const now = 1_000_000, endsAt = now + 25 * 60_000;
-  const focus = { mode: "focus" as const, status: "running" as const, endsAt };
-
-  it("plays during a running focus round and fades out at its end", () => {
-    expect(scapePlan({ soundscape: "rain", soundscapeVolume: 50 }, focus, now)).toEqual({ kind: "rain", gain: 0.5, fadeAt: endsAt, duckAt: 0 });
-  });
-  it("uses the default volume when unset", () => {
-    expect(scapePlan({ soundscape: "fire" }, focus, now)?.gain).toBe(0.4);
-  });
-  it("plays ocean for settings saved with café", () => {
-    expect(scapePlan({ soundscape: "cafe", soundscapeVolume: 30 }, focus, now)).toMatchObject({ kind: "ocean", gain: 0.3 });
-  });
-  it("stays quiet when off, muted, paused, idle or past the end", () => {
-    expect(scapePlan({}, focus, now)).toBeNull();
-    expect(scapePlan({ soundscape: "off" }, focus, now)).toBeNull();
-    expect(scapePlan({ soundscape: "rain", soundscapeVolume: 0 }, focus, now)).toBeNull();
-    expect(scapePlan({ soundscape: "rain" }, { ...focus, status: "paused" }, now)).toBeNull();
-    expect(scapePlan({ soundscape: "rain" }, { ...focus, status: "idle" }, now)).toBeNull();
-    expect(scapePlan({ soundscape: "rain" }, focus, endsAt)).toBeNull();
-  });
-  it("stays quiet during breaks unless asked", () => {
-    expect(scapePlan({ soundscape: "brown" }, { ...focus, mode: "short" }, now)).toBeNull();
-    expect(scapePlan({ soundscape: "brown" }, { ...focus, mode: "long" }, now)).toBeNull();
-    expect(scapePlan({ soundscape: "brown", soundscapeBreaks: true }, { ...focus, mode: "short" }, now)?.kind).toBe("brown");
-  });
-  it("plays on across phases when breaks are included, dipping under the bell if sounds are on", () => {
-    expect(scapePlan({ soundscape: "brown", soundscapeBreaks: true, sound: true }, focus, now)).toMatchObject({ fadeAt: 0, duckAt: endsAt });
-    expect(scapePlan({ soundscape: "brown", soundscapeBreaks: true, sound: false }, focus, now)).toMatchObject({ fadeAt: 0, duckAt: 0 });
-  });
-});
-
 describe("scapeRamp", () => {
   it("fades in over the full time from silence", () => {
     expect(scapeRamp(0, 0.5)).toEqual([[FADE_IN, 0.5]]);
@@ -72,15 +40,16 @@ describe("scapeRamp", () => {
     expect(scapeRamp(0.5, 0.8, { quick: true })).toEqual([[QUICK, 0.8]]);
     expect(scapeRamp(0.5, 0.2, { quick: true })).toEqual([[QUICK, 0.2]]);
   });
-  it("holds until the phase ends, then fades out", () => {
-    expect(scapeRamp(0, 0.5, { fadeAt: 60 })).toEqual([[FADE_IN, 0.5], [60, 0.5], [60 + FADE_OUT, 0]]);
+  it("holds until the phase ends, then fades out gently", () => {
+    expect(scapeRamp(0, 0.5, { fadeAt: 60 })).toEqual([[FADE_IN, 0.5], [60, 0.5], [60 + PHASE_FADE, 0]]);
+    expect(PHASE_FADE).toBeGreaterThan(FADE_OUT);
   });
   it("cuts the fade in short when the phase ends first", () => {
     const r = scapeRamp(0, 0.6, { fadeAt: 1 });
     expect(r[0][0]).toBe(1);
     expect(r[0][1]).toBeCloseTo(0.2);
-    expect(r[1]).toEqual([1 + FADE_OUT, 0]);
-    expect(scapeRamp(0, 0.6, { fadeAt: -5 })[1]).toEqual([FADE_OUT, 0]);
+    expect(r[1]).toEqual([1 + PHASE_FADE, 0]);
+    expect(scapeRamp(0, 0.6, { fadeAt: -5 })[1]).toEqual([PHASE_FADE, 0]);
   });
   it("dips under the bell and comes back", () => {
     const r = scapeRamp(0.5, 0.5, { duckAt: 30 });
@@ -95,10 +64,40 @@ describe("scapeRamp", () => {
   });
 });
 
+describe("swapRamp", () => {
+  const forward = (r: [number, number][]) => r.forEach(([t], i) => { expect(t).toBeGreaterThan(i ? r[i - 1][0] : 0); });
+
+  it("fades out at the phase-end pace, swaps in silence, then fades the next mix in", () => {
+    const { at, ramp } = swapRamp(0.5, 0.5, 0.3);
+    expect(at).toBe(PHASE_FADE);
+    expect(ramp).toEqual([[PHASE_FADE, 0], [PHASE_FADE + FADE_IN, 0.3]]);
+  });
+  it("picks up a phase-end fade already under way", () => {
+    expect(swapRamp(0.25, 0.5, 0.3).at).toBe(PHASE_FADE / 2);
+    expect(swapRamp(0.2, 0.5, 0.3, {}, FADE_OUT).at).toBeCloseTo(FADE_OUT * 0.4);
+  });
+  it("swaps straight away from silence", () => {
+    const { at, ramp } = swapRamp(0, 0.5, 0.4);
+    expect(at).toBe(0);
+    expect(ramp).toEqual([[FADE_IN, 0.4]]);
+  });
+  it("keeps the next phase's own fade and duck in place", () => {
+    const fade = swapRamp(0.5, 0.5, 0.4, { fadeAt: 300 });
+    expect(fade.ramp.slice(-2)).toEqual([[300, 0.4], [300 + PHASE_FADE, 0]]);
+    const duck = swapRamp(0.5, 0.5, 0.4, { duckAt: 300 });
+    expect(duck.ramp[2]).toEqual([300, 0.4]);
+    expect(Math.min(...duck.ramp.slice(1).map(([, g]) => g))).toBeCloseTo(0.4 * DUCK);
+    forward(fade.ramp); forward(duck.ramp);
+  });
+});
+
 describe("previewRamp", () => {
   it("rises, holds and ends silent", () => {
     const r = previewRamp(0.3);
-    expect(r[0][1]).toBe(0.3);
+    expect(r[0]).toEqual([1, 0.3]);
     expect(r[r.length - 1][1]).toBe(0);
+  });
+  it("glides quickly when a preview is already playing", () => {
+    expect(previewRamp(0.3, 0.2)[0]).toEqual([QUICK, 0.3]);
   });
 });

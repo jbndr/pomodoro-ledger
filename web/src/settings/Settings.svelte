@@ -4,18 +4,16 @@
   import { extensionVersion } from "../extension";
   import { rolloverMode } from "../lib/rollover";
   import { rovingIndex, tickPace, tickVolume, wholeIn, workdayEnd } from "../lib/settings";
-  import { scapeOf, scapeVolume } from "../lib/soundscape";
+  import Mixer from "./Mixer.svelte";
   import SyncPanel from "./SyncPanel.svelte";
 
   let { api } = $props();
 
   const NUM = { sFocus: "focus", sShort: "short", sLong: "long", sEvery: "longEvery", sGoal: "goal" };
-  const TOGGLE = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat", sRecap: "weeklyRecap", sScapeBreaks: "soundscapeBreaks" };
+  const TOGGLE = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat", sRecap: "weeklyRecap" };
   const TABS = [["timer", "Timer"], ["auto", "Automation"], ["alerts", "Sound & alerts"], ["sync", "Data & sync"]];
   const ROLLOVER = [["always", "Move to Today"], ["ask", "Ask"], ["never", "Don't move"]];
   const PACE = [["1", "1 s", "Every second"], ["2", "2 s", "Every 2 seconds"], ["4", "4 s", "Every 4 seconds"]];
-  const SCAPE = [["off", "Off", "Off"], ["rain", "Rain", "Rain"], ["ocean", "Ocean", "Ocean waves"], ["fire", "Fire", "Fireplace"], ["brown", "Brown", "Brown noise"]];
-  const SCAPE_IDS = ["sScape", "sScapeVolume", "sScapeBreaks"];
   // A field being typed into keeps its text when settings arrive from another device.
   const HELD = { ...NUM, sDayEnd: "workdayEnd" };
 
@@ -25,8 +23,6 @@
     for (const k of Object.values(TOGGLE)) out[k] = !!s[k];
     out.reactions = s.reactions !== false;
     out.rollover = rolloverMode(s.rollover);
-    out.soundscape = scapeOf(s.soundscape) || "off";
-    out.soundscapeVolume = scapeVolume(s.soundscapeVolume);
     return out;
   };
   const saved = () => { const t = api.ls.get("pl.setTab"); return TABS.some(([name]) => name === t) ? t : "timer"; };
@@ -34,13 +30,14 @@
   let f = $state(read());
   let tab = $state("timer");
   let note = $state("Changes save as you type.");
-  let syncVersion = $state(0);
+  let syncVersion = $state(0), mixVersion = $state(0);
   let extOn = $state(false);
   show(saved());
 
   export function fill() {
     const held = HELD[document.activeElement?.id];
     for (const [k, v] of Object.entries(read())) if (k !== held) f[k] = v;
+    mixVersion++;
     flushSync();
   }
 
@@ -90,10 +87,7 @@
     else if (id === "sDayEnd") s.workdayEnd = workdayEnd(el.value);
     else if (id === "sReactions") { s.reactions = el.checked; api.reactionsChanged(); }
     else if (id === "sRollover") s.rollover = rolloverMode(el.value);
-    else if (id === "sScape") s.soundscape = scapeOf(el.value) || "off";
-    else if (id === "sScapeVolume") s.soundscapeVolume = scapeVolume(el.value);
     if (["sTicking", "sTickVolume", "sTickPace"].includes(id)) { api.cancelTickPreview(); fillTicking(); api.syncTicking(); }
-    if (SCAPE_IDS.includes(id)) { api.cancelScapePreview(); api.syncTicking(); }
     note = "Saved.";
     api.Store.saveSettings();
     if (api.T.setIndex > s.longEvery) api.T.setIndex = 0;
@@ -121,13 +115,6 @@
     if (!api.S.settings.ticking) { api.toast("Turn ticking on first."); return; }
     if (api.T.status === "running" && api.T.mode === "focus") { api.toast("The ticking is already playing with your timer."); return; }
     try { api.previewTicking(); } catch {}
-  }
-
-  function testScape() {
-    api.cancelScapePreview();
-    if (!scapeOf(api.S.settings.soundscape)) { api.toast("Pick a soundscape first."); return; }
-    if (api.scapePlaying()) { api.toast("The soundscape is already playing with your timer."); return; }
-    api.previewSoundscape();
   }
 </script>
 
@@ -212,14 +199,7 @@
                 </div>
               </div>
             </div>
-            <div class="toggle"><span id="sScapeLabel">Soundscape<small>Rain, waves, fire or brown noise during focus</small></span><span class="acts"><button class="btn small" type="button" id="testScape" onclick={testScape}>Preview</button></span></div>
-            <div class="seg-ctl scape-pick" id="sScape" role="radiogroup" aria-labelledby="sScapeLabel">
-              {#each SCAPE as [v, name, full] (v)}<label><input type="radio" name="sScape" value={v} aria-label={full} bind:group={f.soundscape}>{name}</label>{/each}
-            </div>
-            <div class="nested" id="scapeOptions" hidden={f.soundscape === "off"}>
-              <label class="field"><span class="field-head">Volume<span id="scapeVolumeValue">{f.soundscapeVolume}%</span></span><input type="range" id="sScapeVolume" min="0" max="100" step="1" aria-label="Soundscape volume" bind:value={f.soundscapeVolume}></label>
-              <label class="toggle"><span>Also during breaks</span><input type="checkbox" id="sScapeBreaks" bind:checked={f.soundscapeBreaks}></label>
-            </div>
+            <Mixer {api} version={mixVersion} onsave={() => (note = "Saved.")} />
           </div>
           <p class="hint">Sounds play once you've clicked somewhere on the page.</p>
         </div>
