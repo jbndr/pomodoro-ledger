@@ -1,6 +1,8 @@
 <script>
   import { tick } from "svelte";
-  import { backOut } from "svelte/easing";
+  import { flip } from "svelte/animate";
+  import { backOut, cubicOut } from "svelte/easing";
+  import { calm } from "../dom";
   import { bubbleNames, mateClock, mateProgress, MODE_NAME, othersOf, REACTIONS } from "../lib/room";
   import { room, roomClock } from "../lib/redraw.svelte";
   import { copyInvite } from "./invite";
@@ -18,9 +20,34 @@
   const step = $derived.by(() => { roomClock.version; room.version; return api.inStep(); });
 
   let tray = $state(false), cool = $state(false), trayBtn = $state(), trayEl = $state();
-  const still = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const rise = () => still() ? { duration: 200, css: (t) => `opacity: ${t}` } : { duration: 320, easing: backOut, css: (t, u) => `opacity: ${Math.min(1, t * 2)}; transform: translateY(${u * 12}px) scale(${0.7 + 0.3 * t})` };
-  const drift = () => still() ? { duration: 300, css: (t) => `opacity: ${t}` } : { duration: 600, css: (t, u) => `opacity: ${t}; transform: translateY(${-u * 16}px)` };
+  const rise = () => calm() ? { duration: 200, css: (t) => `opacity: ${t}` } : { duration: 320, easing: backOut, css: (t, u) => `opacity: ${Math.min(1, t * 2)}; transform: translateY(${u * 12}px) scale(${0.7 + 0.3 * t})` };
+  const drift = () => calm() ? { duration: 300, css: (t) => `opacity: ${t}` } : { duration: 600, css: (t, u) => `opacity: ${t}; transform: translateY(${-u * 16}px)` };
+
+  const move = () => ({ duration: calm() ? 0 : 320, easing: cubicOut });
+  const arrive = () => calm() ? { duration: 160, css: (t) => `opacity: ${t}` } : { duration: 260, easing: cubicOut, css: (t) => `opacity: ${t}; scale: ${0.85 + 0.15 * t}` };
+  const leave = () => ({ duration: calm() ? 120 : 180, easing: cubicOut, css: (t) => `opacity: ${t}` });
+  const settle = () => calm() ? { duration: 120, css: (t) => `opacity: ${t}` } : { duration: 400, css: (t) => `opacity: ${Math.max(0, t - 0.45) / 0.55}` };
+
+  let matesEl = $state(), before = new Map();
+  const shape = $derived(v.others.map((m) => m.id + (m.s ? m.s.status + m.s.mode : "")).join());
+  const states = () => [...matesEl.querySelectorAll(".mate .st")].map((el) => [el.closest(".mate").dataset.member, el]);
+
+  $effect.pre(() => {
+    shape;
+    before = new Map(matesEl ? states().map(([id, el]) => [id, el.offsetWidth]) : []);
+  });
+
+  $effect(() => {
+    shape;
+    if (!matesEl || calm()) return;
+    for (const [id, el] of states()) {
+      const from = before.get(id);
+      if (from == null) continue;
+      el.getAnimations().forEach((a) => a.cancel());
+      const to = el.offsetWidth;
+      if (Math.abs(to - from) >= 1) el.animate([{ width: from + "px", opacity: 0.4 }, { width: to + "px", opacity: 1 }], { duration: 260, easing: "cubic-bezier(.33, 1, .68, 1)" });
+    }
+  });
 
   async function openTray() {
     tray = !tray;
@@ -62,14 +89,14 @@
   {:else}
     <button class="room-code" type="button" id="stripCode" title="Copy invite link" onclick={() => copyInvite(api.RM.code)}><small>Room</small>{v.code}</button>
   {/if}
-  <ul class="mates" id="mates">
+  <ul class="mates" id="mates" bind:this={matesEl}>
     {#if v.on && !v.live}<li class="hint">Connecting…</li>
-    {:else if v.on && !v.others.length}<li class="hint">{v.pub ? "Nobody else is here yet. Others can drop in any time." : "Nobody else is here yet. Share the code or the invite link."}</li>
     {:else if v.on}
       {#each v.others as m (m.id)}
         {@const ring = mateProgress(m.s, now)}
-        <li class="mate" data-member={m.id} data-mode={m.s ? m.s.mode : ""} data-status={m.s ? m.s.status : "idle"} style:--progress={ring.deg} title={ring.title}><i aria-hidden="true"></i><b>{m.name}</b>{#if !m.s || m.s.status === "idle"}<em>Ready to focus</em>{:else}<span data-end={m.s.status === "running" ? m.s.end : undefined}>{mateClock(m.s, now)}</span><em>{MODE_NAME[m.s.mode]}{m.s.status === "paused" ? " · paused" : ""}</em>{/if}{#if v.owner && !m.owner}<button class="kick" type="button" data-kick={m.id} aria-label="Remove {m.name} from room" title="Remove from room" onclick={() => { if (api.RM.owner) api.roomSend({ t: "kick", id: m.id }); }}>×</button>{/if}</li>
+        <li class="mate" data-member={m.id} data-mode={m.s ? m.s.mode : ""} data-status={m.s ? m.s.status : "idle"} style:--progress={ring.deg} title={ring.title} animate:flip={move()} in:arrive out:leave><i aria-hidden="true"></i><b>{m.name}</b><span class="st">{#if !m.s || m.s.status === "idle"}<em>Ready to focus</em>{:else}<span data-end={m.s.status === "running" ? m.s.end : undefined}>{mateClock(m.s, now)}</span><em>{MODE_NAME[m.s.mode]}{m.s.status === "paused" ? " · paused" : ""}</em>{/if}</span>{#if v.owner && !m.owner}<button class="kick" type="button" data-kick={m.id} aria-label="Remove {m.name} from room" title="Remove from room" onclick={() => { if (api.RM.owner) api.roomSend({ t: "kick", id: m.id }); }}>×</button>{/if}</li>
       {/each}
+      {#if !v.others.length}<li class="hint" in:settle>{v.pub ? "Nobody else is here yet. Others can drop in any time." : "Nobody else is here yet. Share the code or the invite link."}</li>{/if}
     {/if}
   </ul>
   <div class="room-actions">
