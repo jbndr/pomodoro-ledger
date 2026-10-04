@@ -1,4 +1,5 @@
 import { toast } from "./chrome/notice.svelte";
+import { composer } from "./composer/state.svelte";
 import { $, taskRow, taskRows } from "./dom";
 import { phone, showPage } from "./pages";
 import { S } from "./state";
@@ -55,8 +56,8 @@ export function onKey(e: KeyboardEvent) {
   if (e.key === "?" && !e.metaKey && !e.ctrlKey) { e.preventDefault(); openKeys(); return; }
   if ((e.key === "n" || e.key === "N") && !e.metaKey && !e.ctrlKey && !e.altKey && !zen()) {
     e.preventDefault();
-    if (phone()) showPage("tasks");
-    $("#newTitle").focus();
+    if (phone()) { showPage("tasks"); $("#newTitle").focus(); }
+    else composer.quick = true;
     return;
   }
   if (e.code === "Space" && tag !== "button") { e.preventDefault(); toggle(); }

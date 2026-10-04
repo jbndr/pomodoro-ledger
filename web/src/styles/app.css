@@ -438,7 +438,7 @@ td.barcell { width: 38%; min-width: 120px; }
 .task.open { margin: 10px -8px; padding: 10px 14px 14px 6px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 16px; box-shadow: 0 18px 44px -26px rgba(0,0,0,.4); align-items: start; }
 .task.open .task-main, .task.open .task-side, .task.open .grip { display: none; }
 .task.open .check { margin-top: 7px; }
-.task-card { grid-column: 3 / -1; grid-row: 1; min-width: 0; display: grid; gap: 6px; animation: card-in .2s cubic-bezier(.2, .8, .2, 1); }
+.task-card { grid-column: 3 / -1; grid-row: 1; min-width: 0; contain: inline-size; display: grid; gap: 6px; animation: card-in .2s cubic-bezier(.2, .8, .2, 1); }
 @keyframes card-in { from { opacity: 0; transform: translateY(-3px); } }
 .card-title { width: 100%; border: 0; background: transparent; padding: 4px 0; font: 600 16.5px var(--f-body); color: var(--fg); }
 .card-notes { width: 100%; min-height: 1.5em; resize: none; border: 0; background: transparent; padding: 0; font: 14px/1.5 var(--f-body); color: var(--muted); field-sizing: content; }
@@ -448,6 +448,11 @@ td.barcell { width: 38%; min-width: 120px; }
 .card-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--line); }
 .card-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: 550 12.5px var(--f-body); white-space: nowrap; }
 .card-btn svg { width: 15px; height: 15px; flex: none; }
+.card-btn[data-act="label"], #newLabel { min-width: 0; max-width: 13em; flex: 0 1 auto; }
+.card-btn[data-act="label"] span, #newLabel span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.card-actions { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; flex: none; }
+.card-btn[data-act="label"] { min-width: 4.5em; }
+@media (min-width: 700px) { .task .card-bar, .add.quick .card-bar { flex-wrap: nowrap; min-width: 0; } .add.quick .card-bar .btn { flex: none; } }
 .card-btn .ic-today { color: #E8A800; }
 .card-btn.set { color: var(--fg); }
 .card-btn .label-dot { width: 8px; height: 8px; }
@@ -496,6 +501,15 @@ td.barcell { width: 38%; min-width: 120px; }
 .card-est output { font: 12.5px var(--f-body); color: var(--muted); white-space: nowrap; }
 @media (hover: hover) { .est-pick:hover button i { border-color: var(--line-2); background: transparent; } .est-pick:hover button:hover i, .est-pick button:has(~ button:hover) i { border-color: var(--tomato); background: var(--tomato); } }
 .est-pick button[aria-checked="true"] i { animation: check-pop .28s cubic-bezier(.2, .8, .2, 1.4); }
+.add-scrim { position: fixed; inset: 0; z-index: 42; background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: when-fade .18s ease-out; }
+.add.quick { position: fixed; z-index: 43; left: 50%; top: max(12px, min(14vh, 120px)); width: min(560px, calc(100vw - 24px)); margin: 0; translate: -50% 0; padding: 14px 16px 12px 14px; border-radius: 20px; border-color: var(--line); background: var(--surface); box-shadow: 0 30px 80px -30px rgba(0,0,0,.5), var(--shadow); animation: when-in .22s cubic-bezier(.2, .8, .2, 1); }
+.add.quick #newTitle { font-size: 17px; font-weight: 550; }
+.add.quick .add-check { margin-top: 8px; }
+.key-hint { position: absolute; z-index: 1; top: -9px; right: -6px; padding: 1px 5px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface); color: var(--fg); font: 650 10.5px var(--f-body); box-shadow: 0 2px 6px -2px rgba(0,0,0,.25); opacity: 0; scale: .85; transition: opacity .12s, scale .12s; pointer-events: none; }
+.add.hints .key-hint { opacity: 1; scale: 1; }
+#newWhen, #newLabel, #newEst, .new-task-options { position: relative; }
+.notes-hint { top: 2px; right: auto; left: -30px; }
+.est-pick button:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
 .add-sec { margin-left: auto; height: 28px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: 600 12.5px var(--f-body); letter-spacing: 0; }
 @media (hover: hover) { .add-sec:hover { background: var(--surface-2); color: var(--fg); } }
 .tasks .group.section { min-height: 57px; padding: 22px 10px 7px 8px; gap: 10px; align-items: center; flex-wrap: nowrap; border-bottom: 1px solid var(--line); text-transform: none; letter-spacing: 0; }

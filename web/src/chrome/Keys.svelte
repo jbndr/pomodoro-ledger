@@ -27,12 +27,19 @@
         <dt><kbd>⇧</kbd> <kbd>F</kbd></dt><dd>Full screen</dd>
       </dl></section>
       <section><h3>Tasks</h3><dl>
-        <dt><kbd>N</kbd></dt><dd>New task</dd>
+        <dt><kbd>N</kbd></dt><dd>Quick add a task</dd>
         <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move between tasks (or <kbd>J</kbd> <kbd>K</kbd>)</dd>
         <dt><kbd>↵</kbd></dt><dd>Open the task</dd>
         <dt><kbd>Esc</kbd></dt><dd>Close it</dd>
         <dt><kbd>⌥</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move the task up or down</dd>
         <dt><kbd>⌥</kbd> <kbd>⇧</kbd> <kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move it to the previous or next section (a day in Upcoming)</dd>
+      </dl></section>
+      <section><h3>Quick add</h3><dl>
+        <dt><kbd>↓</kbd></dt><dd>Add a note (or type <kbd>//</kbd> in the title)</dd>
+        <dt><kbd>⌥</kbd> <kbd>D</kbd></dt><dd>Pick when (or type fri, next week)</dd>
+        <dt><kbd>⌥</kbd> <kbd>L</kbd></dt><dd>Pick a label (or type #name)</dd>
+        <dt><kbd>⌥</kbd> <kbd>1</kbd>–<kbd>9</kbd></dt><dd>Set cycles (or type 2c)</dd>
+        <dt><kbd>↵</kbd></dt><dd>Add it and start the next one</dd>
       </dl></section>
       <section><h3>When</h3><dl>
         <dt><kbd>T</kbd></dt><dd>Today</dd>

@@ -56,7 +56,7 @@
   </div>
   <div class="card-bar">
     <button class="card-btn" class:set={card.bucket !== "later"} type="button" data-act="sched" data-sched aria-haspopup="dialog" title="When? (D)" onclick={(e) => api.sched(e.currentTarget, row.id)}>{@html card.bucket === "today" ? api.ICON.star : api.ICON.cal}{card.whenText}</button>
-    <button class="card-btn" class:set={!!row.project} type="button" data-act="label" aria-haspopup="listbox" aria-expanded="false" aria-label={card.labelName} onclick={() => api.label(row.id)}>{#if row.project}<i class="label-dot" style:--h={row.hue}></i>{row.project}{:else}{@html api.ICON.tag}Label{/if}</button>
+    <button class="card-btn" class:set={!!row.project} type="button" data-act="label" title={row.project || null} aria-haspopup="listbox" aria-expanded="false" aria-label={card.labelName} onclick={() => api.label(row.id)}>{#if row.project}<i class="label-dot" style:--h={row.hue}></i><span>{row.project}</span>{:else}{@html api.ICON.tag}<span>Label</span>{/if}</button>
     <span class="card-est">
       <span class="est-pick" role="radiogroup" aria-label="Estimated cycles">
         {#each { length: card.circles } as _, i (i)}
@@ -66,8 +66,10 @@
       <output>{card.estText}</output>
     </span>
     <span class="spacer"></span>
-    <button class="icon-btn" class:danger={card.del} type="button" data-act="del" aria-label={card.del ? null : "Delete task"} title={card.del ? null : "Delete"} onclick={() => api.del(row.id)}>{#if card.del}Delete?{:else}{@html api.ICON.trash}{/if}</button>
-    <button class="btn small solid" type="button" data-act="focus" onclick={() => api.focus(row.id)}>{@html api.ICON.play}Focus</button>
+    <span class="card-actions">
+      <button class="icon-btn" class:danger={card.del} type="button" data-act="del" aria-label={card.del ? null : "Delete task"} title={card.del ? null : "Delete"} onclick={() => api.del(row.id)}>{#if card.del}Delete?{:else}{@html api.ICON.trash}{/if}</button>
+      <button class="btn small solid" type="button" data-act="focus" onclick={() => api.focus(row.id)}>{@html api.ICON.play}Focus</button>
+    </span>
   </div>
   <div class="card-stats">{card.stats}{#if row.today}<span class="task-start" class:late={!!start?.late} title={start ? start.hint : ""}>{start ? " · " + start.text.replace(/^Starts/, "starts") : ""}</span>{/if}{card.added}</div>
 </div>
