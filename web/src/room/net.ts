@@ -1,0 +1,112 @@
+import { flushSync } from "svelte";
+import { toast } from "../chrome/notice.svelte";
+import { setOverlay } from "../layout";
+import { room, roomClock } from "../lib/redraw.svelte";
+import type { Member, Mode, Proposal } from "../lib/room";
+import type { Status } from "../lib/timer";
+import { renderTimer } from "../render";
+import { cancelEnd, playSound } from "../sound";
+import { ls, ss, T } from "../state";
+import { notify, remNow, saveTimer, setMode, start, totalNow, wakeOff } from "../timer/engine";
+
+type Shared = { mode: Mode; status: Status; remaining: number; total: number };
+type RoomMsg =
+  | { t: "note"; msg: string }
+  | { t: "sync"; s: Shared; by: string; name: string }
+  | { t: "room"; now: number; you: string; owner?: boolean; members: (Omit<Member, "owner"> & { owner?: boolean })[]; prop: Proposal | null };
+
+export const RM = {
+  owner: false, ws: null as WebSocket | null, code: ss.get("pl.room"), id: ss.get("pl.rid"), name: ls.get("pl.name", ""),
+  you: null as string | null, members: [] as Member[], prop: null as Proposal | null, live: false, tries: 0,
+  timer: undefined as ReturnType<typeof setTimeout> | undefined, ping: undefined as ReturnType<typeof setInterval> | undefined, sent: "",
+};
+if (!RM.id) { RM.id = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); ss.set("pl.rid", RM.id); }
+
+export const roomSend = (o: object) => { try { if (RM.ws && RM.ws.readyState === 1) RM.ws.send(JSON.stringify(o)); } catch {} };
+
+export function roomPush(force?: boolean) {
+  if (!RM.live) return;
+  const total = Math.round(totalNow()), key = [T.mode, T.status, T.status === "running" ? T.endsAt : Math.round(remNow()), total].join("|");
+  if (key === RM.sent && !force) return;
+  RM.sent = key;
+  roomSend({ t: "state", s: { mode: T.mode, status: T.status, remaining: Math.round(remNow()), total } });
+}
+
+export function roomReset() {
+  clearTimeout(RM.timer); clearInterval(RM.ping);
+  const ws = RM.ws;
+  RM.owner = false; RM.ws = null; RM.code = null; RM.live = false; RM.members = []; RM.prop = null; RM.tries = 0;
+  ss.set("pl.room", null);
+  if (ws) try { ws.close(1000); } catch {}
+  renderRoom();
+}
+
+export function roomConnect() {
+  clearTimeout(RM.timer);
+  if (!RM.code) return;
+  let ws: WebSocket;
+  try { ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/room/" + RM.code + "/ws"); } catch { return; }
+  RM.ws = ws;
+  ws.onopen = () => ws.send(JSON.stringify({ t: "hello", id: RM.id, name: RM.name, ownerToken: ss.get("pl.owner." + RM.code) }));
+  ws.onmessage = (e) => {
+    if (ws !== RM.ws || e.data === "pong") return;
+    let m; try { m = JSON.parse(e.data); } catch { return; }
+    roomMsg(m);
+  };
+  ws.onclose = (e) => {
+    if (ws !== RM.ws) return;
+    const was = RM.live;
+    RM.ws = null; RM.live = false; clearInterval(RM.ping);
+    const gone = ({ 4005: "The room creator removed you from the room.", 4000: "Couldn't join that room.", 4001: "This room was opened in another tab.", 4003: "That room is full.", 4004: "That room doesn't exist, or it has already closed." } as Record<number, string>)[e.code];
+    if (gone || (!was && ++RM.tries > 3)) { roomReset(); toast(gone || "Couldn't reach the room. Check your connection and try again."); return; }
+    RM.timer = setTimeout(roomConnect, Math.min(15000, 1000 * 2 ** RM.tries));
+    renderRoom();
+  };
+}
+
+function roomMsg(m: RoomMsg) {
+  if (m.t === "note") toast(m.msg);
+  else if (m.t === "sync") applySync(m);
+  else if (m.t === "room") {
+    const skew = Date.now() - m.now, had = RM.prop;
+    RM.you = m.you; RM.owner = !!m.owner;
+    RM.members = m.members.map((x) => ({ id: x.id, name: x.name, owner: !!x.owner, s: x.s && { ...x.s, end: x.s.end ? x.s.end + skew : 0 } }));
+    RM.prop = m.prop;
+    if (!RM.live) {
+      RM.live = true; RM.tries = 0;
+      clearInterval(RM.ping); RM.ping = setInterval(() => { try { RM.ws && RM.ws.send("ping"); } catch {} }, 25000);
+      roomPush(true);
+    }
+    if (RM.prop && !had && RM.prop.by !== RM.you) { playSound("task"); notify("Someone in your room wants to sync timers."); }
+    renderRoom();
+  }
+}
+
+function applySync(m: Extract<RoomMsg, { t: "sync" }>) {
+  const s = m.s;
+  if (m.by === RM.you && T.status !== "idle") { toast("Everyone accepted. Your timers are in sync."); return; }
+  if (T.mode !== s.mode) setMode(s.mode, true);
+  const done = T.status === "idle" ? 0 : (T.total || 0) - remNow();
+  cancelEnd();
+  delete T.adj[T.mode];
+  T.total = done + s.remaining; T.remaining = s.remaining; T.endsAt = 0; T.status = "paused";
+  if (s.status === "running") start(); else { wakeOff(); saveTimer(); renderTimer(true); }
+  toast(m.by === RM.you ? "Everyone accepted. Starting together." : "Synced to " + m.name + "'s timer.");
+}
+
+export function roomEnter(code: string) {
+  RM.code = code; RM.tries = 0; ss.set("pl.room", code);
+  setOverlay("#room", false);
+  renderRoom(); roomConnect();
+}
+
+export async function roomCreate() {
+  const res = await fetch("/api/room", { method: "POST" }), body = res.ok ? await res.json() : null;
+  if (!body || !body.code) throw 0;
+  ss.set("pl.owner." + body.code, body.ownerToken);
+  roomEnter(body.code);
+}
+
+// Synchronous like the markup it replaced: a focused field in the dialog has to hide and disable in one go, or Chrome moves focus elsewhere.
+export function renderRoom() { room.refresh(); flushSync(); }
+export const roomTick = () => roomClock.refresh();

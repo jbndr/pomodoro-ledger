@@ -6,6 +6,8 @@ export interface Session {
   full?: boolean;
   /** Overrides the task's label for this session; "" means no label. */
   project?: string;
+  /** The timer run that logged it, so two synced devices log a cycle once. */
+  run?: string;
 }
 
 export interface Subtask {
@@ -25,6 +27,12 @@ export interface Task {
   sample?: boolean;
   project?: string;
   plan?: DayKey;
+  /** Planned for today, or for a section of Today. */
+  today?: boolean;
+  section?: string;
+  order?: number;
+  notes?: string;
+  updatedAt?: number;
   sessions?: Session[];
   subtasks?: Subtask[];
 }

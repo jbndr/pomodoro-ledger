@@ -33,11 +33,6 @@
     </div>
   </header>
 
-  <div class="banner" id="previewBanner" hidden>
-    <span><strong>You're looking at example data.</strong> Add your first task or start the timer, and the examples disappear.</span>
-    <button class="btn" type="button" id="startOwn">Start my own ledger</button>
-  </div>
-
   <main class="top">
     <section class="timer-card" aria-label="Timer">
       <button class="icon-btn float-btn" type="button" id="floatBtn" aria-label="Open floating timer" title="Open floating timer" aria-pressed="false" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><rect x="11" y="11" width="8" height="7" rx="1" fill="currentColor" stroke="none"/></svg></button>
@@ -46,17 +41,7 @@
     <section class="panel" aria-labelledby="tasksH">
       <div class="sec-head tasks-head">
         <h2 id="tasksH">Tasks</h2>
-        <span class="sub" id="taskCount" hidden></span>
-        <div class="seg task-views" id="taskViews" role="group" aria-label="Which tasks to show">
-          <button type="button" data-view="today" aria-pressed="true">Today<em></em></button>
-          <button type="button" data-view="upcoming" aria-pressed="false">Upcoming<em></em></button>
-          <button type="button" data-view="later" aria-pressed="false">Later<em></em></button>
-        </div>
       </div>
-      <div class="label-filter" id="projectFilter" role="group" aria-label="Filter tasks by label" hidden></div>
-      <div class="day-fit" id="dayFit" role="status" hidden><span id="dayFitText"></span><button class="btn small" type="button" id="dayFitMove">Move to tomorrow</button></div>
-      <div class="sub" id="projectSummary" hidden></div>
-      <div id="taskFoot"></div>
     </section>
   </main>
 

@@ -1,6 +1,9 @@
 /** A local calendar day as YYYY-MM-DD. */
 export type DayKey = string;
 
+/** A minute in milliseconds. */
+export const MIN = 60000;
+
 export const pad = (n: number): string => String(n).padStart(2, "0");
 
 export const dayKey = (t: number): DayKey => {

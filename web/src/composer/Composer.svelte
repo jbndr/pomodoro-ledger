@@ -114,8 +114,9 @@
   }
 
   // On click, not pointerdown: collapsing shifts the list, and the click would land on a different row.
+  // A label filter chip also picks the new task's label, so the box stays open for it.
   function outside(e) {
-    if (!open || !e.target.isConnected || e.target.closest("#openRoom, #openSettings, #labelPop, #whenPop")) return;
+    if (!open || !e.target.isConnected || e.target.closest("#openRoom, #openSettings, #labelPop, #whenPop, #projectFilter button")) return;
     if (!form.contains(e.target) && !input.value.trim()) collapse();
   }
 </script>
