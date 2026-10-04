@@ -7,9 +7,10 @@
 
   const v = $derived.by(() => {
     room.version;
-    return { on: !!api.RM.code, code: api.RM.code, live: api.RM.live, owner: api.RM.owner, others: othersOf(api.RM.members, api.RM.you), prop: !!api.RM.prop };
+    return { on: !!api.RM.code, code: api.RM.code, pub: api.RM.pub, live: api.RM.live, owner: api.RM.owner, others: othersOf(api.RM.members, api.RM.you), prop: !!api.RM.prop };
   });
   const now = $derived.by(() => { roomClock.version; room.version; return Date.now(); });
+  const step = $derived.by(() => { roomClock.version; room.version; return api.inStep(); });
 
   let shown = false;
   $effect(() => {
@@ -17,11 +18,15 @@
   });
 </script>
 
-<section class="room" id="roomStrip" aria-label="Shared room" hidden={!v.on}>
-  <button class="room-code" type="button" id="stripCode" title="Copy invite link" onclick={() => copyInvite(api.RM.code)}><small>Room</small>{v.code}</button>
+<section class="room" class:pub={!!v.pub} id="roomStrip" aria-label="Shared room" hidden={!v.on}>
+  {#if v.pub}
+    <button class="room-code" type="button" id="stripCode" title="Room details" onclick={() => api.openRoom()}><small>{v.pub.rhythm}</small><span>{v.pub.title}</span></button>
+  {:else}
+    <button class="room-code" type="button" id="stripCode" title="Copy invite link" onclick={() => copyInvite(api.RM.code)}><small>Room</small>{v.code}</button>
+  {/if}
   <ul class="mates" id="mates">
     {#if v.on && !v.live}<li class="hint">Connecting…</li>
-    {:else if v.on && !v.others.length}<li class="hint">Nobody else is here yet. Share the code or the invite link.</li>
+    {:else if v.on && !v.others.length}<li class="hint">{v.pub ? "Nobody else is here yet. Others can drop in any time." : "Nobody else is here yet. Share the code or the invite link."}</li>
     {:else if v.on}
       {#each v.others as m (m.id)}
         {@const ring = mateProgress(m.s, now)}
@@ -30,7 +35,12 @@
     {/if}
   </ul>
   <div class="room-actions">
-    <button class="btn small" type="button" id="syncAll" title="Ask everyone to switch to your timer. It only happens if all of them accept." disabled={v.on && (!v.live || !v.others.length || v.prop)} onclick={() => api.roomSend({ t: "propose" })}>Sync timers</button>
+    {#if v.pub}
+      {#if step}<span class="in-step" title="Your timer follows the room clock"><i aria-hidden="true"></i><span>In step</span></span>
+      {:else}<button class="btn small solid" type="button" id="followRoom" title="Jump to the room's current round" onclick={() => api.followRoom(true)}>Rejoin round</button>{/if}
+    {:else}
+      <button class="btn small" type="button" id="syncAll" title="Ask everyone to switch to your timer. It only happens if all of them accept." disabled={v.on && (!v.live || !v.others.length || v.prop)} onclick={() => api.roomSend({ t: "propose" })}>Sync timers</button>
+    {/if}
     <button class="link" type="button" id="stripLeave" onclick={() => api.roomReset()}>Leave</button>
   </div>
 </section>

@@ -27,7 +27,7 @@ import Progress from "./progress/Progress.svelte";
 import { renderAll, renderEstPick, renderPill, renderStats, renderTasks, renderTimer, rethemeFloat } from "./render";
 import RoomDialog from "./room/RoomDialog.svelte";
 import RoomStrip from "./room/RoomStrip.svelte";
-import { renderRoom, RM, roomConnect, roomCreate, roomEnter, roomReset, roomSend } from "./room/net";
+import { followRoom, renderRoom, RM, roomConnect, roomCreate, roomEnter, roomInStep, roomList, roomReset, roomSend } from "./room/net";
 import Settings from "./settings/Settings.svelte";
 import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, previewTicking, scheduleEnd, syncTicking } from "./sound";
 import { DEMO, ls, S, ss, T } from "./state";
@@ -73,7 +73,7 @@ mount(Progress, { target: $(".app"), props: { api: {
   S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
   deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask,
 } } });
-const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate };
+const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom };
 mount(BarTools, { target: $(".bar-right"), anchor: $(".bar-right").firstChild!, props: { api: {
   RM, ls, S, Cloud, DEMO, preview, openRoom, openKeys,
   openSync: () => { if (!DEMO) openSettings("sync"); },

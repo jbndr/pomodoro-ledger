@@ -7,26 +7,50 @@ const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const MODES = ["focus", "short", "long"];
 const STATUSES = ["idle", "running", "paused"];
 const MAX_MEMBERS = 12;
+const MIN_MEMBERS = 2;
 const MAX_RUN_MS = 4 * 3600000;
 const PROPOSAL_MS = 30000;
 const COOLDOWN_MS = 60000;
 const EMPTY_MS = 10 * 60000;
+const HEARTBEAT_MS = 5 * 60000;
+const LISTED_MS = 12 * 60000;
+const RHYTHMS = ["25/5", "50/10"];
+const HOUSE = [{ key: "P", rhythm: "25/5", title: "Pomodoro" }, { key: "D", rhythm: "50/10", title: "Deep work" }];
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 const pick = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((x) => ALPHABET[x % ALPHABET.length]).join("");
 const room = (env, code) => env.ROOM.get(env.ROOM.idFromName(code));
 const ms = (v) => Math.max(0, Math.min(MAX_RUN_MS, Math.round(Number(v) || 0)));
-const cleanName = (v) => String(v || "").replace(/[\x00-\x1f\x7f]/g, "").trim().slice(0, 20);
+const clean = (v, n) => String(v || "").replace(/[\x00-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
+const lobby = (env) => env.LOBBY.get(env.LOBBY.idFromName("lobby"));
+// House rooms are always listed. Their codes contain an O, which random codes never do.
+const houseCode = (h, i) => "OPEN" + h.key + ALPHABET[i];
+function houseRoom(code) {
+  if (code.length !== 6) return null;
+  for (const h of HOUSE) {
+    const i = ALPHABET.indexOf(code.slice(5));
+    if (code.slice(0, 5) === "OPEN" + h.key && i >= 0) return { pub: true, house: true, code, rhythm: h.rhythm, title: h.title + (i ? " " + (i + 1) : ""), max: MAX_MEMBERS };
+  }
+  return null;
+}
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === "/api/rooms" && request.method === "GET") return lobby(env).fetch("https://lobby/rooms");
     if (url.pathname === "/api/room" && request.method === "POST") {
+      const body = await request.json().catch(() => null);
+      let cfg = null;
+      if (body && body.pub) {
+        const max = Math.round(Number(body.max ?? MAX_MEMBERS));
+        cfg = { pub: true, house: false, title: clean(body.title, 32), rhythm: body.rhythm, max: Number.isFinite(max) ? Math.max(MIN_MEMBERS, Math.min(MAX_MEMBERS, max)) : MAX_MEMBERS };
+        if (!cfg.title || !RHYTHMS.includes(cfg.rhythm)) return json({ error: "bad room" }, 400);
+      }
       for (let i = 0; i < 5; i++) {
         const code = pick(6);
         const ownerToken = crypto.randomUUID();
-        const res = await room(env, code).fetch("https://room/open", { method: "POST", body: ownerToken });
+        const res = await room(env, code).fetch("https://room/open", { method: "POST", body: JSON.stringify({ ownerToken, cfg: cfg && { ...cfg, code } }) });
         if (res.ok) return json({ code, ownerToken });
       }
       return json({ error: "busy" }, 503);
@@ -51,13 +75,21 @@ export class Room extends DurableObject {
   }
 
   async fetch(request) {
-    const store = this.ctx.storage;
-    if (new URL(request.url).pathname === "/open") {
+    const store = this.ctx.storage, path = new URL(request.url).pathname;
+    if (path === "/open") {
       if (await store.get("open")) return new Response(null, { status: 409 });
+      const { ownerToken, cfg } = await request.json();
       await store.put("open", Date.now());
-      await store.put("ownerToken", await request.text());
+      await store.put("ownerToken", ownerToken);
+      if (cfg) await store.put("cfg", cfg);
       await store.setAlarm(Date.now() + EMPTY_MS);
       return new Response(null, { status: 204 });
+    }
+    const house = houseRoom(path.split("/")[3] || "");
+    if (house && !(await store.get("open"))) {
+      await store.put("open", Date.now());
+      await store.put("cfg", house);
+      await store.setAlarm(Date.now() + EMPTY_MS);
     }
     const [client, server] = Object.values(new WebSocketPair());
     if (await store.get("open")) this.ctx.acceptWebSocket(server);
@@ -85,8 +117,19 @@ export class Room extends DurableObject {
 
   async broadcast(except) {
     const all = this.members(except), prop = (await this.ctx.storage.get("prop")) || null, now = Date.now();
+    const cfg = await this.ctx.storage.get("cfg"), pub = cfg ? { title: cfg.title, rhythm: cfg.rhythm, house: cfg.house, max: cfg.max || MAX_MEMBERS } : null;
     const members = all.map(({ a }) => ({ id: a.pub, name: a.name, s: a.s, owner: !!a.owner }));
-    for (const { ws, a } of all) this.send(ws, { t: "room", now, you: a.pub, owner: !!a.owner, members, prop });
+    for (const { ws, a } of all) this.send(ws, { t: "room", now, you: a.pub, owner: !!a.owner, members, prop, pub });
+  }
+
+  // Tells the lobby who's in a public room; an empty room drops off the list.
+  async report(except) {
+    const cfg = await this.ctx.storage.get("cfg");
+    if (!cfg) return;
+    const names = this.members(except).map((x) => x.a.name);
+    try {
+      await lobby(this.env).fetch("https://lobby/rooms", { method: "POST", body: JSON.stringify({ code: cfg.code, title: cfg.title, rhythm: cfg.rhythm, house: cfg.house, max: cfg.max || MAX_MEMBERS, names }) });
+    } catch {}
   }
 
   // Applies the request once every member present has accepted.
@@ -111,7 +154,7 @@ export class Room extends DurableObject {
 
     if (m.t === "hello") {
       if (me) return;
-      const id = String(m.id || "").slice(0, 40), name = cleanName(m.name);
+      const id = String(m.id || "").slice(0, 40), name = clean(m.name, 20);
       if (!id || !name) return ws.close(4000, "Bad hello");
       const others = [];
       for (const x of this.members(ws)) {
@@ -119,13 +162,19 @@ export class Room extends DurableObject {
         x.ws.serializeAttachment(null);
         x.ws.close(4001, "Replaced");
       }
-      if (others.length >= MAX_MEMBERS) return ws.close(4003, "Room is full");
-      const ownerToken = await store.get("ownerToken");
-      const owner = !!ownerToken && m.ownerToken === ownerToken;
+      const ownerToken = await store.get("ownerToken"), cfg = await store.get("cfg");
+      if (others.length >= ((cfg && cfg.max) || MAX_MEMBERS)) return ws.close(4003, "Room is full");
+      const owner = !cfg && !!ownerToken && m.ownerToken === ownerToken;
       ws.serializeAttachment({ id, pub: pick(8), name, s: null, asked: 0, owner });
-      return this.broadcast();
+      await this.broadcast();
+      if (!cfg) return;
+      await store.setAlarm(now + HEARTBEAT_MS);
+      return this.report();
     }
     if (!me) return;
+
+    // Public rooms follow the room clock: nobody owns them and there's nothing to vote on.
+    if (m.t !== "state" && (await store.get("cfg"))) return;
 
     if (m.t === "kick") {
       if (!me.owner) return;
@@ -188,6 +237,7 @@ export class Room extends DurableObject {
   async left(ws) {
     const store = this.ctx.storage, gone = ws.deserializeAttachment();
     if (!gone || !gone.id) return;
+    await this.report(ws);
     if (!this.members(ws).length) {
       await store.delete("prop");
       return store.setAlarm(Date.now() + EMPTY_MS);
@@ -199,12 +249,43 @@ export class Room extends DurableObject {
   }
 
   async alarm() {
-    const store = this.ctx.storage;
+    const store = this.ctx.storage, cfg = await store.get("cfg");
     if (!this.members().length) return store.deleteAll();
+    if (cfg) {
+      await this.report();
+      return store.setAlarm(Date.now() + HEARTBEAT_MS);
+    }
     const prop = await store.get("prop");
     if (!prop || Date.now() < prop.ends) return;
     await store.delete("prop");
     this.note("Not everyone answered in time, so timers stay as they are.");
     await this.broadcast();
+  }
+}
+
+// Lists the public rooms people are in, plus an open house room for every rhythm.
+export class Lobby extends DurableObject {
+  async fetch(request) {
+    const store = this.ctx.storage, now = Date.now();
+    if (request.method === "POST") {
+      const r = await request.json();
+      if (r.names.length) await store.put("r:" + r.code, { ...r, at: now });
+      else await store.delete("r:" + r.code);
+      return new Response(null, { status: 204 });
+    }
+    const rooms = [], stale = [];
+    for (const [k, r] of await store.list({ prefix: "r:" })) {
+      if (now - r.at > LISTED_MS) stale.push(k);
+      else rooms.push({ code: r.code, title: r.title, rhythm: r.rhythm, house: r.house, max: r.max || MAX_MEMBERS, names: r.names });
+    }
+    if (stale.length) await store.delete(stale);
+    for (const h of HOUSE) {
+      const shards = rooms.filter((r) => r.house && r.rhythm === h.rhythm);
+      if (shards.some((r) => r.names.length < r.max)) continue;
+      let i = 0;
+      while (i < ALPHABET.length && shards.some((r) => r.code === houseCode(h, i))) i++;
+      if (i < ALPHABET.length) rooms.push({ ...houseRoom(houseCode(h, i)), names: [] });
+    }
+    return json({ now, rooms: rooms.map(({ pub, ...r }) => r) });
   }
 }
