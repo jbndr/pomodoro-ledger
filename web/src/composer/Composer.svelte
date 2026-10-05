@@ -127,38 +127,20 @@
     const parsed = parseNew(input.value), name = parsed.title.slice(0, 140);
     if (!name) { input.focus(); return; }
     const into = whenNow(parsed), text = [notes.value.trim(), parsed.note].filter(Boolean).join("\n"), est = parsed.est || api.S.newEst, repeat = parsed.repeat || api.S.newRepeat;
-    const from = textBox();
     setTitle(""); notes.value = ""; api.S.newWhen = null; api.S.newRepeat = null; api.S.newKeep = [];
     const id = api.addTask(name, est, into, text, repeat);
     input.focus();
-    flyIn(id, name, from);
+    unfold(id);
   }
 
-  /** Where the typed words sit inside the input, and their font, so a copy can start from exactly there. */
-  function textBox() {
-    const r = input.getBoundingClientRect(), cs = getComputedStyle(input);
-    return { left: r.left + parseFloat(cs.paddingLeft), top: r.top + parseFloat(cs.paddingTop), font: cs.font, size: parseFloat(cs.fontSize), color: cs.color };
-  }
-
-  // The new row unfolds at the end of its group while the typed title glides from the input into it.
-  async function flyIn(id, text, from) {
+  // The new row fades and unfolds quietly at the end of its group, so the rows below glide instead of jumping.
+  async function unfold(id) {
     if (api.calm()) return;
     await tick();
     const row = document.querySelector(`#taskList .task[data-id="${CSS.escape(id)}"]`);
     if (!row) return;
-    const ease = "cubic-bezier(.32, .72, 0, 1)", h = row.offsetHeight, tt = row.querySelector(".tt"), to = tt?.getBoundingClientRect();
-    row.animate([{ height: "0px", opacity: 0, overflow: "hidden" }, { height: h + "px", opacity: 1, overflow: "hidden" }], { duration: 320, easing: ease });
-    if (!tt || !to || to.top < 0 || to.bottom > innerHeight) return;
-    const ghost = document.createElement("span");
-    ghost.className = "fly-title";
-    ghost.textContent = text;
-    Object.assign(ghost.style, { left: from.left + "px", top: from.top + "px", font: from.font, color: from.color });
-    document.body.append(ghost);
-    tt.style.opacity = "0";
-    const scale = parseFloat(getComputedStyle(tt).fontSize) / from.size;
-    ghost.animate([{ transform: "none" }, { transform: `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${scale})` }], { duration: 420, easing: ease, fill: "forwards" });
-    // A timer rather than onfinish: animations pause in background tabs.
-    setTimeout(() => { ghost.remove(); tt.style.opacity = ""; }, 440);
+    const h = row.offsetHeight;
+    row.animate([{ height: "0px", opacity: 0, overflow: "hidden" }, { height: h + "px", opacity: 1, overflow: "hidden" }], { duration: 260, easing: "cubic-bezier(.32, .72, 0, 1)" });
   }
 
   function keydown(e) {
