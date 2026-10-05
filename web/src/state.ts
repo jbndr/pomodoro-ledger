@@ -85,6 +85,8 @@ export interface Timer {
   /** When a count-up session started; while it's set, the clock counts up instead of down. */
   up?: number;
   upKind?: "over" | "flow";
+  /** Flow is picked and waiting for Start. */
+  flowReady?: boolean;
   /** When the last focus cycle rang, which a "Keep going" counts from. */
   bellAt?: number;
   /** The break's nudge, if any. */

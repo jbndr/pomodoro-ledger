@@ -28,8 +28,8 @@
     return {
       mode: T.mode, status: T.status,
       dots: roundDots(T.mode, T.setIndex, every), round: Math.min(Math.min(T.setIndex || 0, every) + 1, every), every,
-      up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
-      sub: T.up ? (T.upKind === "flow" ? "flow" : "past the bell") : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
+      up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), flow: T.upKind === "flow" || !!T.flowReady, nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
+      sub: T.up ? (T.upKind === "flow" ? "flow · stop when you're done" : "past the bell") : T.flowReady ? "counts up from zero" : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
       held: Object.fromEntries(MODES.map((m) => [m, T.saved[m] ? "Paused with " + clock(Math.ceil(T.saved[m].remaining / 1000)) + " left" : ""])),
     };
   });
@@ -51,7 +51,7 @@
 <div class="glow" aria-hidden="true"></div>
 <div class="card-head">
   <div class="modes" role="tablist" aria-label="Timer mode">
-    {#each MODES as m}<button type="button" role="tab" data-mode={m} aria-label={MODE_NAME[m]} aria-selected={String(m === c.mode)} data-held={c.held[m] ? "" : null} title={c.held[m]} onclick={() => { if (m !== api.T.mode) api.setMode(m, true); }}>{m === "focus" ? "Focus" : m === "short" ? "Short" : "Long"}</button>{/each}
+    {#each MODES as m}<button type="button" role="tab" data-mode={m} aria-label={MODE_NAME[m]} aria-selected={String(m === c.mode && !c.flow)} data-held={c.held[m] ? "" : null} title={c.held[m]} onclick={() => { if (api.T.up) api.toggle(); if (m !== api.T.mode || api.T.flowReady) api.setMode(m, true); }}>{m === "focus" ? "Focus" : m === "short" ? "Short" : "Long"}</button>{/each}<button type="button" role="tab" data-mode="flow" aria-label="Flow: count up until you stop" aria-selected={String(c.flow)} title="Count up from zero until you stop" onclick={() => api.readyFlow()}>Flow</button>
   </div>
   <div class="head-icons" {@attach adoptFloatBtn}>
     <button class="icon-btn full-btn" type="button" id="fullBtn" aria-label={zenLabel} title={timerView.zen ? zenLabel : "Fill the page (F) · Shift-click for browser full screen (Shift+F)"} onclick={(e) => api.toggleZen(e.shiftKey)}>{@html timerView.zen ? api.ICON.shrink : api.ICON.expand}</button>
@@ -61,7 +61,7 @@
 {#if c.keep}
   <div class="cycle"><button class="keep-going" type="button" title="Go back to focus, counting from the bell (O)" onclick={() => api.keepGoing()}>{@html api.ICON.play}Keep going</button></div>
 {:else}
-  <div class="cycle" class:off={c.mode !== "focus"} title={"A long break comes after round " + c.every}>
+  <div class="cycle" class:off={c.mode !== "focus" || c.flow} title={"A long break comes after round " + c.every}>
     <span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span><span>Round {c.round} of {c.every}</span>
   </div>
 {/if}

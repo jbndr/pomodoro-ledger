@@ -1461,3 +1461,4 @@ body.zen .nudge { font-size: max(13px, calc(var(--dial) * .036)); }
 .nudge-add { display: flex; gap: 8px; margin-top: 8px; }
 .nudge-add input { flex: 1; min-width: 0; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); font-size: 14px; }
 .recap-nudges { margin: -4px 0 0; font-size: 13px; color: var(--muted); }
+.modes button[data-mode="flow"] { --c: var(--tomato); }

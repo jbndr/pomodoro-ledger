@@ -26,13 +26,15 @@ export function renderTimer(force?: boolean) {
   if (T.mode + T.status !== lastPhase) { lastPhase = T.mode + T.status; syncActive(); }
   showMode(T.mode);
   if (document.body.dataset.status !== T.status) document.body.dataset.status = T.status;
-  const up = !!T.up, total = up ? 1 : totalNow(), rem = up ? upNow() : remNow(), frac = up ? 1 : Math.max(0, Math.min(1, rem / total));
-  const txt = (up ? "+" : "") + clock(up ? Math.floor(rem / 1000) : Math.ceil(rem / 1000));
+  // Past the bell shows "+12:40" on a full ring; flow counts from zero and fills the ring once an hour.
+  const kind = T.up ? T.upKind || "over" : T.flowReady ? "flow" : "", total = kind ? 1 : totalNow(), rem = kind ? upNow() : remNow();
+  const frac = kind === "over" ? 1 : kind === "flow" ? (rem % 3_600_000) / 3_600_000 : Math.max(0, Math.min(1, rem / total));
+  const txt = (kind === "over" ? "+" : "") + clock(kind ? Math.floor(rem / 1000) : Math.ceil(rem / 1000));
   if (txt !== lastTxt || force) {
     lastTxt = txt;
-    document.title = T.status === "idle" ? "Pomodoro Ledger" : txt + " · " + MODE_NAME[T.mode] + (T.status === "paused" ? " (paused)" : "");
+    document.title = T.status === "idle" ? "Pomodoro Ledger" : txt + " · " + (kind === "flow" ? "Flow" : MODE_NAME[T.mode]) + (T.status === "paused" ? " (paused)" : "");
   }
-  timerView.set(rem, total, up);
+  timerView.set(rem, total, kind);
   renderFloating(txt, frac);
   renderTaskStarts(force);
   const tabTime = T.status === "running" ? txt : "Timer";

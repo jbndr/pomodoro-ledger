@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "./tasks";
-import { arcOffset, CIRCUMFERENCE, clock, clockLabel, extraBreakMin, fraction, knobAt, litTicks, modeLabel, roundDots, startLabel, TICKS } from "./timer";
+import { arcOffset, CIRCUMFERENCE, clock, clockLabel, extraBreakMin, flowBreakMin, fraction, knobAt, litTicks, modeLabel, roundDots, startLabel, TICKS } from "./timer";
 
 describe("clock", () => {
   it("pads minutes and seconds", () => {
@@ -75,5 +75,13 @@ describe("extraBreakMin", () => {
     expect(extraBreakMin(3 * 60_000)).toBe(1);
     expect(extraBreakMin(12 * 60_000)).toBe(2);
     expect(extraBreakMin(4 * 3600_000)).toBe(15);
+  });
+});
+
+describe("flowBreakMin", () => {
+  it("gives about a minute of break per five of flow, from one to thirty", () => {
+    expect(flowBreakMin(2 * 60_000)).toBe(1);
+    expect(flowBreakMin(72 * 60_000)).toBe(14);
+    expect(flowBreakMin(5 * 3600_000)).toBe(30);
   });
 });
