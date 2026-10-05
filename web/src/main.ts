@@ -150,7 +150,7 @@ mount(TaskViews, { target: $(".tasks-head"), props: { api: headApi } });
 mount(ListHead, { target: panel, props: { api: headApi } });
 mount(ListFoot, { target: panel, props: { api: headApi } });
 mount(Composer, { target: panel, anchor: $(".filter-fold"), props: { api: {
-  S, ICON, plural, dayName, todayKey, dur, fmtDur, labelChipName, filterLabel, addTask,
+  S, ICON, plural, dayName, todayKey, dur, fmtDur, labelChipName, filterLabel, addTask, calm,
   openWhen, openLabelPop, closeLabelPop, labelKey: (e: KeyboardEvent) => ui.label!.key(e), filterLabels: (q: string) => ui.label!.filter(q),
 } } });
 ui.list = mount(TaskList, { target: panel, anchor: $("#taskFoot"), props: { api: {

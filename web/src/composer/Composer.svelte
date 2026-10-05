@@ -1,5 +1,5 @@
 <script>
-  import { flushSync } from "svelte";
+  import { flushSync, tick } from "svelte";
   import { addDays, dayKey } from "../lib/dates";
   import { labelMatches } from "../lib/labels";
   import { firstDue, repeatText } from "../lib/repeat";
@@ -101,9 +101,21 @@
     api.labelKey(e);
   }
 
+  let leaving = 0;
   function collapse() {
     if (LP.key === "new" || LP.key === "hash") api.closeLabelPop();
     if (form.contains(document.activeElement)) document.activeElement.blur();
+    // Quick add fades and settles a little before it goes, instead of vanishing.
+    if (composer.quick && !api.calm()) {
+      const id = ++leaving;
+      form.animate([{ opacity: 1, scale: 1 }, { opacity: 0, scale: 0.97 }], { duration: 150, easing: "ease-in" });
+      document.querySelector(".add-scrim")?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: "ease-in", fill: "forwards" });
+      setTimeout(() => { if (id === leaving) finishCollapse(); }, 140);
+      return;
+    }
+    finishCollapse();
+  }
+  function finishCollapse() {
     open = false; composer.quick = false;
     if (!input.value.trim()) { api.S.newLabel = api.filterLabel(); api.S.newWhen = null; api.S.newRepeat = null; api.S.newKeep = []; notes.value = ""; composer.refresh(); }
     flushSync();
@@ -115,9 +127,38 @@
     const parsed = parseNew(input.value), name = parsed.title.slice(0, 140);
     if (!name) { input.focus(); return; }
     const into = whenNow(parsed), text = [notes.value.trim(), parsed.note].filter(Boolean).join("\n"), est = parsed.est || api.S.newEst, repeat = parsed.repeat || api.S.newRepeat;
+    const from = textBox();
     setTitle(""); notes.value = ""; api.S.newWhen = null; api.S.newRepeat = null; api.S.newKeep = [];
-    api.addTask(name, est, into, text, repeat);
+    const id = api.addTask(name, est, into, text, repeat);
     input.focus();
+    flyIn(id, name, from);
+  }
+
+  /** Where the typed words sit inside the input, and their font, so a copy can start from exactly there. */
+  function textBox() {
+    const r = input.getBoundingClientRect(), cs = getComputedStyle(input);
+    return { left: r.left + parseFloat(cs.paddingLeft), top: r.top + parseFloat(cs.paddingTop), font: cs.font, size: parseFloat(cs.fontSize), color: cs.color };
+  }
+
+  // The new row unfolds at the end of its group while the typed title glides from the input into it.
+  async function flyIn(id, text, from) {
+    if (api.calm()) return;
+    await tick();
+    const row = document.querySelector(`#taskList .task[data-id="${CSS.escape(id)}"]`);
+    if (!row) return;
+    const ease = "cubic-bezier(.32, .72, 0, 1)", h = row.offsetHeight, tt = row.querySelector(".tt"), to = tt?.getBoundingClientRect();
+    row.animate([{ height: "0px", opacity: 0, overflow: "hidden" }, { height: h + "px", opacity: 1, overflow: "hidden" }], { duration: 320, easing: ease });
+    if (!tt || !to || to.top < 0 || to.bottom > innerHeight) return;
+    const ghost = document.createElement("span");
+    ghost.className = "fly-title";
+    ghost.textContent = text;
+    Object.assign(ghost.style, { left: from.left + "px", top: from.top + "px", font: from.font, color: from.color });
+    document.body.append(ghost);
+    tt.style.opacity = "0";
+    const scale = parseFloat(getComputedStyle(tt).fontSize) / from.size;
+    ghost.animate([{ transform: "none" }, { transform: `translate(${to.left - from.left}px, ${to.top - from.top}px) scale(${scale})` }], { duration: 420, easing: ease, fill: "forwards" });
+    // A timer rather than onfinish: animations pause in background tabs.
+    setTimeout(() => { ghost.remove(); tt.style.opacity = ""; }, 440);
   }
 
   function keydown(e) {
