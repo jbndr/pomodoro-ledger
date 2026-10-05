@@ -11,7 +11,8 @@
   --f-display: "Bricolage Grotesque", "Geist", system-ui, sans-serif;
   --f-body: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --f-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --glow-o: .16; --go-l-max: 52%; --glow-dl: 18%; --glow-top: 2; --glow-w: 120% 60%; --glow-side: 0; --grain-o: .035; --disc-shade: 0;
+  --glow-o: .16; --go-l-max: 52%; --ember: 0; --paper: 1; --grain-o: .035; --disc-shade: 0; --tick-lit: 55%; --track-tint: 12%;
+  --disc-bg: var(--surface); --disc-lift: 0 1px 2px rgba(20,24,22,.05), 0 14px 34px -14px rgba(20,24,22,.2), inset 0 1px 0 #fff; --disc-inset: 14%;
   --face-bg: .87; --face-fg: .34;
 }
 @media (prefers-color-scheme: dark) {
@@ -23,7 +24,8 @@
     --heat0: #1F2422; --heat1: #4B251A; --heat2: #823620; --heat3: #C84E2B; --heat4: #FF7B56;
     --scrim: rgba(0,0,0,.55);
     --shadow: 0 1px 0 rgba(255,255,255,.03), 0 18px 44px -18px rgba(0,0,0,.7);
-    --glow-o: .2; --go-l-max: 100%; --glow-dl: 0%; --glow-top: 1.1; --glow-w: 70% 45%; --glow-side: 1; --grain-o: .07; --disc-shade: .35;
+    --glow-o: .2; --go-l-max: 100%; --ember: 1; --paper: 0; --grain-o: .07; --disc-shade: .35; --tick-lit: 100%; --track-tint: 0%;
+    --disc-bg: radial-gradient(circle at 50% 35%, var(--surface) 0%, color-mix(in oklab, var(--surface) 70%, transparent) 60%, transparent 72%); --disc-lift: 0 0 transparent; --disc-inset: 15%;
     --face-bg: .42; --face-fg: .93;
     color-scheme: dark;
   }
@@ -37,7 +39,8 @@
   --heat0: #1F2422; --heat1: #4B251A; --heat2: #823620; --heat3: #C84E2B; --heat4: #FF7B56;
   --scrim: rgba(0,0,0,.55);
   --shadow: 0 1px 0 rgba(255,255,255,.03), 0 18px 44px -18px rgba(0,0,0,.7);
-  --glow-o: .2; --go-l-max: 100%; --glow-dl: 0%; --glow-top: 1.1; --glow-w: 70% 45%; --glow-side: 1; --grain-o: .07; --disc-shade: .35;
+  --glow-o: .2; --go-l-max: 100%; --ember: 1; --paper: 0; --grain-o: .07; --disc-shade: .35; --tick-lit: 100%; --track-tint: 0%;
+    --disc-bg: radial-gradient(circle at 50% 35%, var(--surface) 0%, color-mix(in oklab, var(--surface) 70%, transparent) 60%, transparent 72%); --disc-lift: 0 0 transparent; --disc-inset: 15%;
   --face-bg: .42; --face-fg: .93;
   color-scheme: dark;
 }
@@ -293,16 +296,17 @@ a.btn { color: inherit; text-decoration: none; }
 }
 .glow { position: absolute; z-index: -1; inset: 0; pointer-events: none;
   background:
-    radial-gradient(var(--glow-w) at 50% 0%, oklch(calc(var(--acc-l) + var(--glow-dl)) var(--acc-c) var(--acc-h) / calc(var(--glow-o) * var(--glow-top))), transparent 72%),
-    radial-gradient(55% 40% at 12% 30%, oklch(calc(var(--acc-l) + 6%) calc(var(--acc-c) * .8) calc(var(--acc-h) - 28) / calc(var(--glow-o) * .7 * var(--glow-side))), transparent 70%),
-    radial-gradient(55% 40% at 88% 34%, oklch(calc(var(--acc-l) + 4%) calc(var(--acc-c) * .8) calc(var(--acc-h) + 28) / calc(var(--glow-o) * .6 * var(--glow-side))), transparent 70%),
-    radial-gradient(60% 34% at 50% 100%, oklch(calc(var(--acc-l) + var(--glow-dl)) var(--acc-c) var(--acc-h) / calc(var(--glow-o) * .35)), transparent 75%); }
+    linear-gradient(180deg, oklch(calc(var(--acc-l) + 33%) calc(var(--acc-c) * .3) var(--acc-h) / var(--paper)), transparent 62%),
+    radial-gradient(70% 45% at 50% 0%, oklch(var(--acc-l) var(--acc-c) var(--acc-h) / calc(var(--glow-o) * 1.1 * var(--ember))), transparent 72%),
+    radial-gradient(55% 40% at 12% 30%, oklch(calc(var(--acc-l) + 6%) calc(var(--acc-c) * .8) calc(var(--acc-h) - 28) / calc(var(--glow-o) * .7 * var(--ember))), transparent 70%),
+    radial-gradient(55% 40% at 88% 34%, oklch(calc(var(--acc-l) + 4%) calc(var(--acc-c) * .8) calc(var(--acc-h) + 28) / calc(var(--glow-o) * .6 * var(--ember))), transparent 70%),
+    radial-gradient(60% 34% at 50% 100%, oklch(var(--acc-l) var(--acc-c) var(--acc-h) / calc(var(--glow-o) * .35 * var(--ember))), transparent 75%); }
 /* Grain keeps the soft gradients from banding. */
 .glow::after { content: ""; position: absolute; inset: 0; opacity: var(--grain-o); mix-blend-mode: overlay; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 .timer-card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 1px 0 rgba(255,255,255,.7), inset 0 0 0 1px rgba(255,255,255,.25); }
 :root[data-theme="dark"] .timer-card::after { box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .timer-card::after { box-shadow: inset 0 1px 0 rgba(255,255,255,.06); } }
-.dial-wrap::before { content: ""; position: absolute; inset: 15%; z-index: -1; border-radius: 50%; background: radial-gradient(circle at 50% 35%, var(--surface) 0%, color-mix(in oklab, var(--surface) 70%, transparent) 60%, transparent 72%); box-shadow: 0 30px 60px -30px oklch(var(--acc-l) var(--acc-c) var(--acc-h) / var(--disc-shade)); }
+.dial-wrap::before { content: ""; position: absolute; inset: var(--disc-inset); z-index: -1; border-radius: 50%; background: var(--disc-bg); box-shadow: var(--disc-lift), 0 30px 60px -30px oklch(var(--acc-l) var(--acc-c) var(--acc-h) / var(--disc-shade)); }
 .modes { display: inline-flex; align-items: center; gap: 4px; }
 .modes button { position: relative; height: 32px; padding: 0 8px; border: 0; background: none; font-size: 13px; font-weight: 550; color: var(--faint); transition: color .2s; }
 .modes button::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 3px; height: 2px; border-radius: 2px; background: var(--c); transform: scaleX(0); transition: transform .35s cubic-bezier(.32, .72, 0, 1); }
@@ -325,9 +329,9 @@ a.btn { color: inherit; text-decoration: none; }
 .dial { width: 100%; height: 100%; display: block; }
 .dial .tick { stroke: var(--line-2); stroke-width: 2; stroke-linecap: round; transition: stroke .3s; }
 .dial .tick.major { stroke-width: 2.6; }
-.dial .tick.lit { stroke: var(--accent); }
+.dial .tick.lit { stroke: color-mix(in oklab, var(--accent) var(--tick-lit), var(--surface)); }
 body.morphing .dial .tick, body.morphing .task { transition: none; }
-.dial .track { fill: none; stroke: var(--surface-2); stroke-width: 12; }
+.dial .track { fill: none; stroke: color-mix(in oklab, var(--accent) var(--track-tint), var(--surface-2)); stroke-width: 12; }
 .dial .arc { fill: none; stroke: var(--accent); stroke-width: 12; stroke-linecap: round; }
 .dial .knob { fill: var(--surface); stroke: var(--accent); stroke-width: 4; }
 @media (min-width: 641px) {
