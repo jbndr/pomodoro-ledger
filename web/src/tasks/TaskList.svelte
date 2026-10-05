@@ -327,6 +327,7 @@
   class:sorting={!!drag}
   id="taskList"
   bind:this={ul}
+  onmousedown={(e) => { if ((e.shiftKey || e.metaKey || e.ctrlKey) && e.target.closest(".task-main")) e.preventDefault(); }}
   onpointerdown={(e) => { pressStart(e); pointerdown(e); }}
   onpointermove={(e) => { pressMove(e); pointermove(e); }}
   onpointerup={(e) => { pressEnd(); pointerend(e); }}

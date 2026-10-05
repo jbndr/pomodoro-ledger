@@ -7,7 +7,7 @@
   let { api } = $props();
   let el, search, ul;
   let opts = $state.raw([]), idx = $state(-1), text = $state(""), manage = $state(false), hash = $state(false), value = $state("");
-  let left = $state(0), top = $state(0);
+  let left = $state(0), top = $state(0), bottom = $state(null);
   let query = "", find = null, cb = null, skip = "";
 
   export const anchor = () => (find ? find() : null);
@@ -31,9 +31,12 @@
   export function place() {
     const a = anchor();
     if (!a) return;
-    const r = a.getBoundingClientRect();
+    const r = a.getBoundingClientRect(), bar = a.closest(".bulk-bar")?.getBoundingClientRect();
+    const view = document.documentElement.clientHeight, below = view - r.bottom, above = r.top;
     left = Math.max(12, Math.min(r.left, document.documentElement.clientWidth - el.offsetWidth - 12)) + scrollX;
-    top = r.bottom + 6 + scrollY;
+    // Near the bottom of the screen (the bulk bar) it opens upward, held by its bottom edge so filtering keeps it attached.
+    if (below < 340 && above > below) { bottom = view - (bar ? bar.top : r.top) - scrollY + 8; top = null; }
+    else { top = r.bottom + 6 + scrollY; bottom = null; }
     flushSync();
   }
 
@@ -130,7 +133,8 @@
   id="labelPop"
   hidden={labelPop.hidden}
   style:left={left + "px"}
-  style:top={top + "px"}
+  style:top={top == null ? "auto" : top + "px"}
+  style:bottom={bottom == null ? null : bottom + "px"}
   bind:this={el}
   onmousedown={(e) => { if (e.target !== search) e.preventDefault(); }}
   onpointermove={(e) => { const li = e.target.closest("li[data-i]"); if (li && +li.dataset.i !== idx) move(+li.dataset.i); }}
