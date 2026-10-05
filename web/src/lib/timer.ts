@@ -39,12 +39,6 @@ export const modeLabel = (mode: Mode, setIndex: number, every: number) =>
 
 export const startLabel = (status: Status) => (status === "running" ? "Pause" : status === "paused" ? "Resume" : "Start");
 
-/** One class per cycle dot until the long break, and the caption after them. */
-export function setDots(mode: Mode, status: Status, setIndex: number, every: number) {
-  const idx = Math.min(setIndex || 0, every), dots: string[] = [];
-  for (let i = 0; i < every; i++) dots.push(i < idx ? "on" : i === idx && mode === "focus" && status === "running" ? "now" : "");
-  return { dots, text: mode === "long" ? "long break" : every - idx + " to long break" };
-}
 
 export interface PickOption { id: string; title: string; meta?: string }
 

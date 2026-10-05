@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "./tasks";
-import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, modeLabel, pickOptions, setDots, startLabel, TICKS } from "./timer";
+import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, modeLabel, pickOptions, startLabel, TICKS } from "./timer";
 
 describe("clock", () => {
   it("pads minutes and seconds", () => {
@@ -57,15 +57,6 @@ describe("labels", () => {
   });
 });
 
-describe("setDots", () => {
-  it("fills finished cycles and pulses the running one", () => {
-    expect(setDots("focus", "running", 1, 4)).toEqual({ dots: ["on", "now", "", ""], text: "3 to long break" });
-    expect(setDots("focus", "paused", 1, 4).dots).toEqual(["on", "", "", ""]);
-    expect(setDots("short", "running", 2, 4).dots).toEqual(["on", "on", "", ""]);
-  });
-  it("says long break once it's time", () => expect(setDots("long", "idle", 4, 4)).toEqual({ dots: ["on", "on", "on", "on"], text: "long break" }));
-  it("caps the index at the cycle count", () => expect(setDots("focus", "idle", 7, 3).text).toBe("0 to long break"));
-});
 
 describe("pickOptions", () => {
   const a: Task = { id: "a", title: "Alpha", est: 3, project: "Work", sessions: [{ at: 1, ms: 1, full: true }, { at: 2, ms: 1 }] };
