@@ -646,6 +646,13 @@ body.sec-sorting, body.sec-sorting * { user-select: none; -webkit-user-select: n
 .task-views em { font: 500 12px var(--f-mono); font-style: normal; color: var(--faint); margin-left: 5px; vertical-align: 2px; }
 .task-views em:empty { display: none; }
 .task-views button[aria-pressed="true"] { color: var(--fg); }
+.task-views button { display: inline-flex; align-items: center; gap: 7px; }
+.view-ic { display: grid; place-items: center; width: 20px; height: 20px; color: var(--faint); opacity: .7; transition: color .2s, opacity .2s, scale .35s cubic-bezier(.32, .72, 0, 1); }
+.view-ic svg { width: 18px; height: 18px; }
+.task-views button[aria-pressed="true"] .view-ic { opacity: 1; scale: 1.05; }
+.task-views [data-view="today"][aria-pressed="true"] .view-ic { color: #E8A800; }
+.task-views [data-view="upcoming"][aria-pressed="true"] .view-ic { color: var(--accent); }
+.task-views [data-view="later"][aria-pressed="true"] .view-ic { color: var(--sky); }
 @media (hover: hover) { .task-views button[aria-pressed="false"]:hover { color: var(--muted); } }
 .filter-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; max-width: 18ch; padding: 0 10px; border-radius: 999px; border: 1px solid transparent; background: none; color: var(--muted); font-size: 13px; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
 .filter-btn svg { width: 14px; height: 14px; flex: none; }
