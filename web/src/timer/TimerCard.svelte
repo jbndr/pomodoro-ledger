@@ -52,6 +52,6 @@
 </div>
 <div class="controls">
   <button class="round" type="button" id="resetBtn" aria-label="Reset timer" title="Reset" onclick={() => { api.buzz(8); api.flushPartial(); api.setMode(api.T.mode); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg></button>
-  <button class="go" type="button" id="startBtn" onclick={() => { api.buzz(api.T.status === "running" ? 8 : 14); api.toggle(); }}>{@html c.status === "running" ? api.ICON.pause : api.ICON.play}{startLabel(c.status)}</button>
+  <button class="go" type="button" id="startBtn" onclick={() => { api.buzz(api.T.status === "running" ? 8 : 14); api.toggle(); }}><span class="go-ic" aria-hidden="true"><span class:on={c.status !== "running"}>{@html api.ICON.play}</span><span class:on={c.status === "running"}>{@html api.ICON.pause}</span></span><span class="go-lbl">{#each ["Start", "Pause", "Resume"] as w}<span class:on={w === startLabel(c.status)} aria-hidden={w !== startLabel(c.status)}>{w}</span>{/each}</span></button>
   <button class="round" type="button" id="skipBtn" aria-label="Skip to next phase" title="Skip" onclick={() => { api.buzz(8); api.skip(); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/></svg></button>
 </div>
