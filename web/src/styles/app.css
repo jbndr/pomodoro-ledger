@@ -1423,3 +1423,18 @@ body.zen .card-head { max-width: min(100%, 520px); }
 }
 body:has(.bulk-bar.open) .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 82px); }
 @media (max-width: 640px) { body:has(.bulk-bar.open) .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); } }
+
+/* Keep going: offered in the break's empty round row, so nothing shifts when it appears. */
+.keep-going { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 8px 0 11px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--tomato) 30%, var(--line)); background: color-mix(in oklab, var(--tomato) 8%, var(--surface)); color: var(--fg); font-size: 13px; font-weight: 550; cursor: pointer; animation: keep-in .4s cubic-bezier(.32, .72, 0, 1) both; transition: background .15s; }
+.keep-going svg { width: 12px; height: 12px; color: var(--tomato); }
+.keep-going kbd { margin-left: 2px; }
+@media (hover: hover) { .keep-going:hover { background: color-mix(in oklab, var(--tomato) 14%, var(--surface)); } }
+@media (hover: none) { .keep-going kbd { display: none; } }
+@keyframes keep-in { from { opacity: 0; scale: .94; } }
+.cycle { min-height: 28px; }
+/* Counting up: the digits step down a size so "+12:40" fits inside the ring like "25:00" does. */
+.time.counting { font-size: 19cqw; }
+body.zen .time.counting { font-size: calc(var(--dial) * .19); }
+.time .p { display: inline-block; width: .38em; text-align: center; font-size: .6em; vertical-align: .18em; opacity: .5; }
+/* As specific as the hover rule that reveals the chips (it carries an id), so they stay hidden while counting up. */
+body:not(.zen) .timer-card.timer-card #adjust.off { visibility: hidden; }

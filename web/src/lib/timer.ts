@@ -44,5 +44,8 @@ export function roundDots(mode: Mode, setIndex: number, every: number): ("done" 
 
 export const startLabel = (status: Status) => (status === "running" ? "Pause" : status === "paused" ? "Resume" : "Start");
 
+/** Extra break minutes after counting up past the bell: about one per five, at most fifteen. */
+export const extraBreakMin = (ms: number) => Math.min(15, Math.round(ms / 300_000));
+
 
 

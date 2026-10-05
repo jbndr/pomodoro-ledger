@@ -5,7 +5,7 @@ import { phone, showPage } from "./pages";
 import { S } from "./state";
 import { focusRow, moveTasksToTop, scheduleTask } from "./tasks/actions";
 import { groupName, guardPreview, quickDays } from "./tasks/derived";
-import { adjust, skip, toggle } from "./timer/engine";
+import { adjust, keepGoing, skip, toggle } from "./timer/engine";
 import { closeKeys, closeRecap, closeRoom, closeSettings, openKeys, openPlan, openWhen, togglePalette, ui } from "./ui";
 import { toggleZen } from "./zen";
 
@@ -75,6 +75,7 @@ export function onKey(e: KeyboardEvent) {
   }
   if (e.code === "Space" && tag !== "button") { e.preventDefault(); toggle(); }
   else if ((e.key === "s" || e.key === "S") && !e.metaKey && !e.ctrlKey) skip();
+  else if ((e.key === "o" || e.key === "O") && !e.metaKey && !e.ctrlKey && !e.altKey) keepGoing();
   else if ((e.key === "f" || e.key === "F") && !e.metaKey && !e.ctrlKey && !e.altKey) toggleZen(e.shiftKey);
   else if ((e.key === "p" || e.key === "P") && !e.metaKey && !e.ctrlKey && !e.altKey && !zen()) { e.preventDefault(); openPlan(); }
   else if ((e.key === "+" || e.key === "=") && !e.metaKey && !e.ctrlKey) adjust(1);

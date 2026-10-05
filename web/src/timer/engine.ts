@@ -4,7 +4,7 @@ import { announce } from "../extension";
 import { autoFloat } from "../float";
 import { fmtDur } from "../format";
 import { MIN } from "../lib/dates";
-import { MODES, type Mode } from "../lib/timer";
+import { extraBreakMin, MODES, type Mode } from "../lib/timer";
 import { renderAll, renderTimer } from "../render";
 import { followRoom, roomFollows, roomRoundEnded, roomTick, RM } from "../room/net";
 import { cancelEnd, ensureAudio, playSound, releaseBell, scheduleEnd, syncTicking } from "../sound";
@@ -19,7 +19,9 @@ export const MAX_RUN = 180 * MIN;
 export const dur = (m: Mode) => (S.settings[m] || DEF[m]) * MIN;
 const base = (m: Mode) => Math.max(MIN, dur(m) + (T.adj[m] || 0));
 export const totalNow = () => (T.status === "idle" ? base(T.mode) : T.total || dur(T.mode));
-export const remNow = () => (T.status === "running" ? Math.max(0, T.endsAt - Date.now()) : T.status === "paused" ? T.remaining ?? 0 : base(T.mode));
+export const remNow = () => (T.up ? 0 : T.status === "running" ? Math.max(0, T.endsAt - Date.now()) : T.status === "paused" ? T.remaining ?? 0 : base(T.mode));
+/** Time counted up so far in a "keep going" or flow session. */
+export const upNow = () => (T.up ? Math.max(0, Math.min(MAX_RUN, Date.now() - T.up)) : 0);
 
 // Worker timers aren't throttled in background tabs, so a phase ends (and notifies) on time.
 let W: Worker | null = null;
@@ -65,12 +67,13 @@ function logFocus(ms: number, full: boolean, at: number, run?: string) {
 
 export function flushPartial() {
   if (T.mode !== "focus" || T.status === "idle") return;
-  const el = (T.total || dur("focus")) - remNow();
+  const el = T.up ? upNow() : (T.total || dur("focus")) - remNow();
   if (el >= MIN) { logFocus(el, false, Date.now()); toast("Logged " + fmtDur(el) + " of focus."); }
 }
 
 export function setMode(m: Mode, keep?: boolean) {
   if (!keep) delete T.adj[T.mode];
+  delete T.up; delete T.upKind;
   if (T.mode === "long" && m !== "long" && T.setIndex >= S.settings.longEvery) T.setIndex = 0;
   if (keep && T.status !== "idle") T.saved[T.mode] = { remaining: remNow(), total: T.total };
   const s = T.saved[m];
@@ -97,6 +100,7 @@ export function pause() {
 }
 
 export function complete(at: number) {
+  if (T.up) { stopUp(at); return; }
   const wasFocus = T.mode === "focus";
   const stale = Date.now() - at > MIN;
   timerQuiet = stale;
@@ -114,6 +118,7 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
     next = T.setIndex >= S.settings.longEvery ? "long" : "short";
     delete T.saved[next];
   } else next = "focus";
+  if (wasFocus && !stale && !follow) T.bellAt = at; else delete T.bellAt;
   const rang = releaseBell(at);
   if (!rang && !stale) playSound(wasFocus ? "focus" : "break");
   if (!stale && !document.hidden) buzz([60, 80, 60]);
@@ -129,12 +134,40 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
   if (wasFocus && !stale) roomRoundEnded();
 }
 
-export const toggle = () => (T.status === "running" ? pause() : start());
+export const toggle = () => (T.up ? stopUp() : T.status === "running" ? pause() : start());
+
+/** "Keep going" is offered for ten minutes after a focus cycle rings, outside rooms, whose shared clock leads. */
+export const canKeepGoing = () => !!T.bellAt && T.mode !== "focus" && !RM.code && Date.now() - T.bellAt < 10 * MIN;
+
+/** Goes back to focus, counting up from the bell, so the minutes worked before pressing it count too. */
+export function keepGoing() {
+  if (!canKeepGoing()) { toast(RM.code ? "In a room, the room's clock leads." : "Keep going works for ten minutes after a cycle ends."); return; }
+  const since = T.bellAt!;
+  cancelEnd();
+  delete T.saved.focus; delete T.bellAt;
+  // The end sits at the longest allowed session, so the blocker, soundscapes and other devices treat it as a running focus.
+  Object.assign(T, { mode: "focus", status: "running", up: since, upKind: "over", total: 0, remaining: null, endsAt: since + MAX_RUN, run: "ot-" + since.toString(36) });
+  scheduleEnd(); saveTimer(); wakeOn(); renderTimer(true);
+  toast("Keep going. Stop when you're done, and your break grows to match.");
+}
+
+/** Ends a count-up session: logs it and starts a break that grows with it. */
+export function stopUp(at = Date.now()) {
+  if (!T.up) return;
+  const ms = Math.max(0, Math.min(MAX_RUN, at - T.up)), next: Mode = T.setIndex >= S.settings.longEvery ? "long" : "short";
+  if (ms >= MIN) logFocus(ms, false, at, T.run);
+  const extra = extraBreakMin(ms);
+  setMode(next);
+  if (extra) { T.adj[next] = extra * MIN; saveTimer(); renderTimer(true); }
+  toast((ms >= MIN ? "Logged " + fmtDur(ms) + " past the bell." : "Back to your break.") + (extra ? " Your break gets " + extra + " more " + (extra === 1 ? "minute." : "minutes.") : ""));
+  if (S.settings.autoBreak) start();
+}
 
 // Android only; iOS has no vibration API.
 export const buzz = (pattern: number | number[]) => { try { if (navigator.vibrate && matchMedia("(hover: none)").matches) navigator.vibrate(pattern); } catch {} };
 
 export function adjust(min: number) {
+  if (T.up) { toast("This session counts up. Stop when you're done."); return; }
   const d = min * MIN, total = totalNow() + d, rem = remNow() + d;
   if (rem < MIN) { toast("A session needs at least a minute left."); return; }
   if (total > MAX_RUN) { toast("A session can't be longer than " + fmtDur(MAX_RUN) + "."); return; }
@@ -156,7 +189,7 @@ export function notify(body: string) {
 }
 
 // Skipping keeps the clock going if it was running.
-export function skip() { const run = T.status === "running"; flushPartial(); setMode(T.mode === "focus" ? "short" : "focus"); if (run) start(); }
+export function skip() { if (T.up) { stopUp(); return; } const run = T.status === "running"; flushPartial(); setMode(T.mode === "focus" ? "short" : "focus"); if (run) start(); }
 
 export function tick() {
   if (T.status === "running" && Date.now() >= T.endsAt) complete(T.endsAt);

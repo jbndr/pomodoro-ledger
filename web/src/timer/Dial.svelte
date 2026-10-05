@@ -4,9 +4,9 @@
 
   let { sub } = $props();
 
-  const frac = $derived(fraction(timerView.rem, timerView.total));
-  const secs = $derived(Math.ceil(timerView.rem / 1000));
-  const chars = $derived([...clock(secs)]);
+  const frac = $derived(timerView.up ? 1 : fraction(timerView.rem, timerView.total));
+  const secs = $derived(timerView.up ? Math.floor(timerView.rem / 1000) : Math.ceil(timerView.rem / 1000));
+  const chars = $derived([...(timerView.up ? "+" : "") + clock(secs)]);
   const lit = $derived(litTicks(frac));
   const knob = $derived(knobAt(frac));
 </script>
@@ -19,7 +19,7 @@
     <circle class="knob" id="knob" cx={knob.cx} cy={knob.cy} r="9" />
   </svg>
   <div class="dial-center" aria-live="off">
-    <div class="time" id="time" role="timer" aria-label={clockLabel(secs)}>{#each chars as c}<span class={c === ":" ? "c" : "d"}>{c}</span>{/each}</div>
+    <div class="time" class:counting={timerView.up} id="time" role="timer" aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + " seconds past the bell" : clockLabel(secs)}>{#each chars as c}<span class={c === ":" ? "c" : c === "+" ? "p" : "d"}>{c}</span>{/each}</div>
     <div class="dial-sub" id="dialSub">{sub}</div>
   </div>
 </div>

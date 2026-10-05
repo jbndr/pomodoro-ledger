@@ -77,6 +77,11 @@ export interface Timer {
   /** Minutes added to or taken from a phase before it starts. */
   adj: Partial<Record<Mode, number>>;
   run?: string;
+  /** When a count-up session started; while it's set, the clock counts up instead of down. */
+  up?: number;
+  upKind?: "over" | "flow";
+  /** When the last focus cycle rang, which a "Keep going" counts from. */
+  bellAt?: number;
 }
 
 const timerOf = (o: object): Timer => Object.assign({ mode: "focus", status: "idle", remaining: null, endsAt: 0, total: 0, setIndex: 0, saved: {}, adj: {} } as Timer, o);

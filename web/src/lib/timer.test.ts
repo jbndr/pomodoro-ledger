@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "./tasks";
-import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, modeLabel, roundDots, startLabel, TICKS } from "./timer";
+import { arcOffset, CIRCUMFERENCE, clock, clockLabel, extraBreakMin, fraction, knobAt, litTicks, modeLabel, roundDots, startLabel, TICKS } from "./timer";
 
 describe("clock", () => {
   it("pads minutes and seconds", () => {
@@ -66,4 +66,14 @@ describe("roundDots", () => {
   it("fills every round during an earned long break", () => expect(roundDots("long", 4, 4)).toEqual(["done", "done", "done", "done"]));
   it("keeps the place in the cycle during an early long break", () => expect(roundDots("long", 2, 4)).toEqual(["done", "done", "", ""]));
   it("caps the index at the round count", () => expect(roundDots("focus", 9, 3)).toEqual(["done", "done", "done"]));
+});
+
+describe("extraBreakMin", () => {
+  it("adds about a minute of break per five minutes past the bell, up to fifteen", () => {
+    expect(extraBreakMin(0)).toBe(0);
+    expect(extraBreakMin(2 * 60_000)).toBe(0);
+    expect(extraBreakMin(3 * 60_000)).toBe(1);
+    expect(extraBreakMin(12 * 60_000)).toBe(2);
+    expect(extraBreakMin(4 * 3600_000)).toBe(15);
+  });
 });

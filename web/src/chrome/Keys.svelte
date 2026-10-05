@@ -23,6 +23,7 @@
       <section><h3>Timer</h3><dl>
         <dt><kbd>Space</kbd></dt><dd><span>Start or pause</span></dd>
         <dt><kbd>S</kbd></dt><dd><span>Skip to the next phase</span></dd>
+        <dt><kbd>O</kbd></dt><dd><span>Keep going after the bell (for ten minutes after a cycle)</span></dd>
         <dt><kbd>+</kbd> <kbd>−</kbd></dt><dd><span>A minute more or less</span></dd>
         <dt><kbd>F</kbd></dt><dd><span>Fill the page</span></dd>
         <dt><kbd>⇧</kbd> <kbd>F</kbd></dt><dd><span>Full screen</span></dd>
