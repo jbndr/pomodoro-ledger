@@ -2,6 +2,7 @@
   import { clock, MODE_NAME, MODES, roundDots, startLabel } from "../lib/timer";
   import Dial from "./Dial.svelte";
   import { onMount } from "svelte";
+  import { calm } from "../dom";
   import { timerView } from "./state.svelte";
 
   let { api } = $props();
@@ -31,6 +32,14 @@
       held: Object.fromEntries(MODES.map((m) => [m, T.saved[m] ? "Paused with " + clock(Math.ceil(T.saved[m].remaining / 1000)) + " left" : ""])),
     };
   });
+  // The pill springs to its new width when the word changes, so the change reads as one motion rather than a jump.
+  let goBtn, goWidth = 0;
+  $effect.pre(() => { c.status; if (goBtn) goWidth = goBtn.offsetWidth; });
+  $effect(() => {
+    c.status;
+    const w = goBtn.offsetWidth;
+    if (goWidth && w !== goWidth && !calm()) goBtn.animate([{ width: goWidth + "px" }, { width: w + "px" }], { duration: 380, easing: "cubic-bezier(.32, .72, 0, 1)" });
+  });
   const zenLabel = $derived(timerView.zen ? "Exit full screen" : "Full screen");
 
   // The floating timer's button is wired up before this mounts, so it is moved in rather than rendered here.
@@ -57,6 +66,6 @@
 </div>
 <div class="controls">
   <button class="round" type="button" id="resetBtn" aria-label="Reset timer" title="Reset" onclick={() => { api.buzz(8); api.flushPartial(); api.setMode(api.T.mode); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg></button>
-  <button class="go" type="button" id="startBtn" onclick={() => { api.buzz(api.T.status === "running" ? 8 : 14); api.toggle(); }}><span class="go-ic" aria-hidden="true"><span class:on={c.status !== "running"}>{@html api.ICON.play}</span><span class:on={c.status === "running"}>{@html api.ICON.pause}</span></span><span class="go-lbl">{#each ["Start", "Pause", "Resume"] as w}<span class:on={w === startLabel(c.status)} aria-hidden={w !== startLabel(c.status)}>{w}</span>{/each}</span></button>
+  <button class="go" type="button" id="startBtn" bind:this={goBtn} onclick={() => { api.buzz(api.T.status === "running" ? 8 : 14); api.toggle(); }}><span class="go-ic" aria-hidden="true"><span class:on={c.status !== "running"}>{@html api.ICON.play}</span><span class:on={c.status === "running"}>{@html api.ICON.pause}</span></span>{#key c.status}<span class="go-lbl">{startLabel(c.status)}</span>{/key}</button>
   <button class="round" type="button" id="skipBtn" aria-label="Skip to next phase" title="Skip" onclick={() => { api.buzz(8); api.skip(); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/></svg></button>
 </div>
