@@ -14,6 +14,7 @@
   const TOGGLE = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat", sRecap: "weeklyRecap", sPlanOffer: "weeklyPlan" };
   const TABS = [["timer", "Timer"], ["auto", "Automation"], ["alerts", "Sound & alerts"], ["sync", "Data & sync"]];
   const ROLLOVER = [["always", "Move to Today"], ["ask", "Ask"], ["never", "Don't move"]];
+  const TICKS = [...Array(12)].map((_, i) => { const a = (i / 12) * Math.PI * 2; return [32 + Math.sin(a) * 27.5, 32 - Math.cos(a) * 27.5, 32 + Math.sin(a) * 30.5, 32 - Math.cos(a) * 30.5].map((n) => +n.toFixed(2)); });
   const PACE = [["1", "1 s", "Every second"], ["2", "2 s", "Every 2 seconds"], ["4", "4 s", "Every 4 seconds"]];
   // A field being typed into keeps its text when settings arrive from another device.
   const HELD = { ...NUM, sDayEnd: "workdayEnd" };
@@ -121,6 +122,13 @@
   }
 </script>
 
+{#snippet mini(which)}
+  <span class="pv-face pv-{which}">
+    <svg viewBox="0 0 64 64"><circle class="pv-track" cx="32" cy="32" r="22"/><circle class="pv-arc" cx="32" cy="32" r="22" pathLength="100" stroke-dasharray="72 100" transform="rotate(-90 32 32)"/>{#each TICKS as [x1, y1, x2, y2], k (k)}<line x1={x1} y1={y1} x2={x2} y2={y2}/>{/each}<circle class="pv-knob" cx="32" cy="10" r="3.6"/></svg>
+    <i class="pv-go"></i>
+  </span>
+{/snippet}
+
 <div class="overlay" id="settings" hidden role="presentation" onclick={(e) => { if (e.target === e.currentTarget) close(); }}>
   <form class="sheet settings-sheet" id="settingsForm" aria-labelledby="setH" oninput={changed} onsubmit={(e) => { e.preventDefault(); close(); }}>
     <div class="sec-head"><h2 id="setH">Settings</h2><button class="icon-btn" type="button" id="closeSettings" aria-label="Close settings" onclick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -152,7 +160,7 @@
           <legend>Phase change</legend>
           <div class="pm-tiles" role="radiogroup" aria-label="How the timer changes colour between focus and breaks">
             {#each PHASE_MORPHS as [v, name] (v)}
-              <label class="pm-tile"><input type="radio" name="sPhaseMorph" value={v} bind:group={f.phaseMorph}><span class="pv pv-{v}" aria-hidden="true"><i></i></span><span>{name}</span></label>
+              <label class="pm-tile"><input type="radio" name="sPhaseMorph" value={v} bind:group={f.phaseMorph}><span class="pv pv-{v}" aria-hidden="true">{@render mini("now")}{@render mini("next")}</span><span>{name}</span></label>
             {/each}
           </div>
           <p class="hint">{PHASE_MORPHS.find(([v]) => v === f.phaseMorph)?.[2]} With reduced motion turned on, changes are instant.</p>
