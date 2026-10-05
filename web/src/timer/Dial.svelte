@@ -3,7 +3,7 @@
   import { rollDigits } from "../lib/roll";
   import { timerView } from "./state.svelte";
 
-  let { sub } = $props();
+  let { sub, nudge = null, onnudge = () => {} } = $props();
 
   const frac = $derived(timerView.up ? 1 : fraction(timerView.rem, timerView.total));
   const secs = $derived(timerView.up ? Math.floor(timerView.rem / 1000) : Math.ceil(timerView.rem / 1000));
@@ -29,6 +29,7 @@
   </svg>
   <div class="dial-center" aria-live="off">
     <div class="time" class:counting={timerView.up} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + " seconds past the bell" : clockLabel(secs)}>{#each chars as c}<span class={c === ":" ? "c" : c === "+" ? "p" : "d"}>{c}</span>{/each}</div>
-    <div class="dial-sub" id="dialSub">{sub}</div>
+    {#if nudge}<button class="nudge" class:done={nudge.done} type="button" disabled={nudge.done} aria-label={nudge.done ? "Done: " + nudge.text : nudge.text + ". Mark as done"} title={nudge.done ? "" : "Tap when done"} onclick={onnudge}><i aria-hidden="true">{#if nudge.done}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{/if}</i><span>{nudge.text}</span></button>
+    {:else}<div class="dial-sub" id="dialSub">{sub}</div>{/if}
   </div>
 </div>

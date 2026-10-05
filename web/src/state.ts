@@ -1,6 +1,7 @@
 import type { Label } from "./lib/labels";
 import type { SavedMix } from "./lib/mix";
 import type { PhaseMorph } from "./lib/phaseMorph";
+import type { Nudge } from "./lib/nudges";
 import type { Repeat } from "./lib/repeat";
 import type { Rollover } from "./lib/rollover";
 import type { Scape } from "./lib/soundscape";
@@ -28,6 +29,10 @@ export interface Settings {
   /** Mixes like "rain:70,fire:40"; empty is off. */
   scapeFocus?: string; scapeBreak?: string; scapeMixes: SavedMix[];
   weeklyRecap: boolean;
+  /** Break nudges; unset means the presets. */
+  nudges?: Nudge[];
+  /** When each nudge was last offered, and how many were done per day. */
+  nudgeSeen?: Record<string, number>; nudgeLog?: Record<string, number>;
   /** The week (its first day) whose visit already showed a recap. */
   recapSeen: string;
   weeklyPlan: boolean; plans: WeekPlan[];
@@ -82,6 +87,8 @@ export interface Timer {
   upKind?: "over" | "flow";
   /** When the last focus cycle rang, which a "Keep going" counts from. */
   bellAt?: number;
+  /** The break's nudge, if any. */
+  nudge?: { id: string; text: string; done?: boolean };
 }
 
 const timerOf = (o: object): Timer => Object.assign({ mode: "focus", status: "idle", remaining: null, endsAt: 0, total: 0, setIndex: 0, saved: {}, adj: {} } as Timer, o);

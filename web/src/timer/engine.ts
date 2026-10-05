@@ -4,6 +4,8 @@ import { announce } from "../extension";
 import { autoFloat } from "../float";
 import { fmtDur } from "../format";
 import { MIN } from "../lib/dates";
+import { dayKey } from "../lib/dates";
+import { logNudge, nudgesOf, pickNudge } from "../lib/nudges";
 import { extraBreakMin, MODES, type Mode } from "../lib/timer";
 import { renderAll, renderTimer } from "../render";
 import { followRoom, roomFollows, roomRoundEnded, roomTick, RM } from "../room/net";
@@ -74,6 +76,7 @@ export function flushPartial() {
 export function setMode(m: Mode, keep?: boolean) {
   if (!keep) delete T.adj[T.mode];
   delete T.up; delete T.upKind;
+  if (m === "focus") delete T.nudge;
   if (T.mode === "long" && m !== "long" && T.setIndex >= S.settings.longEvery) T.setIndex = 0;
   if (keep && T.status !== "idle") T.saved[T.mode] = { remaining: remNow(), total: T.total };
   const s = T.saved[m];
@@ -123,6 +126,7 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
   if (!rang && !stale) playSound(wasFocus ? "focus" : "break");
   if (!stale && !document.hidden) buzz([60, 80, 60]);
   setMode(next);
+  if (wasFocus && !stale) offerNudge(next);
   const auto = wasFocus ? S.settings.autoBreak : S.settings.autoFocus;
   if (follow && !stale) followRoom();
   // Starting from the end time, not now, lets every synced device arrive at the same next phase.
@@ -132,6 +136,24 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
   toast(msg);
   if (!stale) notify(msg);
   if (wasFocus && !stale) roomRoundEnded();
+}
+
+/** Picks one quiet body nudge for a break that follows focus. */
+function offerNudge(kind: Mode) {
+  if (kind === "focus") return;
+  const now = Date.now(), seen = S.settings.nudgeSeen || {}, n = pickNudge(nudgesOf(S.settings.nudges), seen, kind, now);
+  delete T.nudge;
+  if (!n) return;
+  T.nudge = { id: n.id, text: n.text };
+  S.settings.nudgeSeen = { ...seen, [n.id]: now };
+  Store.saveSettings(); saveTimer();
+}
+
+export function nudgeDone() {
+  if (!T.nudge || T.nudge.done) return;
+  T.nudge.done = true;
+  S.settings.nudgeLog = logNudge(S.settings.nudgeLog || {}, dayKey(Date.now()));
+  Store.saveSettings(); saveTimer(); renderTimer(true);
 }
 
 export const toggle = () => (T.up ? stopUp() : T.status === "running" ? pause() : start());
@@ -158,6 +180,7 @@ export function stopUp(at = Date.now()) {
   if (ms >= MIN) logFocus(ms, false, at, T.run);
   const extra = extraBreakMin(ms);
   setMode(next);
+  offerNudge(next);
   if (extra) { T.adj[next] = extra * MIN; saveTimer(); renderTimer(true); }
   toast((ms >= MIN ? "Logged " + fmtDur(ms) + " past the bell." : "Back to your break.") + (extra ? " Your break gets " + extra + " more " + (extra === 1 ? "minute." : "minutes.") : ""));
   if (S.settings.autoBreak) start();

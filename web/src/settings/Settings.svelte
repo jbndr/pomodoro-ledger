@@ -6,6 +6,7 @@
   import { rolloverMode } from "../lib/rollover";
   import { rovingIndex, tickPace, tickVolume, wholeIn, workdayEnd } from "../lib/settings";
   import Mixer from "./Mixer.svelte";
+  import NudgeSettings from "./NudgeSettings.svelte";
   import SyncPanel from "./SyncPanel.svelte";
 
   let { api } = $props();
@@ -201,6 +202,7 @@
             <label class="toggle"><span>Offer to plan the week<small>A quiet prompt from Sunday to Tuesday · P opens it any time</small></span><input type="checkbox" id="sPlanOffer" bind:checked={f.weeklyPlan}></label>
           </div>
         </fieldset>
+        <NudgeSettings api={{ S: api.S, Store: api.Store, ICON: api.ICON }} version={mixVersion} />
         {#if extOn}
           <fieldset class="group" id="blockRow">
             <legend>Block distracting sites</legend>

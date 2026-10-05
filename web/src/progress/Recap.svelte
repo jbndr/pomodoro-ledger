@@ -15,6 +15,7 @@
   const r = $derived.by(() => { version; return start ? weekRecap(api.viewTasks(), start) : null; });
   const first = $derived.by(() => { version; return firstWeek(api.viewTasks()); });
   const delta = $derived(r ? r.ms - r.before.ms : 0);
+  const bodyBreaks = $derived.by(() => { version; const log = api.S.settings.nudgeLog || {}; return start ? [...Array(7)].reduce((n, _, i) => n + (log[dayKey(addDays(start, i))] || 0), 0) : 0; });
   const maxDay = $derived(r ? Math.max(1, ...r.days.map((d) => d.ms)) : 1);
   const title = $derived(start === thisWeek() ? "This week so far" : start === addDays(thisWeek(), -7) ? "Last week" : "Week of " + api.fmtDate(start, { day: "numeric", month: "long" }));
   const range = $derived(api.fmtDate(start, { weekday: "short", day: "numeric", month: "short" }) + " – " + api.fmtDate(addDays(start, 6), { weekday: "short", day: "numeric", month: "short" }));
@@ -98,6 +99,7 @@
         <div><b>{r.finished.length}</b><span>{r.finished.length === 1 ? "task" : "tasks"} finished</span></div>
         <div><b>{r.streak}</b><span>{r.streak === 1 ? "day" : "days"} streak</span></div>
       </div>
+      {#if bodyBreaks}<p class="recap-nudges">{api.plural(bodyBreaks, "body break")} taken.</p>{/if}
       <div class="recap-days">
         <div class="recap-bars">
           {#each r.days as d, i (i)}
