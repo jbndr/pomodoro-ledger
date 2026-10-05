@@ -1,5 +1,6 @@
 <script>
   import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, TICKS } from "../lib/timer";
+  import { rollDigits } from "../lib/roll";
   import { timerView } from "./state.svelte";
 
   let { sub } = $props();
@@ -9,6 +10,14 @@
   const chars = $derived([...(timerView.up ? "+" : "") + clock(secs)]);
   const lit = $derived(litTicks(frac));
   const knob = $derived(knobAt(frac));
+
+  // Jumps (±min, skip, a new phase) roll the digits that changed; ordinary seconds keep still.
+  let timeEl, before = [], beforeSecs = 0, seen = -1;
+  $effect(() => {
+    const now = chars, v = timerView.version;
+    if (v !== seen && seen >= 0 && before.length === now.length) rollDigits([...timeEl.children], before, now, secs > beforeSecs);
+    before = now; beforeSecs = secs; seen = v;
+  });
 </script>
 
 <div class="dial-wrap">
@@ -19,7 +28,7 @@
     <circle class="knob" id="knob" cx={knob.cx} cy={knob.cy} r="9" />
   </svg>
   <div class="dial-center" aria-live="off">
-    <div class="time" class:counting={timerView.up} id="time" role="timer" aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + " seconds past the bell" : clockLabel(secs)}>{#each chars as c}<span class={c === ":" ? "c" : c === "+" ? "p" : "d"}>{c}</span>{/each}</div>
+    <div class="time" class:counting={timerView.up} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + " seconds past the bell" : clockLabel(secs)}>{#each chars as c}<span class={c === ":" ? "c" : c === "+" ? "p" : "d"}>{c}</span>{/each}</div>
     <div class="dial-sub" id="dialSub">{sub}</div>
   </div>
 </div>

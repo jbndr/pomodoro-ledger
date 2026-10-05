@@ -1,4 +1,5 @@
 <script>
+  import { roll } from "../lib/roll";
   import { addDays, dayKey, sod } from "../lib/dates";
   import { progress } from "../lib/redraw.svelte";
   import { dayLabels, dayTotals, estimateAccuracy, streaks, sumDays } from "../lib/stats";
@@ -63,22 +64,22 @@
   <div class="tiles" id="tiles">
     <div class="tile">
       <div class="k">Focus today</div>
-      <div class="v">{@render dur(m.todayTotal.ms)}</div>
+      <div class="v" {@attach roll}>{@render dur(m.todayTotal.ms)}</div>
       <div class="s"><div class="meter" role="img" aria-label={m.todayTotal.cycles + " of " + m.goal + " cycles"}><b style:width={Math.min(100, (m.todayTotal.cycles / m.goal) * 100) + "%"}></b></div><span>{m.todayTotal.cycles} of {m.goal} cycles{m.todayTotal.cycles >= m.goal ? " · goal reached" : ""}</span></div>
     </div>
     <div class="tile">
       <div class="k">Focus · 7 days</div>
-      <div class="v">{@render dur(m.week)}</div>
+      <div class="v" {@attach roll}>{@render dur(m.week)}</div>
       <div class="s">{#if m.before || m.week}<span class={m.week >= m.before ? "up" : "down"}>{m.week >= m.before ? "+" : "−"}{api.fmtDur(Math.abs(m.week - m.before))}</span> vs the 7 days before{:else}No focus logged yet{/if}</div>
     </div>
     <div class="tile">
       <div class="k">Streak</div>
-      <div class="v">{m.streak.current}<small>{m.streak.current === 1 ? "day" : "days"}</small></div>
+      <div class="v" {@attach roll}>{m.streak.current}<small>{m.streak.current === 1 ? "day" : "days"}</small></div>
       <div class="s">{m.streak.current ? "Best run: " + api.plural(m.streak.best, "day") : "Finish a cycle today to start one"}</div>
     </div>
     <div class="tile">
       <div class="k">Estimates</div>
-      <div class="v">{#if m.estimates.ratio == null}–{:else}{m.estimates.ratio.toFixed(2)}<small>×</small>{/if}</div>
+      <div class="v" {@attach roll}>{#if m.estimates.ratio == null}–{:else}{m.estimates.ratio.toFixed(2)}<small>×</small>{/if}</div>
       <div class="s">{#if m.estimates.ratio == null}Finish a task to compare plan and reality{:else}{Math.abs(m.estimates.diff) < 5 ? "Finished tasks land close to plan" : "Tasks take " + Math.abs(m.estimates.diff) + "% " + (m.estimates.diff > 0 ? "more" : "fewer") + " cycles than planned"} · {api.plural(m.estimates.count, "task")}{/if}</div>
     </div>
   </div>
