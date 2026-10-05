@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupAt, jump, place, placements, step, type Entry } from "./order";
+import { groupAt, jump, place, placements, step, toTop, type Entry } from "./order";
 
 const g = (key: string, end?: string): Entry => ({ kind: "group", g: key, ...(end ? { end } : {}) });
 const t = (id: string): Entry => ({ kind: "task", id });
@@ -69,5 +69,20 @@ describe("placements", () => {
   it("carries a month heading's range and falls back without headings", () => {
     expect(placements([g("2026-11-01", "2026-11-30"), t("m")], "later")).toEqual([{ id: "m", g: "2026-11-01", end: "2026-11-30", order: 0 }]);
     expect(placements([t("x")], "later")).toEqual([{ id: "x", g: "later", end: "", order: 0 }]);
+  });
+});
+
+describe("toTop", () => {
+  it("moves a task to the top of its own group", () => {
+    expect(names(toTop(today, ["c"]))).toEqual(["#today", "a", "#sec:deep", "c", "b", "#sec:admin", "d"]);
+  });
+  it("keeps several picked tasks in their order, each at the top of its group", () => {
+    const list = [g("today"), t("a"), t("b"), t("c"), g("sec:deep"), t("d"), t("e")];
+    expect(names(toTop(list, ["c", "b", "e"]))).toEqual(["#today", "b", "c", "a", "#sec:deep", "e", "d"]);
+  });
+  it("returns null when everything is already on top", () => {
+    expect(toTop(today, ["a"])).toBeNull();
+    expect(toTop(today, ["b", "d"])).toBeNull();
+    expect(toTop(today, ["missing"])).toBeNull();
   });
 });

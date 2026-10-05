@@ -3,7 +3,7 @@ import { composer } from "./composer/state.svelte";
 import { $, taskRow, taskRows } from "./dom";
 import { phone, showPage } from "./pages";
 import { S } from "./state";
-import { focusRow, scheduleTask } from "./tasks/actions";
+import { focusRow, moveTasksToTop, scheduleTask } from "./tasks/actions";
 import { groupName, guardPreview, quickDays } from "./tasks/derived";
 import { adjust, skip, toggle } from "./timer/engine";
 import { closeKeys, closeRecap, closeRoom, closeSettings, openKeys, openPlan, openWhen, togglePalette, ui } from "./ui";
@@ -80,6 +80,7 @@ export function onKey(e: KeyboardEvent) {
   else if ((e.key === "+" || e.key === "=") && !e.metaKey && !e.ctrlKey) adjust(1);
   else if (e.key === "-" && !e.metaKey && !e.ctrlKey) adjust(-1);
   else if (e.key === "Escape" && zen()) toggleZen(false);
+  else if (e.key === "ArrowUp" && e.altKey && (mac ? e.metaKey : e.ctrlKey) && !zen()) { e.preventDefault(); const t = shortcutTask(); if (t) moveTasksToTop([t.id]); else toast("Point at a task or pick one to work on first."); }
   else if ((e.key === "ArrowUp" || e.key === "ArrowDown") && e.altKey && !e.metaKey && !e.ctrlKey && !zen()) { e.preventDefault(); moveTaskKey(e.key === "ArrowUp", e.shiftKey); }
   else if (/^[tmwld]$/i.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && !zen()) { e.preventDefault(); scheduleShortcut(e.key.toLowerCase()); }
   else if (["ArrowDown", "ArrowUp", "j", "k"].includes(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey && !zen() && !$("#taskList").contains(document.activeElement)) {

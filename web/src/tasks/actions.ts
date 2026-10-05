@@ -12,7 +12,7 @@ import { playSound } from "../sound";
 import { clone, S, T, type Section, type Task } from "../state";
 import { Labels, Store } from "../store";
 import { saveTimer, setMode, start } from "../timer/engine";
-import { closeWhen, openLabelPop, openWhen } from "../ui";
+import { closeWhen, openLabelPop, openWhen, ui } from "../ui";
 import { dayName, guardPreview, inGroup, inProject, isToday, markStarted, openOf, ord, placed, preview, sections, shortDay, subsOf, todayKey, topOfToday, viewOf, viewTasks } from "./derived";
 
 /** Slides rows out of the list before `done` saves the change that removes them. */
@@ -286,4 +286,71 @@ export function dismissCard(e: PointerEvent) {
   if (!S.openTask || (e.target as Element).closest(".task.open, #whenPop, #labelPop, #pop, .toast")) return;
   const el = document.activeElement; if (el && el.matches && el.matches("[data-field]")) saveField(el as Field);
   S.openTask = null; S.confirmDel = null; renderTasks();
+}
+
+/** Puts tasks at the top of the group each one is in. */
+export function moveTasksToTop(ids: string[]) {
+  if (guardPreview() || !ids.length) return;
+  if (S.projectFilter) { toast("Show all tasks to move them to the top."); return; }
+  const one = ids.length === 1 ? S.tasks.get(ids[0]) : null;
+  if (!ui.list?.moveToTop(ids)) { toast(one ? "“" + one.title + "” is already at the top." : "They're already at the top."); return; }
+  toast(one ? "Moved “" + one.title + "” to the top." : "Moved " + plural(ids.length, "task") + " to the top.");
+}
+
+const openTasks = (ids: string[]) => ids.map((id) => S.tasks.get(id)).filter((t): t is Task => !!t && !t.done);
+
+export function labelTasks(ids: string[], find: () => Element | null | undefined) {
+  const list = openTasks(ids);
+  if (guardPreview() || !list.length) return;
+  const first = projectOf(list[0]), same = list.every((t) => projectOf(t) === first);
+  openLabelPop("bulk", find, same ? first : "", (name) => {
+    const changed = list.filter((t) => projectOf(t) !== name).map((t) => { const n = clone(t); if (name) n.project = Labels.use(name); else delete n.project; return n; });
+    if (changed.length) Store.saveTasks(changed);
+    toast(name ? "Labelled " + plural(list.length, "task") + " “" + name + "”." : "Removed the label from " + plural(list.length, "task") + ".");
+  });
+}
+
+export function schedTasks(anchor: Element, ids: string[]) {
+  const list = openTasks(ids);
+  if (guardPreview() || !list.length) return;
+  if (!whenPop.hidden) { closeWhen(); return; }
+  openWhen(anchor, {}, (g) => {
+    if (g !== "today" && g !== "later" && g <= todayKey()) g = "today";
+    let last = Math.max(-1, ...openOf(S.tasks).filter((x) => !ids.includes(x.id) && inGroup(x, g)).map(ord));
+    const where = g === "later" ? "Later" : dayName(g === "today" ? todayKey() : g);
+    const save = () => { Store.saveTasks(list.map((t) => placed(t, g, ++last))); toast("Moved " + plural(list.length, "task") + " to " + where + "."); };
+    if (viewOf(g) !== S.taskView) leaveRows(ids, save); else save();
+  }, (r) => {
+    Store.saveTasks(list.map((t) => withRepeat(clone(t), r, todayKey())));
+    toast(r ? plural(list.length, "task") + " now repeat e" + repeatText(r).slice(1) + "." : plural(list.length, "task") + " no longer repeat.");
+  });
+}
+
+export function finishTasks(ids: string[]) {
+  const list = openTasks(ids);
+  if (guardPreview() || !list.length) return;
+  playSound("task");
+  leaveRows(list.map((t) => t.id), () => {
+    const now = Date.now(), out: Task[] = [];
+    for (const t of list) {
+      const n = clone(t); n.done = true; n.doneAt = now; out.push(n);
+      const next = nextOccurrence(n, todayKey());
+      if (next && !S.tasks.has(next.id) && !openOf(S.tasks).some((x) => !ids.includes(x.id) && seriesOf(x) === next.series)) out.push(next);
+      if (S.openTask === t.id) S.openTask = null;
+    }
+    if (S.activeId && ids.includes(S.activeId)) { S.activeId = openOf(S.tasks).find((x) => !ids.includes(x.id))?.id || null; saveTimer(); }
+    Store.saveTasks(out);
+    toast("Finished " + plural(list.length, "task") + ".");
+  });
+}
+
+export function deleteTasks(ids: string[]) {
+  const list = openTasks(ids);
+  if (guardPreview() || !list.length) return;
+  leaveRows(list.map((t) => t.id), () => {
+    for (const t of list) { if (S.openTask === t.id) S.openTask = null; Store.deleteTask(t.id, false); }
+    if (S.activeId && ids.includes(S.activeId)) { S.activeId = null; saveTimer(); }
+    renderTasks();
+    toast("Deleted " + plural(list.length, "task") + ".");
+  });
 }

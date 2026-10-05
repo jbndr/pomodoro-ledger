@@ -46,13 +46,14 @@ import { exportLedger, importLedger, planImport } from "./settings/backup";
 import Settings from "./settings/Settings.svelte";
 import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, previewSoundscape, previewTicking, scheduleEnd, syncTicking } from "./sound";
 import { cancelScapePreview, scapePlaying } from "./soundscape";
-import { DEMO, ls, S, ss, T } from "./state";
+import { DEMO, ls, S, ss, T, type Task } from "./state";
 import { Labels, Store } from "./store";
-import { addSection, addSubtasks, addTask, commitPlacements, completeTask, completing, deleteSubtask, deleteTask, dismissCard, editSubtask, focusOnTask, focusRow, labelTask, moveSection, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
+import { addSection, addSubtasks, addTask, commitPlacements, completeTask, completing, deleteSubtask, deleteTask, deleteTasks, dismissCard, editSubtask, finishTasks, focusOnTask, focusRow, labelTask, labelTasks, moveSection, moveTasksToTop, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, schedTasks, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
 import { bucketOf, dayName, enterDemo, filterLabel, groupName, guardPreview, inProject, isToday, labelChipName, labelHidden, listHead, markStarted, openOf, preview, sections, shortDay, subsOf, todayKey, viewTasks } from "./tasks/derived";
 import ListFoot from "./tasks/ListFoot.svelte";
 import ListHead from "./tasks/ListHead.svelte";
 import { leaveAsked, leftoverPrompt, moveAsked, newDay } from "./tasks/rollover";
+import BulkBar from "./tasks/BulkBar.svelte";
 import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
 import { adjust, arm, buzz, complete, dur, flushPartial, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
@@ -103,6 +104,7 @@ mount(BarTools, { target: $(".bar-right"), props: { api: {
 } } });
 mount(RoomStrip, { target: $(".app"), anchor: $(".bar").nextSibling!, props: { api: roomApi } });
 timerLayout.observe($("#roomStrip"));
+mount(BulkBar, { target: document.body, props: { api: { S, ICON, shown: (t: Task) => bucketOf(t) === S.taskView && inProject(t), toTop: moveTasksToTop, labelMany: labelTasks, schedMany: schedTasks, finishMany: finishTasks, deleteMany: deleteTasks } } });
 mount(Tip, { target: document.body });
 mount(Toast, { target: document.body });
 ui.room = mount(RoomDialog, { target: document.body, props: { api: roomApi } }) as Sheet;
@@ -156,7 +158,7 @@ ui.list = mount(TaskList, { target: panel, anchor: $("#taskFoot"), props: { api:
   todayKey, bucketOf, isToday, sections, openOf, viewTasks, inProject, cyclesOf, timeOf, projectOf, labelHue, labelChipName, subsOf,
   plural, fmtDur, fmtDate, fmtClock, shortDay, dayName, keyTime, dayKey, addDays, sod, dur, groupName,
   renderTasks, commit: commitPlacements, focusRow, hover: setHover, goalLookup,
-  open: toggleCard, complete: completeTask, focus: focusOnTask, label: labelTask, sched: schedTask, del: deleteTask, setEst: setEstimate,
+  open: toggleCard, complete: completeTask, focus: focusOnTask, label: labelTask, sched: schedTask, del: deleteTask, setEst: setEstimate, toTop: moveTasksToTop, buzz,
   saveField, addSubtasks, subDone: (id: string, subid: string, done: boolean) => editSubtask(id, subid, (s) => { s.done = done; }), renameSub: renameSubtask, deleteSub: deleteSubtask,
   addSection, removeSection, renameSection, moveSection,
 } } }) as ListUI;

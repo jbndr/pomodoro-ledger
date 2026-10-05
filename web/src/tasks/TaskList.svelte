@@ -1,8 +1,9 @@
 <script>
   import { flushSync } from "svelte";
-  import { groupAt, jump, place, placements, step } from "../lib/order";
+  import { groupAt, jump, place, placements, step, toTop } from "../lib/order";
   import { list } from "../lib/redraw.svelte";
   import { buildList } from "./model.js";
+  import { picked, togglePick } from "./selection.svelte";
   import TaskRow from "./TaskRow.svelte";
 
   let { api } = $props();
@@ -63,7 +64,47 @@
     return { from, to };
   }
 
+  export function moveToTop(ids) {
+    const next = toTop(entries(), ids);
+    if (!next) return false;
+    flip(() => save(next));
+    return true;
+  }
+
   export const dragging = () => !!drag;
+
+  const taskIds = () => entries().filter((e) => e.kind === "task").map((e) => e.id);
+
+  // ⌘/Ctrl-click picks a task for a bulk edit, Shift-click picks a range; once anything is picked, a plain click or tap toggles.
+  function pickClick(e) {
+    if (pressPicked) { pressPicked = false; e.preventDefault(); e.stopPropagation(); return true; }
+    const li = e.target.closest(".task");
+    if (!li || li.classList.contains("open") || e.target.closest(".task-card, .side-acts, .grip, .check, input, textarea")) return false;
+    const mod = e.metaKey || e.ctrlKey;
+    if (!mod && !e.shiftKey && !picked.ids.length) return false;
+    e.preventDefault(); e.stopPropagation();
+    const id = li.dataset.id, ids = taskIds();
+    if (e.shiftKey && picked.anchor && ids.includes(picked.anchor)) {
+      const a = ids.indexOf(picked.anchor), b = ids.indexOf(id), [lo, hi] = a < b ? [a, b] : [b, a];
+      picked.ids = [...new Set([...picked.ids, ...ids.slice(lo, hi + 1)])];
+      return true;
+    }
+    togglePick(id);
+    return true;
+  }
+
+  // On touch, a long press picks the task, the way Mail and Photos start a selection.
+  let pressTimer = 0, pressAt = null, pressPicked = false;
+  function pressStart(e) {
+    if (e.pointerType === "mouse" || e.target.closest(".grip, .check, .side-acts, .task-card, input, textarea")) return;
+    const li = e.target.closest(".task");
+    if (!li || li.classList.contains("open")) return;
+    pressAt = { x: e.clientX, y: e.clientY };
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => { pressPicked = true; togglePick(li.dataset.id); api.buzz?.(10); }, 450);
+  }
+  function pressMove(e) { if (pressAt && Math.hypot(e.clientX - pressAt.x, e.clientY - pressAt.y) > 8) pressEnd(); }
+  function pressEnd() { clearTimeout(pressTimer); pressAt = null; }
 
   // Rows are hit-tested by layout position, so the sliding animations can't make the slot flicker back and forth.
   function updateDrop(y) {
@@ -223,6 +264,7 @@
 
   function keydown(e) {
     const t = e.target;
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "a" && !t.matches("input, textarea")) { e.preventDefault(); picked.ids = taskIds(); return; }
     if (t.matches(".sec-grip") && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
       e.preventDefault();
       const id = t.closest(".group.section").dataset.g.slice(4), i = api.sections().findIndex((x) => x.id === id);
@@ -285,15 +327,15 @@
   class:sorting={!!drag}
   id="taskList"
   bind:this={ul}
-  onpointerdown={pointerdown}
-  onpointermove={pointermove}
-  onpointerup={pointerend}
-  onpointercancel={pointerend}
+  onpointerdown={(e) => { pressStart(e); pointerdown(e); }}
+  onpointermove={(e) => { pressMove(e); pointermove(e); }}
+  onpointerup={(e) => { pressEnd(); pointerend(e); }}
+  onpointercancel={(e) => { pressEnd(); pointerend(e); }}
   onlostpointercapture={pointerend}
   onpointerover={(e) => { if (e.pointerType === "mouse") api.hover(e.target.closest(".task")?.dataset.id || ""); }}
   onpointerleave={() => api.hover("")}
   onkeydown={keydown}
-  onclickcapture={swallowClick}
+  onclickcapture={(e) => { if (!pickClick(e)) swallowClick(e); }}
 >
   {#each shown as it (it.key)}
     {#if it.kind === "task"}

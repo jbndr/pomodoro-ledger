@@ -1402,3 +1402,24 @@ body.zen .card-head { max-width: min(100%, 520px); }
   body[data-status="running"]:not(.zen) .panel:is(:hover, :focus-within) :is(.task, .add, .tasks .group, .day-fit),
   body[data-status="running"]:not(.zen) .progress:is(:hover, :focus-within) { opacity: 1; }
 }
+
+/* Bulk edit: picked rows tint blue, and a bar slides up with what you can do to all of them. */
+.task.selected, .task.selected.is-active:not(.open) { background: color-mix(in oklab, var(--sky) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--sky) 45%, transparent); }
+@media (hover: hover) { .task.selected:hover { background: color-mix(in oklab, var(--sky) 16%, transparent); } }
+.bulk-bar { position: fixed; z-index: 35; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); display: flex; align-items: center; gap: 2px; padding: 6px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 24px 60px -20px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.08); max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: none; translate: -50% 24px; opacity: 0; visibility: hidden; transition: translate .2s ease, opacity .16s ease, visibility 0s linear .2s; }
+.bulk-bar.open { translate: -50% 0; opacity: 1; visibility: visible; transition: translate .42s cubic-bezier(.32, .72, 0, 1), opacity .2s ease, visibility 0s; }
+.bulk-count { padding: 0 10px 0 8px; font-size: 13px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bulk-count b { color: var(--fg); font-weight: 650; }
+.bulk-bar button { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 12px; border: 0; border-radius: 12px; background: none; color: var(--fg); font-size: 13.5px; font-weight: 550; white-space: nowrap; cursor: pointer; transition: background .15s, color .15s; }
+.bulk-bar button svg { width: 16px; height: 16px; color: var(--muted); }
+@media (hover: hover) { .bulk-bar button:hover { background: var(--surface-2); } }
+.bulk-bar button.danger { background: color-mix(in oklab, var(--tomato) 14%, var(--surface)); color: var(--tomato); }
+.bulk-bar button.danger svg { color: currentColor; }
+.bulk-bar .bulk-x { width: 36px; padding: 0; justify-content: center; margin-left: 4px; }
+@media (max-width: 640px) {
+  .bulk-bar { bottom: calc(env(safe-area-inset-bottom, 0px) + 84px); }
+  .bulk-bar button { height: 44px; padding: 0 10px; }
+  .bulk-bar button:not(.bulk-x) svg { display: none; }
+}
+body:has(.bulk-bar.open) .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 82px); }
+@media (max-width: 640px) { body:has(.bulk-bar.open) .toast { bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); } }
