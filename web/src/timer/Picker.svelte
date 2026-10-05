@@ -1,7 +1,7 @@
 <script>
   import { flushSync, untrack } from "svelte";
   import { list } from "../lib/redraw.svelte";
-  import { cyclesOf, timeOf } from "../lib/tasks";
+  import { cyclesOf, labelHue, projectOf, timeOf } from "../lib/tasks";
   import { pickOptions } from "../lib/timer";
 
   let { api } = $props();
@@ -67,11 +67,11 @@
   <span id="pickLabel" class="vh">Working on</span>
   <div class="pick" id="pick">
     <!-- svelte-ignore a11y_role_supports_aria_props_implicit -->
-    <button class="pick-btn" type="button" id="taskPick" aria-haspopup="listbox" aria-expanded={String(open)} aria-labelledby="pickLabel pickValue" aria-activedescendant={open ? "pick-" + idx : null} onclick={() => (open ? (open = false) : show())} onkeydown={keydown} onkeyup={(e) => { if (e.key === " ") e.preventDefault(); }}><span id="pickValue">{p.opts[p.cur].id ? p.opts[p.cur].title : "Pick a task"}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10l4-4 4 4M8 14l4 4 4-4"/></svg></button>
+    <button class="pick-btn" type="button" id="taskPick" aria-haspopup="listbox" aria-expanded={String(open)} aria-labelledby="pickLabel pickValue" aria-describedby="workingNote" title={note} aria-activedescendant={open ? "pick-" + idx : null} onclick={() => (open ? (open = false) : show())} onkeydown={keydown} onkeyup={(e) => { if (e.key === " ") e.preventDefault(); }}>{#if p.act && projectOf(p.act)}<i class="label-dot" style:--h={labelHue(projectOf(p.act))}></i>{/if}<span id="pickValue">{p.opts[p.cur].id ? p.opts[p.cur].title : "Pick a task"}</span>{#if p.act}<em>{cyclesOf(p.act)}/{p.act.est || 0}</em>{/if}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 10l4-4 4 4M8 14l4 4 4-4"/></svg></button>
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <ul class="pick-menu" id="pickMenu" role="listbox" aria-labelledby="pickLabel" hidden={!open} bind:this={menu} onmousedown={(e) => e.preventDefault()} onpointermove={hover} onclick={click}>
       {#each p.opts as o, i (o.id)}<li role="option" id={"pick-" + i} data-i={i} aria-selected={String(i === p.cur)} class:act={open && i === idx}><span>{o.title}</span>{#if o.meta}<em>{o.meta}</em>{/if}{@html api.ICON.check}</li>{/each}
     </ul>
   </div>
-  <small id="workingNote">{note}</small>
+  <span id="workingNote" class="vh">{note}</span>
 </div>

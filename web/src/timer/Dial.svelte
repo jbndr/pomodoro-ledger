@@ -2,7 +2,7 @@
   import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, TICKS } from "../lib/timer";
   import { timerView } from "./state.svelte";
 
-  let { api, label, sub } = $props();
+  let { api, label, sub, children } = $props();
 
   const frac = $derived(fraction(timerView.rem, timerView.total));
   const secs = $derived(Math.ceil(timerView.rem / 1000));
@@ -25,7 +25,7 @@
   <div class="dial-center" aria-live="off">
     <div class="dial-label" id="modeLabel">{label}</div>
     <div class="time" id="time" role="timer" aria-label={clockLabel(secs)}>{#each chars as c}<span class={c === ":" ? "c" : "d"}>{c}</span>{/each}</div>
-    <div class="dial-sub" id="dialSub">{sub}</div>
+    <div class="dial-foot"><div class="dial-sub" id="dialSub">{sub}</div>{@render children?.()}</div>
   </div>
   <button class="icon-btn full-btn" type="button" id="fullBtn" aria-label={zenLabel} title={timerView.zen ? zenLabel : "Fill the page (F) · Shift-click for browser full screen (Shift+F)"} onclick={(e) => api.toggleZen(e.shiftKey)}>{@html timerView.zen ? api.ICON.shrink : api.ICON.expand}</button>
 </div>
