@@ -161,12 +161,34 @@ export function removeSection(id: string) {
 
 export const completing = new Map<string, ReturnType<typeof setTimeout>>();
 
+/** A few tomato dots fly out of the check when the last task of the day is done. */
+function burst(from: Element | null | undefined) {
+  if (!from || calm()) return;
+  const r = from.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const tones = ["var(--tomato)", "color-mix(in oklab, var(--tomato) 60%, #fff)", "color-mix(in oklab, var(--tomato) 70%, #E8A800)"];
+  for (let i = 0; i < 12; i++) {
+    const dot = document.createElement("i"), a = (i / 12) * Math.PI * 2 + Math.random() * 0.4, far = 30 + Math.random() * 26, size = 5 + Math.random() * 4;
+    dot.className = "burst-dot";
+    Object.assign(dot.style, { left: cx + "px", top: cy + "px", width: size + "px", height: size + "px", background: tones[i % tones.length] });
+    document.body.append(dot);
+    dot.animate([
+      { transform: "translate(-50%, -50%) scale(1)", opacity: 1 },
+      { transform: `translate(calc(-50% + ${(Math.cos(a) * far).toFixed(1)}px), calc(-50% + ${(Math.sin(a) * far).toFixed(1)}px)) scale(.4)`, opacity: 0 },
+    ], { duration: 620 + Math.random() * 180, easing: "cubic-bezier(.2, .8, .2, 1)", fill: "forwards" });
+    // A timer rather than onfinish: animations pause in background tabs.
+    setTimeout(() => dot.remove(), 1000);
+  }
+}
+
 export function completeTask(id: string) {
   if (guardPreview()) return;
   // A short pause before the task leaves, so a slipped click can be taken back.
   if (completing.has(id)) { clearTimeout(completing.get(id)); completing.delete(id); renderTasks(); return; }
-  if (!S.tasks.get(id)) return;
+  const t = S.tasks.get(id);
+  if (!t) return;
   playSound("task");
+  const lastToday = isToday(t) && openOf(S.tasks).every((x) => x.id === id || completing.has(x.id) || !isToday(x));
+  if (lastToday) burst(taskRow(id)?.querySelector(".check"));
   completing.set(id, setTimeout(() => {
     completing.delete(id);
     const cur = S.tasks.get(id); if (!cur || cur.done) return;
