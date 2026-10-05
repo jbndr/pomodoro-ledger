@@ -505,10 +505,18 @@ td.barcell { width: 38%; min-width: 120px; }
 .task-meta:empty { display: none; }
 .task-meta > span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
 .task-meta .meta-chip { padding: 0; border: 0; color: var(--faint); }
-/* Rows without a second line keep the height of those with one; every row centers on its checkbox. */
+/* Rows without a second line keep the height of those with one and center on the title.
+   Rows with one align the circle, handle and side to the title's first line, worked out from its line height. */
+.task { --title-lh: 20px; --check: 22px; --grip-h: 30px; --first-line: calc(2px + var(--title-lh) / 2); }
+.task .tt { line-height: var(--title-lh); }
 .task-main { min-height: 45.25px; align-content: center; }
 .task:not(.open) { align-items: center; }
 .task:not(.open) .check, .task:not(.open) .grip { margin-top: 0; }
+.task:not(.open):has(.task-meta:not(:empty)) { align-items: start; }
+.task:not(.open):has(.task-meta:not(:empty)) .task-main { align-content: start; }
+.task:not(.open):has(.task-meta:not(:empty)) .check { margin-top: calc(var(--first-line) - var(--check) / 2); }
+.task:not(.open):has(.task-meta:not(:empty)) .grip { margin-top: calc(var(--first-line) - var(--grip-h) / 2); }
+.task:not(.open):has(.task-meta:not(:empty)) .task-side { margin-top: calc(var(--first-line) - 16px); }
 .task-meta svg { width: 13px; height: 13px; flex: none; }
 .task-meta .done-all { color: var(--good); }
 .task-side { grid-column: 4; display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 32px; }
@@ -561,11 +569,14 @@ td.barcell { width: 38%; min-width: 120px; }
 /* Quick entry: a quiet row that opens into a small card, and reads When, estimate and #label from what you type. */
 .add { display: grid; grid-template-columns: 24px minmax(0, 1fr); column-gap: 10px; align-items: start; margin-top: 14px; padding: 10px 12px 10px 10px; border-radius: 14px; border: 1px solid transparent; background: var(--surface-2); transition: background .15s, border-color .15s, box-shadow .2s, opacity .6s cubic-bezier(.65, 0, .35, 1); }
 .add:focus-within, .add.open { background: var(--surface); border-color: var(--line-2); box-shadow: 0 16px 40px -26px rgba(0,0,0,.4); }
-.add-check { width: 22px; height: 22px; margin-top: 6px; border-radius: 50%; border: 1.6px dashed var(--line-2); display: grid; place-items: center; }
+.add { --add-lh: 21px; }
+.add.quick { --add-lh: 23px; }
+/* The circle centers on the title input's line: its top padding plus half its line height. */
+.add-check { width: 22px; height: 22px; margin-top: calc(6px + var(--add-lh) / 2 - 11px); border-radius: 50%; border: 1.6px dashed var(--line-2); display: grid; place-items: center; }
 .add-check::before { content: "+"; color: var(--faint); font-size: 15px; line-height: 1; }
 .add:focus-within .add-check::before, .add.open .add-check::before { content: ""; }
 .add-body { min-width: 0; display: grid; gap: 4px; }
-#newTitle { width: 100%; border: 0; background: transparent; padding: 6px 0; font: 550 15.5px var(--f-body); color: var(--fg); min-width: 0; }
+#newTitle { width: 100%; border: 0; background: transparent; padding: 6px 0; font: 550 15.5px/var(--add-lh) var(--f-body); color: var(--fg); min-width: 0; }
 #newTitle:focus, #newNotes:focus { outline: none; }
 #newTitle::placeholder, #newNotes::placeholder { color: var(--faint); }
 #newNotes { width: 100%; min-height: 1.5em; resize: none; border: 0; background: transparent; padding: 0; font: 14px/1.5 var(--f-body); color: var(--muted); field-sizing: content; }
@@ -586,8 +597,7 @@ td.barcell { width: 38%; min-width: 120px; }
 .est-pick button[aria-checked="true"] i { animation: check-pop .28s cubic-bezier(.2, .8, .2, 1.4); }
 .add-scrim { position: fixed; inset: 0; z-index: 42; background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: when-fade .18s ease-out; }
 .add.quick { position: fixed; z-index: 43; left: 50%; top: max(12px, min(14vh, 120px)); width: min(560px, calc(100vw - 24px)); margin: 0; translate: -50% 0; padding: 14px 16px 12px 14px; border-radius: 20px; border-color: var(--line); background: var(--surface); box-shadow: 0 30px 80px -30px rgba(0,0,0,.5), var(--shadow); animation: when-in .22s cubic-bezier(.2, .8, .2, 1); }
-.add.quick #newTitle { font-size: 17px; font-weight: 550; }
-.add.quick .add-check { margin-top: 8px; }
+.add.quick #newTitle { font-size: 17px; font-weight: 550; line-height: var(--add-lh); }
 .key-hint { position: absolute; z-index: 1; top: -9px; right: -6px; padding: 1px 5px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface); color: var(--fg); font: 650 10.5px var(--f-body); box-shadow: 0 2px 6px -2px rgba(0,0,0,.25); opacity: 0; scale: .85; transition: opacity .12s, scale .12s; pointer-events: none; }
 .add.hints .key-hint { opacity: 1; scale: 1; }
 #newWhen, #newLabel, #newEst, .new-task-options { position: relative; }
@@ -1159,6 +1169,7 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   .est-pick button { width: 100%; height: 44px; }
   .task { grid-template-columns: 24px 34px minmax(0, 1fr) auto; column-gap: 6px; padding-left: 0; }
   .grip { width: 24px; height: 44px; }
+  .task { --check: 26px; --grip-h: 44px; }
   .check { width: 26px; height: 26px; margin-top: 2px; justify-self: center; }
   .grip { margin-top: -7px; }
   .task.open { margin-inline: -4px; padding-right: 10px; }
