@@ -26,7 +26,14 @@ let settle = 0, pending: string | null = null;
 /** Shows a phase (the body's data-mode), animating the colour change with the chosen style. */
 export function showMode(mode: string, kind: PhaseMorph = phaseMorph(S.settings.phaseMorph)) {
   const b = document.body;
-  if (!b.dataset.mode) { b.dataset.mode = mode; return; }
+  // The first mode is a starting state, not a phase change, so it must not sweep from the default colour on load.
+  if (!b.dataset.mode) {
+    b.classList.add("morph-instant");
+    b.dataset.mode = mode;
+    getComputedStyle(b).getPropertyValue("--acc-h");
+    requestAnimationFrame(() => requestAnimationFrame(() => { if (!b.classList.contains("morphing")) b.classList.remove("morph-instant"); }));
+    return;
+  }
   if (mode === (pending ?? b.dataset.mode)) return;
   const apply = () => { b.dataset.mode = mode; pending = null; };
   if (calm()) kind = "instant";
