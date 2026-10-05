@@ -50,6 +50,19 @@ body { --acc-l: var(--t-l); --acc-c: var(--t-c); --acc-h: var(--t-h); --accent: 
 body[data-mode="short"] { --acc-l: var(--lf-l); --acc-c: var(--lf-c); --acc-h: var(--lf-h); }
 body[data-mode="long"] { --acc-l: var(--sk-l); --acc-c: var(--sk-c); --acc-h: var(--sk-h); }
 @media (prefers-reduced-motion: reduce) { body { transition-duration: .12s; } }
+body.morph-js, body.morph-instant { transition: none; }
+@property --morph-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@property --pv-l { syntax: "<percentage>"; inherits: false; initial-value: 59.3%; }
+@property --pv-c { syntax: "<number>"; inherits: false; initial-value: .192; }
+@property --pv-h { syntax: "<number>"; inherits: false; initial-value: 34.1; }
+@property --pv-col { syntax: "<color>"; inherits: false; initial-value: oklch(59.3% .192 34.1); }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+::view-transition-group(timer-card) { animation: none; }
+::view-transition-old(timer-card) { animation: none; }
+.morph-wipe::view-transition-new(timer-card) { animation: morph-wipe .52s cubic-bezier(.77, 0, .175, 1) both; }
+.morph-clock::view-transition-new(timer-card) { -webkit-mask: conic-gradient(from 0deg at var(--morph-x, 50%) var(--morph-y, 40%), #000 var(--morph-a), transparent 0); mask: conic-gradient(from 0deg at var(--morph-x, 50%) var(--morph-y, 40%), #000 var(--morph-a), transparent 0); animation: morph-clock .62s cubic-bezier(.65, 0, .35, 1) both; }
+@keyframes morph-wipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes morph-clock { from { --morph-a: 0deg; } to { --morph-a: 360deg; } }
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
 .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
@@ -288,6 +301,7 @@ a.btn { color: inherit; text-decoration: none; }
 .dial .tick { stroke: var(--line-2); stroke-width: 2; stroke-linecap: round; transition: stroke .3s; }
 .dial .tick.major { stroke-width: 2.6; }
 .dial .tick.lit { stroke: var(--accent); }
+body.morphing .dial .tick { transition: none; }
 .dial .track { fill: none; stroke: var(--surface-2); stroke-width: 12; }
 .dial .arc { fill: none; stroke: var(--accent); stroke-width: 12; stroke-linecap: round; }
 .dial .knob { fill: var(--surface); stroke: var(--accent); stroke-width: 4; }
@@ -1288,3 +1302,31 @@ body.zen .working { width: min(100%, 420px); }
 @media (hover: none) {
   .icon-btn:active, .btn:active, .round:active, .adjust button:active, .room-code:active, button.pill:active { background: var(--surface-2); }
 }
+
+/* Phase change picker: each tile previews its style on hover, and the chosen one plays */
+.pm-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pm-tile { position: relative; display: grid; justify-items: center; gap: 8px; padding: 14px 8px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); font-size: 13.5px; font-weight: 550; text-align: center; cursor: pointer; transition: border-color .15s, background .15s; }
+.pm-tile input { position: absolute; opacity: 0; pointer-events: none; }
+.pm-tile:has(input:checked) { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
+.pm-tile:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (hover: hover) { .pm-tile:hover { background: var(--surface-2); } }
+.pv { --a: oklch(var(--t-l) var(--t-c) var(--t-h)); --b: oklch(var(--lf-l) var(--lf-c) var(--lf-h)); position: relative; overflow: hidden; width: 64px; height: 26px; border-radius: 999px; background: var(--a); }
+.pv i { position: absolute; inset: 0; background: var(--b); opacity: 0; }
+.pv, .pv i { animation: 2.4s cubic-bezier(.77, 0, .175, 1) infinite alternate paused; }
+.pm-tile:hover .pv, .pm-tile:hover .pv i, .pm-tile:has(input:checked) .pv, .pm-tile:has(input:checked) .pv i { animation-play-state: running; }
+.pv-wipe i { opacity: 1; animation-name: pv-wipe; }
+.pv-clock i { opacity: 1; -webkit-mask: conic-gradient(#000 var(--morph-a), transparent 0); mask: conic-gradient(#000 var(--morph-a), transparent 0); animation-name: pv-clock; }
+.pv-sweep { background: oklch(var(--pv-l) var(--pv-c) var(--pv-h)); animation-name: pv-sweep; }
+.pv-blend { background: var(--pv-col); animation-name: pv-blend; }
+.pv-grey { background: oklch(var(--pv-l) var(--pv-c) var(--pv-h)); animation-name: pv-grey; }
+.pv-instant { animation-name: pv-instant; }
+.pv-instant i { animation-name: pv-instant-fill; }
+@keyframes pv-wipe { 0%, 30% { clip-path: inset(0 100% 0 0); } 70%, 100% { clip-path: inset(0 0 0 0); } }
+@keyframes pv-clock { 0%, 30% { --morph-a: 0deg; } 70%, 100% { --morph-a: 360deg; } }
+@keyframes pv-sweep { 0%, 30% { --pv-l: var(--t-l); --pv-c: var(--t-c); --pv-h: var(--t-h); } 70%, 100% { --pv-l: var(--lf-l); --pv-c: var(--lf-c); --pv-h: var(--lf-h); } }
+@keyframes pv-blend { 0%, 38% { --pv-col: oklch(var(--t-l) var(--t-c) var(--t-h)); } 62%, 100% { --pv-col: oklch(var(--lf-l) var(--lf-c) var(--lf-h)); } }
+@keyframes pv-grey { 0%, 30% { --pv-l: var(--t-l); --pv-c: var(--t-c); --pv-h: var(--t-h); } 49.9% { --pv-c: .012; --pv-h: var(--t-h); } 50% { --pv-c: .012; --pv-h: var(--lf-h); } 70%, 100% { --pv-l: var(--lf-l); --pv-c: var(--lf-c); --pv-h: var(--lf-h); } }
+@keyframes pv-instant { 0%, 49% { scale: 1; } 52% { scale: .93; } 60%, 100% { scale: 1; } }
+@keyframes pv-instant-fill { 0%, 49.9% { opacity: 0; } 50%, 100% { opacity: 1; } }
+@media (max-width: 640px) { .pm-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) { .pv, .pv i { animation: none; } }

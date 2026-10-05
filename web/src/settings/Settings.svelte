@@ -2,6 +2,7 @@
   import { flushSync } from "svelte";
   import { refreshNudge } from "../chrome/backupNudge.svelte";
   import { extensionVersion } from "../extension";
+  import { PHASE_MORPHS, phaseMorph } from "../lib/phaseMorph";
   import { rolloverMode } from "../lib/rollover";
   import { rovingIndex, tickPace, tickVolume, wholeIn, workdayEnd } from "../lib/settings";
   import Mixer from "./Mixer.svelte";
@@ -23,6 +24,7 @@
     for (const k of Object.values(TOGGLE)) out[k] = !!s[k];
     out.reactions = s.reactions !== false;
     out.rollover = rolloverMode(s.rollover);
+    out.phaseMorph = phaseMorph(s.phaseMorph);
     return out;
   };
   const saved = () => { const t = api.ls.get("pl.setTab"); return TABS.some(([name]) => name === t) ? t : "timer"; };
@@ -87,6 +89,7 @@
     else if (id === "sDayEnd") s.workdayEnd = workdayEnd(el.value);
     else if (id === "sReactions") { s.reactions = el.checked; api.reactionsChanged(); }
     else if (id === "sRollover") s.rollover = rolloverMode(el.value);
+    else if (id === "sPhaseMorph") s.phaseMorph = phaseMorph(el.value);
     if (["sTicking", "sTickVolume", "sTickPace"].includes(id)) { api.cancelTickPreview(); fillTicking(); api.syncTicking(); }
     note = "Saved.";
     api.Store.saveSettings();
@@ -144,6 +147,15 @@
             <label class="field">Workday ends <span class="opt">optional</span><input type="time" id="sDayEnd" step="900" bind:value={f.workdayEnd}></label>
           </div>
           <p class="hint">Optional. When set, Today points out tasks that won't finish before then, and after hours offers to move the rest to tomorrow.</p>
+        </fieldset>
+        <fieldset class="group">
+          <legend>Phase change</legend>
+          <div class="pm-tiles" role="radiogroup" aria-label="How the timer changes colour between focus and breaks">
+            {#each PHASE_MORPHS as [v, name] (v)}
+              <label class="pm-tile"><input type="radio" name="sPhaseMorph" value={v} bind:group={f.phaseMorph}><span class="pv pv-{v}" aria-hidden="true"><i></i></span><span>{name}</span></label>
+            {/each}
+          </div>
+          <p class="hint">{PHASE_MORPHS.find(([v]) => v === f.phaseMorph)?.[2]} With reduced motion turned on, changes are instant.</p>
         </fieldset>
       </div>
       <div class="set-panel" role="tabpanel" id="setPanel-auto" aria-labelledby="setTab-auto" aria-hidden={String(tab !== "auto")}>
