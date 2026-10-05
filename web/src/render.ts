@@ -16,14 +16,13 @@ import { taskStartPlan } from "./tasks/plan";
 import { remNow, totalNow } from "./timer/engine";
 import { timerView } from "./timer/state.svelte";
 import { closeLabelPop, ui } from "./ui";
-import { changeMode } from "./timer/morph";
+import { showMode } from "./timer/morph";
 
 let lastTxt = "", startEstimateMinute = -1, renderedDay = "";
 
 export function renderTimer(force?: boolean) {
   if (force) syncTicking();
-  if (!document.body.dataset.mode) document.body.dataset.mode = T.mode;
-  else if (document.body.dataset.mode !== T.mode) changeMode(() => { document.body.dataset.mode = T.mode; });
+  showMode(T.mode);
   if (document.body.dataset.status !== T.status) document.body.dataset.status = T.status;
   const total = totalNow(), rem = remNow(), frac = Math.max(0, Math.min(1, rem / total));
   const txt = clock(Math.ceil(rem / 1000));

@@ -21,11 +21,14 @@ function drive(ms: number, at: (t: number) => number[]) {
   requestAnimationFrame(step);
 }
 
-let settle = 0;
+let settle = 0, pending: string | null = null;
 
-/** Applies a phase change (the body's data-mode) with the chosen colour transition. */
-export function changeMode(apply: () => void, kind: PhaseMorph = phaseMorph(S.settings.phaseMorph)) {
+/** Shows a phase (the body's data-mode), animating the colour change with the chosen style. */
+export function showMode(mode: string, kind: PhaseMorph = phaseMorph(S.settings.phaseMorph)) {
   const b = document.body;
+  if (!b.dataset.mode) { b.dataset.mode = mode; return; }
+  if (mode === (pending ?? b.dataset.mode)) return;
+  const apply = () => { b.dataset.mode = mode; pending = null; };
   if (calm()) kind = "instant";
   b.classList.toggle("morph-instant", kind !== "sweep" && !DRIVEN.includes(kind));
   b.classList.toggle("morph-js", DRIVEN.includes(kind));
@@ -57,7 +60,9 @@ export function changeMode(apply: () => void, kind: PhaseMorph = phaseMorph(S.se
     }
     root.classList.add("morph-" + kind);
     card.style.viewTransitionName = "timer-card";
+    pending = mode;
     const vt = document.startViewTransition(async () => { apply(); await tick(); });
+    vt.ready.catch(() => {});
     vt.finished.finally(() => { root.classList.remove("morph-" + kind); card.style.viewTransitionName = ""; });
     return;
   }

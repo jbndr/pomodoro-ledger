@@ -301,7 +301,7 @@ a.btn { color: inherit; text-decoration: none; }
 .dial .tick { stroke: var(--line-2); stroke-width: 2; stroke-linecap: round; transition: stroke .3s; }
 .dial .tick.major { stroke-width: 2.6; }
 .dial .tick.lit { stroke: var(--accent); }
-body.morphing .dial .tick { transition: none; }
+body.morphing .dial .tick, body.morphing .task { transition: none; }
 .dial .track { fill: none; stroke: var(--surface-2); stroke-width: 12; }
 .dial .arc { fill: none; stroke: var(--accent); stroke-width: 12; stroke-linecap: round; }
 .dial .knob { fill: var(--surface); stroke: var(--accent); stroke-width: 4; }
