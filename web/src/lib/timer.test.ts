@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "./tasks";
-import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, modeLabel, pickOptions, setDots, startLabel, TICKS } from "./timer";
+import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, modeLabel, roundDots, startLabel, TICKS } from "./timer";
 
 describe("clock", () => {
   it("pads minutes and seconds", () => {
@@ -57,33 +57,13 @@ describe("labels", () => {
   });
 });
 
-describe("setDots", () => {
-  it("fills finished cycles and pulses the running one", () => {
-    expect(setDots("focus", "running", 1, 4)).toEqual({ dots: ["on", "now", "", ""], text: "3 to long break" });
-    expect(setDots("focus", "paused", 1, 4).dots).toEqual(["on", "", "", ""]);
-    expect(setDots("short", "running", 2, 4).dots).toEqual(["on", "on", "", ""]);
+describe("roundDots", () => {
+  it("marks finished rounds and the one in progress", () => {
+    expect(roundDots("focus", 0, 4)).toEqual(["now", "", "", ""]);
+    expect(roundDots("focus", 2, 4)).toEqual(["done", "done", "now", ""]);
   });
-  it("says long break once it's time", () => expect(setDots("long", "idle", 4, 4)).toEqual({ dots: ["on", "on", "on", "on"], text: "long break" }));
-  it("caps the index at the cycle count", () => expect(setDots("focus", "idle", 7, 3).text).toBe("0 to long break"));
-});
-
-describe("pickOptions", () => {
-  const a: Task = { id: "a", title: "Alpha", est: 3, project: "Work", sessions: [{ at: 1, ms: 1, full: true }, { at: 2, ms: 1 }] };
-  const b: Task = { id: "b", title: "Bravo" };
-  it("offers no task first, then open tasks with label and cycles", () => {
-    const { opts, cur } = pickOptions([a, b], null);
-    expect(opts).toEqual([
-      { id: "", title: "Unplanned focus (no task)" },
-      { id: "a", title: "Alpha", meta: "Work · 1/3" },
-      { id: "b", title: "Bravo", meta: "0/0" },
-    ]);
-    expect(cur).toBe(0);
-  });
-  it("selects the active task", () => expect(pickOptions([a, b], b).cur).toBe(2));
-  it("keeps a finished active task at the end", () => {
-    const done = { id: "d", title: "Done", done: true };
-    const { opts, cur } = pickOptions([a], done);
-    expect(opts.at(-1)).toEqual({ id: "d", title: "Done (finished)" });
-    expect(cur).toBe(2);
-  });
+  it("shows no current round during a short break", () => expect(roundDots("short", 1, 4)).toEqual(["done", "", "", ""]));
+  it("fills every round during an earned long break", () => expect(roundDots("long", 4, 4)).toEqual(["done", "done", "done", "done"]));
+  it("keeps the place in the cycle during an early long break", () => expect(roundDots("long", 2, 4)).toEqual(["done", "done", "", ""]));
+  it("caps the index at the round count", () => expect(roundDots("focus", 9, 3)).toEqual(["done", "done", "done"]));
 });

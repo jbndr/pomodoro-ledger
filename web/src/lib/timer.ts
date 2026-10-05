@@ -1,5 +1,4 @@
 import { pad } from "./dates";
-import { cyclesOf, projectOf, type Task } from "./tasks";
 
 export type Mode = "focus" | "short" | "long";
 export type Status = "idle" | "running" | "paused";
@@ -37,21 +36,13 @@ export const TICKS = Array.from({ length: 60 }, (_, i) => {
 export const modeLabel = (mode: Mode, setIndex: number, every: number) =>
   MODE_NAME[mode] + (mode === "focus" ? " · " + Math.min(Math.min(setIndex || 0, every) + 1, every) + " of " + every : "");
 
+/** One dot per focus round before the long break: finished, the current one, or still to come. */
+export function roundDots(mode: Mode, setIndex: number, every: number): ("done" | "now" | "")[] {
+  const idx = Math.min(setIndex || 0, every);
+  return [...Array(every)].map((_, i) => (i < idx ? "done" : i === idx && mode === "focus" ? "now" : ""));
+}
+
 export const startLabel = (status: Status) => (status === "running" ? "Pause" : status === "paused" ? "Resume" : "Start");
 
-/** One class per cycle dot until the long break, and the caption after them. */
-export function setDots(mode: Mode, status: Status, setIndex: number, every: number) {
-  const idx = Math.min(setIndex || 0, every), dots: string[] = [];
-  for (let i = 0; i < every; i++) dots.push(i < idx ? "on" : i === idx && mode === "focus" && status === "running" ? "now" : "");
-  return { dots, text: mode === "long" ? "long break" : every - idx + " to long break" };
-}
 
-export interface PickOption { id: string; title: string; meta?: string }
 
-/** The "Working on" choices: no task, every open task, and the active task if it's already finished. */
-export function pickOptions(open: Task[], active: Task | null | undefined) {
-  const opts: PickOption[] = [{ id: "", title: "Unplanned focus (no task)" }];
-  for (const t of open) opts.push({ id: t.id, title: t.title, meta: (projectOf(t) ? projectOf(t) + " · " : "") + cyclesOf(t) + "/" + (t.est || 0) });
-  if (active && active.done) opts.push({ id: active.id, title: active.title + " (finished)" });
-  return { opts, cur: Math.max(0, opts.findIndex((o) => o.id === (active ? active.id : ""))) };
-}

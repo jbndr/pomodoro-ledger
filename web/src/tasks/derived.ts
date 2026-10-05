@@ -38,6 +38,9 @@ export const openOf = (vt: Map<string, Task>) => {
   });
 };
 
+/** The task the timer works on: the first open task in Today, as the list shows it. */
+export const topOfToday = (vt = viewTasks()) => openOf(vt).find((t) => isToday(t)) || null;
+
 export function dayName(k: string) {
   const days = Math.round((keyTime(k) - sod(Date.now())) / 864e5);
   if (days <= 0) return "Today";

@@ -141,7 +141,7 @@ mount(TimerCard, { target: $(".timer-card"), props: { api: {
   T, S, ICON, floatBtn, fmtClock, fmtDur, plural, viewTasks, openOf,
   toggle, skip, adjust, setMode, flushPartial, buzz, toggleZen, setActive,
 } } });
-timerLayout.observe($(".working"));
+timerLayout.observe($(".now-task"));
 ui.pop = mount(Pop, { target: document.body, anchor: $("#toast"), props: { api: { ICON } } }) as PopUI;
 ui.when = mount(WhenPop, { target: document.body, anchor: $("#toast"), props: { api: { S, todayKey, openOf, isToday, scheduleTask, setRepeat, fmtDate, plural } } }) as WhenUI;
 ui.label = mount(LabelPop, { target: document.body, anchor: $("#toast"), props: { api: { S, ICON, renderTasks, saveSettings: () => Store.saveSettings() } } }) as LabelUI;

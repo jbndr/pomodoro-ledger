@@ -19,7 +19,7 @@ export function taskStartPlan(): StartPlan {
   const current = T.mode === "focus" && T.status !== "idle" ? today.find((t) => t.id === S.activeId) : null;
   const sequence = current ? [current, ...today.filter((t) => t !== current)] : today;
   const remaining = (t: Task) => Math.max(t === current ? 1 : 0, (t.est || 0) - cyclesOf(t));
-  let cursor = Date.now(), index = T.mode === "long" ? 0 : T.setIndex || 0;
+  let cursor = Date.now(), index = T.mode === "long" && T.setIndex >= S.settings.longEvery ? 0 : T.setIndex || 0;
   const nextBreak = () => {
     if (index >= S.settings.longEvery) { index = 0; return dur("long"); }
     return dur("short");
