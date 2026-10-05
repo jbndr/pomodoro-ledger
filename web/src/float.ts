@@ -5,7 +5,7 @@ import { ICON } from "./icons";
 import { MIN } from "./lib/dates";
 import { MODE_NAME } from "./lib/timer";
 import { S, T } from "./state";
-import { adjust, flushPartial, MAX_RUN, remNow, setMode, skip, tick, toggle, totalNow } from "./timer/engine";
+import { adjust, flushPartial, MAX_RUN, remNow, setMode, skip, tick, toggle, totalNow, upNow } from "./timer/engine";
 
 // A second view of the same timer: no separate state, logs, or room connection.
 let floatWindow: Window | null = null, floatOpening = false;
@@ -34,18 +34,18 @@ export function renderFloating(txt: string, frac: number) {
   const every = S.settings.longEvery, idx = Math.min(T.setIndex || 0, every);
   $("#miniMode", doc).textContent = MODE_NAME[T.mode] + (T.mode === "focus" ? " · " + Math.min(idx + 1, every) + " of " + every : "");
   const time = $("#miniTime", doc);
-  time.innerHTML = [...txt].map((c) => (c === ":" ? '<span class="c">:</span>' : '<span class="d">' + c + "</span>")).join("");
-  const secs = Math.ceil(remNow() / 1000);
-  time.setAttribute("aria-label", Math.floor(secs / 60) + " minutes " + (secs % 60) + " seconds remaining");
-  $("#miniSub", doc).textContent = T.status === "running" ? "ends at " + fmtClock(T.endsAt) : T.status === "paused" ? "paused" : (totalNow() / MIN) + " min";
+  time.innerHTML = [...txt].map((c) => (c === ":" ? '<span class="c">:</span>' : c === "+" ? '<span class="p">+</span>' : '<span class="d">' + c + "</span>")).join("");
+  const secs = T.up ? Math.floor(upNow() / 1000) : Math.ceil(remNow() / 1000);
+  time.setAttribute("aria-label", Math.floor(secs / 60) + " minutes " + (secs % 60) + (T.up ? " seconds past the bell" : " seconds remaining"));
+  $("#miniSub", doc).textContent = T.up ? "past the bell" : T.status === "running" ? "ends at " + fmtClock(T.endsAt) : T.status === "paused" ? "paused" : (totalNow() / MIN) + " min";
   const task = S.activeId && S.tasks.get(S.activeId);
   const taskEl = $("#miniTask", doc);
   taskEl.textContent = task ? task.title : T.mode === "focus" ? "Time to focus" : "Take a breather";
   taskEl.title = task ? task.title : "";
   $("#miniProgress", doc).style.width = (frac * 100) + "%";
   const [less, more] = doc.querySelectorAll<HTMLButtonElement>(".step button");
-  less.disabled = remNow() < 2 * MIN;
-  more.disabled = totalNow() + MIN > MAX_RUN;
+  less.disabled = !!T.up || remNow() < 2 * MIN;
+  more.disabled = !!T.up || totalNow() + MIN > MAX_RUN;
   const button = $("#miniToggle", doc);
   const label = T.status === "running" ? "Pause" : T.status === "paused" ? "Resume" : "Start";
   if (button.getAttribute("aria-label") !== label) {
@@ -90,6 +90,7 @@ async function openFloating(quiet?: boolean) {
       .step button:disabled:hover { background: var(--surface-2); color: var(--muted); }
       #miniTime { font: 650 clamp(42px, 17vw, 52px)/.9 var(--f-display); letter-spacing: -.02em; font-variation-settings: "opsz" 96; font-variant-numeric: tabular-nums; white-space: nowrap; }
       #miniTime .d { display: inline-block; width: .6em; text-align: center; }
+      #miniTime .p { display: inline-block; width: .42em; text-align: center; opacity: .55; }
       #miniTime .c { display: inline-block; width: .28em; text-align: center; translate: 0 -.06em; }
       .progress { overflow: hidden; height: 6px; border-radius: 999px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line); }
       #miniProgress { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .25s linear, background .8s; }

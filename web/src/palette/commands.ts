@@ -17,7 +17,7 @@ import { S, ss, T, type View } from "../state";
 import { Store } from "../store";
 import { focusOnTask, focusRow, toggleCard } from "../tasks/actions";
 import { bucketOf, dayName, inProject, listHead, viewTasks } from "../tasks/derived";
-import { adjust, flushPartial, setMode, skip, toggle } from "../timer/engine";
+import { adjust, canKeepGoing, flushPartial, keepGoing, setMode, skip, toggle } from "../timer/engine";
 import { fillSettings, openKeys, openRecap, openRoom, openSettings } from "../ui";
 import { labelFilter } from "../tasks/filter.svelte";
 import { fsEl, toggleZen } from "../zen";
@@ -95,6 +95,7 @@ addCommands(() => {
       hint: T.mode === "focus" && active && !running ? active.title : "",
       icon: running ? ICON.pause : ICON.play, run: toggle,
     },
+    ...(canKeepGoing() ? [{ id: "timer.keep", group: "Timer", suggest: true, keys: ["O"], title: "Keep going", words: "overtime continue flow more past bell", icon: ICON.play, run: keepGoing } as Command] : []),
     { id: "timer.skip", group: "Timer", suggest: !idle, keys: ["S"], title: T.mode === "focus" ? "Skip to the break" : "Skip to focus", words: "next phase", icon: G.skip, run: skip },
     { id: "timer.reset", group: "Timer", title: "Reset timer", words: "restart", icon: G.reset, run: () => { flushPartial(); setMode(T.mode); } },
     { id: "timer.more", group: "Timer", keys: ["+"], title: "Add a minute", words: "longer extend plus", icon: G.plus, run: () => adjust(1) },

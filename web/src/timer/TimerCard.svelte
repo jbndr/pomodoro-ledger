@@ -28,18 +28,20 @@
     return {
       mode: T.mode, status: T.status,
       dots: roundDots(T.mode, T.setIndex, every), round: Math.min(Math.min(T.setIndex || 0, every) + 1, every), every,
-      sub: T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
+      up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(),
+      sub: T.up ? (T.upKind === "flow" ? "flow" : "past the bell") : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
       held: Object.fromEntries(MODES.map((m) => [m, T.saved[m] ? "Paused with " + clock(Math.ceil(T.saved[m].remaining / 1000)) + " left" : ""])),
     };
   });
   // The pill springs to its new width when the word changes, so the change reads as one motion rather than a jump.
   let goBtn, goWidth = 0;
-  $effect.pre(() => { c.status; if (goBtn) goWidth = goBtn.offsetWidth; });
+  $effect.pre(() => { c.status; c.up; if (goBtn) goWidth = goBtn.offsetWidth; });
   $effect(() => {
-    c.status;
+    c.status; c.up;
     const w = goBtn.offsetWidth;
     if (goWidth && w !== goWidth && !calm()) goBtn.animate([{ width: goWidth + "px" }, { width: w + "px" }], { duration: 380, easing: "cubic-bezier(.32, .72, 0, 1)" });
   });
+  const STOP = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>';
   const zenLabel = $derived(timerView.zen ? "Exit full screen" : "Full screen");
 
   // The floating timer's button is wired up before this mounts, so it is moved in rather than rendered here.
@@ -56,16 +58,20 @@
   </div>
 </div>
 <Dial sub={c.sub} />
-<div class="cycle" class:off={c.mode !== "focus"} title={"A long break comes after round " + c.every}>
-  <span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span><span>Round {c.round} of {c.every}</span>
-</div>
-<div class="adjust" id="adjust" role="group" aria-label="Adjust this session">
+{#if c.keep}
+  <div class="cycle"><button class="keep-going" type="button" title="Go back to focus, counting from the bell (O)" onclick={() => api.keepGoing()}>{@html api.ICON.play}Keep going</button></div>
+{:else}
+  <div class="cycle" class:off={c.mode !== "focus"} title={"A long break comes after round " + c.every}>
+    <span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span><span>Round {c.round} of {c.every}</span>
+  </div>
+{/if}
+<div class="adjust" class:off={!!c.up} id="adjust" role="group" aria-label="Adjust this session">
   <button type="button" data-adj="-1" title="1 minute less (−)" onclick={() => api.adjust(-1)}>−1 min</button>
   <button type="button" data-adj="1" title="1 minute more (+)" onclick={() => api.adjust(1)}>+1 min</button>
   <button type="button" data-adj="5" title="5 minutes more" onclick={() => api.adjust(5)}>+5 min</button>
 </div>
 <div class="controls">
-  <button class="round" type="button" id="resetBtn" aria-label="Reset timer" title="Reset" onclick={() => { api.buzz(8); api.flushPartial(); api.setMode(api.T.mode); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg></button>
-  <button class="go" type="button" id="startBtn" bind:this={goBtn} onclick={() => { api.buzz(api.T.status === "running" ? 8 : 14); api.toggle(); }}><span class="go-ic" aria-hidden="true"><span class:on={c.status !== "running"}>{@html api.ICON.play}</span><span class:on={c.status === "running"}>{@html api.ICON.pause}</span></span>{#key c.status}<span class="go-lbl">{startLabel(c.status)}</span>{/key}</button>
-  <button class="round" type="button" id="skipBtn" aria-label="Skip to next phase" title="Skip" onclick={() => { api.buzz(8); api.skip(); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/></svg></button>
+  <button class="round" type="button" id="resetBtn" aria-label="Reset timer" title="Reset" onclick={(e) => { api.buzz(8); api.flushPartial(); api.setMode(api.T.mode); if (e.detail) e.currentTarget.blur(); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg></button>
+  <button class="go" type="button" id="startBtn" bind:this={goBtn} onclick={(e) => { api.buzz(api.T.status === "running" ? 8 : 14); api.toggle(); if (e.detail) e.currentTarget.blur(); }}><span class="go-ic" aria-hidden="true"><span class:on={c.status !== "running"}>{@html api.ICON.play}</span><span class:on={c.status === "running" && !c.up}>{@html api.ICON.pause}</span><span class:on={!!c.up}>{@html STOP}</span></span>{#key c.status + c.up}<span class="go-lbl">{c.up ? "Stop" : startLabel(c.status)}</span>{/key}</button>
+  <button class="round" type="button" id="skipBtn" aria-label="Skip to next phase" title="Skip" onclick={(e) => { api.buzz(8); api.skip(); if (e.detail) e.currentTarget.blur(); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l10 7-10 7z"/><path d="M19 5v14"/></svg></button>
 </div>
