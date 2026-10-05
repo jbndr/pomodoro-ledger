@@ -904,7 +904,8 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .settings-sheet .seg-ctl > label { height: 34px; font-size: 13px; }
 #tickingOptions input[type="range"], .mixer input[type="range"] { height: 40px; padding: 0; border: 0; background: transparent; accent-color: var(--accent); cursor: pointer; }
 .settings-sheet { display: flex; flex-direction: column; overflow: hidden; }
-.settings-sheet .set-panels { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 calc(-1 * var(--pad)) calc(-1 * var(--pad)); padding: 2px var(--pad) var(--pad); }
+.settings-sheet .set-panels { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 calc(-1 * var(--pad)) -16px; padding: 2px var(--pad) 16px; }
+.settings-sheet > .sheet-foot { flex: none; margin: 0 calc(-1 * var(--pad)); padding: 14px var(--pad) 0; border-top: 1px solid var(--line); }
 .mixer { display: grid; gap: 12px; padding-bottom: 10px; }
 .mixer .seg-ctl > label { display: flex; align-items: center; justify-content: center; gap: 7px; }
 .mix-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--line-2); transition: background .15s; }
