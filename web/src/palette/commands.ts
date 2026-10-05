@@ -19,6 +19,7 @@ import { focusOnTask, focusRow, toggleCard } from "../tasks/actions";
 import { bucketOf, dayName, inProject, listHead, viewTasks } from "../tasks/derived";
 import { adjust, flushPartial, setMode, skip, toggle } from "../timer/engine";
 import { fillSettings, openKeys, openRecap, openRoom, openSettings } from "../ui";
+import { labelFilter } from "../tasks/filter.svelte";
 import { fsEl, toggleZen } from "../zen";
 import { addCommands, type Command } from "./registry";
 
@@ -140,7 +141,7 @@ addCommands(() => {
       out.push({
         id: "label:" + (c.v || "all"), group: "Filter by label", title: c.v ? c.name : "All labels", words: "filter label project show only",
         hint: plural(c.n, "open task"), on: S.projectFilter === c.v, icon: c.hue != null ? dot(c.name) : c.v === "none" ? '<i class="label-dot none" aria-hidden="true"></i>' : ICON.tag,
-        run: () => { if (phone()) showPage("tasks"); click(`#projectFilter [data-filter="${CSS.escape(c.v)}"]`); showTasks(); },
+        run: () => { if (phone()) showPage("tasks"); labelFilter.open = true; click(`#projectFilter [data-filter="${CSS.escape(c.v)}"]`); showTasks(); },
       });
     }
   }
