@@ -36,8 +36,9 @@ export function renderFloating(txt: string, frac: number) {
   const time = $("#miniTime", doc);
   time.innerHTML = [...txt].map((c) => (c === ":" ? '<span class="c">:</span>' : c === "+" ? '<span class="p">+</span>' : '<span class="d">' + c + "</span>")).join("");
   const secs = T.up ? Math.floor(upNow() / 1000) : Math.ceil(remNow() / 1000);
-  time.setAttribute("aria-label", Math.floor(secs / 60) + " minutes " + (secs % 60) + (T.up ? " seconds past the bell" : " seconds remaining"));
-  $("#miniSub", doc).textContent = T.up ? "past the bell" : T.status === "running" ? "ends at " + fmtClock(T.endsAt) : T.status === "paused" ? "paused" : (totalNow() / MIN) + " min";
+  const flow = T.upKind === "flow" || T.flowReady;
+  time.setAttribute("aria-label", Math.floor(secs / 60) + " minutes " + (secs % 60) + (T.up ? (flow ? " seconds of flow" : " seconds past the bell") : " seconds remaining"));
+  $("#miniSub", doc).textContent = T.up ? (flow ? "flow" : "past the bell") : T.flowReady ? "counts up" : T.status === "running" ? "ends at " + fmtClock(T.endsAt) : T.status === "paused" ? "paused" : (totalNow() / MIN) + " min";
   const task = S.activeId && S.tasks.get(S.activeId);
   const taskEl = $("#miniTask", doc);
   taskEl.textContent = task ? task.title : T.mode === "focus" ? "Time to focus" : "Take a breather";

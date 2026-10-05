@@ -47,5 +47,8 @@ export const startLabel = (status: Status) => (status === "running" ? "Pause" : 
 /** Extra break minutes after counting up past the bell: about one per five, at most fifteen. */
 export const extraBreakMin = (ms: number) => Math.min(15, Math.round(ms / 300_000));
 
+/** A flow session's break: about one minute per five of flow, from one to thirty. */
+export const flowBreakMin = (ms: number) => Math.max(1, Math.min(30, Math.round(ms / 300_000)));
+
 
 

@@ -6,7 +6,7 @@ import { fmtDur } from "../format";
 import { MIN } from "../lib/dates";
 import { dayKey } from "../lib/dates";
 import { logNudge, nudgesOf, pickNudge } from "../lib/nudges";
-import { extraBreakMin, MODES, type Mode } from "../lib/timer";
+import { extraBreakMin, flowBreakMin, MODES, type Mode } from "../lib/timer";
 import { renderAll, renderTimer } from "../render";
 import { followRoom, roomFollows, roomRoundEnded, roomTick, RM } from "../room/net";
 import { cancelEnd, ensureAudio, playSound, releaseBell, scheduleEnd, syncTicking } from "../sound";
@@ -75,7 +75,7 @@ export function flushPartial() {
 
 export function setMode(m: Mode, keep?: boolean) {
   if (!keep) delete T.adj[T.mode];
-  delete T.up; delete T.upKind;
+  delete T.up; delete T.upKind; delete T.flowReady;
   if (m === "focus") delete T.nudge;
   if (T.mode === "long" && m !== "long" && T.setIndex >= S.settings.longEvery) T.setIndex = 0;
   if (keep && T.status !== "idle") T.saved[T.mode] = { remaining: remNow(), total: T.total };
@@ -89,6 +89,7 @@ export function start(from?: number) {
   ensureAudio();
   if (preview()) { markStarted(); }
   if (T.status === "running") return;
+  if (T.flowReady && T.status === "idle") { startFlow(from || Date.now()); return; }
   if (T.status === "idle") { T.total = base(T.mode); T.remaining = T.total; T.run = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); delete T.adj[T.mode]; }
   T.endsAt = (from || Date.now()) + (T.remaining ?? 0);
   T.status = "running";
@@ -138,6 +139,19 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
   if (wasFocus && !stale) roomRoundEnded();
 }
 
+// Flow counts as focus time but not as a cycle, so goals stay in cycles.
+function stopFlow(at: number) {
+  const ms = Math.max(0, Math.min(MAX_RUN, at - T.up!));
+  if (ms >= MIN) logFocus(ms, false, at, T.run);
+  const minutes = flowBreakMin(ms);
+  setMode("short");
+  T.adj.short = minutes * MIN - dur("short");
+  offerNudge("short");
+  saveTimer(); renderTimer(true);
+  toast(ms >= MIN ? "Logged " + fmtDur(ms) + " of flow. Take a " + minutes + "-minute break." : "Flow stopped before a minute, so nothing was logged.");
+  if (S.settings.autoBreak && ms >= MIN) start();
+}
+
 /** Picks one quiet body nudge for a break that follows focus. */
 function offerNudge(kind: Mode) {
   if (kind === "focus") return;
@@ -173,9 +187,28 @@ export function keepGoing() {
   toast("Keep going. Stop when you're done, and your break grows to match.");
 }
 
+/** Picks Flow: a focus that counts up from zero once you press Start. */
+export function readyFlow() {
+  if (RM.code) { toast("In a room, the room's clock leads."); return; }
+  if (T.status === "running") { toast(T.upKind === "flow" ? "Flow is running. Stop when you're done." : "Pause or finish this session first."); return; }
+  if (T.flowReady) return;
+  flushPartial();
+  setMode("focus");
+  T.flowReady = true;
+  saveTimer(); renderTimer(true);
+}
+
+function startFlow(at: number) {
+  delete T.flowReady;
+  Object.assign(T, { mode: "focus", status: "running", up: at, upKind: "flow", total: 0, remaining: null, endsAt: at + MAX_RUN, run: "fl-" + at.toString(36) });
+  scheduleEnd(); saveTimer(); wakeOn(); renderTimer(true);
+  autoFloat();
+}
+
 /** Ends a count-up session: logs it and starts a break that grows with it. */
 export function stopUp(at = Date.now()) {
   if (!T.up) return;
+  if (T.upKind === "flow") { stopFlow(at); return; }
   const ms = Math.max(0, Math.min(MAX_RUN, at - T.up)), next: Mode = T.setIndex >= S.settings.longEvery ? "long" : "short";
   if (ms >= MIN) logFocus(ms, false, at, T.run);
   const extra = extraBreakMin(ms);
