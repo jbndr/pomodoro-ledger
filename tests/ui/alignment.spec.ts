@@ -7,7 +7,9 @@ const audit = (page: Page) => page.evaluate(AUDIT) as Promise<{ name: string; of
 
 // A fixed clock keeps the demo data the same on every run; running past the start-up timers lets the
 // weekly recap and Year in Focus open, so they can be closed before anything is measured.
-test.beforeEach(async ({ page, isMobile }) => {
+test.beforeEach(async ({ page, isMobile }, info) => {
+  // Shortcut labels differ by platform (⌘K vs Ctrl K), so one project runs as Windows whatever the host is.
+  if (info.project.name === "desktop-windows") await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "platform", { get: () => "Win32" }));
   await page.clock.install({ time: new Date("2026-10-05T10:00:00") });
   await page.goto("/?demo=1");
   await page.locator(".task").first().waitFor({ state: "attached" });
