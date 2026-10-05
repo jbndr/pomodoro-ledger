@@ -498,6 +498,10 @@ td.barcell { width: 38%; min-width: 120px; }
 .task .tt { background: linear-gradient(currentColor, currentColor) no-repeat 0 55% / 0 1.5px; transition: background-size .35s cubic-bezier(.65, 0, .35, 1) .05s, color .3s; }
 .task.completing .tt { background-size: 100% 1.5px; color: var(--faint); }
 @keyframes check-pop { 50% { transform: scale(1.18); } }
+/* The tick draws itself in once the circle has filled. */
+.task.completing .check svg path { stroke-dasharray: 20; stroke-dashoffset: 20; animation: check-draw .3s cubic-bezier(.65, 0, .35, 1) .08s forwards; }
+@keyframes check-draw { to { stroke-dashoffset: 0; } }
+.burst-dot { position: fixed; z-index: 50; border-radius: 50%; pointer-events: none; }
 .task-main { grid-column: 3; min-width: 0; cursor: pointer; display: grid; gap: 1px; padding: 2px 0; }
 .task-title { display: flex; align-items: baseline; min-width: 0; }
 .tt { font-size: 15px; font-weight: 550; line-height: 1.35; overflow-wrap: anywhere; transition: color .2s; }
