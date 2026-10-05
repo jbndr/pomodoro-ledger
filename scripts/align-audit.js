@@ -10,6 +10,7 @@
     ["Task handle", ".task:not(.open)", ":scope > .grip", ".task-main", "block"],
     ["Subtask box", ".subtask", "input[type=checkbox]", "input[type=text]"],
     ["Menu icon", ".bar-menu .item", "svg, i", ":scope"],
+    ["Bulk bar icon", ".bulk-bar.open button:not(.bulk-x)", "svg", ":scope"],
     ["Work together", ".together", ".faces, svg", ".together-label"],
     ["Filter chip dot", ".label-filter button", ".label-dot", "span"],
     ["Row label dot", ".task-meta .meta-chip", ".label-dot", "span"],

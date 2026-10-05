@@ -1,8 +1,10 @@
 <script>
+  import { picked } from "./selection.svelte";
   import TaskCard from "./TaskCard.svelte";
 
   let { api, row, plan, lifted = false, drag = null } = $props();
   const start = $derived(plan && plan.get(row.id));
+  const selected = $derived(picked.ids.includes(row.id));
 </script>
 
 <li
@@ -13,6 +15,7 @@
   class:dropped={row.dropped}
   class:dragging={!!drag}
   class:sec-lifted={lifted}
+  class:selected
   style:top={drag ? drag.top + "px" : null}
   style:left={drag ? drag.left + "px" : null}
   style:width={drag ? drag.width + "px" : null}
@@ -35,6 +38,7 @@
     </div>
     <div class="side-acts">
       {#if row.today}<span class="task-start" class:late={!!start?.late} title={start ? start.hint : ""}>{start ? start.text : ""}</span>{/if}
+      <button class="icon-btn" type="button" data-act="top" aria-label={"Move “" + row.title + "” to the top"} title="Move to top" onclick={() => api.toTop([row.id])}>{@html api.ICON.top}</button>
       <button class="icon-btn" type="button" data-act="sched" data-sched aria-haspopup="dialog" aria-label={"When: “" + row.title + "”"} title="When? (D)" onclick={(e) => api.sched(e.currentTarget, row.id)}>{@html api.ICON.cal}</button>
       <button class="icon-btn play" type="button" data-act="focus" aria-label={"Start focusing on “" + row.title + "”"} title="Focus on this" onclick={() => api.focus(row.id)}>{@html api.ICON.play}</button>
     </div>

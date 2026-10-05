@@ -46,6 +46,16 @@ export function jump(list: Entry[], id: string, up: boolean): Entry[] | null {
   return next < 0 ? null : moveTo(list, i, next + 1);
 }
 
+/** Moves the given tasks to the top of the group each one is in, keeping their order among themselves. Null when nothing moves. */
+export function toTop(list: Entry[], ids: string[]): Entry[] | null {
+  const pick = new Set(ids), out: Entry[] = [];
+  let block: Entry[] = [];
+  const flush = () => { out.push(...block.filter((e) => e.kind === "task" && pick.has(e.id)), ...block.filter((e) => !(e.kind === "task" && pick.has(e.id)))); block = []; };
+  for (const e of list) { if (e.kind === "task") block.push(e); else { flush(); out.push(e); } }
+  flush();
+  return out.every((e, i) => e === list[i]) ? null : out;
+}
+
 /** Moves a task to sit right before list position `before`, or at the end for null. */
 export function place(list: Entry[], id: string, before: number | null): Entry[] {
   const i = indexOf(list, id);

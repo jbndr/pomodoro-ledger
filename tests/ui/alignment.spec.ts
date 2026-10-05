@@ -41,3 +41,14 @@ test("menu open", async ({ page, isMobile }) => {
   await expect(page.locator("#barMenu")).toHaveClass(/open/);
   expect(await audit(page)).toEqual([]);
 });
+
+test("tasks picked for a bulk edit", async ({ page, isMobile }) => {
+  const rows = page.locator("#taskList .task:visible");
+  test.skip((await rows.count()) < 2, "Needs two tasks");
+  const pick = isMobile ? { modifiers: [] as ("Meta" | "Control")[] } : { modifiers: [process.platform === "darwin" ? "Meta" : "Control"] as ("Meta" | "Control")[] };
+  if (isMobile) { await rows.nth(0).locator(".task-main").dispatchEvent("click", { metaKey: true }); await rows.nth(1).locator(".task-main").click(); }
+  else { await rows.nth(0).locator(".task-main").click(pick); await rows.nth(1).locator(".task-main").click(pick); }
+  await expect(page.locator(".bulk-bar")).toHaveClass(/open/);
+  await expect(page.locator(".bulk-count")).toContainText("2 selected");
+  expect(await audit(page)).toEqual([]);
+});

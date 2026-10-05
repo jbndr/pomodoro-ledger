@@ -2,6 +2,7 @@
   import { ICON } from "../icons";
   import { list } from "../lib/redraw.svelte";
   import { labelFilter } from "./filter.svelte";
+  import { clearPicks } from "./selection.svelte";
 
   let { api } = $props();
 
@@ -13,7 +14,7 @@
 
   function pick(view) {
     if (view === api.S.taskView) return;
-    api.S.taskView = view; api.ss.set("pl.taskView", view);
+    api.S.taskView = view; api.ss.set("pl.taskView", view); clearPicks();
     api.renderTasks();
   }
 </script>

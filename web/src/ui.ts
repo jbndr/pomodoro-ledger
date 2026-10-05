@@ -17,7 +17,7 @@ export interface RecapUI { open(week?: number): void; close(): void; maybeOpen()
 export interface YearUI { open(year?: number): void; close(): void; maybeOpen(): void }
 export interface ShareRequest { kind: string; theme: string; heading: string; name: string; title: string; make(theme: string): Promise<Blob>; tall?: boolean; onclose?(): void }
 export interface ShareUI { open(r: ShareRequest): void; close(): void }
-export interface ListUI { moveTask(id: string, up: boolean, far: boolean): { from: string; to: string } | null; dragging(): boolean }
+export interface ListUI { moveTask(id: string, up: boolean, far: boolean): { from: string; to: string } | null; moveToTop(ids: string[]): boolean; dragging(): boolean }
 
 /** What the mounted components expose; set during boot. */
 export const ui: { pop?: PopUI; when?: WhenUI; label?: LabelUI; settings?: SettingsUI; keys?: Sheet; room?: Sheet; list?: ListUI; recap?: RecapUI; palette?: PaletteUI; plan?: Sheet; year?: YearUI; share?: ShareUI } = {};
