@@ -2,7 +2,7 @@
   import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, TICKS } from "../lib/timer";
   import { timerView } from "./state.svelte";
 
-  let { api, label, sub } = $props();
+  let { api, label, name, dots, sub } = $props();
 
   const frac = $derived(fraction(timerView.rem, timerView.total));
   const secs = $derived(Math.ceil(timerView.rem / 1000));
@@ -23,7 +23,7 @@
     <circle class="knob" id="knob" cx={knob.cx} cy={knob.cy} r="9" />
   </svg>
   <div class="dial-center" aria-live="off">
-    <div class="dial-label" id="modeLabel">{label}</div>
+    <div class="dial-label" id="modeLabel" aria-label={label} title={label}><span>{name}</span><span class="rounds" aria-hidden="true">{#each dots as d, i (i)}<i class={d}></i>{/each}</span></div>
     <div class="time" id="time" role="timer" aria-label={clockLabel(secs)}>{#each chars as c}<span class={c === ":" ? "c" : "d"}>{c}</span>{/each}</div>
     <div class="dial-sub" id="dialSub">{sub}</div>
   </div>

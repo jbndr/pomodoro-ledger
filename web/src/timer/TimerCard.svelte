@@ -1,5 +1,5 @@
 <script>
-  import { clock, MODE_NAME, MODES, modeLabel, startLabel } from "../lib/timer";
+  import { clock, MODE_NAME, MODES, modeLabel, roundDots, startLabel } from "../lib/timer";
   import Dial from "./Dial.svelte";
   import NowTask from "./NowTask.svelte";
   import { onMount } from "svelte";
@@ -27,7 +27,7 @@
     const T = api.T, every = api.S.settings.longEvery;
     return {
       mode: T.mode, status: T.status,
-      label: modeLabel(T.mode, T.setIndex, every),
+      label: modeLabel(T.mode, T.setIndex, every), name: MODE_NAME[T.mode], dots: roundDots(T.mode, T.setIndex, every),
       sub: T.status === "running" ? "ends at " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
       held: Object.fromEntries(MODES.map((m) => [m, T.saved[m] ? "Paused with " + clock(Math.ceil(T.saved[m].remaining / 1000)) + " left" : ""])),
     };
@@ -38,7 +38,7 @@
 <div class="modes" role="tablist" aria-label="Timer mode">
   {#each MODES as m}<button type="button" role="tab" data-mode={m} aria-selected={String(m === c.mode)} data-held={c.held[m] ? "" : null} title={c.held[m]} onclick={() => { if (m !== api.T.mode) api.setMode(m, true); }}>{MODE_NAME[m]}</button>{/each}
 </div>
-<Dial {api} label={c.label} sub={c.sub} />
+<Dial {api} label={c.label} name={c.name} dots={c.dots} sub={c.sub} />
 <div class="adjust" id="adjust" role="group" aria-label="Adjust this session">
   <button type="button" data-adj="-1" title="1 minute less (−)" onclick={() => api.adjust(-1)}>−1 min</button>
   <button type="button" data-adj="1" title="1 minute more (+)" onclick={() => api.adjust(1)}>+1 min</button>

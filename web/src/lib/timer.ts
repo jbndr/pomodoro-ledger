@@ -36,6 +36,12 @@ export const TICKS = Array.from({ length: 60 }, (_, i) => {
 export const modeLabel = (mode: Mode, setIndex: number, every: number) =>
   MODE_NAME[mode] + (mode === "focus" ? " · " + Math.min(Math.min(setIndex || 0, every) + 1, every) + " of " + every : "");
 
+/** One dot per focus round before the long break: finished, the current one, or still to come. */
+export function roundDots(mode: Mode, setIndex: number, every: number): ("done" | "now" | "")[] {
+  const idx = mode === "long" ? every : Math.min(setIndex || 0, every);
+  return [...Array(every)].map((_, i) => (i < idx ? "done" : i === idx && mode === "focus" ? "now" : ""));
+}
+
 export const startLabel = (status: Status) => (status === "running" ? "Pause" : status === "paused" ? "Resume" : "Start");
 
 

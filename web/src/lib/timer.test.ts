@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "./tasks";
-import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, modeLabel, startLabel, TICKS } from "./timer";
+import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, modeLabel, roundDots, startLabel, TICKS } from "./timer";
 
 describe("clock", () => {
   it("pads minutes and seconds", () => {
@@ -57,4 +57,12 @@ describe("labels", () => {
   });
 });
 
-
+describe("roundDots", () => {
+  it("marks finished rounds and the one in progress", () => {
+    expect(roundDots("focus", 0, 4)).toEqual(["now", "", "", ""]);
+    expect(roundDots("focus", 2, 4)).toEqual(["done", "done", "now", ""]);
+  });
+  it("shows no current round during a short break", () => expect(roundDots("short", 1, 4)).toEqual(["done", "", "", ""]));
+  it("fills every round during the long break", () => expect(roundDots("long", 4, 4)).toEqual(["done", "done", "done", "done"]));
+  it("caps the index at the round count", () => expect(roundDots("focus", 9, 3)).toEqual(["done", "done", "done"]));
+});
