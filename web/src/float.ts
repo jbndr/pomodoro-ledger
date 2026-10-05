@@ -81,11 +81,11 @@ async function openFloating(quiet?: boolean) {
       .glow { position: absolute; z-index: -1; width: 280px; aspect-ratio: 1; left: 25%; top: 35%; translate: -50% -50%; border-radius: 50%; background: var(--accent); opacity: var(--glow-o); filter: blur(56px); pointer-events: none; }
       .meta { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
       #miniMode { overflow: hidden; color: var(--accent); font-size: 9.5px; font-weight: 650; letter-spacing: .1em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
-      #miniSub { flex: none; color: var(--muted); font: 9.5px/1.2 var(--f-mono); white-space: nowrap; }
+      #miniSub { flex: none; color: var(--muted); font: 9.5px/1.2 var(--f-body); font-variant-numeric: tabular-nums; white-space: nowrap; }
       .time-row { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
       .step { display: flex; gap: 4px; opacity: .55; transition: opacity .15s; }
       main:hover .step, .step:focus-within { opacity: 1; }
-      .step button { width: 30px; height: 26px; border-radius: 999px; font: 550 11px var(--f-mono); }
+      .step button { width: 30px; height: 26px; border-radius: 999px; font: 550 11px var(--f-body); font-variant-numeric: tabular-nums; }
       .step button:disabled { opacity: .35; cursor: default; transform: none; }
       .step button:disabled:hover { background: var(--surface-2); color: var(--muted); }
       #miniTime { font: 650 clamp(42px, 17vw, 52px)/.9 var(--f-display); letter-spacing: -.02em; font-variation-settings: "opsz" 96; font-variant-numeric: tabular-nums; white-space: nowrap; }
