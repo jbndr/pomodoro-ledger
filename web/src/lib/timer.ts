@@ -38,7 +38,7 @@ export const modeLabel = (mode: Mode, setIndex: number, every: number) =>
 
 /** One dot per focus round before the long break: finished, the current one, or still to come. */
 export function roundDots(mode: Mode, setIndex: number, every: number): ("done" | "now" | "")[] {
-  const idx = mode === "long" ? every : Math.min(setIndex || 0, every);
+  const idx = Math.min(setIndex || 0, every);
   return [...Array(every)].map((_, i) => (i < idx ? "done" : i === idx && mode === "focus" ? "now" : ""));
 }
 

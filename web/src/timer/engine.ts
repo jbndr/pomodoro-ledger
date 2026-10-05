@@ -71,7 +71,7 @@ export function flushPartial() {
 
 export function setMode(m: Mode, keep?: boolean) {
   if (!keep) delete T.adj[T.mode];
-  if (T.mode === "long" && m !== "long" && (T.status !== "idle" || T.setIndex >= S.settings.longEvery)) T.setIndex = 0;
+  if (T.mode === "long" && m !== "long" && T.setIndex >= S.settings.longEvery) T.setIndex = 0;
   if (keep && T.status !== "idle") T.saved[T.mode] = { remaining: remNow(), total: T.total };
   const s = T.saved[m];
   delete T.saved[m];

@@ -63,6 +63,7 @@ describe("roundDots", () => {
     expect(roundDots("focus", 2, 4)).toEqual(["done", "done", "now", ""]);
   });
   it("shows no current round during a short break", () => expect(roundDots("short", 1, 4)).toEqual(["done", "", "", ""]));
-  it("fills every round during the long break", () => expect(roundDots("long", 4, 4)).toEqual(["done", "done", "done", "done"]));
+  it("fills every round during an earned long break", () => expect(roundDots("long", 4, 4)).toEqual(["done", "done", "done", "done"]));
+  it("keeps the place in the cycle during an early long break", () => expect(roundDots("long", 2, 4)).toEqual(["done", "done", "", ""]));
   it("caps the index at the round count", () => expect(roundDots("focus", 9, 3)).toEqual(["done", "done", "done"]));
 });

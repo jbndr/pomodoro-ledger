@@ -296,6 +296,14 @@ a.btn { color: inherit; text-decoration: none; }
 .modes button { border: 0; background: transparent; padding: 6px 13px; border-radius: 999px; font-size: 13px; font-weight: 550; color: var(--muted); transition: background .2s, color .2s; }
 .modes button[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 0 0 1px var(--line); }
 .modes button[data-held]::after { content: ""; display: inline-block; width: 5px; height: 5px; margin-left: 6px; border-radius: 50%; background: currentColor; opacity: .7; vertical-align: middle; }
+.card-head { width: 100%; min-width: 0; min-height: 40px; display: grid; align-items: center; }
+.card-head > * { grid-area: 1 / 1; }
+.card-head .modes { justify-self: center; }
+.head-info { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 6px; }
+.rounds { flex: none; display: flex; gap: 6px; color: var(--accent); }
+.rounds i { width: 8px; height: 8px; box-sizing: border-box; border-radius: 50%; border: 2px solid currentColor; opacity: .35; }
+.rounds i:is(.done, .now) { opacity: 1; }
+.rounds i.done { background: currentColor; }
 .dial-wrap { position: relative; width: min(100%, 320px); aspect-ratio: 1; max-width: 100%; container-type: inline-size; }
 .dial { width: 100%; height: 100%; display: block; }
 .dial .tick { stroke: var(--line-2); stroke-width: 2; stroke-linecap: round; transition: stroke .3s; }
@@ -317,11 +325,7 @@ body.morphing .dial .tick, body.morphing .task { transition: none; }
 /* A small dial leaves room beside it, so its corner buttons move off the ring. */
 @container (max-width: 260px) { .full-btn { right: -50px; } .float-btn { left: -50px; } }
 .dial-center { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; text-align: center; gap: 2px; pointer-events: none; }
-.dial-label { display: flex; align-items: center; gap: 9px; font-size: 11.5px; font-size: clamp(9px, 3.6cqw, 11.5px); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
-.rounds { display: flex; gap: 5px; }
-.rounds i { width: .8em; height: .8em; box-sizing: border-box; border-radius: 50%; border: 1.5px solid currentColor; opacity: .35; }
-.rounds i.done { background: currentColor; opacity: 1; }
-.rounds i.now { opacity: 1; background: color-mix(in oklab, currentColor 35%, transparent); }
+.dial-label { font-size: 11.5px; font-size: clamp(9px, 3.6cqw, 11.5px); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
 .time { font-family: var(--f-display); font-weight: 650; font-size: clamp(58px, 17vw, 78px); font-size: 24.4cqw; line-height: 1; letter-spacing: -.02em; font-variation-settings: "opsz" 96; }
 .time .d { display: inline-block; width: .6em; text-align: center; }
 .time .c { display: inline-block; width: .28em; text-align: center; translate: 0 -.06em; }
@@ -330,12 +334,17 @@ body.morphing .dial .tick, body.morphing .task { transition: none; }
 .adjust button { height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; font-family: var(--f-mono); font-size: 12px; color: var(--muted); transition: background .15s, color .15s, border-color .15s; }
 @media (hover: hover) { .adjust button:hover { background: var(--surface-2); color: var(--fg); border-color: var(--line-2); } }
 /* Secondary timer controls rest out of sight until the card is hovered, reached from the keyboard, or tapped */
-.timer-card :is(.float-btn, .full-btn, .adjust, #resetBtn, #skipBtn) { transition: opacity .3s ease .4s, visibility 0s linear .7s; }
-.timer-card:not(.reveal, :has(:focus-visible)) :is(.float-btn, .full-btn, .adjust, #resetBtn, #skipBtn) { opacity: 0; visibility: hidden; }
+.timer-card :is(.float-btn, .full-btn, .modes, .adjust, #resetBtn, #skipBtn) { transition: opacity .3s ease .4s, visibility 0s linear .7s; }
+.timer-card:not(.reveal, :has(:focus-visible)) :is(.float-btn, .full-btn, .modes, .adjust, #resetBtn, #skipBtn) { opacity: 0; visibility: hidden; }
 @media (hover: hover) {
-  body:not(.zen) .timer-card:hover :is(.float-btn, .full-btn, .adjust, #resetBtn, #skipBtn) { opacity: 1; visibility: visible; transition: opacity .18s ease, visibility 0s; }
+  body:not(.zen) .timer-card:hover :is(.float-btn, .full-btn, .modes, .adjust, #resetBtn, #skipBtn) { opacity: 1; visibility: visible; transition: opacity .18s ease, visibility 0s; }
 }
-.timer-card:is(.reveal, :has(:focus-visible)) :is(.float-btn, .full-btn, .adjust, #resetBtn, #skipBtn) { transition: opacity .18s ease, visibility 0s; }
+.timer-card:is(.reveal, :has(:focus-visible)) :is(.float-btn, .full-btn, .modes, .adjust, #resetBtn, #skipBtn) { transition: opacity .18s ease, visibility 0s; }
+.head-info { transition: opacity .18s ease .5s; }
+.timer-card:is(.reveal, :has(:focus-visible)) .modes { transition-delay: .1s; }
+@media (hover: hover) { body:not(.zen) .timer-card:hover .modes { transition-delay: .1s; } }
+.timer-card:is(.reveal, :has(:focus-visible)) .head-info { opacity: 0; transition-duration: .1s; transition-delay: 0s; }
+@media (hover: hover) { body:not(.zen) .timer-card:hover .head-info { opacity: 0; transition-duration: .1s; transition-delay: 0s; } }
 @keyframes pulse { 50% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--tomato) 18%, transparent); } }
 .controls { display: flex; align-items: center; gap: 18px; }
 .round { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); display: grid; place-items: center; color: var(--muted); transition: background .15s, color .15s, transform .1s; }
@@ -344,7 +353,7 @@ body.morphing .dial .tick, body.morphing .task { transition: none; }
 .round svg { width: 20px; height: 20px; }
 .go { min-width: 148px; height: 64px; padding: 0 26px; border-radius: 999px; border: 0; background: var(--accent); color: var(--on-accent); font-family: var(--f-display); font-weight: 700; font-size: 19px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: transform .1s; }
 .go svg { width: 20px; height: 20px; }
-.now-task { max-width: 100%; min-height: 40px; box-sizing: border-box; margin: 0; display: flex; align-items: center; gap: 8px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in oklab, var(--surface-2) 70%, transparent); font-size: 14.5px; font-weight: 600; }
+.now-task { min-width: 0; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 600; }
 .now-task span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .now-task em { flex: none; font-style: normal; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
 .now-task .none { font-weight: 500; color: var(--muted); }
@@ -1160,7 +1169,7 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 }
 @media (max-width: 640px) {
   body.landscape-phone .timer-card { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  body.landscape-phone .timer-card .modes, body.landscape-phone .timer-card .now-task { grid-column: 1 / -1; }
+  body.landscape-phone .timer-card .card-head { grid-column: 1 / -1; }
   body.landscape-phone .dial-wrap { grid-column: 1; grid-row: 2 / 5; width: min(100%, 220px); }
   body.landscape-phone .adjust, body.landscape-phone .controls { grid-column: 2; }
   body.compact-phone .app { gap: 10px; }
@@ -1182,7 +1191,7 @@ body.zen .time { font-size: calc(var(--dial) * .245); }
 body.zen .dial-label { font-size: max(11.5px, calc(var(--dial) * .036)); }
 body.zen .dial-sub { font-size: max(12.5px, calc(var(--dial) * .039)); }
 body.zen .glow { width: calc(var(--dial) * 1.5); height: calc(var(--dial) * 1.5); }
-body.zen .now-task { max-width: min(100%, 420px); }
+body.zen .card-head { max-width: min(100%, 520px); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 /* Phones: one section per page, switched from a bottom tab bar, so the timer gets the whole screen. */
 .tabbar { display: none; }
