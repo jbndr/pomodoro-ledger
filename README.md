@@ -79,7 +79,7 @@ your URL, for example `https://pomodoro-ledger.<your-subdomain>.workers.dev`.
 To deploy from CI instead of `wrangler login`, set `CLOUDFLARE_API_TOKEN`
 (template "Edit Cloudflare Workers") and `CLOUDFLARE_ACCOUNT_ID`.
 
-The `YEAR_IN_FOCUS` repository secret decides when Year in focus shows up:
+The `YEAR_IN_FOCUS` repository variable (or secret) decides when Year in focus shows up:
 `on` (the default when unset), `off`, a start day such as `2026-12-01`, or a
 window such as `2026-12-01..2027-01-15`. Dates are checked in the browser, so a
 window opens and closes on its own; changing the value needs a new deploy.

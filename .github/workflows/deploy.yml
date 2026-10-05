@@ -40,4 +40,4 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          VITE_YEAR_IN_FOCUS: ${{ secrets.YEAR_IN_FOCUS }}
+          VITE_YEAR_IN_FOCUS: ${{ vars.YEAR_IN_FOCUS || secrets.YEAR_IN_FOCUS }}
