@@ -1443,3 +1443,21 @@ body.zen .time.counting { font-size: calc(var(--dial) * .19); }
 /* As specific as the hover rule that reveals the chips (it carries an id), so they stay hidden while counting up. */
 body:not(.zen) .timer-card.timer-card #adjust.off { visibility: hidden; }
 
+
+/* A break's body nudge sits where "ends at" was: one quiet line you can tick. */
+.nudge { pointer-events: auto; display: inline-flex; align-items: center; gap: 7px; max-width: 74cqw; margin-top: 2px; padding: 3px 10px 3px 6px; border: 0; border-radius: 999px; background: color-mix(in oklab, var(--accent) 12%, transparent); color: var(--fg); font-size: 12.5px; font-size: clamp(10px, 3.9cqw, 13px); font-weight: 550; cursor: pointer; transition: background .2s, color .2s; animation: nudge-in .5s cubic-bezier(.32, .72, 0, 1) .2s both; }
+.nudge span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nudge i { flex: none; width: 15px; height: 15px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid color-mix(in oklab, var(--accent) 70%, transparent); color: var(--on-accent); transition: background .2s, border-color .2s; }
+.nudge i svg { width: 9px; height: 9px; }
+@media (hover: hover) { .nudge:not(.done):hover { background: color-mix(in oklab, var(--accent) 18%, transparent); } }
+.nudge.done { cursor: default; background: transparent; color: var(--muted); }
+.nudge.done i { background: var(--accent); border-color: var(--accent); }
+@keyframes nudge-in { from { opacity: 0; translate: 0 3px; } }
+body.zen .nudge { font-size: max(13px, calc(var(--dial) * .036)); }
+.nudge-row { gap: 10px; }
+.nudge-copy { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.nudge-copy select { justify-self: start; height: 26px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-size: 12.5px; }
+.nudge-row .icon-btn { width: 30px; height: 30px; }
+.nudge-add { display: flex; gap: 8px; margin-top: 8px; }
+.nudge-add input { flex: 1; min-width: 0; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); font-size: 14px; }
+.recap-nudges { margin: -4px 0 0; font-size: 13px; color: var(--muted); }

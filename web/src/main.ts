@@ -56,7 +56,7 @@ import { leaveAsked, leftoverPrompt, moveAsked, newDay } from "./tasks/rollover"
 import BulkBar from "./tasks/BulkBar.svelte";
 import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
-import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, keepGoing, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
+import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, keepGoing, nudgeDone, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
 import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, openSettings, openShare, openWhen, openYear, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type ShareUI, type Sheet, type WhenUI, type YearUI } from "./ui";
 import Year from "./year/Year.svelte";
@@ -132,7 +132,7 @@ if (invite) {
   } else if (RM.code) roomConnect();
 } else if (RM.code) roomConnect();
 ui.settings = mount(Settings, { target: document.body, props: { api: {
-  S, Store, Cloud, ls, toast, setOverlay, floatable: !floatBtn.hidden, T,
+  S, Store, Cloud, ls, toast, setOverlay, floatable: !floatBtn.hidden, T, ICON,
   ensureAudio, playSound, scheduleEnd, cancelEnd, cancelTickPreview, syncTicking, previewTicking,
   previewSoundscape, cancelScapePreview, scapePlaying,
   autoFloatHandler, renderTimer, renderStats, renderEstPick,
@@ -140,7 +140,7 @@ ui.settings = mount(Settings, { target: document.body, props: { api: {
 } } }) as SettingsUI;
 mount(TimerCard, { target: $(".timer-card"), props: { api: {
   T, S, ICON, floatBtn, fmtClock, fmtDur, plural, viewTasks, openOf,
-  toggle, skip, adjust, setMode, flushPartial, buzz, toggleZen, setActive, keepGoing, canKeepGoing,
+  toggle, skip, adjust, setMode, flushPartial, buzz, toggleZen, setActive, keepGoing, canKeepGoing, nudgeDone,
 } } });
 ui.pop = mount(Pop, { target: document.body, anchor: $("#toast"), props: { api: { ICON } } }) as PopUI;
 ui.when = mount(WhenPop, { target: document.body, anchor: $("#toast"), props: { api: { S, todayKey, openOf, isToday, scheduleTask, setRepeat, fmtDate, plural } } }) as WhenUI;
