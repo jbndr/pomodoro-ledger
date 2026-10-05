@@ -1,12 +1,13 @@
 // Paste into the browser console (or run through DevTools automation) on a running app.
 // For each row that pairs a marker (circle, dot, icon) with text, it measures how far the marker's
-// vertical centre sits from the centre of the text's first line, and lists every pair off by more than 1px.
+// vertical centre sits from its target and lists every pair off by more than 1px. The target is the centre
+// of the text's first line, or with "block" the centre of the whole text block (task rows center on it).
 (() => {
   const PAIRS = [
     ["New task circle", ".add", ".add-check", "#newTitle"],
-    ["Task circle", ".task", ":scope > .check", ".tt"],
-    ["Task side dots", ".task", ".side-info .cyc", ".tt"],
-    ["Task handle", ".task", ":scope > .grip", ".tt"],
+    ["Task circle", ".task:not(.open)", ":scope > .check", ".task-main", "block"],
+    ["Task side dots", ".task:not(.open)", ".side-info .cyc", ".task-main", "block"],
+    ["Task handle", ".task:not(.open)", ":scope > .grip", ".task-main", "block"],
     ["Subtask box", ".subtask", "input[type=checkbox]", "input[type=text]"],
     ["Menu icon", ".bar-menu .item", "svg, i", ":scope"],
     ["Work together", ".together", ".faces, svg", ".together-label"],
@@ -30,12 +31,12 @@
   };
   const center = (el) => { const r = el.getBoundingClientRect(); return r.height ? r.top + r.height / 2 : null; };
   const out = [];
-  for (const [name, rowSel, markSel, textSel] of PAIRS) {
+  for (const [name, rowSel, markSel, textSel, mode] of PAIRS) {
     for (const row of document.querySelectorAll(rowSel)) {
       if (!row.getClientRects().length) continue;
       const mark = row.querySelector(markSel), text = textSel === ":scope" ? row : row.querySelector(textSel);
       if (!mark || !text || mark === text) continue;
-      const a = center(mark), b = firstLine(text);
+      const a = center(mark), b = mode === "block" ? center(text) : firstLine(text);
       if (a == null || b == null) continue;
       const off = Math.round((a - b) * 10) / 10;
       if (Math.abs(off) > 1) out.push({ name, off, text: (text.value || text.placeholder || text.textContent || "").trim().slice(0, 30) });

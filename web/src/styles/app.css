@@ -505,18 +505,10 @@ td.barcell { width: 38%; min-width: 120px; }
 .task-meta:empty { display: none; }
 .task-meta > span { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
 .task-meta .meta-chip { padding: 0; border: 0; color: var(--faint); }
-/* Rows without a second line keep the height of those with one and center on the title.
-   Rows with one align the circle, handle and side to the title's first line, worked out from its line height. */
-.task { --title-lh: 20px; --check: 22px; --grip-h: 30px; --first-line: calc(2px + var(--title-lh) / 2); }
-.task .tt { line-height: var(--title-lh); }
+/* Rows without a second line keep the height of those with one; the circle, handle and side center on the whole text block. */
 .task-main { min-height: 45.25px; align-content: center; }
 .task:not(.open) { align-items: center; }
 .task:not(.open) .check, .task:not(.open) .grip { margin-top: 0; }
-.task:not(.open):has(.task-meta:not(:empty)) { align-items: start; }
-.task:not(.open):has(.task-meta:not(:empty)) .task-main { align-content: start; }
-.task:not(.open):has(.task-meta:not(:empty)) .check { margin-top: calc(var(--first-line) - var(--check) / 2); }
-.task:not(.open):has(.task-meta:not(:empty)) .grip { margin-top: calc(var(--first-line) - var(--grip-h) / 2); }
-.task:not(.open):has(.task-meta:not(:empty)) .task-side { margin-top: calc(var(--first-line) - 16px); }
 .task-meta svg { width: 13px; height: 13px; flex: none; }
 .task-meta .done-all { color: var(--good); }
 .task-side { grid-column: 4; display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 32px; }
@@ -1169,7 +1161,6 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   .est-pick button { width: 100%; height: 44px; }
   .task { grid-template-columns: 24px 34px minmax(0, 1fr) auto; column-gap: 6px; padding-left: 0; }
   .grip { width: 24px; height: 44px; }
-  .task { --check: 26px; --grip-h: 44px; }
   .check { width: 26px; height: 26px; margin-top: 2px; justify-self: center; }
   .grip { margin-top: -7px; }
   .task.open { margin-inline: -4px; padding-right: 10px; }
