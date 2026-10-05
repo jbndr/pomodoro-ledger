@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "./tasks";
-import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, modeLabel, pickOptions, startLabel, TICKS } from "./timer";
+import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, modeLabel, startLabel, TICKS } from "./timer";
 
 describe("clock", () => {
   it("pads minutes and seconds", () => {
@@ -58,23 +58,3 @@ describe("labels", () => {
 });
 
 
-describe("pickOptions", () => {
-  const a: Task = { id: "a", title: "Alpha", est: 3, project: "Work", sessions: [{ at: 1, ms: 1, full: true }, { at: 2, ms: 1 }] };
-  const b: Task = { id: "b", title: "Bravo" };
-  it("offers no task first, then open tasks with label and cycles", () => {
-    const { opts, cur } = pickOptions([a, b], null);
-    expect(opts).toEqual([
-      { id: "", title: "Unplanned focus (no task)" },
-      { id: "a", title: "Alpha", meta: "Work · 1/3" },
-      { id: "b", title: "Bravo", meta: "0/0" },
-    ]);
-    expect(cur).toBe(0);
-  });
-  it("selects the active task", () => expect(pickOptions([a, b], b).cur).toBe(2));
-  it("keeps a finished active task at the end", () => {
-    const done = { id: "d", title: "Done", done: true };
-    const { opts, cur } = pickOptions([a], done);
-    expect(opts.at(-1)).toEqual({ id: "d", title: "Done (finished)" });
-    expect(cur).toBe(2);
-  });
-});

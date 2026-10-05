@@ -16,12 +16,14 @@ import { taskStartPlan } from "./tasks/plan";
 import { remNow, totalNow } from "./timer/engine";
 import { timerView } from "./timer/state.svelte";
 import { closeLabelPop, ui } from "./ui";
+import { syncActive } from "./tasks/actions";
 import { showMode } from "./timer/morph";
 
-let lastTxt = "", startEstimateMinute = -1, renderedDay = "";
+let lastPhase = "", lastTxt = "", startEstimateMinute = -1, renderedDay = "";
 
 export function renderTimer(force?: boolean) {
   if (force) syncTicking();
+  if (T.mode + T.status !== lastPhase) { lastPhase = T.mode + T.status; syncActive(); }
   showMode(T.mode);
   if (document.body.dataset.status !== T.status) document.body.dataset.status = T.status;
   const total = totalNow(), rem = remNow(), frac = Math.max(0, Math.min(1, rem / total));
@@ -55,6 +57,7 @@ export function renderTaskStarts(force = false) {
 export function renderTasks() {
   if (ui.list?.dragging()) return;
   renderedDay = todayKey();
+  syncActive();
   const projects = projectNames(viewTasks());
   Labels.importTasks(S.tasks);
   if (S.projectFilter.startsWith("project:") && !projects.includes(S.projectFilter.slice(8))) S.projectFilter = "";

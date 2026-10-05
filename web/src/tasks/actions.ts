@@ -13,7 +13,7 @@ import { clone, S, T, type Section, type Task } from "../state";
 import { Labels, Store } from "../store";
 import { saveTimer, setMode, start } from "../timer/engine";
 import { closeWhen, openLabelPop, openWhen } from "../ui";
-import { dayName, guardPreview, inGroup, inProject, isToday, markStarted, openOf, ord, placed, preview, sections, shortDay, subsOf, todayKey, viewOf } from "./derived";
+import { dayName, guardPreview, inGroup, inProject, isToday, markStarted, openOf, ord, placed, preview, sections, shortDay, subsOf, todayKey, topOfToday, viewOf, viewTasks } from "./derived";
 
 /** Slides rows out of the list before `done` saves the change that removes them. */
 function leaveRows(ids: string[], done: () => void) {
@@ -72,6 +72,16 @@ export function addTask(title: string, est: number, into: string, notes: string,
   if (!inProject(t)) S.projectFilter = "";
   Store.saveTask(t);
   toast("Added “" + title + "”" + (t.project ? " to " + t.project : "") + " · " + (into === "later" ? "Later" : dayName(into === "today" ? todayKey() : into)) + ".");
+}
+
+/** Keeps the timer on the top of Today; a running focus round keeps its task until it ends. */
+export function syncActive() {
+  const top = topOfToday()?.id ?? null;
+  if (top === S.activeId) return;
+  const cur = S.activeId ? viewTasks().get(S.activeId) : null;
+  if (T.mode === "focus" && T.status === "running" && cur && !cur.done) return;
+  S.activeId = top;
+  if (!preview()) saveTimer();
 }
 
 export function setActive(id: string) {
@@ -174,7 +184,13 @@ export function completeTask(id: string) {
 }
 
 export function focusOnTask(id: string) {
-  if (guardPreview() || !S.tasks.get(id)) return;
+  const t = S.tasks.get(id);
+  if (guardPreview() || !t) return;
+  const top = topOfToday(S.tasks);
+  if (top?.id !== id) {
+    const first = Math.min(0, ...openOf(S.tasks).filter((x) => isToday(x)).map(ord));
+    Store.saveTask(placed(t, "today", first - 1));
+  }
   S.activeId = id; saveTimer(); renderTasks();
   if (T.mode !== "focus") setMode("focus", true);
   if (T.status !== "running") start();
