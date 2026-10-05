@@ -317,11 +317,6 @@ a.btn { color: inherit; text-decoration: none; }
 .head-icons { display: flex; gap: 2px; }
 .cycle { display: flex; align-items: center; gap: 10px; min-height: 20px; font-size: 13px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; transition: opacity .3s, visibility 0s; }
 .cycle.off { opacity: 0; visibility: hidden; }
-/* The task shows on the clock only where the task list is out of view. */
-.task-line { display: grid; grid-template-rows: 0fr; width: 100%; opacity: 0; transition: grid-template-rows .45s cubic-bezier(.32, .72, 0, 1), opacity .3s; }
-.task-line > div { min-height: 0; overflow: hidden; display: flex; justify-content: center; }
-body.zen .task-line { grid-template-rows: 1fr; opacity: 1; }
-@media (max-width: 640px) { body[data-page="timer"] .task-line { grid-template-rows: 1fr; opacity: 1; } }
 .rounds { flex: none; display: flex; gap: 6px; color: var(--accent); }
 .rounds i { width: 8px; height: 8px; box-sizing: border-box; border-radius: 50%; border: 2px solid currentColor; opacity: .35; }
 .rounds i:is(.done, .now) { opacity: 1; }
@@ -375,10 +370,6 @@ body.morphing .dial .tick, body.morphing .task { transition: none; }
 .go-ic > *, .go-lbl > * { grid-area: 1 / 1; opacity: 0; transition: opacity .16s ease; }
 .go-lbl > * { text-align: center; }
 .go-ic > .on, .go-lbl > .on { opacity: 1; }
-.now-task { min-width: 0; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 600; }
-.now-task span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.now-task em { flex: none; font-style: normal; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
-.now-task .none { font-weight: 500; color: var(--muted); }
 .pick-menu { position: absolute; z-index: 5; left: 0; right: 0; bottom: calc(100% + 6px); margin: 0; padding: 5px; list-style: none; max-height: min(280px, 50vh); overflow-y: auto; overscroll-behavior: contain; border-radius: 14px; border: 1px solid var(--line-2); background: var(--surface); box-shadow: var(--shadow); }
 .pick-menu li { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; cursor: pointer; font-size: 14px; font-weight: 500; }
 .pick-menu li.act { background: var(--surface-2); }
