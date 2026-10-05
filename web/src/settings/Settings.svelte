@@ -2,6 +2,7 @@
   import { flushSync } from "svelte";
   import { refreshNudge } from "../chrome/backupNudge.svelte";
   import { extensionVersion } from "../extension";
+  import { PHASE_MORPHS, phaseMorph } from "../lib/phaseMorph";
   import { rolloverMode } from "../lib/rollover";
   import { rovingIndex, tickPace, tickVolume, wholeIn, workdayEnd } from "../lib/settings";
   import Mixer from "./Mixer.svelte";
@@ -13,6 +14,7 @@
   const TOGGLE = { sAutoBreak: "autoBreak", sAutoFocus: "autoFocus", sSound: "sound", sNotify: "notify", sTicking: "ticking", sAutoFloat: "autoFloat", sRecap: "weeklyRecap", sPlanOffer: "weeklyPlan" };
   const TABS = [["timer", "Timer"], ["auto", "Automation"], ["alerts", "Sound & alerts"], ["sync", "Data & sync"]];
   const ROLLOVER = [["always", "Move to Today"], ["ask", "Ask"], ["never", "Don't move"]];
+  const TICKS = [...Array(12)].map((_, i) => { const a = (i / 12) * Math.PI * 2; return [32 + Math.sin(a) * 27.5, 32 - Math.cos(a) * 27.5, 32 + Math.sin(a) * 30.5, 32 - Math.cos(a) * 30.5].map((n) => +n.toFixed(2)); });
   const PACE = [["1", "1 s", "Every second"], ["2", "2 s", "Every 2 seconds"], ["4", "4 s", "Every 4 seconds"]];
   // A field being typed into keeps its text when settings arrive from another device.
   const HELD = { ...NUM, sDayEnd: "workdayEnd" };
@@ -23,6 +25,7 @@
     for (const k of Object.values(TOGGLE)) out[k] = !!s[k];
     out.reactions = s.reactions !== false;
     out.rollover = rolloverMode(s.rollover);
+    out.phaseMorph = phaseMorph(s.phaseMorph);
     return out;
   };
   const saved = () => { const t = api.ls.get("pl.setTab"); return TABS.some(([name]) => name === t) ? t : "timer"; };
@@ -87,6 +90,7 @@
     else if (id === "sDayEnd") s.workdayEnd = workdayEnd(el.value);
     else if (id === "sReactions") { s.reactions = el.checked; api.reactionsChanged(); }
     else if (id === "sRollover") s.rollover = rolloverMode(el.value);
+    else if (id === "sPhaseMorph") s.phaseMorph = phaseMorph(el.value);
     if (["sTicking", "sTickVolume", "sTickPace"].includes(id)) { api.cancelTickPreview(); fillTicking(); api.syncTicking(); }
     note = "Saved.";
     api.Store.saveSettings();
@@ -118,6 +122,13 @@
   }
 </script>
 
+{#snippet mini(which)}
+  <span class="pv-face pv-{which}">
+    <svg viewBox="0 0 64 64"><circle class="pv-track" cx="32" cy="32" r="22"/><circle class="pv-arc" cx="32" cy="32" r="22" pathLength="100" stroke-dasharray="72 100" transform="rotate(-90 32 32)"/>{#each TICKS as [x1, y1, x2, y2], k (k)}<line x1={x1} y1={y1} x2={x2} y2={y2}/>{/each}<circle class="pv-knob" cx="32" cy="10" r="3.6"/></svg>
+    <i class="pv-go"></i>
+  </span>
+{/snippet}
+
 <div class="overlay" id="settings" hidden role="presentation" onclick={(e) => { if (e.target === e.currentTarget) close(); }}>
   <form class="sheet settings-sheet" id="settingsForm" aria-labelledby="setH" oninput={changed} onsubmit={(e) => { e.preventDefault(); close(); }}>
     <div class="sec-head"><h2 id="setH">Settings</h2><button class="icon-btn" type="button" id="closeSettings" aria-label="Close settings" onclick={close}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
@@ -144,6 +155,15 @@
             <label class="field">Workday ends <span class="opt">optional</span><input type="time" id="sDayEnd" step="900" bind:value={f.workdayEnd}></label>
           </div>
           <p class="hint">Optional. When set, Today points out tasks that won't finish before then, and after hours offers to move the rest to tomorrow.</p>
+        </fieldset>
+        <fieldset class="group">
+          <legend>Phase change</legend>
+          <div class="pm-tiles" role="radiogroup" aria-label="How the timer changes colour between focus and breaks">
+            {#each PHASE_MORPHS as [v, name] (v)}
+              <label class="pm-tile"><input type="radio" name="sPhaseMorph" value={v} bind:group={f.phaseMorph}><span class="pv pv-{v}" aria-hidden="true">{@render mini("now")}{@render mini("next")}</span><span>{name}</span></label>
+            {/each}
+          </div>
+          <p class="hint">{PHASE_MORPHS.find(([v]) => v === f.phaseMorph)?.[2]} With reduced motion turned on, changes are instant.</p>
         </fieldset>
       </div>
       <div class="set-panel" role="tabpanel" id="setPanel-auto" aria-labelledby="setTab-auto" aria-hidden={String(tab !== "auto")}>

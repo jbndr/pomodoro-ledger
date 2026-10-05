@@ -25,9 +25,10 @@ export function renderFloating(txt: string, frac: number) {
   if (!floatWindow || floatWindow.closed) return;
   const doc = floatWindow.document, root = doc.documentElement;
   const theme = getComputedStyle(document.body);
-  for (const name of ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--accent", "--tomato", "--on-accent", "--shadow", "--glow-o", "--f-display", "--f-body", "--f-mono"]) {
+  for (const name of ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--tomato", "--on-accent", "--shadow", "--glow-o", "--f-display", "--f-body", "--f-mono"]) {
     root.style.setProperty(name, theme.getPropertyValue(name));
   }
+  root.style.setProperty("--accent", theme.getPropertyValue(T.mode === "short" ? "--leaf" : T.mode === "long" ? "--sky" : "--tomato"));
   root.style.colorScheme = getComputedStyle(document.documentElement).colorScheme;
   doc.title = txt + " · " + MODE_NAME[T.mode];
   const every = S.settings.longEvery, idx = Math.min(T.setIndex || 0, every);
