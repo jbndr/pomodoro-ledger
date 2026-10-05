@@ -1,5 +1,5 @@
 <script>
-  import { clock, MODE_NAME, MODES, modeLabel, roundDots, startLabel } from "../lib/timer";
+  import { clock, MODE_NAME, MODES, roundDots, startLabel } from "../lib/timer";
   import Dial from "./Dial.svelte";
   import NowTask from "./NowTask.svelte";
   import { onMount } from "svelte";
@@ -27,24 +27,31 @@
     const T = api.T, every = api.S.settings.longEvery;
     return {
       mode: T.mode, status: T.status,
-      label: modeLabel(T.mode, T.setIndex, every), name: MODE_NAME[T.mode], dots: roundDots(T.mode, T.setIndex, every),
-      sub: T.status === "running" ? "ends at " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
+      dots: roundDots(T.mode, T.setIndex, every), round: Math.min(Math.min(T.setIndex || 0, every) + 1, every), every,
+      sub: T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
       held: Object.fromEntries(MODES.map((m) => [m, T.saved[m] ? "Paused with " + clock(Math.ceil(T.saved[m].remaining / 1000)) + " left" : ""])),
     };
   });
+  const zenLabel = $derived(timerView.zen ? "Exit full screen" : "Full screen");
+
+  // The floating timer's button is wired up before this mounts, so it is moved in rather than rendered here.
+  const adoptFloatBtn = (el) => { el.prepend(api.floatBtn); };
 </script>
 
 <div class="glow" aria-hidden="true"></div>
 <div class="card-head">
-  <div class="head-info">
-    <NowTask {api} />
-    <span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span>
-  </div>
   <div class="modes" role="tablist" aria-label="Timer mode">
-    {#each MODES as m}<button type="button" role="tab" data-mode={m} aria-selected={String(m === c.mode)} data-held={c.held[m] ? "" : null} title={c.held[m]} onclick={() => { if (m !== api.T.mode) api.setMode(m, true); }}>{MODE_NAME[m]}</button>{/each}
+    {#each MODES as m}<button type="button" role="tab" data-mode={m} aria-label={MODE_NAME[m]} aria-selected={String(m === c.mode)} data-held={c.held[m] ? "" : null} title={c.held[m]} onclick={() => { if (m !== api.T.mode) api.setMode(m, true); }}>{m === "focus" ? "Focus" : m === "short" ? "Short" : "Long"}</button>{/each}
+  </div>
+  <div class="head-icons" {@attach adoptFloatBtn}>
+    <button class="icon-btn full-btn" type="button" id="fullBtn" aria-label={zenLabel} title={timerView.zen ? zenLabel : "Fill the page (F) · Shift-click for browser full screen (Shift+F)"} onclick={(e) => api.toggleZen(e.shiftKey)}>{@html timerView.zen ? api.ICON.shrink : api.ICON.expand}</button>
   </div>
 </div>
-<Dial {api} label={c.label} name={c.name} sub={c.sub} />
+<Dial sub={c.sub} />
+<div class="cycle" class:off={c.mode !== "focus"} title={"A long break comes after round " + c.every}>
+  <span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span><span>Round {c.round} of {c.every}</span>
+</div>
+<div class="task-line"><div><NowTask {api} /></div></div>
 <div class="adjust" id="adjust" role="group" aria-label="Adjust this session">
   <button type="button" data-adj="-1" title="1 minute less (−)" onclick={() => api.adjust(-1)}>−1 min</button>
   <button type="button" data-adj="1" title="1 minute more (+)" onclick={() => api.adjust(1)}>+1 min</button>

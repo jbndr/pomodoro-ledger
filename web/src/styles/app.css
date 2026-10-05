@@ -313,10 +313,15 @@ a.btn { color: inherit; text-decoration: none; }
 .modes button[data-mode="short"] { --c: var(--leaf); }
 .modes button[data-mode="long"] { --c: var(--sky); }
 .modes button[data-held]::before { content: ""; position: absolute; top: 6px; right: 1px; width: 5px; height: 5px; border-radius: 50%; background: var(--c); }
-.card-head { width: 100%; min-width: 0; min-height: 40px; display: grid; align-items: center; }
-.card-head > * { grid-area: 1 / 1; }
-.card-head .modes { justify-self: center; }
-.head-info { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 0 6px; }
+.card-head { width: 100%; min-width: 0; min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.head-icons { display: flex; gap: 2px; }
+.cycle { display: flex; align-items: center; gap: 10px; min-height: 20px; font-size: 13px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; transition: opacity .3s, visibility 0s; }
+.cycle.off { opacity: 0; visibility: hidden; }
+/* The task shows on the clock only where the task list is out of view. */
+.task-line { display: grid; grid-template-rows: 0fr; width: 100%; opacity: 0; transition: grid-template-rows .45s cubic-bezier(.32, .72, 0, 1), opacity .3s; }
+.task-line > div { min-height: 0; overflow: hidden; display: flex; justify-content: center; }
+body.zen .task-line { grid-template-rows: 1fr; opacity: 1; }
+@media (max-width: 640px) { body[data-page="timer"] .task-line { grid-template-rows: 1fr; opacity: 1; } }
 .rounds { flex: none; display: flex; gap: 6px; color: var(--accent); }
 .rounds i { width: 8px; height: 8px; box-sizing: border-box; border-radius: 50%; border: 2px solid currentColor; opacity: .35; }
 .rounds i:is(.done, .now) { opacity: 1; }
@@ -330,7 +335,6 @@ body.morphing .dial .tick, body.morphing .task { transition: none; }
 .dial .track { fill: none; stroke: var(--surface-2); stroke-width: 12; }
 .dial .arc { fill: none; stroke: var(--accent); stroke-width: 12; stroke-linecap: round; }
 .dial .knob { fill: var(--surface); stroke: var(--accent); stroke-width: 4; }
-.full-btn { position: absolute; top: 0; right: 0; }
 @media (min-width: 641px) {
   .dial-wrap { width: min(100%, var(--desk-dial, 340px)); }
   body.short-desk .timer-card { gap: 10px; padding: 14px 18px 16px; }
@@ -338,11 +342,8 @@ body.morphing .dial .tick, body.morphing .task { transition: none; }
   body.short-desk .go { height: 54px; font-size: 17px; }
   body.short-desk .round { width: 46px; height: 46px; }
 }
-.float-btn { position: absolute; top: 0; left: 0; }
 /* A small dial leaves room beside it, so its corner buttons move off the ring. */
-@container (max-width: 260px) { .full-btn { right: -50px; } .float-btn { left: -50px; } }
 .dial-center { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; text-align: center; gap: 2px; pointer-events: none; }
-.dial-label { font-size: 11.5px; font-size: clamp(9px, 3.6cqw, 11.5px); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
 .time { font-family: var(--f-display); font-weight: 650; font-size: clamp(52px, 15.3vw, 70px); font-size: 22cqw; line-height: 1; letter-spacing: -.02em; font-variation-settings: "opsz" 96; }
 .time .d { display: inline-block; width: .6em; text-align: center; }
 .time .c { display: inline-block; width: .28em; text-align: center; translate: 0 -.06em; }
@@ -351,17 +352,12 @@ body.morphing .dial .tick, body.morphing .task { transition: none; }
 .adjust button { height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; font-family: var(--f-mono); font-size: 12px; color: var(--muted); transition: background .15s, color .15s, border-color .15s; }
 @media (hover: hover) { .adjust button:hover { background: var(--surface-2); color: var(--fg); border-color: var(--line-2); } }
 /* Secondary timer controls rest out of sight until the card is hovered, reached from the keyboard, or tapped */
-.timer-card :is(.float-btn, .full-btn, .modes, .adjust, #resetBtn, #skipBtn) { transition: opacity .3s ease .4s, visibility 0s linear .7s; }
-.timer-card:not(.reveal, :has(:focus-visible)) :is(.float-btn, .full-btn, .modes, .adjust, #resetBtn, #skipBtn) { opacity: 0; visibility: hidden; }
+.timer-card :is(.head-icons, .adjust, #resetBtn, #skipBtn) { transition: opacity .3s ease .4s, visibility 0s linear .7s; }
+.timer-card:not(.reveal, :has(:focus-visible)) :is(.head-icons, .adjust, #resetBtn, #skipBtn) { opacity: 0; visibility: hidden; }
 @media (hover: hover) {
-  body:not(.zen) .timer-card:hover :is(.float-btn, .full-btn, .modes, .adjust, #resetBtn, #skipBtn) { opacity: 1; visibility: visible; transition: opacity .18s ease, visibility 0s; }
+  body:not(.zen) .timer-card:hover :is(.head-icons, .adjust, #resetBtn, #skipBtn) { opacity: 1; visibility: visible; transition: opacity .18s ease, visibility 0s; }
 }
-.timer-card:is(.reveal, :has(:focus-visible)) :is(.float-btn, .full-btn, .modes, .adjust, #resetBtn, #skipBtn) { transition: opacity .18s ease, visibility 0s; }
-.head-info { transition: opacity .18s ease .5s; }
-.timer-card:is(.reveal, :has(:focus-visible)) .modes { transition-delay: .1s; }
-@media (hover: hover) { body:not(.zen) .timer-card:hover .modes { transition-delay: .1s; } }
-.timer-card:is(.reveal, :has(:focus-visible)) .head-info { opacity: 0; transition-duration: .1s; transition-delay: 0s; }
-@media (hover: hover) { body:not(.zen) .timer-card:hover .head-info { opacity: 0; transition-duration: .1s; transition-delay: 0s; } }
+.timer-card:is(.reveal, :has(:focus-visible)) :is(.head-icons, .adjust, #resetBtn, #skipBtn) { transition: opacity .18s ease, visibility 0s; }
 @keyframes pulse { 50% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--tomato) 18%, transparent); } }
 .controls { display: flex; align-items: center; gap: 18px; }
 .round { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface-2); display: grid; place-items: center; color: var(--muted); transition: background .15s, color .15s, transform .1s; }
@@ -1122,8 +1118,7 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   .progress { order: 5; }
   .timer-card { padding: 10px 12px 12px; gap: 8px; border-radius: 22px; box-shadow: none; min-height: 0; }
   .dial-wrap { width: min(100%, var(--mobile-dial, 240px)); }
-  .modes { width: 100%; }
-  .modes button { flex: 1; min-height: 44px; padding-inline: 6px; }
+  .modes button { min-height: 44px; }
   .adjust { width: 100%; justify-content: center; }
   .adjust button { min-height: 44px; padding-inline: 14px; }
   .controls { width: 100%; justify-content: center; gap: 12px; }
@@ -1202,7 +1197,6 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
   body.compact-phone .mates { grid-column: 2; grid-row: 1; }
   body.compact-phone .room-actions { grid-column: 3; }
   body.compact-phone .timer-card { padding-block: 8px; gap: 6px; }
-  body.compact-phone .modes { padding: 2px; }
   body.compact-phone .go { height: 52px; }
 }
 button, .pick-menu li { touch-action: manipulation; }
@@ -1213,7 +1207,6 @@ body.zen { overflow: hidden; }
 body.zen .timer-card { position: fixed; inset: 0; z-index: 30; border: 0; border-radius: 0; box-shadow: none; overflow-y: auto; align-content: center; align-content: safe center; gap: clamp(14px, 2.6dvh, 30px); padding: calc(env(safe-area-inset-top, 0px) + 20px) 22px calc(env(safe-area-inset-bottom, 0px) + 20px); --dial: max(220px, min(100vw - 44px, 100dvh - 445px, 760px)); }
 body.zen .dial-wrap { width: var(--dial); }
 body.zen .time { font-size: calc(var(--dial) * .22); }
-body.zen .dial-label { font-size: max(11.5px, calc(var(--dial) * .036)); }
 body.zen .dial-sub { font-size: max(12.5px, calc(var(--dial) * .039)); }
 body.zen .card-head { max-width: min(100%, 520px); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
@@ -1243,7 +1236,6 @@ body.zen .card-head { max-width: min(100%, 520px); }
   body[data-page="timer"][data-status="running"]::before { animation: breathe 7s ease-in-out infinite; }
   body[data-page="timer"][data-status="running"] .bar { opacity: .45; }
   body[data-page="timer"] .bar { transition: opacity .6s; }
-  body[data-page="timer"] .modes { width: auto; min-width: min(100%, 320px); background: color-mix(in oklab, var(--surface) 55%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
   body[data-page="timer"] .dial .track { stroke: color-mix(in oklab, var(--fg) 7%, transparent); }
   body[data-page="timer"] .dial .knob { filter: drop-shadow(0 0 6px var(--accent)); }
   body[data-page="timer"] .adjust { gap: 8px; }
