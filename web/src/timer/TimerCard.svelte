@@ -1,7 +1,6 @@
 <script>
   import { clock, MODE_NAME, MODES, roundDots, startLabel } from "../lib/timer";
   import Dial from "./Dial.svelte";
-  import NowTask from "./NowTask.svelte";
   import { onMount } from "svelte";
   import { timerView } from "./state.svelte";
 
@@ -51,7 +50,6 @@
 <div class="cycle" class:off={c.mode !== "focus"} title={"A long break comes after round " + c.every}>
   <span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span><span>Round {c.round} of {c.every}</span>
 </div>
-<div class="task-line"><div><NowTask {api} /></div></div>
 <div class="adjust" id="adjust" role="group" aria-label="Adjust this session">
   <button type="button" data-adj="-1" title="1 minute less (−)" onclick={() => api.adjust(-1)}>−1 min</button>
   <button type="button" data-adj="1" title="1 minute more (+)" onclick={() => api.adjust(1)}>+1 min</button>

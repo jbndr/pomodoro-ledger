@@ -39,7 +39,7 @@ function scheduleShortcut(key: string) {
   const q = quickDays();
   if (key === "d") {
     const row = taskRow(t.id);
-    openWhen(row ? row.querySelector("[data-sched]") || row : $("#nowTask"), t);
+    openWhen(row ? row.querySelector("[data-sched]") || row : $("#startBtn"), t);
     return;
   }
   scheduleTask(t.id, ({ t: q.today, m: q.tomorrow, w: q.week, l: q.later } as Record<string, string>)[key]);
