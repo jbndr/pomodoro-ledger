@@ -61,7 +61,7 @@ export function commitPlacements(order: Placement[]) {
   if (changed.length) Store.saveTasks(changed); else renderTasks();
 }
 
-export function addTask(title: string, est: number, into: string, notes: string, repeat?: Repeat | null) {
+export function addTask(title: string, est: number, into: string, notes: string, repeat?: Repeat | null): string {
   markStarted(true);
   const id = "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const last = Math.max(-1, ...openOf(S.tasks).filter((x) => inGroup(x, into)).map(ord));
@@ -72,6 +72,7 @@ export function addTask(title: string, est: number, into: string, notes: string,
   if (!inProject(t)) S.projectFilter = "";
   Store.saveTask(t);
   toast("Added “" + title + "”" + (t.project ? " to " + t.project : "") + " · " + (into === "later" ? "Later" : dayName(into === "today" ? todayKey() : into)) + ".");
+  return id;
 }
 
 /** Keeps the timer on the top of Today; a running focus round keeps its task until it ends. */

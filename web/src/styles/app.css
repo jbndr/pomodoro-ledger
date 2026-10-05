@@ -1442,3 +1442,6 @@ body.zen .time.counting { font-size: calc(var(--dial) * .19); }
 .time .p { display: inline-block; width: .38em; text-align: center; font-size: .6em; vertical-align: .18em; opacity: .5; }
 /* As specific as the hover rule that reveals the chips (it carries an id), so they stay hidden while counting up. */
 body:not(.zen) .timer-card.timer-card #adjust.off { visibility: hidden; }
+
+/* A copy of a new task's title, gliding from the composer into its row. */
+.fly-title { position: fixed; z-index: 50; pointer-events: none; white-space: nowrap; transform-origin: 0 0; line-height: 1.35; }
