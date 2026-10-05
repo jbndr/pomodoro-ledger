@@ -9,3 +9,6 @@ dist-extension/
 .dev.vars
 .dev.vars.*
 *.log
+
+playwright-report/
+test-results/

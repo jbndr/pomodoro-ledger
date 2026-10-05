@@ -8,9 +8,11 @@
     "typecheck": "tsc --noEmit",
     "test": "tsc --noEmit && vitest run && node --test tests/room.cjs tests/sync.cjs tests/push.cjs tests/extension.mjs",
     "vapid": "node scripts/vapid.mjs",
-    "extension:zip": "node scripts/zip-extension.mjs"
+    "extension:zip": "node scripts/zip-extension.mjs",
+    "test:ui": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "concurrently": "^9.2.4",
     "svelte": "^5.57.1",
