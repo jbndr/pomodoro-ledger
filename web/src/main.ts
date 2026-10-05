@@ -67,7 +67,6 @@ import { fsEl, setZen, toggleZen } from "./zen";
 initFloat();
 document.addEventListener("pointerdown", dismissCard);
 document.addEventListener("keydown", onKey);
-$("#openSettings").addEventListener("click", () => openSettings());
 initPages();
 setInterval(tick, 250);
 setInterval(newDay, 60000);
@@ -97,8 +96,8 @@ mount(Progress, { target: $(".app"), props: { api: {
 } } });
 const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
   roomReact, reactWait, reactionsOn };
-mount(BarTools, { target: $(".bar-right"), anchor: $(".bar-right").firstChild!, props: { api: {
-  RM, ls, S, Cloud, DEMO, preview, openRoom, openKeys, openPalette,
+mount(BarTools, { target: $(".bar-right"), props: { api: {
+  RM, ls, S, Cloud, DEMO, preview, openRoom, openKeys, openPalette, openSettings: () => openSettings(),
   openSync: () => { if (!DEMO) openSettings("sync"); },
   themed: rethemeFloat,
 } } });
@@ -148,7 +147,7 @@ const panel = $(".top > .panel"), headApi = { S, ss, listHead, plural, fmtDur, f
 mount(TaskViews, { target: $(".tasks-head"), props: { api: headApi } });
 mount(ListHead, { target: panel, props: { api: headApi } });
 mount(ListFoot, { target: panel, props: { api: headApi } });
-mount(Composer, { target: panel, anchor: $("#projectFilter"), props: { api: {
+mount(Composer, { target: panel, anchor: $(".filter-fold"), props: { api: {
   S, ICON, plural, dayName, todayKey, dur, fmtDur, labelChipName, filterLabel, addTask,
   openWhen, openLabelPop, closeLabelPop, labelKey: (e: KeyboardEvent) => ui.label!.key(e), filterLabels: (q: string) => ui.label!.filter(q),
 } } });
