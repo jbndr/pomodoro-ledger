@@ -124,6 +124,58 @@ for (const scheme of ["light", "dark"]) {
   for (const m of mates) await m.context().close();
   await page.context().close();
 
+  page = await open(1000, 700);
+  await page.locator(".timer-card .dial-wrap").hover();
+  await page.waitForTimeout(500);
+  const dial = await page.locator(".timer-card .dial-wrap").boundingBox();
+  const steps = await page.locator(".timer-card [data-adj='5']").boundingBox();
+  const tcard = await page.locator(".timer-card").boundingBox();
+  const dbox = { x: Math.round(tcard.x), y: Math.round(dial.y - 8), width: Math.round(tcard.width), height: Math.round(steps.y + steps.height + 14 - dial.y + 8) };
+  await encode(await record(page, async () => {
+    await page.waitForTimeout(900);
+    await page.locator(".timer-card [data-adj='5']").click();
+    await page.waitForTimeout(1300);
+    await page.locator(".timer-card [data-adj='5']").click();
+    await page.waitForTimeout(1300);
+    await page.locator(".timer-card [data-adj='-1']").click();
+    await page.waitForTimeout(1800);
+  }), dbox, `digits-${scheme}`, 760, 1000);
+  await page.context().close();
+
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2, colorScheme: scheme, isMobile: true, hasTouch: true });
+    page = await ctx.newPage();
+    await page.goto(base + "/app/?demo=1&embed=1");
+    await page.waitForTimeout(1000);
+    await page.locator(".tabbar [data-page=tasks]").click();
+    await page.waitForTimeout(700);
+    const rows = page.locator("section.panel .check");
+    const first = await rows.nth(0).boundingBox(), last = await rows.nth(2).boundingBox();
+    const fbox = { x: 0, y: Math.round(first.y - 70), width: 390, height: Math.round(last.y + last.height + 22 - first.y + 70) };
+    await encode(await record(page, async () => {
+      await page.waitForTimeout(1000);
+      await rows.nth(2).click();
+      await page.waitForTimeout(3000);
+    }), fbox, `finish-${scheme}`, 780, 390);
+    await ctx.close();
+  }
+
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1000, height: 700 }, deviceScaleFactor: 2, colorScheme: scheme });
+    await ctx.addInitScript(() => {
+      Object.defineProperty(window, "documentPictureInPicture", { value: { window: null, requestWindow: async ({ width, height }) => window.open("about:blank", "pip", `popup,width=${width},height=${height}`) } });
+    });
+    const main = await ctx.newPage();
+    await main.goto(base + "/app/?demo=1&embed=1");
+    await main.waitForTimeout(1000);
+    await main.getByRole("button", { name: /^Start/ }).first().click();
+    const [pip] = await Promise.all([ctx.waitForEvent("page"), main.locator("#floatBtn").click()]);
+    await pip.setViewportSize({ width: 300, height: 184 });
+    await pip.waitForTimeout(1500);
+    await encode(await record(pip, () => pip.waitForTimeout(5200)), { x: 0, y: 0, width: 300, height: 184 }, `pip-${scheme}`, 600, 300);
+    await ctx.close();
+  }
+
   page = await open(1000, 820);
   await page.locator(".yr-hero").scrollIntoViewIfNeeded();
   await page.locator(".yr-hero").click();

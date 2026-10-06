@@ -2,7 +2,7 @@
 export type Kind = "dawn" | "dusk" | "meadow" | "sky" | "violet" | "ember" | "lagoon";
 interface Props { kind: Kind }
 const { kind } = Astro.props;
-const id = `pt-${kind}`;
+const id = `pt-${kind}-${Math.random().toString(36).slice(2, 7)}`;
 const hills = [
   "M0 318 C110 286 230 292 360 314 C500 338 630 284 800 296 L800 500 L0 500Z",
   "M0 382 C140 346 290 362 430 390 C560 414 690 366 800 374 L800 500 L0 500Z",

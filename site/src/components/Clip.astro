@@ -1,15 +1,16 @@
 ---
 import type { ImageMetadata } from "astro";
-interface Props { light: string; dark: string; posterLight: ImageMetadata; posterDark: ImageMetadata; label: string; w: number; ratio: string; radius?: string; frame?: boolean; fade?: boolean }
-const { light, dark, posterLight, posterDark, label, w, ratio, radius = "14px", frame = true, fade = false } = Astro.props;
+interface Props { light: string; dark: string; posterLight: ImageMetadata; posterDark: ImageMetadata; label: string; w: number; radius?: string; frame?: boolean; fade?: boolean }
+const { light, dark, posterLight, posterDark, label, w, radius = "14px", frame = true, fade = false } = Astro.props;
+const ratio = `${posterLight.width} / ${posterLight.height}`;
 ---
 <div class:list={["clip", { frame, fade }]} style={`--w:${w}px;--ar:${ratio};--r:${radius}`} data-clip>
   <video class="on-light" muted loop playsinline preload="none" poster={posterLight.src} aria-label={label}><source src={light} type="video/mp4" /></video>
   <video class="on-dark" muted loop playsinline preload="none" poster={posterDark.src} aria-label={label}><source src={dark} type="video/mp4" /></video>
 </div>
 <style>
-  .clip { width: min(var(--w), 100%); aspect-ratio: var(--ar); position: relative; }
-  .clip video { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: var(--r); background: var(--surface-2); }
+  .clip { width: min(var(--w), 100%); aspect-ratio: var(--ar); position: relative; min-height: 0; }
+  .clip video { display: block; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: var(--r); background: var(--surface-2); }
   .frame video { box-shadow: 0 0 0 1px rgb(20 24 22 / .06), 0 2px 4px rgb(20 24 22 / .06), 0 26px 50px -24px rgb(20 24 22 / .45); }
   .clip:not(.frame) video { filter: drop-shadow(0 26px 40px rgb(20 24 22 / .3)); }
   .fade { -webkit-mask-image: linear-gradient(transparent, #000 28%); mask-image: linear-gradient(transparent, #000 28%); }

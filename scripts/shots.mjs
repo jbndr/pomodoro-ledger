@@ -10,7 +10,7 @@ const clear = "html,body,.app{background:transparent!important} body::before,bod
 const browser = await chromium.launch();
 for (const scheme of ["light", "dark"]) {
   const open = async (w = 1280, h = 860, o = {}) => {
-    const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 2, colorScheme: scheme, reducedMotion: "reduce", isMobile: !!o.mobile, hasTouch: !!o.mobile });
+    const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: o.dpr ?? 2, colorScheme: scheme, reducedMotion: "reduce", isMobile: !!o.mobile, hasTouch: !!o.mobile });
     await page.goto(base + "/app/?demo=1&embed=1");
     if (o.clear !== false) await page.addStyleTag({ content: clear });
     await page.waitForTimeout(800);
@@ -70,6 +70,12 @@ for (const scheme of ["light", "dark"]) {
   const tall = `${out}/ledger-phone-${scheme}.png`;
   const cut = await sharp(tall).extract({ left: 0, top: 0, width: (await sharp(tall).metadata()).width, height: 1240 }).toBuffer();
   await sharp(cut).toFile(tall);
+  await page.close();
+
+  page = await open(940, 1100, { dpr: 4 });
+  await page.locator("#tiles").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  await shot(page, "#tiles .tile:nth-child(4)", "estimates");
   await page.close();
 
   page = await open(940, 1100);

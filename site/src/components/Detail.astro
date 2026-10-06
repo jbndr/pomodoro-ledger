@@ -1,0 +1,18 @@
+---
+import Paint, { type Kind } from "./Paint.astro";
+interface Props { kind: Kind; title: string; wide?: boolean }
+const { kind, title, wide = false } = Astro.props;
+---
+<figure class:list={["detail", { wide }]}>
+  <div class="wp stage"><Paint kind={kind} /><div class="art"><slot /></div></div>
+  <figcaption><b>{title}</b> <slot name="text" /></figcaption>
+</figure>
+<style>
+  .detail { margin: 0; display: grid; gap: 14px; align-content: start; }
+  .stage { height: 300px; border-radius: 18px; }
+  .art { position: relative; height: 100%; display: grid; place-items: center; padding: 22px; }
+  figcaption { font-size: 14.5px; line-height: 1.55; color: var(--muted); padding: 0 4px; }
+  figcaption b { color: var(--fg); font-weight: 600; }
+  .wide { grid-column: 1 / -1; }
+  @media (max-width: 640px) { .stage { height: 260px; } .wide .stage { height: 280px; } }
+</style>
