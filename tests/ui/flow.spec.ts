@@ -13,10 +13,11 @@ test("a flow session counts up and earns a break that matches", async ({ page, i
   await open(page);
   await page.locator('.modes [data-mode="flow"]').click();
   await expect(page.locator("#time")).toHaveText("00:00");
-  await expect(page.locator("#dialSub")).toHaveText("counts up from zero");
+  await expect(page.locator("#dialSub")).toHaveText("");
   await page.locator("#startBtn").click();
   await page.clock.fastForward(72 * 60_000); await page.clock.runFor(500);
   await expect(page.locator("#time")).toHaveText(/^72:0\d$/);
+  await expect(page.locator("#dialSub")).toContainText("started");
   await expect(page.locator("#startBtn")).toContainText("Stop");
   await page.locator("#startBtn").click();
   await expect(page.locator("#toast")).toContainText("of flow. Take a 14-minute break.");
