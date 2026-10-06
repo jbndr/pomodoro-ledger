@@ -1,0 +1,107 @@
+---
+const rooms = [
+  { code: "OPENDA", title: "Deep work", rhythm: "50/10" },
+  { code: "OPENPA", title: "Pomodoro", rhythm: "25/5" },
+];
+---
+<div class="rooms" data-rooms>
+  <div class="head">
+    <span class="title">Public rooms</span>
+    <span class="now" data-now><i></i><span>Checking who's in…</span></span>
+  </div>
+  <ul>
+    {rooms.map((r) => (
+      <li data-room={r.code} data-rhythm={r.rhythm}>
+        <span class="ring" aria-hidden="true">
+          <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19" class="track" /><circle cx="22" cy="22" r="19" class="arc" pathLength="100" /></svg>
+          <b data-min>–</b><small>min</small>
+        </span>
+        <span class="meta">
+          <span class="name">{r.title}</span>
+          <span class="phase" data-phase>{r.rhythm}</span>
+        </span>
+        <span class="count" data-count>–/12</span>
+        <a class="join" href={`/app/?room=${r.code}`}>Join</a>
+      </li>
+    ))}
+  </ul>
+  <p class="foot">People in a room see your name and timer. Never your tasks.</p>
+</div>
+<style>
+  .rooms { width: min(520px, 100%); background: var(--surface); border-radius: 22px; padding: 20px; box-shadow: 0 0 0 1px rgb(20 24 22 / .05), 0 2px 4px rgb(20 24 22 / .06), 0 26px 50px -26px rgb(20 24 22 / .45); }
+  .head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 4px 14px; }
+  .title { font: 650 20px/1 var(--f-display); letter-spacing: -.02em; }
+  .now { display: inline-flex; align-items: center; gap: 7px; font: 500 13px/1.2 var(--f-body); color: var(--muted); text-align: right; }
+  .now i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; }
+  .now.busy i { background: var(--leaf); box-shadow: 0 0 0 4px color-mix(in oklab, var(--leaf) 20%, transparent); }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  li { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--line); }
+  .ring { position: relative; width: 44px; height: 44px; display: grid; place-content: center; text-align: center; line-height: 1; }
+  .ring svg { position: absolute; inset: 0; rotate: -90deg; }
+  .ring circle { fill: none; stroke-width: 3; }
+  .track { stroke: var(--line); }
+  .arc { stroke: var(--tomato); stroke-linecap: round; stroke-dasharray: 0 100; transition: stroke-dasharray .6s ease, stroke .3s; }
+  li.break .arc { stroke: var(--leaf); }
+  .ring b { font: 650 14px/1 var(--f-body); font-variant-numeric: tabular-nums; }
+  .ring small { font: 500 8.5px/1 var(--f-body); color: var(--faint); margin-top: 1px; }
+  .meta { display: grid; gap: 4px; min-width: 0; }
+  .name { font: 600 15.5px/1.2 var(--f-body); }
+  .phase { font: 400 13px/1.2 var(--f-body); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .phase :global(em) { font-style: normal; font-weight: 600; color: var(--tomato); }
+  li.break .phase :global(em) { color: var(--leaf); }
+  .count { font: 500 13px/1 var(--f-body); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .count :global(b) { color: var(--fg); font-weight: 600; }
+  .join { display: inline-flex; align-items: center; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line-2); background: var(--surface); font: 600 13.5px/1 var(--f-body); text-decoration: none; transition: border-color .15s, transform .12s; }
+  .join:hover { border-color: var(--fg); }
+  .join:active { transform: scale(.96); }
+  .foot { margin: 14px 4px 0; font-size: 13px; color: var(--faint); }
+  @media (max-width: 640px) {
+    .rooms { padding: 14px; }
+    .head { flex-direction: column; align-items: flex-start; gap: 8px; }
+    li { gap: 10px; padding: 10px; }
+    .count { display: none; }
+  }
+</style>
+<script>
+  import { phaseAt, type Rhythm } from "../../../web/src/lib/rhythm";
+
+  const box = document.querySelector<HTMLElement>("[data-rooms]");
+  if (box) {
+    const rows = [...box.querySelectorAll<HTMLElement>("[data-room]")];
+    const now = box.querySelector<HTMLElement>("[data-now]")!;
+    const fmt = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" });
+    let skew = 0, people: Record<string, number> | null = null;
+
+    const tick = () => {
+      const t = Date.now() + skew;
+      for (const row of rows) {
+        const r = row.dataset.rhythm as Rhythm, p = phaseAt(r, t);
+        const left = Math.max(0, p.end - t), frac = left / (p.end - p.start);
+        row.classList.toggle("break", !p.focus);
+        row.querySelector("[data-min]")!.textContent = String(Math.ceil(left / 60000));
+        row.querySelector<SVGCircleElement>(".arc")!.style.strokeDasharray = `${(frac * 100).toFixed(1)} 100`;
+        row.querySelector("[data-phase]")!.innerHTML = `<em>${p.focus ? "Focus" : "Break"}</em> until ${fmt.format(p.end)} · ${r}`;
+        const n = people?.[row.dataset.room!];
+        row.querySelector("[data-count]")!.innerHTML = n == null ? "–/12" : `<b>${n}</b>/12`;
+      }
+    };
+    const load = async () => {
+      try {
+        const res = await fetch("/api/rooms", { headers: { accept: "application/json" } });
+        if (!res.ok) throw new Error();
+        const data: { now: number; rooms: { code: string; names: string[] }[] } = await res.json();
+        skew = data.now - Date.now();
+        people = Object.fromEntries(data.rooms.map((r) => [r.code, r.names.length]));
+        const total = data.rooms.reduce((n, r) => n + r.names.length, 0);
+        now.classList.toggle("busy", total > 0);
+        now.querySelector("span")!.textContent = total ? `${total} ${total === 1 ? "person" : "people"} focusing now` : "Quiet right now. Be the first.";
+      } catch {
+        now.querySelector("span")!.textContent = "Rooms follow the clock";
+      }
+      tick();
+    };
+    tick(); load();
+    setInterval(tick, 10_000);
+    setInterval(() => { if (!document.hidden) load(); }, 60_000);
+  }
+</script>

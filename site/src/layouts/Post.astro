@@ -8,7 +8,7 @@ const ld = { "@context": "https://schema.org", "@type": "BlogPosting", headline:
 ---
 <Base title={post.data.title} description={post.data.description} noindex={post.data.draft}>
   <script type="application/ld+json" slot="head" set:html={JSON.stringify(ld)} />
-  <article class="wrap">
+  <article class="col">
     <header class="page-head prose">
       <p class="eyebrow"><a href={href}>{section}</a> · <time datetime={post.data.date.toISOString()}>{day(post.data.date)}</time></p>
       <h1>{post.data.title}</h1>

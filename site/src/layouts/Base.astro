@@ -26,7 +26,7 @@ const on = (h: string) => (path === h || path.startsWith(h + "/") ? "page" : und
 <meta property="og:description" content={description}>
 <meta property="og:url" content={canonical}>
 <meta name="twitter:card" content="summary">
-<meta name="theme-color" content="#EDEFEC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#F6F7F5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0E1110" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -35,12 +35,12 @@ const on = (h: string) => (path === h || path.startsWith(h + "/") ? "page" : und
 <link rel="sitemap" href="/sitemap-index.xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Caveat:wght@500..700&display=swap">
 <slot name="head" />
 </head>
 <body>
 <header class="top">
-  <div class="wrap">
+  <div class="col">
     <a class="brand" href="/">
       <svg viewBox="0 0 28 28" aria-hidden="true"><circle cx="5.6" cy="14" r="4.5" fill="var(--tomato)"/><path d="M13.04 20.96L22.16 7.76" fill="none" stroke="var(--leaf)" stroke-width="6" stroke-linecap="round"/></svg>
       {SITE.name}
@@ -50,12 +50,14 @@ const on = (h: string) => (path === h || path.startsWith(h + "/") ? "page" : und
   </div>
 </header>
 <main><slot /></main>
-<footer class="foot">
-  <div class="wrap">
-    <span>© {new Date().getFullYear()} {SITE.name}</span>
-    <nav aria-label="Footer">
-      <a href="/features">Features</a><a href="/changelog">Changelog</a><a href="/devlog">Devlog</a><a href="/changelog/rss.xml">RSS</a>
-    </nav>
+<footer class="site-foot">
+  <div class="col">
+    <div class="grid">
+      <nav aria-labelledby="fProduct"><h2 id="fProduct">Product</h2><ul><li><a href={SITE.app}>Open the app</a></li><li><a href="/app/?demo=1">Try the demo</a></li><li><a href="/features">Features</a></li></ul></nav>
+      <nav aria-labelledby="fUpdates"><h2 id="fUpdates">Updates</h2><ul><li><a href="/changelog">Changelog</a></li><li><a href="/devlog">Devlog</a></li><li><a href="/changelog/rss.xml">RSS</a></li></ul></nav>
+      <nav aria-labelledby="fMore"><h2 id="fMore">More</h2><ul><li><a href="/#faq">FAQ</a></li><li><a href="/sitemap-index.xml">Sitemap</a></li></ul></nav>
+    </div>
+    <div class="base"><span>Made in a lot of 25-minute rounds.</span><span>© {new Date().getFullYear()} {SITE.name}</span></div>
   </div>
 </footer>
 <script is:inline>{`const t=document.querySelector(".top");const f=()=>t.classList.toggle("scrolled",scrollY>4);addEventListener("scroll",f,{passive:true});f();`}</script>

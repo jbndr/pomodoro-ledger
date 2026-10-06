@@ -1,0 +1,26 @@
+---
+type Arrow = "down-left" | "down-right" | "left" | "down";
+interface Props { arrow?: Arrow; color?: string; style?: string; class?: string }
+const { arrow = "down-left", color = "var(--leaf)", style = "", class: cls } = Astro.props;
+const paths: Record<Arrow, { d: string; head: string; box: string }> = {
+  "down-left": { d: "M54 6 C 60 26, 40 44, 10 46", head: "M18 40 L9 46 L19 51", box: "0 0 64 56" },
+  "down-right": { d: "M8 6 C 2 26, 22 44, 52 46", head: "M44 40 L53 46 L43 51", box: "0 0 64 56" },
+  left: { d: "M58 20 C 44 6, 24 8, 8 22", head: "M10 12 L7 23 L18 25", box: "0 0 64 32" },
+  down: { d: "M14 4 C 26 16, 4 30, 16 48", head: "M9 41 L16 49 L22 40", box: "0 0 32 54" },
+};
+const a = paths[arrow];
+---
+<span class:list={["note", arrow, cls]} style={`--nc:${color};${style}`} aria-hidden="true">
+  <span class="t"><slot /></span>
+  <svg viewBox={a.box} fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d={a.d} /><path d={a.head} /></svg>
+</span>
+<style>
+  .note { position: absolute; display: inline-flex; flex-direction: column; color: var(--nc); font: 600 20px/1.05 var(--f-hand); white-space: nowrap; transform: rotate(-3deg); pointer-events: none; z-index: 3; }
+  .note svg { width: 54px; height: auto; }
+  .down-left svg { align-self: flex-start; margin: 2px 0 0 -6px; }
+  .down-right svg { align-self: flex-end; margin: 2px -6px 0 0; }
+  .down svg { width: 26px; align-self: center; margin-top: 2px; }
+  .left { flex-direction: row-reverse; align-items: center; gap: 4px; }
+  .left svg { width: 48px; }
+  @media (max-width: 760px) { .note { display: none; } }
+</style>

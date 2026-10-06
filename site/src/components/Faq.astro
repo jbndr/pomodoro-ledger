@@ -1,0 +1,26 @@
+---
+import { FAQ } from "../data/faq";
+const ld = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: FAQ.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) };
+---
+<div class="faq">
+  {FAQ.map((f) => (
+    <details>
+      <summary>{f.q}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></summary>
+      <p>{f.a}</p>
+    </details>
+  ))}
+</div>
+<script type="application/ld+json" set:html={JSON.stringify(ld)} />
+<style>
+  .faq { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-1); overflow: hidden; }
+  details + details { border-top: 1px solid var(--line); }
+  summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 20px; font: 550 15.5px/1.35 var(--f-body); cursor: pointer; transition: background .15s; }
+  summary::-webkit-details-marker { display: none; }
+  summary:hover { background: var(--surface-2); }
+  summary svg { width: 16px; height: 16px; color: var(--faint); flex: none; transition: rotate .25s ease; }
+  details[open] summary svg { rotate: 180deg; }
+  details p { margin: -4px 20px 18px; color: var(--muted); font-size: 15px; max-width: 38rem; }
+  details[open] p { animation: open .3s ease; }
+  @keyframes open { from { opacity: 0; translate: 0 -4px; } }
+  @media (prefers-reduced-motion: reduce) { details[open] p { animation: none; } }
+</style>

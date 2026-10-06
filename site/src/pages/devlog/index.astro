@@ -5,7 +5,7 @@ import { posts } from "../../lib";
 const list = await posts("devlog");
 ---
 <Base title="Devlog" description="Notes on what we're building, why, and what we learned along the way." noindex={!list.length}>
-  <div class="wrap">
+  <div class="col">
     <header class="page-head">
       <h1>Building it in the open.</h1>
       <p>Notes on what we're building, why, and what we learned along the way.</p>

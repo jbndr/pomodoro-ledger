@@ -13,6 +13,8 @@ export type { Task };
 export type View = "today" | "upcoming" | "later";
 
 export const DEMO = new URLSearchParams(location.search).get("demo") === "1";
+/** The demo framed inside the landing page: no banner, no popups. */
+export const EMBED = DEMO && new URLSearchParams(location.search).get("embed") === "1";
 
 export interface Section { id: string; title: string }
 

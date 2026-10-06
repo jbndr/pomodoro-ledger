@@ -1,0 +1,185 @@
+---
+const dots = (n: number, of = 6) => Array.from({ length: of }, (_, i) => i < n);
+---
+<div class="qa" data-qa>
+  <div class="card">
+    <div class="head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
+      <span>Upcoming</span><small data-count>2</small>
+    </div>
+    <div class="composer" data-composer>
+      <div class="line">
+        <span class="plus" aria-hidden="true">+</span>
+        <span class="input" data-input><span class="ph">New task</span></span>
+      </div>
+      <div class="fold"><div class="foot">
+        <span class="chip" data-date><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17" /></svg>Fri</span>
+        <span class="chip" data-label><i></i>Writing</span>
+        <span class="dots" data-dots>{dots(2).map((on) => <b class:list={{ on }} />)}</span>
+        <span class="cyc" data-cyc>2 cycles</span>
+        <span class="add" data-add>Add <kbd>↵</kbd></span>
+      </div></div>
+      <div class="pop" data-pop>
+        <span class="opt hi"><i></i>Writing</span>
+        <span class="opt"><i style="--lc: var(--violet)"></i>Admin</span>
+      </div>
+    </div>
+    <p class="group">Friday</p>
+    <ul class="list">
+      <li><span class="ck"></span><span class="tt">Send the invoices<small><i style="--lc: var(--violet)"></i>Admin</small></span><span class="est">{dots(0, 2).map(() => <b />)}</span></li>
+      <li><span class="ck"></span><span class="tt">Review the Q3 numbers<small><i style="--lc: var(--sky)"></i>Finance</small></span><span class="est">{dots(0, 2).map(() => <b />)}</span></li>
+      <li class="new" data-new><div class="in">
+        <span class="ck"></span>
+        <span class="tt">Draft the launch post<small><i></i>Writing<em><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 19h14M7 15l9-9 3 3-9 9H7z" /></svg>outline first</em></small></span>
+        <span class="est">{dots(0, 3).map(() => <b />)}</span>
+      </div></li>
+    </ul>
+    <p class="sum"><span data-sum>2 tasks · about <b>1h 40m</b> of focus</span></p>
+  </div>
+  <button class="replay" type="button" data-replay>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.6-5.9M4 4v4h4" /></svg>Replay
+  </button>
+  <p class="sr">Typing "Draft the launch post fri 3c #writing // outline first" adds a task for Friday with three rounds, the Writing label and a note.</p>
+</div>
+<style>
+  .qa { position: relative; width: min(500px, 100%); align-self: start; margin-top: 6px; --lab: oklch(60% .11 190); }
+  .card { background: var(--surface); border-radius: 22px; padding: 20px 20px 16px; box-shadow: 0 0 0 1px rgb(20 24 22 / .05), 0 2px 4px rgb(20 24 22 / .06), 0 26px 50px -26px rgb(20 24 22 / .4); }
+  .head { display: flex; align-items: center; gap: 8px; font: 650 21px/1 var(--f-display); letter-spacing: -.02em; margin: 2px 4px 16px; }
+  .head svg { width: 20px; height: 20px; color: var(--sky); }
+  .head small { font: 500 13px/1 var(--f-body); color: var(--faint); margin-left: 2px; }
+
+  .composer { position: relative; border-radius: 14px; background: var(--surface-2); border: 1px solid transparent; transition: background .3s, border-color .3s, box-shadow .3s; }
+  .composer.open { background: var(--surface); border-color: var(--line); box-shadow: 0 10px 28px -14px rgb(20 24 22 / .35); }
+  .line { display: flex; align-items: center; gap: 11px; padding: 13px 14px; min-height: 50px; }
+  .plus { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1.5px dashed var(--line-2); color: var(--faint); font: 400 15px/1 var(--f-body); flex: none; }
+  .input { font: 500 16.5px/1.35 var(--f-body); color: var(--fg); white-space: pre-wrap; word-break: break-word; }
+  .input .ph { color: var(--faint); }
+  .input :global(.tok) { border-radius: 5px; padding: 0 2px; margin: 0 -2px; transition: background .25s, color .25s; }
+  .input :global(.when) { background: color-mix(in oklab, var(--leaf) 16%, transparent); color: color-mix(in oklab, var(--leaf) 80%, var(--fg)); }
+  .input :global(.est) { background: color-mix(in oklab, var(--tomato) 15%, transparent); color: color-mix(in oklab, var(--tomato) 85%, var(--fg)); }
+  .input :global(.hash) { color: var(--tomato); }
+  .input :global(.note) { color: var(--faint); }
+  .input :global(.caret) { display: inline-block; width: 1.5px; height: 1.1em; background: var(--tomato); vertical-align: -3px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .fold { max-height: 0; overflow: hidden; transition: max-height .35s cubic-bezier(.2, .8, .2, 1); }
+  .composer.open .fold { max-height: 120px; }
+  .foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 12px; }
+  .composer.open .foot { padding: 10px 12px 12px; border-top: 1px solid var(--line); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line-2); font: 500 13px/1 var(--f-body); color: var(--fg); opacity: 0; scale: .92; width: 0; padding-inline: 0; border-width: 0; overflow: hidden; transition: opacity .25s, scale .3s cubic-bezier(.2, .9, .3, 1.2), width .3s; }
+  .chip.on { opacity: 1; scale: 1; width: auto; padding-inline: 10px; border-width: 1px; }
+  .chip svg { width: 13px; height: 13px; color: var(--leaf); }
+  .chip i, .opt i, .tt small i { width: 8px; height: 8px; border-radius: 50%; background: var(--lc, var(--lab)); flex: none; }
+  .dots { display: inline-flex; gap: 4px; margin-left: 4px; }
+  .dots b, .est b { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--line-2); transition: background .25s, border-color .25s; }
+  .dots b.on { background: var(--tomato); border-color: var(--tomato); }
+  .cyc { font: 500 13px/1 var(--f-body); color: var(--muted); }
+  .add { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px 0 13px; border-radius: 9px; background: var(--fg); color: var(--bg); font: 600 13.5px/1 var(--f-body); transition: transform .12s; }
+  .add kbd { background: transparent; color: inherit; border-color: color-mix(in oklab, var(--bg) 35%, transparent); font-size: 11px; }
+  .add.press { transform: scale(.94); }
+
+  .pop { position: absolute; left: 160px; top: 44px; z-index: 2; display: grid; gap: 2px; padding: 5px; min-width: 150px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 14px 30px -12px rgb(20 24 22 / .35); opacity: 0; translate: 0 -4px; transition: opacity .18s, translate .22s; pointer-events: none; }
+  .pop.on { opacity: 1; translate: 0 0; }
+  .opt { display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 8px; font: 500 13.5px/1 var(--f-body); color: var(--muted); }
+  .opt.hi { background: var(--surface-2); color: var(--fg); }
+
+  .group { margin: 18px 6px 4px; font: 600 12px/1 var(--f-body); color: var(--faint); text-transform: uppercase; letter-spacing: .06em; }
+  .list { list-style: none; margin: 0; padding: 0; }
+  .list li { display: flex; align-items: center; gap: 12px; padding: 10px 6px; }
+  .list li + li { border-top: 1px solid var(--line); }
+  .ck { width: 21px; height: 21px; border-radius: 50%; border: 1.5px solid var(--line-2); flex: none; }
+  .tt { display: grid; gap: 3px; font: 500 15.5px/1.25 var(--f-body); }
+  .tt small { display: flex; align-items: center; gap: 6px; font: 400 13px/1 var(--f-body); color: var(--muted); }
+  .tt em { display: inline-flex; align-items: center; gap: 4px; font-style: normal; color: var(--faint); margin-left: 6px; }
+  .tt em svg { width: 12px; height: 12px; }
+  .est { margin-left: auto; display: inline-flex; gap: 4px; }
+  .est b { width: 7px; height: 7px; border-width: 1.3px; }
+  .list li.new { display: grid; grid-template-rows: 0fr; padding: 0 6px; border-top-color: transparent; opacity: 0; transition: grid-template-rows .4s cubic-bezier(.2, .8, .2, 1), opacity .35s .1s, padding .4s, border-color .4s; }
+  .list li.new .in { overflow: hidden; display: flex; align-items: center; gap: 12px; min-height: 0; }
+  .list li.new.on { grid-template-rows: 1fr; opacity: 1; padding: 10px 6px; border-top-color: var(--line); }
+  .list li.new.on .tt { animation: settle 1.6s ease-out; }
+  @keyframes settle { 0% { color: var(--tomato); } 100% { color: var(--fg); } }
+  .sum { margin: 12px 6px 0; font: 400 13.5px/1.3 var(--f-body); color: var(--muted); }
+  .sum b { color: var(--fg); font-weight: 600; }
+  .sum span { display: inline-block; transition: opacity .2s; }
+
+  .replay { position: absolute; right: 14px; top: 18px; display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border-radius: 999px; border: 0; background: var(--surface-2); font: 600 12.5px/1 var(--f-body); color: var(--muted); cursor: pointer; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .replay svg { width: 13px; height: 13px; }
+  .replay.on { opacity: 1; pointer-events: auto; }
+  @media (max-width: 640px) {
+    .card { padding: 16px 14px 12px; }
+    .input { font-size: 15px; }
+    .cyc { display: none; }
+    .replay { top: 14px; right: 10px; }
+  }
+</style>
+<script>
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  type Seg = { t: string; c?: string };
+
+  for (const qa of document.querySelectorAll<HTMLElement>("[data-qa]")) {
+    const $ = <T extends HTMLElement>(s: string) => qa.querySelector<T>(s)!;
+    const composer = $("[data-composer]"), input = $("[data-input]"), date = $("[data-date]"), label = $("[data-label]");
+    const dots = [...qa.querySelectorAll<HTMLElement>("[data-dots] b")], cyc = $("[data-cyc]"), add = $("[data-add]");
+    const pop = $("[data-pop]"), row = $("[data-new]"), sum = $("[data-sum]"), count = $("[data-count]"), replay = $<HTMLButtonElement>("[data-replay]");
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let segs: Seg[] = [], run = 0;
+
+    const draw = (caret = true) => {
+      input.innerHTML = segs.map((s) => `<span class="${s.c ?? ""}">${s.t}</span>`).join("") + (caret ? '<span class="caret"></span>' : "");
+    };
+    const setDots = (n: number) => { dots.forEach((d, i) => d.classList.toggle("on", i < n)); cyc.textContent = `${n} cycles`; };
+    const setSum = async (html: string) => { sum.style.opacity = "0"; await sleep(180); sum.innerHTML = html; sum.style.opacity = "1"; };
+
+    const reset = () => {
+      composer.classList.remove("open"); [date, label].forEach((c) => c.classList.remove("on")); setDots(2);
+      pop.classList.remove("on"); row.classList.remove("on"); replay.classList.remove("on");
+      sum.innerHTML = "2 tasks · about <b>1h 40m</b> of focus"; count.textContent = "2";
+      input.innerHTML = '<span class="ph">New task</span>';
+    };
+    const end = () => {
+      composer.classList.remove("open"); pop.classList.remove("on");
+      input.innerHTML = '<span class="ph">New task</span>';
+      row.classList.add("on"); count.textContent = "3";
+      sum.innerHTML = "3 tasks · about <b>2h 55m</b> of focus";
+    };
+
+    const STOP = Symbol("stop");
+    async function play() {
+      const id = ++run;
+      const wait = async (ms: number) => { await sleep(ms); if (id !== run) throw STOP; };
+      const type = async (text: string, c?: string) => {
+        const seg: Seg = { t: "", c }; segs.push(seg);
+        for (const ch of text) { seg.t += ch; draw(); await wait(42 + Math.random() * 46); }
+        return seg;
+      };
+      try {
+        reset(); segs = [];
+        await wait(350); composer.classList.add("open"); draw(); await wait(500);
+        await type("Draft the launch post ");
+        (await type("fri")).c = "tok when"; draw(); date.classList.add("on"); await wait(380);
+        await type(" ");
+        (await type("3c")).c = "tok est"; draw(); setDots(3); await wait(380);
+        await type(" ");
+        const hash = await type("#", "hash");
+        const at = input.querySelector<HTMLElement>(".hash:last-of-type");
+        if (at) { pop.style.left = `${Math.max(8, Math.min(at.offsetLeft - 8, composer.clientWidth - 160))}px`; pop.style.top = `${at.offsetTop + at.offsetHeight + 6}px`; }
+        pop.classList.add("on");
+        for (const ch of "wri") { hash.t += ch; draw(); await wait(90); }
+        await wait(520);
+        segs.splice(segs.length - 2, 2); pop.classList.remove("on"); label.classList.add("on"); draw(); await wait(350);
+        await type(" // outline first", "note");
+        draw(false); await wait(650);
+        add.classList.add("press"); await wait(150); add.classList.remove("press");
+        composer.classList.remove("open"); input.innerHTML = '<span class="ph">New task</span>';
+        await wait(260); row.classList.add("on"); count.textContent = "3";
+        await setSum("3 tasks · about <b>2h 55m</b> of focus");
+        await wait(900); replay.classList.add("on");
+      } catch (e) { if (e !== STOP) throw e; }
+    }
+
+    if (reduced) { end(); continue; }
+    replay.addEventListener("click", () => play());
+    new IntersectionObserver((es, io) => { if (es.some((e) => e.isIntersecting)) { io.disconnect(); play(); } }, { threshold: 0.6 }).observe(qa);
+  }
+</script>

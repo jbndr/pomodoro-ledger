@@ -2,7 +2,7 @@
   import { pill } from "../lib/redraw.svelte";
 
   let { api } = $props();
-  const shown = $derived.by(() => { pill.version; return api.preview(); });
+  const shown = $derived.by(() => { pill.version; return !api.EMBED && api.preview(); });
 
   function click() {
     if (api.DEMO) {

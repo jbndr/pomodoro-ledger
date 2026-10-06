@@ -46,7 +46,7 @@ import { exportLedger, importLedger, planImport } from "./settings/backup";
 import Settings from "./settings/Settings.svelte";
 import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, previewSoundscape, previewTicking, scheduleEnd, syncTicking } from "./sound";
 import { cancelScapePreview, scapePlaying } from "./soundscape";
-import { DEMO, ls, S, ss, T, type Task } from "./state";
+import { DEMO, EMBED, ls, S, ss, T, type Task } from "./state";
 import { Labels, Store } from "./store";
 import { addSection, addSubtasks, addTask, commitPlacements, completeTask, completing, deleteSubtask, deleteTask, deleteTasks, dismissCard, editSubtask, finishTasks, focusOnTask, focusRow, labelTask, labelTasks, moveSection, moveTasksToTop, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, schedTasks, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
 import { bucketOf, dayName, enterDemo, filterLabel, groupName, guardPreview, inProject, isToday, labelChipName, labelHidden, listHead, markStarted, openOf, preview, sections, shortDay, subsOf, todayKey, viewTasks } from "./tasks/derived";
@@ -72,7 +72,7 @@ initPages();
 setInterval(tick, 250);
 setInterval(() => { newDay(); freshRounds(); }, 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { sizeTimer(); tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); Cloud.wake(); newDay(); freshRounds(); } });
-mount(PreviewBanner, { target: $(".app"), anchor: $("main.top"), props: { api: { DEMO, preview, markStarted } } });
+mount(PreviewBanner, { target: $(".app"), anchor: $("main.top"), props: { api: { DEMO, EMBED, preview, markStarted } } });
 mount(BackupPrompt, { target: $(".app"), anchor: $("main.top"), props: { api: { exportLedger, toast } } });
 mount(PlanPrompt, { target: $(".app"), anchor: $("main.top"), props: { api: { planDue, waveOff, stopOffering, openPlan } } });
 initLayout();
@@ -171,9 +171,12 @@ renderAll();
 announce();
 measure();
 renderSyncTab();
-setTimeout(() => ui.recap!.maybeOpen(), 1500);
-setTimeout(() => ui.year!.maybeOpen(), 2500);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { ui.recap!.maybeOpen(); ui.year!.maybeOpen(); } });
+if (EMBED) document.documentElement.style.scrollbarWidth = "none";
+else {
+  setTimeout(() => ui.recap!.maybeOpen(), 1500);
+  setTimeout(() => ui.year!.maybeOpen(), 2500);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { ui.recap!.maybeOpen(); ui.year!.maybeOpen(); } });
+}
 if (!DEMO) Store.connect().then(() => {
   renderPill();
   newDay(); freshRounds();

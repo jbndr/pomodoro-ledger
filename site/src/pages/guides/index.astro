@@ -5,7 +5,7 @@ import { posts } from "../../lib";
 const list = await posts("guides");
 ---
 <Base title="Guides" description="Practical guides to the Pomodoro technique, planning and deep work." noindex={!list.length}>
-  <div class="wrap">
+  <div class="col">
     <header class="page-head">
       <h1>Getting more out of focus.</h1>
       <p>Practical guides to the Pomodoro technique, planning and deep work.</p>
