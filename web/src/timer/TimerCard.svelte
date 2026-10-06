@@ -62,7 +62,7 @@
     <button class="icon-btn full-btn" type="button" id="fullBtn" aria-label={zenLabel} title={timerView.zen ? zenLabel : "Fill the page (F) · Shift-click for browser full screen (Shift+F)"} onclick={(e) => api.toggleZen(e.shiftKey)}>{@html timerView.zen ? api.ICON.shrink : api.ICON.expand}</button>
   </div>
 </div>
-<Dial sub={flowSub || c.sub} flow={c.flow} />
+<Dial sub={flowSub || c.sub} flow={c.flow} mode={c.mode} />
 {#if showKeep}
   <div class="cycle"><button class="keep-going" type="button" title="Go back to focus, counting from the bell (O)" onclick={() => api.keepGoing()}>{@html api.ICON.play}Keep going</button></div>
 {:else if showNudge}
