@@ -29,7 +29,7 @@
       mode: T.mode, status: T.status,
       dots: roundDots(T.mode, T.setIndex, every), round: Math.min(Math.min(T.setIndex || 0, every) + 1, every), every,
       up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), bellAt: T.bellAt || 0, flowSince: T.upKind === "flow" ? T.up : 0, flow: T.upKind === "flow" || !!T.flowReady, nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
-      sub: T.up ? (T.upKind === "flow" ? "flow · stop when you're done" : "past the bell") : T.flowReady ? "counts up from zero" : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
+      sub: T.up ? (T.upKind === "flow" ? "started " + api.fmtClock(T.up) : "past the bell") : T.flowReady ? "" : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
       held: Object.fromEntries(MODES.map((m) => [m, T.saved[m] ? "Paused with " + clock(Math.ceil(T.saved[m].remaining / 1000)) + " left" : ""])),
     };
   });
@@ -72,7 +72,7 @@
     <span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span><span>Round {c.round} of {c.every}</span>
   </div>
 {/if}
-<div class="adjust" class:off={!!c.up} id="adjust" role="group" aria-label="Adjust this session">
+<div class="adjust" class:off={!!c.up || c.flow} id="adjust" role="group" aria-label="Adjust this session">
   <button type="button" data-adj="-1" title="1 minute less (−)" onclick={() => api.adjust(-1)}>−1 min</button>
   <button type="button" data-adj="1" title="1 minute more (+)" onclick={() => api.adjust(1)}>+1 min</button>
   <button type="button" data-adj="5" title="5 minutes more" onclick={() => api.adjust(5)}>+5 min</button>
