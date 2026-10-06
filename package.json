@@ -2,18 +2,22 @@
   "name": "pomodoro-ledger",
   "private": true,
   "scripts": {
-    "dev": "vite build && concurrently -k -n web,worker -c yellow,cyan \"vite build --watch\" \"wrangler dev\"",
-    "build": "vite build",
-    "deploy": "vite build && wrangler deploy",
-    "typecheck": "tsc --noEmit",
+    "dev": "npm run build && concurrently -k -n web,site,worker -c yellow,magenta,cyan \"vite build --watch\" \"astro dev --root site --port 4321\" \"wrangler dev\"",
+    "build": "astro build --root site && vite build",
+    "deploy": "npm run build && wrangler deploy",
+    "typecheck": "tsc --noEmit && astro check --root site",
     "test": "tsc --noEmit && vitest run && node --test tests/room.cjs tests/sync.cjs tests/push.cjs tests/extension.mjs",
     "vapid": "node scripts/vapid.mjs",
     "extension:zip": "node scripts/zip-extension.mjs",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "site": "astro dev --root site"
   },
   "devDependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.4",
     "@playwright/test": "^1.63.0",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "astro": "^7.3.6",
     "concurrently": "^9.2.4",
     "svelte": "^5.57.1",
     "typescript": "^5.9.3",

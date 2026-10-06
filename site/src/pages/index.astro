@@ -1,0 +1,73 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../layouts/Base.astro";
+import Dial from "../components/Dial.astro";
+import { AREAS } from "../data/features";
+import { SITE, day } from "../lib";
+const latest = (await getCollection("changelog")).sort((a, b) => b.data.n - a.data.n).slice(0, 5);
+const pillars = AREAS.filter((a) => ["planning", "timer", "insights", "rooms"].includes(a.key));
+---
+<Base returning>
+  <section class="hero wrap">
+    <div class="copy">
+      <p class="eyebrow">Free · in your browser · no account</p>
+      <h1>A Pomodoro timer that keeps the books on your focus.</h1>
+      <p class="lede">Estimate tasks in rounds, work through them one focus session at a time, and watch the ledger fill up — per task, per label, per week.</p>
+      <div class="cta">
+        <a class="btn primary" href={SITE.app}>Start a focus round</a>
+        <a class="btn" href="/features">See every feature</a>
+      </div>
+    </div>
+    <div class="art"><Dial /></div>
+  </section>
+
+  <section class="wrap pillars">
+    {pillars.map((a) => (
+      <article>
+        <h2>{a.title}</h2>
+        <p class="muted">{a.lede}</p>
+        <ul>{a.shipped.slice(0, 3).map((f) => <li>{f.title}</li>)}</ul>
+      </article>
+    ))}
+  </section>
+
+  <section class="wrap recent">
+    <div class="head">
+      <h2>Shipping every day</h2>
+      <a href="/changelog">Full changelog →</a>
+    </div>
+    <ol>
+      {latest.map((e) => (
+        <li><time datetime={e.data.date.toISOString()}>{day(e.data.date)}</time><a href={`/changelog#${e.data.n}`}>{e.data.title}</a></li>
+      ))}
+    </ol>
+  </section>
+</Base>
+<style>
+  .hero { display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: center; padding-top: 88px; padding-bottom: 72px; }
+  .hero h1 { font-size: clamp(40px, 6.4vw, 68px); margin-top: 18px; }
+  .lede { font-size: 19px; color: var(--muted); max-width: 32rem; margin: 22px 0 32px; }
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; }
+  .art { max-width: 380px; justify-self: center; width: 100%; }
+  .pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .pillars article { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 22px; box-shadow: var(--shadow); }
+  .pillars h2 { font-size: 20px; }
+  .pillars p { font-size: 14.5px; margin: 8px 0 14px; }
+  .pillars ul { margin: 0; padding: 0; list-style: none; font-size: 14.5px; }
+  .pillars li { padding: 7px 0; border-top: 1px solid var(--line); }
+  .recent { margin-top: 96px; }
+  .recent .head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+  .recent h2 { font-size: 30px; }
+  .recent .head a { color: var(--muted); text-decoration: none; font-size: 15px; }
+  .recent ol { list-style: none; margin: 0; padding: 0; }
+  .recent li { display: grid; grid-template-columns: 9.5rem 1fr; gap: 16px; padding: 14px 0; border-top: 1px solid var(--line); }
+  .recent time { color: var(--faint); font-size: 14.5px; font-variant-numeric: tabular-nums; }
+  .recent li a { text-decoration: none; }
+  @media (max-width: 900px) { .pillars { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 680px) {
+    .hero { grid-template-columns: 1fr; gap: 40px; padding-top: 48px; }
+    .art { max-width: 260px; order: -1; }
+    .pillars { grid-template-columns: 1fr; }
+    .recent li { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>

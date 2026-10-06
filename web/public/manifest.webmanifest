@@ -3,7 +3,7 @@
   "short_name": "Pomodoro",
   "description": "A task-focused Pomodoro timer with a ledger of your focus time.",
   "id": "/",
-  "start_url": "/",
+  "start_url": "/app/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#EDEFEC",

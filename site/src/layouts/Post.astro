@@ -1,0 +1,21 @@
+---
+import type { CollectionEntry } from "astro:content";
+import Base from "./Base.astro";
+import { SITE, day } from "../lib";
+interface Props { post: CollectionEntry<"devlog" | "guides">; section: string; href: string }
+const { post, section, href } = Astro.props;
+const ld = { "@context": "https://schema.org", "@type": "BlogPosting", headline: post.data.title, description: post.data.description, datePublished: post.data.date.toISOString(), publisher: { "@type": "Organization", name: SITE.name } };
+---
+<Base title={post.data.title} description={post.data.description} noindex={post.data.draft}>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(ld)} />
+  <article class="wrap">
+    <header class="page-head prose">
+      <p class="eyebrow"><a href={href}>{section}</a> · <time datetime={post.data.date.toISOString()}>{day(post.data.date)}</time></p>
+      <h1>{post.data.title}</h1>
+      <p>{post.data.description}</p>
+    </header>
+    <div class="md prose"><slot /></div>
+    <aside class="prose end"><a class="btn primary" href={SITE.app}>Try Pomodoro Ledger</a></aside>
+  </article>
+</Base>
+<style>.eyebrow a { text-decoration: none; } .end { margin-top: 56px; }</style>

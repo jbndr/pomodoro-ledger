@@ -1,6 +1,6 @@
-// Offline shell: the page is fetched fresh when online and served from cache when not.
-const CACHE = "pomodoro-ledger-v3";
-const SHELL = ["/", "/manifest.webmanifest", "/favicon.svg", "/icons/icon-192.png", "/icons/icon-512.png"];
+// Offline shell for the app under /app/; the marketing pages are network-only.
+const CACHE = "pomodoro-ledger-v4";
+const SHELL = ["/app/", "/manifest.webmanifest", "/favicon.svg", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -17,12 +17,13 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET" || url.pathname.startsWith("/api/") || url.pathname.startsWith("/cdn-cgi/")) return;
 
   if (req.mode === "navigate") {
+    if (!url.pathname.startsWith("/app/")) return;
     e.respondWith(fetch(req)
       .then((res) => {
-        if (res.ok && url.origin === location.origin) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put("/", copy)); }
+        if (res.ok && url.origin === location.origin) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put("/app/", copy)); }
         return res;
       })
-      .catch(() => caches.match("/")));
+      .catch(() => caches.match("/app/")));
     return;
   }
 
@@ -54,7 +55,7 @@ self.addEventListener("notificationclick", (e) => {
   e.notification.close();
   e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((all) => {
     const win = all.find((c) => "focus" in c);
-    if (!win) return self.clients.openWindow(code ? "/?room=" + code : "/");
+    if (!win) return self.clients.openWindow(code ? "/app/?room=" + code : "/app/");
     return win.focus().catch(() => win).then((w) => { if (code) (w || win).postMessage({ t: "join", code }); });
   }));
 });

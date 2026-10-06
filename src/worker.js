@@ -69,6 +69,8 @@ function houseRoom(code) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    // Links shared before the app moved to /app/ (invites, sync return, demo) keep working.
+    if (url.pathname === "/" && /[?&](room|synced|demo)(=|&|$)/.test(url.search)) return Response.redirect(url.origin + "/app/" + url.search, 302);
     if (url.pathname === "/api/rooms" && request.method === "GET") return lobby(env).fetch("https://lobby/rooms");
     if (url.pathname === "/api/push" && request.method === "GET") return json({ key: pushReady(env) ? env.VAPID_PUBLIC_KEY.trim() : null });
     if (url.pathname === "/api/room" && request.method === "POST") {

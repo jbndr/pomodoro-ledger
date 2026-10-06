@@ -1,0 +1,16 @@
+---
+import Base from "../../layouts/Base.astro";
+import PostList from "../../components/PostList.astro";
+import { posts } from "../../lib";
+const list = await posts("devlog");
+---
+<Base title="Devlog" description="Notes on what we're building, why, and what we learned along the way." noindex={!list.length}>
+  <div class="wrap">
+    <header class="page-head">
+      <p class="eyebrow">Devlog</p>
+      <h1>Building it in the open.</h1>
+      <p>Notes on what we're building, why, and what we learned along the way.</p>
+    </header>
+    <PostList posts={list} base="/devlog" empty="First post coming soon." />
+  </div>
+</Base>
