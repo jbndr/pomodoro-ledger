@@ -5,7 +5,7 @@ import { autoFloat } from "../float";
 import { fmtDur } from "../format";
 import { MIN } from "../lib/dates";
 import { dayKey } from "../lib/dates";
-import { logNudge, nudgesOf, pickNudge } from "../lib/nudges";
+import { logNudge, nudgesOf, pickNudge, type NudgeContext } from "../lib/nudges";
 import { extraBreakMin, flowBreakMin, MODES, roundsStale, type Mode } from "../lib/timer";
 import { renderAll, renderTimer } from "../render";
 import { followRoom, roomFollows, roomRoundEnded, roomTick, RM } from "../room/net";
@@ -155,9 +155,18 @@ function stopFlow(at: number) {
 }
 
 /** Picks one quiet body nudge for a break that follows focus. */
+/** Focus and breaks since a moment, read from logged sessions; a break follows each full cycle or a long enough run. */
+function nudgeContext(): NudgeContext {
+  const after = (at: number) => [...S.tasks.values()].flatMap((t) => (t.sessions || []).filter((s) => s.at > at));
+  return {
+    focusSince: (at) => after(at).reduce((a, s) => a + (s.ms || 0), 0),
+    breaksSince: (at) => after(at).filter((s) => s.full || (s.ms || 0) >= 10 * MIN).length,
+  };
+}
+
 function offerNudge(kind: Mode) {
   if (kind === "focus") return;
-  const now = Date.now(), seen = S.settings.nudgeSeen || {}, n = pickNudge(nudgesOf(S.settings.nudges), seen, kind, now);
+  const now = Date.now(), seen = S.settings.nudgeSeen || {}, n = pickNudge(nudgesOf(S.settings.nudges), seen, kind, now, nudgeContext());
   delete T.nudge;
   if (!n) return;
   T.nudge = { id: n.id, text: n.text };
