@@ -56,7 +56,7 @@ import { leaveAsked, leftoverPrompt, moveAsked, newDay } from "./tasks/rollover"
 import BulkBar from "./tasks/BulkBar.svelte";
 import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
-import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, keepGoing, nudgeDone, readyFlow, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
+import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, freshRounds, keepGoing, nudgeDone, readyFlow, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
 import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, openSettings, openShare, openWhen, openYear, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type ShareUI, type Sheet, type WhenUI, type YearUI } from "./ui";
 import Year from "./year/Year.svelte";
@@ -70,8 +70,8 @@ document.addEventListener("pointerdown", dismissCard);
 document.addEventListener("keydown", onKey);
 initPages();
 setInterval(tick, 250);
-setInterval(newDay, 60000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { sizeTimer(); tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); Cloud.wake(); newDay(); } });
+setInterval(() => { newDay(); freshRounds(); }, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { sizeTimer(); tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); Cloud.wake(); newDay(); freshRounds(); } });
 mount(PreviewBanner, { target: $(".app"), anchor: $("main.top"), props: { api: { DEMO, preview, markStarted } } });
 mount(BackupPrompt, { target: $(".app"), anchor: $("main.top"), props: { api: { exportLedger, toast } } });
 mount(PlanPrompt, { target: $(".app"), anchor: $("main.top"), props: { api: { planDue, waveOff, stopOffering, openPlan } } });
@@ -176,7 +176,7 @@ setTimeout(() => ui.year!.maybeOpen(), 2500);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { ui.recap!.maybeOpen(); ui.year!.maybeOpen(); } });
 if (!DEMO) Store.connect().then(() => {
   renderPill();
-  newDay();
+  newDay(); freshRounds();
   setTimeout(maybeRemind, 2500);
   setInterval(maybeRemind, 60000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) maybeRemind(); });

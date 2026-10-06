@@ -89,6 +89,8 @@ export interface Timer {
   flowReady?: boolean;
   /** When the last focus cycle rang, which a "Keep going" counts from. */
   bellAt?: number;
+  /** When the last round finished; rounds start over after a new day or a long pause. */
+  roundAt?: number;
   /** The break's nudge, if any. */
   nudge?: { id: string; text: string; done?: boolean };
 }
