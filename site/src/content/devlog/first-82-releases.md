@@ -27,4 +27,4 @@ Rooms let you focus alongside other people. Scheduled public sessions send a rem
 
 ## What's next
 
-The [features map](/features) has the list. The [changelog](/changelog) has every step.
+The [features page](/features) has everything that works today. The [changelog](/changelog) has every step.

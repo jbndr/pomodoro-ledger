@@ -2,12 +2,11 @@
 import Base from "../layouts/Base.astro";
 import { AREAS } from "../data/features";
 ---
-<Base title="Features" description="Everything Pomodoro Ledger does today, and what's on the list next.">
+<Base title="Features" description="Everything Pomodoro Ledger does today.">
   <div class="wrap">
     <header class="page-head">
-      <p class="eyebrow">Features</p>
-      <h1>What it does, and what's next.</h1>
-      <p>Everything here works in the browser today. The “On the list” column is what we're thinking about — no promises on order.</p>
+      <h1>Everything it does.</h1>
+      <p>All of it works in the browser today — no account, no install.</p>
     </header>
     <nav class="jump" aria-label="Areas">{AREAS.map((a) => <a href={`#${a.key}`}>{a.title}</a>)}</nav>
     {AREAS.map((a) => (
@@ -18,11 +17,8 @@ import { AREAS } from "../data/features";
         </div>
         <div class="grid">
           {a.shipped.map((f) => (
-            <article class="card"><span class="tag shipped">Shipped</span><h3>{f.title}</h3><p>{f.blurb}</p></article>
+            <article class="card"><h3>{f.title}</h3><p>{f.blurb}</p></article>
           ))}
-          {a.next.length > 0 && (
-            <article class="card next"><span class="tag">On the list</span><ul>{a.next.map((t) => <li>{t}</li>)}</ul></article>
-          )}
         </div>
       </section>
     ))}
@@ -36,9 +32,7 @@ import { AREAS } from "../data/features";
   .side p { font-size: 15px; margin: 10px 0 0; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 12px; }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
-  .card h3 { font-size: 17px; margin: 12px 0 6px; }
+  .card h3 { font-size: 17px; margin: 0 0 6px; }
   .card p { margin: 0; font-size: 14.5px; color: var(--muted); }
-  .card.next { background: transparent; border-style: dashed; }
-  .card.next ul { margin: 12px 0 0; padding-left: 18px; font-size: 14.5px; color: var(--muted); }
   @media (max-width: 760px) { .area { grid-template-columns: 1fr; gap: 18px; } }
 </style>
