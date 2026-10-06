@@ -53,3 +53,17 @@ test("rounds start over after a long pause", async ({ page, isMobile }) => {
   await expect(page.locator(".cycle")).toContainText("Round 1 of 4");
   await expect(page.locator('.modes [data-mode="focus"]')).toHaveAttribute("aria-selected", "true");
 });
+
+test("the round row starts the rounds over by hand", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Same logic on phones");
+  await open(page);
+  await expect(page.locator(".round-reset")).toHaveCount(0);
+  await page.locator("#startBtn").click();
+  await page.clock.fastForward(25 * 60_000 + 2000); await page.clock.runFor(500);
+  await page.locator('.modes [data-mode="focus"]').click();
+  await expect(page.locator(".cycle")).toContainText("Round 2 of 4");
+  await page.locator(".round-reset").click();
+  await expect(page.locator(".cycle")).toContainText("Round 1 of 4");
+  await expect(page.locator("#toast")).toContainText("Rounds start over");
+  await expect(page.locator(".round-reset")).toHaveCount(0);
+});

@@ -172,6 +172,15 @@ export function nudgeDone() {
   Store.saveSettings(); saveTimer(); renderTimer(true);
 }
 
+/** Starts the rounds over by hand; never while a session runs. */
+export function resetRounds() {
+  if (T.status === "running") { toast("Pause or finish this session to start the rounds over."); return; }
+  if (!T.setIndex) return;
+  T.setIndex = 0; delete T.roundAt;
+  saveTimer(); renderTimer(true);
+  toast("Rounds start over at round 1.");
+}
+
 /** Starts the rounds over after a new day or a long pause, so the morning begins at round one. */
 export function freshRounds() {
   // Timers saved before roundAt existed fall back to the last time the timer changed.

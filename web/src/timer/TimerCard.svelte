@@ -28,7 +28,7 @@
     return {
       mode: T.mode, status: T.status,
       dots: roundDots(T.mode, T.setIndex, every), round: Math.min(Math.min(T.setIndex || 0, every) + 1, every), every,
-      up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), bellAt: T.bellAt || 0, flowSince: T.upKind === "flow" ? T.up : 0, flow: T.upKind === "flow" || !!T.flowReady, nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
+      canReset: T.setIndex > 0 && T.status !== "running", up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), bellAt: T.bellAt || 0, flowSince: T.upKind === "flow" ? T.up : 0, flow: T.upKind === "flow" || !!T.flowReady, nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
       sub: T.up ? (T.upKind === "flow" ? "started " + api.fmtClock(T.up) : "past the bell") : T.flowReady ? "" : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
       held: Object.fromEntries(MODES.map((m) => [m, T.saved[m] ? "Paused with " + clock(Math.ceil(T.saved[m].remaining / 1000)) + " left" : ""])),
     };
@@ -68,8 +68,12 @@
 {:else if showNudge}
   <div class="cycle"><button class="nudge" class:done={c.nudge.done} type="button" disabled={c.nudge.done} aria-label={c.nudge.done ? "Done: " + c.nudge.text : c.nudge.text + ". Mark as done"} title={c.nudge.done ? "" : "Tap when done"} onclick={() => api.nudgeDone()}><i aria-hidden="true">{#if c.nudge.done}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{/if}</i><span>{c.nudge.text}</span></button></div>
 {:else}
-  <div class="cycle" class:off={c.mode !== "focus" || c.flow} title={"A long break comes after round " + c.every}>
-    <span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span><span>Round {c.round} of {c.every}</span>
+  <div class="cycle" class:off={c.mode !== "focus" || c.flow} title={c.canReset ? "" : "A long break comes after round " + c.every}>
+    {#if c.canReset}
+      <button class="round-reset" type="button" aria-label={"Round " + c.round + " of " + c.every + ". Start the rounds over"} onclick={() => api.resetRounds()}><span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span><span class="rr-label"><span>Round {c.round} of {c.every}</span><span aria-hidden="true">Start over</span></span></button>
+    {:else}
+      <span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span><span>Round {c.round} of {c.every}</span>
+    {/if}
   </div>
 {/if}
 <div class="adjust" class:off={!!c.up || c.flow} id="adjust" role="group" aria-label="Adjust this session">
