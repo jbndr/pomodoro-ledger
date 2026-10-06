@@ -120,7 +120,7 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
     T.setIndex = (T.setIndex || 0) + 1;
     if (follow && T.setIndex >= S.settings.longEvery) T.setIndex = 0;
     next = T.setIndex >= S.settings.longEvery ? "long" : "short";
-    delete T.saved[next];
+    dropHeldBreaks();
   } else next = "focus";
   if (wasFocus && !stale && !follow) T.bellAt = at; else delete T.bellAt;
   const rang = releaseBell(at);
@@ -144,6 +144,7 @@ function stopFlow(at: number) {
   const ms = Math.max(0, Math.min(MAX_RUN, at - T.up!));
   if (ms >= MIN) logFocus(ms, false, at, T.run);
   const minutes = flowBreakMin(ms);
+  dropHeldBreaks();
   setMode("short");
   T.adj.short = minutes * MIN - dur("short");
   offerNudge("short");
@@ -187,13 +188,17 @@ export function keepGoing() {
   toast("Keep going. Stop when you're done, and your break grows to match.");
 }
 
+// A fresh break replaces any break left on hold, so only one ever waits to be resumed.
+const dropHeldBreaks = () => { delete T.saved.short; delete T.saved.long; };
+
 /** Picks Flow: a focus that counts up from zero once you press Start. */
 export function readyFlow() {
   if (RM.code) { toast("In a room, the room's clock leads."); return; }
   if (T.upKind === "flow") { toast("Flow is running. Stop when you're done."); return; }
   if (T.flowReady) return;
-  // Like the other mode words: a break is kept to come back to, and a started focus logs what it has.
-  if (T.mode !== "focus") setMode("focus", true);
+  // Flow earns its own break, so a break you leave for it isn't kept; a started focus logs what it has.
+  dropHeldBreaks();
+  if (T.mode !== "focus") setMode("focus");
   if (T.status !== "idle") { flushPartial(); setMode("focus"); }
   T.flowReady = true;
   saveTimer(); renderTimer(true);
@@ -213,6 +218,7 @@ export function stopUp(at = Date.now()) {
   const ms = Math.max(0, Math.min(MAX_RUN, at - T.up)), next: Mode = T.setIndex >= S.settings.longEvery ? "long" : "short";
   if (ms >= MIN) logFocus(ms, false, at, T.run);
   const extra = extraBreakMin(ms);
+  dropHeldBreaks();
   setMode(next);
   offerNudge(next);
   if (extra) { T.adj[next] = extra * MIN; saveTimer(); renderTimer(true); }
