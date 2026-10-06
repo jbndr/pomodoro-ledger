@@ -28,6 +28,14 @@ import roundL from "../assets/clips/round-light.mp4";
 import roundD from "../assets/clips/round-dark.mp4";
 import roundPL from "../assets/clips/round-light.webp";
 import roundPD from "../assets/clips/round-dark.webp";
+import nudgeL from "../assets/clips/nudge-light.mp4";
+import nudgeD from "../assets/clips/nudge-dark.mp4";
+import nudgePL from "../assets/clips/nudge-light.webp";
+import nudgePD from "../assets/clips/nudge-dark.webp";
+import roomL from "../assets/clips/room-light.mp4";
+import roomD from "../assets/clips/room-dark.mp4";
+import roomPL from "../assets/clips/room-light.webp";
+import roomPD from "../assets/clips/room-dark.webp";
 import yearL from "../assets/clips/year-light.mp4";
 import yearD from "../assets/clips/year-dark.mp4";
 import yearPL from "../assets/clips/year-light.webp";
@@ -52,6 +60,9 @@ const icon = {
   cup: '<path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5c0 1.5 1 1.5 1 3M11.5 3.5c0 1.5 1 1.5 1 3"/>',
   video: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/>',
   wave: '<path d="M3 12h2l2-5 3 10 3-12 3 9 2-2h3"/>',
+  stretch: '<circle cx="12" cy="4.5" r="1.8"/><path d="M5 9l7 1.5L19 9M12 10.5V15l-3 5M12 15l3 5"/>',
+  drop: '<path d="M12 3.5c3 4 6 7.2 6 10.5a6 6 0 0 1-12 0c0-3.3 3-6.5 6-10.5z"/>',
+  camera: '<rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3"/>',
 };
 type Icon = keyof typeof icon;
 const replaced = (items: [Icon, string][]) => items;
@@ -61,7 +72,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
   <section class="hero col">
     <a class="pill" href="/changelog"><span class="dot"></span>{log.length} releases since {since}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
     <h1>Find out how long things really take</h1>
-    <p class="lede">Pomodoro Ledger is a focus timer that keeps the books. Plan your day in rounds, and every round is written down, so your estimates get honest and your week adds up. In your browser, no account needed.</p>
+    <p class="lede">Pomodoro Ledger is a focus timer that keeps the books. Plan your day in rounds, focus on your own or in a room with others, and every round is written down, so your estimates get honest and your week adds up. In your browser, no account needed.</p>
     <div class="cta">
       <a class="btn primary" href={SITE.app}>Open the app</a>
       <a class="btn" href="/app/?demo=1">Try the demo</a>
@@ -146,18 +157,38 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     </ul>
   </section>
 
-  <section class="col chapter" id="rooms" style="--c: var(--violet)">
-    <span class="label">Rooms</span>
-    <h2>Focus alongside other people</h2>
-    <p class="replaces"><b>Replaces:</b>{replaced([["library", "The library"], ["cup", "Co-working day passes"]]).map(([i, t]) => <span><svg viewBox="0 0 24 24" aria-hidden="true" set:html={icon[i]} />{t}</span>)}</p>
-    <p>Drop into a public room and your timer joins its round. Everyone in the room sees who's there and how long is left. Nobody sees what you're working on.</p>
-    <Showcase kind="violet" h={420} hm={400} cap="Live from the public rooms. Join opens the app right in that room.">
-      <Fragment slot="p0"><LiveRooms /></Fragment>
+  <section class="col chapter" id="breaks" style="--c: var(--leaf)">
+    <span class="label">Breaks</span>
+    <h2>Breaks that actually rest you</h2>
+    <p class="replaces"><b>Replaces:</b>{replaced([["stretch", "Stretch reminders"], ["drop", "Water reminder apps"]]).map(([i, t]) => <span><svg viewBox="0 0 24 24" aria-hidden="true" set:html={icon[i]} />{t}</span>)}</p>
+    <p>A break spent scrolling isn't much of a break. So each one brings a single small nudge: rest your eyes, stand up and stretch, or drink a glass of water. Tap it when you've done it.</p>
+    <Showcase kind="lagoon" h={540} hm={440} cap="The first minute of a break belongs to Keep going. Then the nudge takes its place, one thing at a time.">
+      <Fragment slot="p0"><Clip light={nudgeL} dark={nudgeD} posterLight={nudgePL} posterDark={nudgePD} w={440} ratio="880 / 896" radius="0 0 6.82% 6.82% / 0 0 6.7% 6.7%" frame={false} fade label="A short break with the nudge Rest your eyes: look 20 feet away, which gets ticked off" /></Fragment>
     </Showcase>
     <ul class="checks">
-      <li>Private rooms with a code, for a team or a study group</li>
-      <li>Scheduled sessions, with a reminder even when the app is closed</li>
-      <li>A quick 👋 or 🎉 to the room, and nothing more</li>
+      <li>Rest your eyes on every break, stretch on the long ones</li>
+      <li>Write your own nudges, and choose every break, long breaks or once an hour</li>
+      <li>Breaks start on their own when a round ends, and the next round can too</li>
+    </ul>
+  </section>
+
+  <section class="col chapter" id="together" style="--c: var(--violet)">
+    <span class="label">Together</span>
+    <h2>Focus alongside other people</h2>
+    <p class="replaces"><b>Replaces:</b>{replaced([["camera", "Video co-working calls"], ["library", "The library"]]).map(([i, t]) => <span><svg viewBox="0 0 24 24" aria-hidden="true" set:html={icon[i]} />{t}</span>)}</p>
+    <p>Start a private room for your team or study group, or drop into a public one. Everyone's timer follows the same round, so you see who's focusing and how long is left. No camera, no small talk, and nobody sees what you're working on.</p>
+    <Showcase kind="violet" h={560} hm={460} id="sc-together" tabs={[
+      { label: "In a room", cap: "Maya and Jonas start their rounds, and a 🎉 and a 👋 arrive. That's about as loud as it gets." },
+      { label: "Public rooms, live", cap: "Live from the public rooms. Join opens the app right in that room." },
+    ]}>
+      <Fragment slot="p0"><Clip light={roomL} dark={roomD} posterLight={roomPL} posterDark={roomPD} w={460} ratio="1 / 1" radius="16px" label="A private room: two teammates start focusing, the timer runs, and they send a 🎉 and a 👋" /></Fragment>
+      <Fragment slot="p1"><LiveRooms /></Fragment>
+    </Showcase>
+    <ul class="checks">
+      <li>Private rooms with a code or an invite link</li>
+      <li>Sync timers asks everyone to switch to yours, and only happens if all of them accept</li>
+      <li>Scheduled public sessions, with a reminder even when the app is closed</li>
+      <li>Your tasks, labels and history stay private, always</li>
     </ul>
   </section>
 

@@ -22,7 +22,8 @@ export const AREAS: Area[] = [
     items: [
       { title: "Soundscapes", blurb: "Rain, ocean, fire and brown noise, generated in the browser so nothing ever loops." },
       { title: "Mixes", blurb: "Layer up to three sounds, save your mixes, and give breaks a mix of their own." },
-      { title: "Body break nudges", blurb: "Each break brings one small nudge: rest your eyes, stretch, or drink some water." },
+      { title: "Break nudges", blurb: "Each break brings one small nudge: rest your eyes, stand up and stretch, or drink some water. Tap it when done." },
+      { title: "Your own nudges", blurb: "Write your own and choose when they come up: every break, long breaks only, or once an hour." },
       { title: "Gentle ticking", blurb: "An optional tick during focus, at the pace and volume you like." },
     ],
   },
@@ -56,7 +57,8 @@ export const AREAS: Area[] = [
     lede: "Everyone sees who's in the room. Nobody sees your tasks.",
     items: [
       { title: "Public rooms", blurb: "Drop into a room and your timer follows its round, in classic 25/5 or 50/10 deep work." },
-      { title: "Private rooms", blurb: "Share a code with a team or a study group and keep the same rhythm together." },
+      { title: "Private rooms", blurb: "Share a code or an invite link with a team or a study group and keep the same rhythm together." },
+      { title: "Sync timers", blurb: "Ask everyone in the room to switch to your timer. It only happens if all of them accept." },
       { title: "Scheduled sessions", blurb: "Recurring public sessions, like deep work 9 to 12 on weekdays, that anyone can plan to join." },
       { title: "Session reminders", blurb: "A notification when a session you planned is starting, even with the app closed." },
       { title: "Reactions", blurb: "A quick 👋 or 🎉 to the room, without breaking anyone's focus." },

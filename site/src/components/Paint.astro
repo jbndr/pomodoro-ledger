@@ -1,5 +1,5 @@
 ---
-export type Kind = "dawn" | "dusk" | "meadow" | "sky" | "violet" | "ember";
+export type Kind = "dawn" | "dusk" | "meadow" | "sky" | "violet" | "ember" | "lagoon";
 interface Props { kind: Kind }
 const { kind } = Astro.props;
 const id = `pt-${kind}`;
@@ -41,6 +41,8 @@ const hills = [
     --h1: #C4D9F5; --h2: #A9C6EE; --h3: #8DB2E6; }
   .violet { --s0: #8D8AF0; --s1: #F3C8E8; --b1: #C6A2FF; --b2: #FF9BCB; --b3: #A8C2FF; --p1: 180px 330px; --p2: 650px 200px; --p3: 420px 60px;
     --h1: #9C86E6; --h2: #7D63D3; --h3: #5E46B4; }
+  .lagoon { --s0: #BFE9E4; --s1: #F3F7E8; --b1: #8FE0C8; --b2: #FFFFFF; --b3: #B8E1F5; --p1: 560px 160px; --p2: 160px 300px; --p3: 680px 380px;
+    --h1: #9FD8C6; --h2: #6CC1A7; --h3: #3F9E84; }
   .ember { --s0: #2A1F3D; --s1: #6B2E25; --b1: #FF8A3D; --b2: #FFC46B; --b3: #B3415B; --p1: 400px 470px; --p2: 300px 420px; --p3: 680px 160px;
     --h1: #4A2A36; --h2: #35202B; --h3: #24161E; }
 
@@ -50,6 +52,7 @@ const hills = [
     :global(:root:not([data-theme="light"])) .meadow { --s0: #0D1D2B; --s1: #1C2A22; --b1: #B9A653; --b2: #2D5C79; --b3: #3C8A62; --h1: #1F4A35; --h2: #173B2B; --h3: #102C1F; }
     :global(:root:not([data-theme="light"])) .sky { --s0: #0A1530; --s1: #1B3460; --b1: #3D6BC7; --b2: #7F9BE0; --b3: #23407F; --h1: #1A2E57; --h2: #142547; --h3: #0E1B36; }
     :global(:root:not([data-theme="light"])) .violet { --s0: #16113A; --s1: #3B1846; --b1: #6E4BD8; --b2: #B03A86; --b3: #3A55C9; --h1: #2B1E66; --h2: #221852; --h3: #19113F; }
+    :global(:root:not([data-theme="light"])) .lagoon { --s0: #0B2226; --s1: #142B26; --b1: #2E8F7A; --b2: #6FB3A8; --b3: #22597A; --h1: #1A4A40; --h2: #143B33; --h3: #0E2C26; }
     :global(:root:not([data-theme="light"])) .ember { --s0: #1B1428; --s1: #4F2019; --b1: #F07A35; --b2: #FFB45E; --b3: #9A3550; --h1: #3A222C; --h2: #2A1922; --h3: #1C1117; }
   }
   :global(:root[data-theme="dark"]) .dawn { --s0: #0E1A2E; --s1: #2B1B30; --b1: #E8643F; --b2: #5B44B0; --b3: #1F5C8E; --h1: #1D4040; --h2: #163332; --h3: #102625; }
@@ -57,5 +60,6 @@ const hills = [
   :global(:root[data-theme="dark"]) .meadow { --s0: #0D1D2B; --s1: #1C2A22; --b1: #B9A653; --b2: #2D5C79; --b3: #3C8A62; --h1: #1F4A35; --h2: #173B2B; --h3: #102C1F; }
   :global(:root[data-theme="dark"]) .sky { --s0: #0A1530; --s1: #1B3460; --b1: #3D6BC7; --b2: #7F9BE0; --b3: #23407F; --h1: #1A2E57; --h2: #142547; --h3: #0E1B36; }
   :global(:root[data-theme="dark"]) .violet { --s0: #16113A; --s1: #3B1846; --b1: #6E4BD8; --b2: #B03A86; --b3: #3A55C9; --h1: #2B1E66; --h2: #221852; --h3: #19113F; }
+  :global(:root[data-theme="dark"]) .lagoon { --s0: #0B2226; --s1: #142B26; --b1: #2E8F7A; --b2: #6FB3A8; --b3: #22597A; --h1: #1A4A40; --h2: #143B33; --h3: #0E2C26; }
   :global(:root[data-theme="dark"]) .ember { --s0: #1B1428; --s1: #4F2019; --b1: #F07A35; --b2: #FFB45E; --b3: #9A3550; --h1: #3A222C; --h2: #2A1922; --h3: #1C1117; }
 </style>

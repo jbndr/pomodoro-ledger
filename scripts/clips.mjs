@@ -71,6 +71,59 @@ for (const scheme of ["light", "dark"]) {
   await encode(await record(page, () => page.waitForTimeout(11000)), box, `round-${scheme}`, 1320, 1000);
   await page.context().close();
 
+  page = await open(1000, 700);
+  await page.getByRole("button", { name: /^Start/ }).first().click();
+  await page.waitForTimeout(300);
+  await page.clock.fastForward(25 * 60 * 1000 - 1500);
+  await page.waitForTimeout(2500);
+  const tc = await page.locator(".timer-card").boundingBox();
+  const cbox = { x: Math.round(tc.x), y: Math.round(tc.y + 150), width: Math.round(tc.width), height: Math.round(tc.height - 150) };
+  await page.clock.fastForward(60_500);
+  await encode(await record(page, async () => {
+    await page.waitForTimeout(2200);
+    await page.locator(".timer-card .nudge").click();
+    await page.waitForTimeout(3600);
+  }), cbox, `nudge-${scheme}`, 880, 1000);
+  await page.context().close();
+
+  page = await open(640, 900);
+  await page.getByRole("button", { name: "Work together" }).click();
+  await page.getByRole("tab", { name: /Private/ }).click();
+  await page.locator("#rName").fill("Sam");
+  await page.locator("#rCreate").click();
+  await page.waitForTimeout(1200);
+  const code = await page.locator("#stripCode").innerText().then((t) => t.match(/[A-Z2-9]{6}/)[0]);
+  const mates = [];
+  for (const name of ["Maya", "Jonas"]) {
+    const ctx = await browser.newContext({ viewport: { width: 1000, height: 740 }, colorScheme: scheme });
+    const mate = await ctx.newPage();
+    await mate.goto(`${base}/app/?demo=1&embed=1&room=${code}`);
+    await mate.waitForTimeout(1200);
+    await mate.locator("#rName").fill(name);
+    await mate.getByRole("button", { name: /^Join/ }).first().click();
+    await mate.waitForTimeout(900);
+    mates.push(mate);
+  }
+  await page.waitForTimeout(1200);
+  const strip = await page.locator("#roomStrip").boundingBox();
+  const rbox = { x: Math.round(strip.x - 12), y: Math.round(strip.y - 12), width: Math.round(strip.width + 24), height: Math.round(Math.min(900 - strip.y + 12, 640)) };
+  const react = async (mate, emoji) => { await mate.locator("#reactBtn").click(); await mate.waitForTimeout(250); await mate.getByRole("button", { name: `Send ${emoji}` }).click(); };
+  await encode(await record(page, async () => {
+    await page.waitForTimeout(900);
+    await mates[0].getByRole("button", { name: /^Start/ }).first().click();
+    await page.waitForTimeout(1100);
+    await mates[1].getByRole("button", { name: /^Start/ }).first().click();
+    await page.waitForTimeout(1200);
+    await page.getByRole("button", { name: /^Start/ }).first().click();
+    await page.waitForTimeout(1600);
+    await react(mates[0], "🎉");
+    await page.waitForTimeout(2200);
+    await react(mates[1], "👋");
+    await page.waitForTimeout(2600);
+  }), rbox, `room-${scheme}`, 900, 640);
+  for (const m of mates) await m.context().close();
+  await page.context().close();
+
   page = await open(1000, 820);
   await page.locator(".yr-hero").scrollIntoViewIfNeeded();
   await page.locator(".yr-hero").click();
