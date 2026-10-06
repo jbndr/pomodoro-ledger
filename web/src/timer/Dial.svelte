@@ -3,7 +3,7 @@
   import { rollDigits } from "../lib/roll";
   import { timerView } from "./state.svelte";
 
-  let { sub, flow = false } = $props();
+  let { sub, flow = false, mode = "" } = $props();
 
   // Flow has no end, so its ring is a quiet, full circle and only the digits move.
   const frac = $derived(timerView.up === "over" || timerView.up === "flow" ? 1 : fraction(timerView.rem, timerView.total));
@@ -12,12 +12,13 @@
   const lit = $derived(litTicks(frac));
   const knob = $derived(knobAt(frac));
 
-  // Jumps (±min, skip, a new phase) roll the digits that changed; ordinary seconds keep still.
-  let timeEl, before = [], beforeSecs = 0, seen = -1;
+  // ±min rolls the digits that changed. A new phase changes them in place, under the phase-change motion; seconds keep still.
+  let timeEl, before = [], beforeSecs = 0, seen = -1, beforeKey = "";
   $effect(() => {
     const now = chars, v = timerView.version;
-    if (v !== seen && seen >= 0 && before.length === now.length) rollDigits([...timeEl.children], before, now, secs > beforeSecs);
-    before = now; beforeSecs = secs; seen = v;
+    const key = mode + (flow ? ":flow" : "");
+    if (v !== seen && seen >= 0 && key === beforeKey && before.length === now.length) rollDigits([...timeEl.children], before, now, secs > beforeSecs);
+    before = now; beforeSecs = secs; seen = v; beforeKey = key;
   });
 </script>
 
