@@ -52,3 +52,9 @@ export const flowBreakMin = (ms: number) => Math.max(1, Math.min(30, Math.round(
 
 
 
+
+/** Rounds start over on a new day, or after three hours without finishing one, unless a session is under way. */
+export function roundsStale(setIndex: number, lastRound: number, status: Status, now: number, dayOf: (t: number) => string): boolean {
+  if (!setIndex || !lastRound || status !== "idle") return false;
+  return dayOf(lastRound) !== dayOf(now) || now - lastRound > 3 * 3_600_000;
+}

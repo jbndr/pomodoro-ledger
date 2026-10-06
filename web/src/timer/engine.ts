@@ -6,7 +6,7 @@ import { fmtDur } from "../format";
 import { MIN } from "../lib/dates";
 import { dayKey } from "../lib/dates";
 import { logNudge, nudgesOf, pickNudge } from "../lib/nudges";
-import { extraBreakMin, flowBreakMin, MODES, type Mode } from "../lib/timer";
+import { extraBreakMin, flowBreakMin, MODES, roundsStale, type Mode } from "../lib/timer";
 import { renderAll, renderTimer } from "../render";
 import { followRoom, roomFollows, roomRoundEnded, roomTick, RM } from "../room/net";
 import { cancelEnd, ensureAudio, playSound, releaseBell, scheduleEnd, syncTicking } from "../sound";
@@ -118,6 +118,7 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
   if (wasFocus) {
     logFocus(T.total || dur("focus"), true, at, T.run);
     T.setIndex = (T.setIndex || 0) + 1;
+    T.roundAt = at;
     if (follow && T.setIndex >= S.settings.longEvery) T.setIndex = 0;
     next = T.setIndex >= S.settings.longEvery ? "long" : "short";
     dropHeldBreaks();
@@ -169,6 +170,16 @@ export function nudgeDone() {
   T.nudge.done = true;
   S.settings.nudgeLog = logNudge(S.settings.nudgeLog || {}, dayKey(Date.now()));
   Store.saveSettings(); saveTimer(); renderTimer(true);
+}
+
+/** Starts the rounds over after a new day or a long pause, so the morning begins at round one. */
+export function freshRounds() {
+  // Timers saved before roundAt existed fall back to the last time the timer changed.
+  const last = T.roundAt || ls.get<number>("pl.timerAt", 0);
+  if (!roundsStale(T.setIndex, last, T.status, Date.now(), dayKey)) return;
+  T.setIndex = 0;
+  delete T.roundAt; delete T.saved.short; delete T.saved.long;
+  if (T.mode !== "focus") setMode("focus"); else { saveTimer(); renderTimer(true); }
 }
 
 export const toggle = () => (T.up ? stopUp() : T.status === "running" ? pause() : start());

@@ -40,3 +40,16 @@ test("a finished cycle clears breaks left on hold", async ({ page, isMobile }) =
   await page.clock.fastForward(25 * 60_000 + 2000); await page.clock.runFor(500);
   await expect(held(page)).toHaveCount(0);
 });
+
+// Rounds start over after a long pause, so the next session begins at round one.
+test("rounds start over after a long pause", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Same logic on phones");
+  await open(page);
+  await page.locator("#startBtn").click();
+  await page.clock.fastForward(25 * 60_000 + 2000); await page.clock.runFor(500);
+  await page.locator('.modes [data-mode="focus"]').click();
+  await expect(page.locator(".cycle")).toContainText("Round 2 of 4");
+  await page.clock.fastForward(3 * 3_600_000 + 5 * 60_000); await page.clock.runFor(61_000);
+  await expect(page.locator(".cycle")).toContainText("Round 1 of 4");
+  await expect(page.locator('.modes [data-mode="focus"]')).toHaveAttribute("aria-selected", "true");
+});

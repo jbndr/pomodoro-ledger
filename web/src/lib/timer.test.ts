@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Task } from "./tasks";
-import { arcOffset, CIRCUMFERENCE, clock, clockLabel, extraBreakMin, flowBreakMin, fraction, knobAt, litTicks, modeLabel, roundDots, startLabel, TICKS } from "./timer";
+import { arcOffset, CIRCUMFERENCE, clock, clockLabel, extraBreakMin, flowBreakMin, fraction, roundsStale, knobAt, litTicks, modeLabel, roundDots, startLabel, TICKS } from "./timer";
 
 describe("clock", () => {
   it("pads minutes and seconds", () => {
@@ -83,5 +83,20 @@ describe("flowBreakMin", () => {
     expect(flowBreakMin(2 * 60_000)).toBe(1);
     expect(flowBreakMin(72 * 60_000)).toBe(14);
     expect(flowBreakMin(5 * 3600_000)).toBe(30);
+  });
+});
+
+describe("roundsStale", () => {
+  const day = (t: number) => new Date(t).toISOString().slice(0, 10), H = 3_600_000, nine = Date.UTC(2026, 9, 6, 9);
+  it("starts over on a new day or after three quiet hours", () => {
+    expect(roundsStale(2, nine - 12 * H, "idle", nine, day)).toBe(true);
+    expect(roundsStale(2, nine - 4 * H, "idle", nine + 0, (t) => "same")).toBe(true);
+    expect(roundsStale(2, nine - H, "idle", nine, day)).toBe(false);
+  });
+  it("never resets during a session, at round one, or without a time", () => {
+    expect(roundsStale(2, nine - 12 * H, "running", nine, day)).toBe(false);
+    expect(roundsStale(2, nine - 12 * H, "paused", nine, day)).toBe(false);
+    expect(roundsStale(0, nine - 12 * H, "idle", nine, day)).toBe(false);
+    expect(roundsStale(2, 0, "idle", nine, day)).toBe(false);
   });
 });
