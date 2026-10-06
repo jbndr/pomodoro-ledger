@@ -49,7 +49,8 @@ export const AREAS: Area[] = [
       { title: "Focus by label", blurb: "Hours, share of focus and rounds for each label, over a week, a month or all time." },
       { title: "Weekly recap", blurb: "Total focus, best day, top labels, tasks finished and your streak, against the week before." },
       { title: "Best time of day", blurb: "When your focus actually happens, by hour and weekday, with your strongest window named." },
-      { title: "Year in Focus", blurb: "A story of your year: hours, top labels, biggest month, longest streak, and badges." },
+      { title: "Badges", blurb: "Twelve badges to earn each year, from Early bird to Comeback, with progress on every one." },
+      { title: "Year in Focus", blurb: "In December, a story of your year: hours, top labels, biggest month and longest streak." },
     ],
   },
   {

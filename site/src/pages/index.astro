@@ -11,6 +11,7 @@ import Listen from "../components/Listen.astro";
 import Faq from "../components/Faq.astro";
 import Loop from "../components/Loop.astro";
 import Detail from "../components/Detail.astro";
+import Badges from "../components/Badges.astro";
 import { SITE } from "../lib";
 import flowL from "../assets/shots/timer-flow-light.webp";
 import flowD from "../assets/shots/timer-flow-dark.webp";
@@ -50,10 +51,6 @@ import pipL from "../assets/clips/pip-light.mp4";
 import pipD from "../assets/clips/pip-dark.mp4";
 import pipPL from "../assets/clips/pip-light.webp";
 import pipPD from "../assets/clips/pip-dark.webp";
-import yearL from "../assets/clips/year-light.mp4";
-import yearD from "../assets/clips/year-dark.mp4";
-import yearPL from "../assets/clips/year-light.webp";
-import yearPD from "../assets/clips/year-dark.webp";
 
 const log = (await getCollection("changelog")).sort((a, b) => b.data.n - a.data.n);
 const latest = log.slice(0, 5);
@@ -121,18 +118,30 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
       { label: "Estimates", cap: "Across all finished tasks, planned against what they took. This is the demo's sample data. Yours will be kinder. Probably." },
       { label: "Finished", cap: "Task by task. Migrate billing to Stripe was planned at 30 rounds and took 176. It happens." },
       { label: "Best time", cap: "When your focus really happens, by hour and weekday." },
-      { label: "Year", cap: "Once a year, the story of all of it. Every number comes straight from the ledger." },
     ]}>
       <Fragment slot="p0"><Piece light={estL} dark={estD} w={400} alt="Estimates: 3.97 times. Tasks take 297% more cycles than planned, across 12 tasks" /></Fragment>
       <Fragment slot="p1"><Piece light={ledgerL} dark={ledgerD} phoneLight={ledgerPL} phoneDark={ledgerPD} w={680} crop={430} alt="Finished tasks with planned and actual rounds: Migrate billing to Stripe was planned at 30 rounds and took 176" /></Fragment>
       <Fragment slot="p2"><Piece light={bestL} dark={bestD} w={680} alt="Best time of day: a heatmap showing focus is strongest 9 to 11 on weekday mornings" /></Fragment>
-      <Fragment slot="p3"><Clip light={yearL} dark={yearD} posterLight={yearPL} posterDark={yearPD} w={262} radius="6.95% / 3.91%" frame={false} label="Year in Focus: 398 hours, top labels, the biggest month, your best time of day and longest streak" /></Fragment>
     </Showcase>
     <ul class="checks">
       <li>Time tracking without the tracking: focus on a task and the minutes are written down</li>
       <li>Overtime and Flow sessions count too</li>
       <li>Focus by label for a week, a month or all time</li>
       <li>Export everything to a file whenever you like</li>
+    </ul>
+  </section>
+
+  <section class="col chapter" id="badges" style="--c: var(--amber)">
+    <span class="label">Badges</span>
+    <h2>Something to collect</h2>
+    <p>A ledger is honest, and honest isn't always fun. So there are twelve badges to earn over the year, from Early bird to Comeback, and each one shows how close you are.</p>
+    <Showcase kind="dawn" h={420} hm={520}>
+      <Fragment slot="p0"><Badges /></Fragment>
+    </Showcase>
+    <ul class="checks">
+      <li>Progress on every badge, not just the ones you've earned</li>
+      <li>A fresh set every January</li>
+      <li>And in December, a Year in Focus story of everything in your ledger</li>
     </ul>
   </section>
 
@@ -167,7 +176,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
       { label: "End of a round", cap: "The last seconds of a round: the task gets its dot, and the break starts on its own." },
       { label: "Flow", cap: "Flow counts up. Stop when you're done, and the break is sized to match: about a minute per five." },
     ]}>
-      <Fragment slot="p0"><Clip light={roundL} dark={roundD} posterLight={roundPL} posterDark={roundPD} w={660} label="A focus round ends: the timer reaches zero, the task gets a round, and a five-minute break starts" /></Fragment>
+      <Fragment slot="p0"><Clip light={roundL} dark={roundD} posterLight={roundPL} posterDark={roundPD} w={660} frame="window" label="A focus round ends: the timer reaches zero, the task gets a round, and a five-minute break starts" /></Fragment>
       <Fragment slot="p1"><Piece light={flowL} dark={flowD} w={290} alt="The Flow timer counting up from zero" /></Fragment>
     </Showcase>
     <ul class="checks">
@@ -184,7 +193,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     <p class="replaces"><b>Replaces:</b>{replaced([["stretch", "Stretch reminders"], ["drop", "Water reminder apps"]]).map(([i, t]) => <span><svg viewBox="0 0 24 24" aria-hidden="true" set:html={icon[i]} />{t}</span>)}</p>
     <p>A break spent scrolling isn't much of a break. So each one brings a single small nudge: rest your eyes, stand up and stretch, or drink a glass of water. Tap it when you've done it.</p>
     <Showcase kind="lagoon" h={540} hm={440} cap="The first minute of a break belongs to Keep going. Then the nudge takes its place, one thing at a time.">
-      <Fragment slot="p0"><Clip light={nudgeL} dark={nudgeD} posterLight={nudgePL} posterDark={nudgePD} w={440} radius="0 0 6.82% 6.82% / 0 0 6.7% 6.7%" frame={false} fade label="A short break with the nudge Rest your eyes: look 20 feet away, which gets ticked off" /></Fragment>
+      <Fragment slot="p0"><Clip light={nudgeL} dark={nudgeD} posterLight={nudgePL} posterDark={nudgePD} w={440} radius="0 0 6.82% 6.82% / 0 0 6.7% 6.7%" frame="none" fade label="A short break with the nudge Rest your eyes: look 20 feet away, which gets ticked off" /></Fragment>
     </Showcase>
     <ul class="checks">
       <li>Rest your eyes on every break, stretch on the long ones</li>
@@ -202,7 +211,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
       { label: "In a room", cap: "Maya and Jonas start their rounds, and a 🎉 and a 👋 arrive. That's about as loud as it gets." },
       { label: "Public rooms, live", cap: "Live from the public rooms. Join opens the app right in that room." },
     ]}>
-      <Fragment slot="p0"><Clip light={roomL} dark={roomD} posterLight={roomPL} posterDark={roomPD} w={460} radius="16px" label="A private room: two teammates start focusing, the timer runs, and they send a 🎉 and a 👋" /></Fragment>
+      <Fragment slot="p0"><Clip light={roomL} dark={roomD} posterLight={roomPL} posterDark={roomPD} w={460} frame="window" label="A private room: two teammates start focusing, the timer runs, and they send a 🎉 and a 👋" /></Fragment>
       <Fragment slot="p1"><LiveRooms /></Fragment>
     </Showcase>
     <ul class="checks">
@@ -231,19 +240,16 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
       <Detail kind="dawn" title="A timer that floats." wide>
         <div class="pip-scene">
           <div class="doc" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="pip"><Clip light={pipL} dark={pipD} posterLight={pipPL} posterDark={pipPD} w={300} radius="12px" label="The floating Picture-in-Picture timer counting down, with pause and plus or minus one minute" /></div>
+          <div class="pip"><Clip light={pipL} dark={pipD} posterLight={pipPL} posterDark={pipPD} w={300} radius="6.67% / 10.87%" frame="none" label="The floating Picture-in-Picture timer counting down, with pause and plus or minus one minute" /></div>
         </div>
         <Fragment slot="text">Pop the clock out and it stays on top of whatever you're working on, with pause and a minute more or less right there.</Fragment>
       </Detail>
-      <Detail kind="dusk" title="Digits that roll.">
-        <Clip light={digitsL} dark={digitsD} posterLight={digitsPL} posterDark={digitsPD} w={236} radius="18px" label="Adding five minutes twice and removing one: only the digits that change roll" />
+      <Detail kind="dusk" title="Digits that roll." h={340}>
+        <Clip light={digitsL} dark={digitsD} posterLight={digitsPL} posterDark={digitsPD} w={218} radius="6.82% / 5.02%" frame="none" label="Adding five minutes twice and removing one: only the digits that change roll" />
         <Fragment slot="text">Add five minutes and only the digits that change move. The rest stay perfectly still.</Fragment>
       </Detail>
-      <Detail kind="meadow" title="Finishing feels like it.">
-        <Clip light={finishL} dark={finishD} posterLight={finishPL} posterDark={finishPD} w={330} radius="14px" label="Finishing a task: the check fills, the title is struck through and the row folds away" />
-        <Fragment slot="text">The check fills, the title is struck through and the row folds away. The ledger takes it from there.</Fragment>
-      </Detail>
-      <Detail kind="sky" title="Keyboard first." wide>
+
+      <Detail kind="sky" title="Keyboard first." h={340}>
         <div class="keys" aria-hidden="true">
           <span><kbd class="cap">N</kbd><em>New task</em></span>
           <span><kbd class="cap">⌘</kbd><kbd class="cap">K</kbd><em>Any action</em></span>
@@ -251,6 +257,10 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
           <span><kbd class="cap">?</kbd><em>All shortcuts</em></span>
         </div>
         <Fragment slot="text">N adds a task from anywhere, ⌘K finds any action, Space starts and pauses, and ? shows the rest. J and K move through your tasks.</Fragment>
+      </Detail>
+      <Detail kind="meadow" title="Finishing feels like it." wide h={420}>
+        <Clip light={finishL} dark={finishD} posterLight={finishPL} posterDark={finishPD} w={430} radius="4.42% / 5.01%" frame="none" label="Finishing a task: the check fills, the title is struck through and the row folds away" />
+        <Fragment slot="text">The check fills, the title is struck through and the row folds away. The ledger takes it from there.</Fragment>
       </Detail>
     </div>
     <ul class="checks">
@@ -339,7 +349,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
   .doc i { display: block; height: 9px; border-radius: 5px; background: var(--surface-2); }
   .doc i:nth-child(1) { width: 46%; height: 13px; background: color-mix(in oklab, var(--fg) 12%, var(--surface-2)); margin-bottom: 6px; }
   .doc i:nth-child(2) { width: 92%; } .doc i:nth-child(3) { width: 84%; } .doc i:nth-child(4) { width: 88%; } .doc i:nth-child(5) { width: 60%; } .doc i:nth-child(6) { width: 74%; margin-top: 10px; }
-  .pip { position: absolute; right: 0; top: 4px; width: 300px; max-width: 62%; filter: drop-shadow(0 24px 36px rgb(20 24 22 / .35)); animation: hover 6s ease-in-out infinite alternate; }
+  .pip { position: absolute; right: 0; top: 4px; width: 300px; max-width: 62%; animation: hover 6s ease-in-out infinite alternate; }
   .pip :global(.clip) { width: 100%; }
   @keyframes hover { to { translate: 0 -5px; } }
   .keys { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px 26px; }

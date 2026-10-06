@@ -127,10 +127,8 @@ for (const scheme of ["light", "dark"]) {
   page = await open(1000, 700);
   await page.locator(".timer-card .dial-wrap").hover();
   await page.waitForTimeout(500);
-  const dial = await page.locator(".timer-card .dial-wrap").boundingBox();
-  const steps = await page.locator(".timer-card [data-adj='5']").boundingBox();
   const tcard = await page.locator(".timer-card").boundingBox();
-  const dbox = { x: Math.round(tcard.x), y: Math.round(dial.y - 8), width: Math.round(tcard.width), height: Math.round(steps.y + steps.height + 14 - dial.y + 8) };
+  const dbox = { x: Math.round(tcard.x), y: Math.round(tcard.y), width: Math.round(tcard.width), height: Math.round(tcard.height) };
   await encode(await record(page, async () => {
     await page.waitForTimeout(900);
     await page.locator(".timer-card [data-adj='5']").click();
@@ -142,23 +140,16 @@ for (const scheme of ["light", "dark"]) {
   }), dbox, `digits-${scheme}`, 760, 1000);
   await page.context().close();
 
-  {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 760 }, deviceScaleFactor: 2, colorScheme: scheme, isMobile: true, hasTouch: true });
-    page = await ctx.newPage();
-    await page.goto(base + "/app/?demo=1&embed=1");
-    await page.waitForTimeout(1000);
-    await page.locator(".tabbar [data-page=tasks]").click();
-    await page.waitForTimeout(700);
-    const rows = page.locator("section.panel .check");
-    const first = await rows.nth(0).boundingBox(), last = await rows.nth(2).boundingBox();
-    const fbox = { x: 0, y: Math.round(first.y - 70), width: 390, height: Math.round(last.y + last.height + 22 - first.y + 70) };
-    await encode(await record(page, async () => {
-      await page.waitForTimeout(1000);
-      await rows.nth(2).click();
-      await page.waitForTimeout(3000);
-    }), fbox, `finish-${scheme}`, 780, 390);
-    await ctx.close();
-  }
+  page = await open(1000, 700);
+  const panel = await page.locator("section.panel").boundingBox();
+  await page.addStyleTag({ content: `section.panel{min-height:${Math.ceil(panel.height)}px}` });
+  await encode(await record(page, async () => {
+    await page.waitForTimeout(900);
+    await page.locator("section.panel .check").nth(2).click();
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(3000);
+  }), { x: Math.round(panel.x), y: Math.round(panel.y), width: Math.round(panel.width), height: Math.round(panel.height) }, `finish-${scheme}`, 1040, 1000);
+  await page.context().close();
 
   {
     const ctx = await browser.newContext({ viewport: { width: 1000, height: 700 }, deviceScaleFactor: 2, colorScheme: scheme });
@@ -176,20 +167,5 @@ for (const scheme of ["light", "dark"]) {
     await ctx.close();
   }
 
-  page = await open(1000, 820);
-  await page.locator(".yr-hero").scrollIntoViewIfNeeded();
-  await page.locator(".yr-hero").click();
-  await page.waitForTimeout(1600);
-  const card = page.locator(".yr-card").first();
-  const cb = (await card.count()) ? await card.boundingBox() : null;
-  const story = cb ?? { x: 330, y: 40, width: 340, height: 740 };
-  const sbox = { x: Math.round(story.x), y: Math.round(story.y), width: Math.round(story.width), height: Math.round(story.height) };
-  await encode(await record(page, async () => {
-    await page.waitForTimeout(1800);
-    await page.getByRole("button", { name: /Let's go/i }).click().catch(() => {});
-    for (let i = 0; i < 4; i++) { await page.waitForTimeout(2600); await page.keyboard.press("ArrowRight"); }
-    await page.waitForTimeout(2400);
-  }), sbox, `year-${scheme}`, 600, 1000);
-  await page.context().close();
 }
 await browser.close();

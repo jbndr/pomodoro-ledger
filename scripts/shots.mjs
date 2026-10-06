@@ -50,13 +50,17 @@ for (const scheme of ["light", "dark"]) {
   page = await open(1280, 1100);
   await page.getByRole("button", { name: "Weekly recap" }).click();
   await page.locator(".recap-sheet").waitFor();
+  const behind = await page.addStyleTag({ content: ".app{visibility:hidden!important}" });
   await page.waitForTimeout(500);
   await shot(page, ".recap-sheet", "recap");
+  await behind.evaluate((el) => el.remove());
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Plan the week" }).click();
   await page.locator(".plan-sheet").waitFor();
+  const behind2 = await page.addStyleTag({ content: ".app{visibility:hidden!important}" });
   await page.waitForTimeout(500);
   await shot(page, ".plan-sheet", "plan");
+  await behind2.evaluate((el) => el.remove());
   await page.keyboard.press("Escape");
   await page.close();
 
