@@ -10,7 +10,12 @@ test("a break carries one body nudge you can tick", async ({ page, isMobile }) =
   for (let i = 0; i < 3 && (await page.locator(".overlay:not([hidden])").count()); i++) await page.keyboard.press("Escape");
   await page.locator("#startBtn").click();
   await page.clock.fastForward(25 * 60_000 + 2000); await page.clock.runFor(500);
-  const nudge = page.locator(".dial-center .nudge");
+  // One thing at a time: Keep going first, then the nudge in the same spot.
+  const nudge = page.locator(".cycle .nudge"), keep = page.locator(".keep-going");
+  await expect(keep).toBeVisible();
+  await expect(nudge).toHaveCount(0);
+  await page.clock.fastForward(61_000); await page.clock.runFor(1500);
+  await expect(keep).toHaveCount(0);
   await expect(nudge).toContainText("Rest your eyes");
   await nudge.click();
   await expect(nudge).toHaveClass(/done/);

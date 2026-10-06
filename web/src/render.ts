@@ -28,7 +28,7 @@ export function renderTimer(force?: boolean) {
   if (document.body.dataset.status !== T.status) document.body.dataset.status = T.status;
   // Past the bell shows "+12:40" on a full ring; flow counts from zero and fills the ring once an hour.
   const kind = T.up ? T.upKind || "over" : T.flowReady ? "flow" : "", total = kind ? 1 : totalNow(), rem = kind ? upNow() : remNow();
-  const frac = kind === "over" ? 1 : kind === "flow" ? (rem % 3_600_000) / 3_600_000 : Math.max(0, Math.min(1, rem / total));
+  const frac = kind ? 1 : Math.max(0, Math.min(1, rem / total));
   const txt = (kind === "over" ? "+" : "") + clock(kind ? Math.floor(rem / 1000) : Math.ceil(rem / 1000));
   if (txt !== lastTxt || force) {
     lastTxt = txt;

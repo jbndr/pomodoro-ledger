@@ -3,9 +3,10 @@
   import { rollDigits } from "../lib/roll";
   import { timerView } from "./state.svelte";
 
-  let { sub, nudge = null, onnudge = () => {} } = $props();
+  let { sub, flow = false } = $props();
 
-  const frac = $derived(timerView.up === "over" ? 1 : timerView.up === "flow" ? (timerView.rem % 3_600_000) / 3_600_000 : fraction(timerView.rem, timerView.total));
+  // Flow has no end, so its ring is a quiet, full circle and only the digits move.
+  const frac = $derived(timerView.up === "over" || timerView.up === "flow" ? 1 : fraction(timerView.rem, timerView.total));
   const secs = $derived(timerView.up ? Math.floor(timerView.rem / 1000) : Math.ceil(timerView.rem / 1000));
   const chars = $derived([...(timerView.up === "over" ? "+" : "") + clock(secs)]);
   const lit = $derived(litTicks(frac));
@@ -20,7 +21,7 @@
   });
 </script>
 
-<div class="dial-wrap">
+<div class="dial-wrap" class:flow>
   <svg class="dial" viewBox="0 0 300 300" aria-hidden="true">
     <g id="ticks">{#each TICKS as t, i}<line x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} class={"tick" + (t.major ? " major" : "") + (i < lit ? " lit" : "")} />{/each}</g>
     <circle class="track" cx="150" cy="150" r="112" />
@@ -29,7 +30,6 @@
   </svg>
   <div class="dial-center" aria-live="off">
     <div class="time" class:counting={timerView.up === "over"} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + (timerView.up === "flow" ? " seconds of flow" : " seconds past the bell") : clockLabel(secs)}>{#each chars as c}<span class={c === ":" ? "c" : c === "+" ? "p" : "d"}>{c}</span>{/each}</div>
-    {#if nudge}<button class="nudge" class:done={nudge.done} type="button" disabled={nudge.done} aria-label={nudge.done ? "Done: " + nudge.text : nudge.text + ". Mark as done"} title={nudge.done ? "" : "Tap when done"} onclick={onnudge}><i aria-hidden="true">{#if nudge.done}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{/if}</i><span>{nudge.text}</span></button>
-    {:else}<div class="dial-sub" id="dialSub">{sub}</div>{/if}
+    <div class="dial-sub" id="dialSub">{sub}</div>
   </div>
 </div>

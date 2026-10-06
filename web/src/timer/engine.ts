@@ -190,10 +190,11 @@ export function keepGoing() {
 /** Picks Flow: a focus that counts up from zero once you press Start. */
 export function readyFlow() {
   if (RM.code) { toast("In a room, the room's clock leads."); return; }
-  if (T.status === "running") { toast(T.upKind === "flow" ? "Flow is running. Stop when you're done." : "Pause or finish this session first."); return; }
+  if (T.upKind === "flow") { toast("Flow is running. Stop when you're done."); return; }
   if (T.flowReady) return;
-  flushPartial();
-  setMode("focus");
+  // Like the other mode words: a break is kept to come back to, and a started focus logs what it has.
+  if (T.mode !== "focus") setMode("focus", true);
+  if (T.status !== "idle") { flushPartial(); setMode("focus"); }
   T.flowReady = true;
   saveTimer(); renderTimer(true);
 }

@@ -32,3 +32,13 @@ test("picking Focus again leaves flow", async ({ page, isMobile }) => {
   await expect(page.locator("#time")).toHaveText("25:00");
   await expect(page.locator('.modes [data-mode="flow"]')).toHaveAttribute("aria-selected", "false");
 });
+
+test("a long flow gets one quiet check-in", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Same logic on phones");
+  await open(page);
+  await page.locator('.modes [data-mode="flow"]').click();
+  await page.locator("#startBtn").click();
+  await page.clock.fastForward(91 * 60_000); await page.clock.runFor(1500);
+  await expect(page.locator("#dialSub")).toHaveText("90 min in flow · a break soon?");
+  await expect(page.locator("#startBtn")).toContainText("Stop");
+});

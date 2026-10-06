@@ -28,7 +28,7 @@
     return {
       mode: T.mode, status: T.status,
       dots: roundDots(T.mode, T.setIndex, every), round: Math.min(Math.min(T.setIndex || 0, every) + 1, every), every,
-      up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), flow: T.upKind === "flow" || !!T.flowReady, nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
+      up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), bellAt: T.bellAt || 0, flowSince: T.upKind === "flow" ? T.up : 0, flow: T.upKind === "flow" || !!T.flowReady, nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
       sub: T.up ? (T.upKind === "flow" ? "flow · stop when you're done" : "past the bell") : T.flowReady ? "counts up from zero" : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
       held: Object.fromEntries(MODES.map((m) => [m, T.saved[m] ? "Paused with " + clock(Math.ceil(T.saved[m].remaining / 1000)) + " left" : ""])),
     };
@@ -42,6 +42,11 @@
     if (goWidth && w !== goWidth && !calm()) goBtn.animate([{ width: goWidth + "px" }, { width: w + "px" }], { duration: 380, easing: "cubic-bezier(.32, .72, 0, 1)" });
   });
   const STOP = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>';
+  // One thing at a time: Keep going owns a break's first minute, then the nudge takes the same spot.
+  // Both read the ticking clock so the hand-over happens without a refresh; O and the palette keep going for ten minutes.
+  const showKeep = $derived.by(() => { timerView.rem; return c.keep && Date.now() - c.bellAt < 60_000; });
+  const showNudge = $derived(!showKeep && !!c.nudge);
+  const flowSub = $derived.by(() => { timerView.rem; return c.flowSince && Date.now() - c.flowSince >= 90 * 60_000 ? "90 min in flow · a break soon?" : ""; });
   const zenLabel = $derived(timerView.zen ? "Exit full screen" : "Full screen");
 
   // The floating timer's button is wired up before this mounts, so it is moved in rather than rendered here.
@@ -57,9 +62,11 @@
     <button class="icon-btn full-btn" type="button" id="fullBtn" aria-label={zenLabel} title={timerView.zen ? zenLabel : "Fill the page (F) · Shift-click for browser full screen (Shift+F)"} onclick={(e) => api.toggleZen(e.shiftKey)}>{@html timerView.zen ? api.ICON.shrink : api.ICON.expand}</button>
   </div>
 </div>
-<Dial sub={c.sub} nudge={c.nudge} onnudge={() => api.nudgeDone()} />
-{#if c.keep}
+<Dial sub={flowSub || c.sub} flow={c.flow} />
+{#if showKeep}
   <div class="cycle"><button class="keep-going" type="button" title="Go back to focus, counting from the bell (O)" onclick={() => api.keepGoing()}>{@html api.ICON.play}Keep going</button></div>
+{:else if showNudge}
+  <div class="cycle"><button class="nudge" class:done={c.nudge.done} type="button" disabled={c.nudge.done} aria-label={c.nudge.done ? "Done: " + c.nudge.text : c.nudge.text + ". Mark as done"} title={c.nudge.done ? "" : "Tap when done"} onclick={() => api.nudgeDone()}><i aria-hidden="true">{#if c.nudge.done}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>{/if}</i><span>{c.nudge.text}</span></button></div>
 {:else}
   <div class="cycle" class:off={c.mode !== "focus" || c.flow} title={"A long break comes after round " + c.every}>
     <span class="rounds" aria-hidden="true">{#each c.dots as d, i (i)}<i class={d}></i>{/each}</span><span>Round {c.round} of {c.every}</span>
