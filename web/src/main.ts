@@ -56,7 +56,7 @@ import { leaveAsked, leftoverPrompt, moveAsked, newDay } from "./tasks/rollover"
 import BulkBar from "./tasks/BulkBar.svelte";
 import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
-import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, freshRounds, keepGoing, nudgeDone, readyFlow, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
+import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, freshRounds, keepGoing, nudgeDone, readyFlow, resetRounds, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
 import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, openSettings, openShare, openWhen, openYear, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type ShareUI, type Sheet, type WhenUI, type YearUI } from "./ui";
 import Year from "./year/Year.svelte";
@@ -140,7 +140,7 @@ ui.settings = mount(Settings, { target: document.body, props: { api: {
 } } }) as SettingsUI;
 mount(TimerCard, { target: $(".timer-card"), props: { api: {
   T, S, ICON, floatBtn, fmtClock, fmtDur, plural, viewTasks, openOf,
-  toggle, skip, adjust, setMode, flushPartial, buzz, toggleZen, setActive, keepGoing, canKeepGoing, nudgeDone, readyFlow,
+  toggle, skip, adjust, setMode, flushPartial, buzz, toggleZen, setActive, keepGoing, canKeepGoing, nudgeDone, readyFlow, resetRounds,
 } } });
 ui.pop = mount(Pop, { target: document.body, anchor: $("#toast"), props: { api: { ICON } } }) as PopUI;
 ui.when = mount(WhenPop, { target: document.body, anchor: $("#toast"), props: { api: { S, todayKey, openOf, isToday, scheduleTask, setRepeat, fmtDate, plural } } }) as WhenUI;

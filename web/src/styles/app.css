@@ -1464,3 +1464,16 @@ body:not(.zen) .timer-card.timer-card #adjust.off { visibility: hidden; }
 .recap-nudges { margin: -4px 0 0; font-size: 13px; color: var(--muted); }
 .modes button[data-mode="flow"] { --c: var(--tomato); }
 .dial-wrap.flow .dial .knob { transition: cx .25s linear, cy .25s linear; }
+
+/* The round row starts the rounds over when clicked; on hover its label says so, in place. */
+.round-reset { display: inline-flex; align-items: center; gap: 10px; height: 30px; padding: 0 10px; margin: 0 -10px; border: 0; border-radius: 999px; background: none; color: inherit; font: inherit; cursor: pointer; transition: background .15s; }
+.rr-label { display: grid; }
+.rr-label > span { grid-area: 1 / 1; transition: opacity .15s; }
+.rr-label > span + span { opacity: 0; color: var(--fg); }
+@media (hover: hover) {
+  .round-reset:hover { background: var(--surface-2); }
+  .round-reset:hover .rr-label > span:first-child { opacity: 0; }
+  .round-reset:hover .rr-label > span + span { opacity: 1; }
+}
+.round-reset:focus-visible .rr-label > span:first-child { opacity: 0; }
+.round-reset:focus-visible .rr-label > span + span { opacity: 1; }
