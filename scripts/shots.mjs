@@ -60,8 +60,20 @@ for (const scheme of ["light", "dark"]) {
   await page.keyboard.press("Escape");
   await page.close();
 
+  page = await open(390, 2800, { mobile: true });
+  await page.locator(".tabbar [data-page=progress]").click();
+  await page.waitForTimeout(600);
+  await page.addStyleTag({ content: ".bar,.tabbar{display:none!important}" });
+  await page.locator("#ledger").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(400);
+  await shot(page, "#ledger", "ledger-phone");
+  const tall = `${out}/ledger-phone-${scheme}.png`;
+  const cut = await sharp(tall).extract({ left: 0, top: 0, width: (await sharp(tall).metadata()).width, height: 1240 }).toBuffer();
+  await sharp(cut).toFile(tall);
+  await page.close();
+
   page = await open(940, 1100);
-  for (const [sel, name] of [["#bestTime", "besttime"], ["#ledger", "ledger"], [".yr-hero", "year"]]) {
+  for (const [sel, name] of [["#bestTime", "besttime"], ["#ledger", "ledger"]]) {
     await page.locator(sel).first().scrollIntoViewIfNeeded();
     await page.waitForTimeout(400);
     await shot(page, sel, name);

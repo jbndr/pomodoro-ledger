@@ -4,16 +4,12 @@ import Base from "../layouts/Base.astro";
 import LiveApp from "../components/LiveApp.astro";
 import Showcase from "../components/Showcase.astro";
 import Piece from "../components/Piece.astro";
-import Note from "../components/Note.astro";
+import Clip from "../components/Clip.astro";
 import QuickAdd from "../components/QuickAdd.astro";
 import LiveRooms from "../components/LiveRooms.astro";
 import Listen from "../components/Listen.astro";
 import Faq from "../components/Faq.astro";
 import { SITE } from "../lib";
-import focusL from "../assets/shots/timer-focus-light.webp";
-import focusD from "../assets/shots/timer-focus-dark.webp";
-import breakL from "../assets/shots/timer-break-light.webp";
-import breakD from "../assets/shots/timer-break-dark.webp";
 import flowL from "../assets/shots/timer-flow-light.webp";
 import flowD from "../assets/shots/timer-flow-dark.webp";
 import todayL from "../assets/shots/today-light.webp";
@@ -22,12 +18,20 @@ import planL from "../assets/shots/plan-light.webp";
 import planD from "../assets/shots/plan-dark.webp";
 import ledgerL from "../assets/shots/ledger-light.webp";
 import ledgerD from "../assets/shots/ledger-dark.webp";
+import ledgerPL from "../assets/shots/ledger-phone-light.webp";
+import ledgerPD from "../assets/shots/ledger-phone-dark.webp";
 import recapL from "../assets/shots/recap-light.webp";
 import recapD from "../assets/shots/recap-dark.webp";
 import bestL from "../assets/shots/besttime-light.webp";
 import bestD from "../assets/shots/besttime-dark.webp";
-import yearL from "../assets/shots/year-light.webp";
-import yearD from "../assets/shots/year-dark.webp";
+import roundL from "../assets/clips/round-light.mp4";
+import roundD from "../assets/clips/round-dark.mp4";
+import roundPL from "../assets/clips/round-light.webp";
+import roundPD from "../assets/clips/round-dark.webp";
+import yearL from "../assets/clips/year-light.mp4";
+import yearD from "../assets/clips/year-dark.mp4";
+import yearPL from "../assets/clips/year-light.webp";
+import yearPD from "../assets/clips/year-dark.webp";
 
 const log = (await getCollection("changelog")).sort((a, b) => b.data.n - a.data.n);
 const latest = log.slice(0, 5);
@@ -51,51 +55,52 @@ const icon = {
 };
 type Icon = keyof typeof icon;
 const replaced = (items: [Icon, string][]) => items;
+const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
 ---
-<Base returning description="A free Pomodoro timer with tasks, estimates in rounds and a ledger of every focus session. Works in your browser, offline and without an account.">
+<Base returning description="Plan your day in Pomodoro rounds and see how long tasks really take. Every focus session is written down per task and label. Works in your browser, no account needed.">
   <section class="hero col">
     <a class="pill" href="/changelog"><span class="dot"></span>{log.length} releases since {since}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
-    <h1>The Pomodoro timer that remembers where your hours went</h1>
-    <p class="lede">Plan tasks in 25-minute rounds, work through them one at a time, and every session is written down: per task, per label, per week. Free, in your browser, no account.</p>
+    <h1>Find out how long things really take</h1>
+    <p class="lede">Pomodoro Ledger is a focus timer that keeps the books. Plan your day in rounds, and every round is written down, so your estimates get honest and your week adds up. In your browser, no account needed.</p>
     <div class="cta">
-      <a class="btn primary" href={SITE.app}>Start focusing</a>
+      <a class="btn primary" href={SITE.app}>Open the app</a>
       <a class="btn" href="/app/?demo=1">Try the demo</a>
     </div>
-    <p class="latest"><span>+</span> {short(latest[0].data.date)}: <a href={`/changelog#${latest[0].data.n}`}>{latest[0].data.title}</a></p>
+    <p class="latest"><span>New</span> <a href={`/changelog#${latest[0].data.n}`}>{latest[0].data.title}</a> · {short(latest[0].data.date)}</p>
   </section>
 
   <section class="hero-app col wide">
-    <div class="app-wrap">
-      <Note arrow="down-right" color="var(--leaf)" style="right: 4px; top: -62px">the actual app, not a picture</Note>
-      <LiveApp />
-    </div>
+    <LiveApp />
+    <p class="hero-cap">This is the real app with sample data. Press play to try it; nothing you do here is saved.</p>
   </section>
 
   <section class="col statement">
-    <p><mark>Every 25 minutes:</mark> pick one task, start the clock, ignore everything else. Then it's written down.</p>
+    <p><mark>Planned 8 rounds, took 24.</mark> Everyone has tasks like that. Pomodoro Ledger shows you which ones.</p>
   </section>
 
-  <section class="col chapter" id="timer" style="--c: var(--tomato)">
-    <span class="label">Timer</span>
-    <h2>A clock that stays out of the way</h2>
-    <p class="replaces"><b>Replaces:</b>{replaced([["timer", "Kitchen timers"], ["stopwatch", "Stopwatches"]]).map(([i, t]) => <span><svg viewBox="0 0 24 24" aria-hidden="true" set:html={icon[i]} />{t}</span>)}</p>
-    <h3>Why another Pomodoro timer?</h3>
-    <p>There are hundreds of Pomodoro timers. If a countdown is all you need, any of them will do. Plenty are free, and so is this one.</p>
-    <p>Pomodoro Ledger is for when you want the rounds to add up to something. Every round belongs to a task, every task to a label, and nothing you do disappears when the bell rings.</p>
-    <Showcase kind="dusk" h={560} hm={500} tabs={[
-      { label: "Focus", cap: "The controls stay quiet until you need them. Add a minute or five with one tap." },
-      { label: "Break", cap: "Breaks turn green and bring one small nudge: rest your eyes, stretch, or drink some water." },
-      { label: "Flow", cap: "Flow counts up. Stop when you're done, and the break is sized to match: about a minute per five." },
+  <section class="col chapter" id="ledger" style="--c: var(--sky)">
+    <span class="label">The ledger</span>
+    <h2>See where the hours went</h2>
+    <p class="replaces"><b>Replaces:</b>{replaced([["clock", "Timesheets"], ["sheet", "Spreadsheets"]]).map(([i, t]) => <span><svg viewBox="0 0 24 24" aria-hidden="true" set:html={icon[i]} />{t}</span>)}</p>
+    <h3>Why not just a timer?</h3>
+    <p>There are hundreds of Pomodoro timers, and if a countdown is all you need, any of them will do. Pomodoro Ledger cares about what happens after the bell.</p>
+    <p>Every round is written against its task and label, right next to what you planned. You don't log anything. You focus, and the ledger fills in.</p>
+    <Showcase kind="sky" h={540} hm={440} tabs={[
+      { label: "Finished", cap: "Planned against what it took. Migrate billing to Stripe was planned at 30 rounds and took 176. It happens." },
+      { label: "Recap", cap: "A short recap at the start of each week." },
+      { label: "Best time", cap: "When your focus really happens, by hour and weekday." },
+      { label: "Year", cap: "Once a year, the story of all of it. Every number comes straight from the ledger." },
     ]}>
-      <Fragment slot="p0"><Piece light={focusL} dark={focusD} w={300} alt="The timer during a focus round, 24:57 left" /></Fragment>
-      <Fragment slot="p1"><Piece light={breakL} dark={breakD} w={300} alt="The timer during a short break, in green" /></Fragment>
-      <Fragment slot="p2"><Piece light={flowL} dark={flowD} w={300} alt="The Flow timer counting up from zero" /></Fragment>
+      <Fragment slot="p0"><Piece light={ledgerL} dark={ledgerD} phoneLight={ledgerPL} phoneDark={ledgerPD} w={680} crop={430} alt="Finished tasks with planned and actual rounds: Migrate billing to Stripe was planned at 30 rounds and took 176" /></Fragment>
+      <Fragment slot="p1"><Piece light={recapL} dark={recapD} w={330} alt="Last week: 6h 15m of focus, best day Monday, top labels and finished tasks" /></Fragment>
+      <Fragment slot="p2"><Piece light={bestL} dark={bestD} w={680} alt="Best time of day: a heatmap showing focus is strongest 9 to 11 on weekday mornings" /></Fragment>
+      <Fragment slot="p3"><Clip light={yearL} dark={yearD} posterLight={yearPL} posterDark={yearPD} w={262} ratio="600 / 1064" radius="6.95% / 3.91%" frame={false} label="Year in Focus: 398 hours, top labels, the biggest month, your best time of day and longest streak" /></Fragment>
     </Showcase>
     <ul class="checks">
-      <li>Keep going past the bell, and the overtime still counts for the task</li>
-      <li>A floating Picture-in-Picture timer that stays on top of other windows</li>
-      <li>Full screen, for when everything else on the screen is the problem</li>
-      <li>The rounds start over on a new day, or after a long pause</li>
+      <li>Time tracking without the tracking: focus on a task and the minutes are written down</li>
+      <li>Overtime and Flow sessions count too</li>
+      <li>Focus by label for a week, a month or all time</li>
+      <li>Export everything to a file whenever you like</li>
     </ul>
   </section>
 
@@ -103,7 +108,7 @@ const replaced = (items: [Icon, string][]) => items;
     <span class="label">Planning</span>
     <h2>Plan in rounds, not hours</h2>
     <p class="replaces"><b>Replaces:</b>{replaced([["list", "To-do apps"], ["note", "Sticky notes"]]).map(([i, t]) => <span><svg viewBox="0 0 24 24" aria-hidden="true" set:html={icon[i]} />{t}</span>)}</p>
-    <p>Give each task a few rounds and Today tells you roughly when you'll be done. Type a task the way you'd say it: the day, the rounds, a label and a note all fit in one line.</p>
+    <p>Give each task a few rounds and Today tells you when you'll be done. Because you can see what similar tasks really took, your guesses get better every week.</p>
     <Showcase kind="meadow" h={540} hm={520} tabs={[
       { label: "Quick add", cap: "Press N anywhere. “fri 3c #writing // outline first” becomes a day, three rounds, a label and a note." },
       { label: "Today", cap: "Today adds up the rounds and tells you when you'll be done." },
@@ -121,25 +126,24 @@ const replaced = (items: [Icon, string][]) => items;
     </ul>
   </section>
 
-  <section class="col chapter" id="ledger" style="--c: var(--sky)">
-    <span class="label">The ledger</span>
-    <h2>See where the hours went</h2>
-    <p class="replaces"><b>Replaces:</b>{replaced([["clock", "Timesheets"], ["sheet", "Spreadsheets"]]).map(([i, t]) => <span><svg viewBox="0 0 24 24" aria-hidden="true" set:html={icon[i]} />{t}</span>)}</p>
-    <p>Every round is written against its task and label: planned rounds, actual rounds, minutes and overtime. You'll find out which tasks take three times longer than you think. Everyone has some.</p>
-    <div class="margin-note" data-note-for="sc-sky">
-      <Note arrow="left" color="var(--tomato)" class="side">planned 30, took 176.<br />we've all been there</Note>
-      <Showcase kind="sky" h={500} hm={400} tabs={[
-        { label: "Finished", cap: "Every finished task, planned against what it actually took." },
-        { label: "Recap", cap: "A short recap at the start of each week." },
-        { label: "Best time", cap: "When your focus really happens, by hour and weekday." },
-        { label: "Year", cap: "A Year in Focus story, with badges worth a screenshot." },
-      ]}>
-        <Fragment slot="p0"><Piece light={ledgerL} dark={ledgerD} w={680} crop={400} alt="Finished tasks with planned and actual rounds: Migrate billing to Stripe was planned at 30 rounds and took 176" /></Fragment>
-        <Fragment slot="p1"><Piece light={recapL} dark={recapD} w={320} alt="Last week: 6h 15m of focus, best day Monday, top labels and finished tasks" /></Fragment>
-        <Fragment slot="p2"><Piece light={bestL} dark={bestD} w={680} alt="Best time of day: a heatmap showing focus is strongest 9 to 11 on weekday mornings" /></Fragment>
-        <Fragment slot="p3"><Piece light={yearL} dark={yearD} w={680} alt="2026 in focus: 398 hours, 936 cycles and 10 badges" /></Fragment>
-      </Showcase>
-    </div>
+  <section class="col chapter" id="timer" style="--c: var(--tomato)">
+    <span class="label">Timer</span>
+    <h2>A clock that stays out of the way</h2>
+    <p class="replaces"><b>Replaces:</b>{replaced([["timer", "Kitchen timers"], ["stopwatch", "Stopwatches"]]).map(([i, t]) => <span><svg viewBox="0 0 24 24" aria-hidden="true" set:html={icon[i]} />{t}</span>)}</p>
+    <p>Focus, short and long breaks, or Flow when 25 minutes isn't enough. The controls stay quiet until you need them, and when the bell rings the round goes straight into the ledger.</p>
+    <Showcase kind="dusk" h={520} hm={440} tabs={[
+      { label: "End of a round", cap: "The last seconds of a round: the task gets its dot, and the break starts on its own." },
+      { label: "Flow", cap: "Flow counts up. Stop when you're done, and the break is sized to match: about a minute per five." },
+    ]}>
+      <Fragment slot="p0"><Clip light={roundL} dark={roundD} posterLight={roundPL} posterDark={roundPD} w={660} ratio="1320 / 838" label="A focus round ends: the timer reaches zero, the task gets a round, and a five-minute break starts" /></Fragment>
+      <Fragment slot="p1"><Piece light={flowL} dark={flowD} w={290} alt="The Flow timer counting up from zero" /></Fragment>
+    </Showcase>
+    <ul class="checks">
+      <li>Keep going past the bell, and the overtime still counts for the task</li>
+      <li>A floating Picture-in-Picture timer that stays on top of other windows</li>
+      <li>Full screen, for when everything else on the screen is the problem</li>
+      <li>The rounds start over on a new day, or after a long pause</li>
+    </ul>
   </section>
 
   <section class="col chapter" id="rooms" style="--c: var(--violet)">
@@ -184,42 +188,34 @@ const replaced = (items: [Icon, string][]) => items;
     <Faq />
   </section>
 
-  <section class="col">
-    <div class="start">
-      <h2>Ready when you are</h2>
-      <p class="sub">Your first round is one click away.</p>
-      <ol>
-        <li><b>Open the app</b><span>No sign-up, nothing to install.</span></li>
-        <li><b>Add a task</b><span>Give it a few rounds.</span></li>
-        <li><b>Press Start</b><span>The ledger takes it from there.</span></li>
-      </ol>
-      <a class="btn primary" href={SITE.app}>Start focusing</a>
+  <section class="col signoff">
+    <p>The first round takes 25 minutes. The ledger takes it from there.</p>
+    <div class="links">
+      <a href={SITE.app}>Open the app<svg class="arr" viewBox="0 0 16 16" aria-hidden="true" set:html={arrow} /></a>
+      <a href="/app/?demo=1">Try the demo<svg class="arr" viewBox="0 0 16 16" aria-hidden="true" set:html={arrow} /></a>
     </div>
   </section>
 </Base>
-<script>
-  for (const wrap of document.querySelectorAll<HTMLElement>("[data-note-for]")) {
-    document.getElementById(wrap.dataset.noteFor!)?.addEventListener("pane", (e) => wrap.classList.toggle("off", (e as CustomEvent<number>).detail !== 0));
-  }
-</script>
 <style>
   .hero { padding-top: clamp(48px, 8vw, 88px); }
-  .pill { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px 0 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-1); font: 500 13px/1 var(--f-body); color: var(--muted); text-decoration: none; transition: border-color .15s, color .15s; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px 0 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font: 500 13px/1 var(--f-body); color: var(--muted); text-decoration: none; transition: border-color .18s, color .18s; }
   .pill:hover { color: var(--fg); border-color: var(--line-2); }
-  .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tomato); box-shadow: 0 0 0 3px color-mix(in oklab, var(--tomato) 18%, transparent); }
-  .pill svg { width: 13px; height: 13px; }
-  h1 { font-size: clamp(36px, 5.6vw, 54px); line-height: 1.04; letter-spacing: -.035em; margin-top: 22px; max-width: 14em; }
-  .lede { font-size: 18px; line-height: 1.55; color: var(--muted); margin: 20px 0 28px; max-width: 34rem; }
-  .cta { display: flex; gap: 10px; flex-wrap: wrap; }
-  .latest { margin: 18px 0 0; font-size: 13px; color: var(--faint); }
-  .latest span { color: var(--tomato); font-weight: 600; margin-right: 2px; }
-  .latest a { color: var(--muted); }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tomato); }
+  .pill svg { width: 13px; height: 13px; transition: translate .2s cubic-bezier(.2, .9, .25, 1); }
+  .pill:hover svg { translate: 2px 0; }
+  h1 { font-size: clamp(38px, 6vw, 58px); line-height: 1.02; letter-spacing: -.038em; margin-top: 22px; max-width: 12em; }
+  .lede { font-size: 18px; line-height: 1.55; color: var(--muted); margin: 20px 0 28px; max-width: 35rem; }
+  .cta { display: flex; gap: 8px; flex-wrap: wrap; }
+  .latest { margin: 20px 0 0; font-size: 13px; color: var(--faint); }
+  .latest span { display: inline-block; font-weight: 600; font-size: 11.5px; color: var(--tomato); background: color-mix(in oklab, var(--tomato) 12%, transparent); padding: 3px 6px; border-radius: 5px; margin-right: 4px; }
+  .latest a { color: var(--muted); text-decoration: none; transition: color .18s; }
+  .latest a:hover { color: var(--fg); }
 
-  .hero-app { margin-top: 92px; }
+  .hero-app { margin-top: 72px; }
   .wide { --col: 64rem; }
-  .app-wrap { position: relative; }
+  .hero-cap { text-align: center; font-size: 13px; color: var(--faint); margin: 14px 0 0; }
 
-  .statement { margin-top: 120px; }
+  .statement { margin-top: 128px; }
   .statement p { margin: 0; font: 650 clamp(28px, 4.2vw, 40px)/1.18 var(--f-display); letter-spacing: -.03em; text-wrap: balance; }
 
   .chapter { margin-top: 136px; }
@@ -238,35 +234,29 @@ const replaced = (items: [Icon, string][]) => items;
   .checks li::before { background: color-mix(in oklab, var(--c) 15%, transparent); }
   .checks li::after { background: var(--c); --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6 10.5l2.7 2.6L14 7.5' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); -webkit-mask: var(--m) center / 15px no-repeat; mask: var(--m) center / 15px no-repeat; }
 
-  .margin-note { position: relative; }
-  .margin-note :global(.side) { left: calc(100% + 14px); top: 318px; transition: opacity .25s; }
-  .margin-note.off :global(.side) { opacity: 0; }
-  @media (max-width: 1240px) { .margin-note :global(.side) { display: none; } }
-
   .log { list-style: none; margin: 26px 0 0; padding: 0; border-top: 1px solid var(--line); }
   .log li { display: grid; grid-template-columns: 4.5rem 1fr; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
   .log time { color: var(--faint); font-variant-numeric: tabular-nums; }
-  .log a { text-decoration: none; }
+  .log a { text-decoration: none; transition: color .18s; }
   .log a:hover { color: var(--tomato); }
   .chapter > p.more { display: flex; gap: 18px; font-size: 14px; margin-top: 16px; }
   .chapter > p.more a { color: var(--muted); }
 
   .center { text-align: center; margin-bottom: 28px; }
 
-  .start { margin-top: 136px; text-align: center; padding: 48px 28px 44px; border-radius: 24px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-2); position: relative; overflow: hidden; }
-  .start::before { content: ""; position: absolute; inset: 0; background: radial-gradient(60% 50% at 50% 0%, color-mix(in oklab, var(--tomato) 12%, transparent), transparent 70%); pointer-events: none; }
-  .start h2 { font-size: clamp(30px, 4.4vw, 40px); position: relative; }
-  .start .sub { font: 650 clamp(22px, 3vw, 28px)/1.2 var(--f-display); color: var(--faint); margin: 6px 0 36px; letter-spacing: -.02em; position: relative; }
-  .start ol { list-style: none; counter-reset: s; margin: 0 0 34px; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; position: relative; }
-  .start li { counter-increment: s; display: grid; justify-items: center; gap: 6px; }
-  .start li::before { content: counter(s); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--tomato); color: var(--on-accent); font: 650 15px/1 var(--f-body); margin-bottom: 6px; box-shadow: 0 0 0 5px color-mix(in oklab, var(--tomato) 14%, transparent); }
-  .start b { font: 600 16px/1.2 var(--f-body); }
-  .start li span { font-size: 14px; color: var(--muted); }
+  .signoff { margin-top: 152px; text-align: center; }
+  .signoff p { margin: 0 auto; max-width: 15em; font: 650 clamp(28px, 4.2vw, 40px)/1.18 var(--f-display); letter-spacing: -.03em; text-wrap: balance; }
+  .links { display: flex; justify-content: center; gap: 28px; margin-top: 26px; }
+  .links a { display: inline-flex; align-items: center; gap: 6px; font: 550 15.5px/1 var(--f-body); text-decoration: none; color: var(--fg); padding: 6px 0; border-bottom: 1px solid var(--line-2); transition: border-color .18s; }
+  .links a:hover { border-color: var(--fg); }
+  .links svg { width: 15px; height: 15px; }
+  .links a:hover .arr { translate: 2px 0; }
+  .arr { transition: translate .2s cubic-bezier(.2, .9, .25, 1); }
 
   @media (max-width: 700px) {
-    .hero-app { margin-top: 56px; }
-    .statement { margin-top: 88px; }
-    .chapter, .start { margin-top: 100px; }
-    .start ol { grid-template-columns: 1fr; gap: 22px; }
+    .hero-app { margin-top: 48px; }
+    .statement { margin-top: 96px; }
+    .chapter { margin-top: 104px; }
+    .signoff { margin-top: 112px; }
   }
 </style>

@@ -11,7 +11,8 @@
     "extension:zip": "node scripts/zip-extension.mjs",
     "test:ui": "playwright test",
     "site": "astro dev --root site",
-    "shots": "node scripts/shots.mjs"
+    "shots": "node scripts/shots.mjs",
+    "clips": "node scripts/clips.mjs"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

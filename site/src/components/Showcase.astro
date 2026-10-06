@@ -13,6 +13,7 @@ const uid = id ?? `sc-${kind}`;
     <Paint kind={kind} />
     {tabs.length > 1 && (
       <div class="tabs" role="tablist" aria-label="Views">
+        <span class="ind" aria-hidden="true"></span>
         {tabs.map((t, i) => (
           <button type="button" role="tab" id={`${uid}-t${i}`} aria-controls={`${uid}-p${i}`} aria-selected={i === 0 ? "true" : "false"} tabindex={i === 0 ? 0 : -1}>{t.label}</button>
         ))}
@@ -30,29 +31,34 @@ const uid = id ?? `sc-${kind}`;
   .showcase { margin: 36px 0 0; }
   .panel { display: flex; flex-direction: column; }
   .tabs { position: relative; z-index: 2; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: rgb(255 255 255 / .34); backdrop-filter: blur(18px) saturate(1.4); -webkit-backdrop-filter: blur(18px) saturate(1.4); border-bottom: 1px solid rgb(255 255 255 / .35); }
-  .tabs button { appearance: none; border: 0; background: transparent; padding: 15px 10px; font: 600 14.5px/1.2 var(--f-body); color: rgb(20 24 22 / .62); cursor: pointer; transition: color .2s, background .2s; position: relative; }
-  .tabs button + button { box-shadow: inset 1px 0 rgb(255 255 255 / .35); }
-  .tabs button:hover { color: rgb(20 24 22 / .9); }
-  .tabs button[aria-selected="true"] { color: #141816; background: rgb(255 255 255 / .5); }
+  .tabs button { appearance: none; border: 0; background: transparent; padding: 15px 10px; font: 600 14.5px/1.2 var(--f-body); color: rgb(20 24 22 / .58); cursor: pointer; transition: color .25s ease; position: relative; z-index: 1; -webkit-tap-highlight-color: transparent; }
+  .tabs button:hover { color: rgb(20 24 22 / .85); }
+  .tabs button[aria-selected="true"] { color: #141816; }
+  .tabs button:focus-visible { outline-offset: -4px; }
+  .ind { position: absolute; left: 0; top: 0; bottom: 0; width: var(--iw, 0); translate: var(--ix, 0) 0; background: rgb(255 255 255 / .55); box-shadow: inset 0 -2px 0 rgb(20 24 22 / .82); transition: translate .45s cubic-bezier(.2, .9, .25, 1), width .45s cubic-bezier(.2, .9, .25, 1); }
+  .ind.still { transition: none; }
   .stage { position: relative; height: var(--h); }
-  .pane { position: absolute; inset: 0; display: grid; place-items: center; padding: 40px 32px; opacity: 0; transform: translateY(8px) scale(.99); transition: opacity .32s ease, transform .42s cubic-bezier(.2, .8, .2, 1); pointer-events: none; }
-  .pane[data-on] { opacity: 1; transform: none; pointer-events: auto; }
+  .pane { position: absolute; inset: 0; display: grid; place-items: center; padding: 40px 32px; opacity: 0; transform: translateY(10px) scale(.985); filter: blur(6px); transition: opacity .3s ease, transform .5s cubic-bezier(.2, .9, .25, 1), filter .35s ease; pointer-events: none; }
+  .pane[data-on] { opacity: 1; transform: none; filter: none; pointer-events: auto; transition-delay: .06s; }
   .cap { text-align: center; font-size: 13px; color: var(--faint); margin: 14px auto 0; max-width: 34rem; min-height: 1.6em; text-wrap: balance; }
   @media (prefers-color-scheme: dark) {
     :global(:root:not([data-theme="light"])) .tabs { background: rgb(14 17 16 / .42); border-bottom-color: rgb(255 255 255 / .08); }
     :global(:root:not([data-theme="light"])) .tabs button { color: rgb(232 236 233 / .6); }
-    :global(:root:not([data-theme="light"])) .tabs button + button { box-shadow: inset 1px 0 rgb(255 255 255 / .07); }
-    :global(:root:not([data-theme="light"])) .tabs button[aria-selected="true"] { color: #E8ECE9; background: rgb(255 255 255 / .08); }
+    :global(:root:not([data-theme="light"])) .tabs button[aria-selected="true"] { color: #E8ECE9; }
+    :global(:root:not([data-theme="light"])) .tabs button:hover { color: rgb(232 236 233 / .88); }
+    :global(:root:not([data-theme="light"])) .ind { background: rgb(255 255 255 / .07); box-shadow: inset 0 -2px 0 rgb(232 236 233 / .85); }
   }
   :global(:root[data-theme="dark"]) .tabs { background: rgb(14 17 16 / .42); border-bottom-color: rgb(255 255 255 / .08); }
   :global(:root[data-theme="dark"]) .tabs button { color: rgb(232 236 233 / .6); }
-  :global(:root[data-theme="dark"]) .tabs button[aria-selected="true"] { color: #E8ECE9; background: rgb(255 255 255 / .08); }
+  :global(:root[data-theme="dark"]) .tabs button[aria-selected="true"] { color: #E8ECE9; }
+  :global(:root[data-theme="dark"]) .tabs button:hover { color: rgb(232 236 233 / .88); }
+  :global(:root[data-theme="dark"]) .ind { background: rgb(255 255 255 / .07); box-shadow: inset 0 -2px 0 rgb(232 236 233 / .85); }
   @media (max-width: 640px) {
     .stage { height: var(--hm); }
     .pane { padding: 24px 16px; }
     .tabs button { padding: 13px 4px; font-size: 13px; }
   }
-  @media (prefers-reduced-motion: reduce) { .pane { transition: opacity .2s; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .pane { transition: opacity .2s; transform: none; filter: none; } .ind { transition: none; } }
 </style>
 <script>
   for (const sc of document.querySelectorAll<HTMLElement>("[data-showcase]")) {
@@ -60,7 +66,13 @@ const uid = id ?? `sc-${kind}`;
     const panes = [...sc.querySelectorAll<HTMLElement>(".pane")];
     const cap = sc.querySelector("figcaption");
     const caps: string[] = JSON.parse(sc.dataset.caps || "[]");
+    const ind = sc.querySelector<HTMLElement>(".ind");
+    let cur = 0;
+    const place = () => { const t = tabs[cur]; if (ind && t) { ind.style.setProperty("--ix", `${t.offsetLeft}px`); ind.style.setProperty("--iw", `${t.offsetWidth}px`); } };
+    if (ind) { ind.classList.add("still"); place(); requestAnimationFrame(() => ind.classList.remove("still")); new ResizeObserver(() => { ind.classList.add("still"); place(); requestAnimationFrame(() => ind.classList.remove("still")); }).observe(sc); }
     const pick = (i: number, focus = false) => {
+      if (i === cur && !focus) return;
+      cur = i; place();
       tabs.forEach((t, j) => { t.setAttribute("aria-selected", String(i === j)); t.tabIndex = i === j ? 0 : -1; });
       panes.forEach((p, j) => { p.toggleAttribute("data-on", i === j); p.inert = i !== j; });
       if (cap && caps[i]) cap.textContent = caps[i];

@@ -26,7 +26,9 @@ const hills = [
   </g>
 </svg>
 <style>
-  .paint { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; display: block; }
+  .paint { position: absolute; inset: -4%; width: 108%; height: 108%; z-index: -1; display: block; animation: drift 38s ease-in-out infinite alternate; will-change: transform; }
+  @keyframes drift { from { transform: translate3d(-1.5%, 0, 0) scale(1); } to { transform: translate3d(1.5%, -1%, 0) scale(1.04); } }
+  @media (prefers-reduced-motion: reduce) { .paint { animation: none; } }
   .b1 { translate: var(--p1); } .b2 { translate: var(--p2); } .b3 { translate: var(--p3); }
 
   .dawn { --s0: #CFE0F2; --s1: #FBE3D2; --b1: #FFC4A8; --b2: #F7D6F0; --b3: #FFFFFF; --p1: 560px 330px; --p2: 140px 110px; --p3: 660px 60px;

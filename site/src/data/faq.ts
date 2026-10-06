@@ -1,5 +1,6 @@
 export const FAQ: { q: string; a: string }[] = [
-  { q: "Is Pomodoro Ledger free?", a: "Yes. There's no account to create and no ads. Open the app and start a round." },
+  { q: "How is this different from a time tracker?", a: "You don't log anything. Focus on a task and every round is written down for you, next to the rounds you planned. The record builds itself while you work." },
+  { q: "Is Pomodoro Ledger free?", a: "Right now, everything is free. A paid plan with extras will come later." },
   { q: "Do I need an account?", a: "No. Your tasks and history are saved in your browser on this device. You can export everything to a file at any time and import it again somewhere else." },
   { q: "Does it work offline?", a: "Yes. After your first visit the app opens without a connection, and you can install it from your browser so it starts like any other app. Rooms need a connection." },
   { q: "Does it work on my phone?", a: "Yes. Add it to your home screen and it opens full screen, with its own timer page and tabs at the bottom." },

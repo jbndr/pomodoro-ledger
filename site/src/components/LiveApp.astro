@@ -19,23 +19,22 @@ const [dl, dd, pl, pd] = await Promise.all([
   <div class="win">
     <div class="chrome" aria-hidden="true"><i></i><i></i><i></i><span>{host}/app</span></div>
     <div class="frame" data-frame>
-      <picture class="poster">
-        <source media="(max-width: 700px) and (prefers-color-scheme: dark)" srcset={pd.srcSet.attribute} />
-        <source media="(max-width: 700px)" srcset={pl.srcSet.attribute} />
-        <source media="(prefers-color-scheme: dark)" srcset={dd.srcSet.attribute} />
-        <img src={dl.src} srcset={dl.srcSet.attribute} width="1280" height="800" alt={alt} fetchpriority="high" />
-      </picture>
+      <div class="poster">
+        <picture class="on-light"><source media="(max-width: 700px)" srcset={pl.srcSet.attribute} /><img src={dl.src} srcset={dl.srcSet.attribute} width="1280" height="800" alt={alt} loading="lazy" /></picture>
+        <picture class="on-dark"><source media="(max-width: 700px)" srcset={pd.srcSet.attribute} /><img src={dd.src} srcset={dd.srcSet.attribute} width="1280" height="800" alt="" aria-hidden="true" loading="lazy" /></picture>
+        <script is:inline>for (const p of document.currentScript.parentElement.querySelectorAll("picture")) if (getComputedStyle(p).display !== "none") { const i = p.querySelector("img"); i.loading = "eager"; i.fetchPriority = "high"; }</script>
+      </div>
     </div>
     <button class="try" type="button" data-try>
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7.5-4.5z" fill="currentColor" /></svg>
       Try it right here
     </button>
-    <a class="try phone-only" href="/app/?demo=1">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7.5-4.5z" fill="currentColor" /></svg>
-      Try the demo
-    </a>
     <span class="badge" aria-hidden="true">Live demo · nothing is saved</span>
   </div>
+  <a class="try phone-only" href="/app/?demo=1">
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7.5-4.5z" fill="currentColor" /></svg>
+    Try the demo
+  </a>
 </div>
 <style>
   .live { position: relative; padding: 56px 56px 0; border-radius: 26px; }
@@ -45,8 +44,17 @@ const [dl, dd, pl, pd] = await Promise.all([
   .chrome i { width: 11px; height: 11px; border-radius: 50%; background: var(--line-2); }
   .chrome span { margin: 0 auto; transform: translateX(-22px); font: 500 12px/1 var(--f-body); color: var(--faint); background: var(--surface); border: 1px solid var(--line); padding: 6px 14px; border-radius: 7px; min-width: 40%; text-align: center; }
   .frame { position: relative; aspect-ratio: 1280 / 800; overflow: hidden; background: #EDEFEC; }
-  @media (prefers-color-scheme: dark) { .frame { background: #0E1110; } }
+  @media (prefers-color-scheme: dark) { :global(:root:not([data-theme="light"])) .frame { background: #0E1110; } }
+  :global(:root[data-theme="dark"]) .frame { background: #0E1110; }
+  .live { perspective: 1800px; }
+  @media (prefers-reduced-motion: no-preference) and (min-width: 701px) {
+    @supports (animation-timeline: view()) {
+      .win { transform-origin: 50% 0; animation: settle linear both; animation-timeline: view(); animation-range: entry 0% cover 42%; }
+      @keyframes settle { from { transform: rotateX(14deg) translateY(28px) scale(.96); } to { transform: none; } }
+    }
+  }
   .poster { position: absolute; inset: 0; transition: opacity .5s ease; }
+  .poster picture { position: absolute; inset: 0; }
   .poster img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
   .frame :global(iframe) { position: absolute; top: 0; left: 0; width: 1280px; height: 800px; border: 0; transform-origin: 0 0; transform: scale(var(--s, 1)); opacity: 0; transition: opacity .5s ease; }
   .live.on .frame :global(iframe) { opacity: 1; }
@@ -70,7 +78,8 @@ const [dl, dd, pl, pd] = await Promise.all([
     .chrome, .badge { display: none; }
     .frame { aspect-ratio: 390 / 844; border-radius: 31px; }
     .try:not(.phone-only) { display: none; }
-    .phone-only { display: inline-flex; bottom: 92px; white-space: nowrap; }
+    .phone-only { display: flex; position: relative; left: auto; bottom: auto; translate: none; width: max-content; margin: 20px auto 0; white-space: nowrap; }
+    .live { padding-bottom: 24px; }
   }
 </style>
 <script>
