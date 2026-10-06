@@ -9,9 +9,13 @@
   const frac = $derived(timerView.up === "over" || timerView.up === "flow" ? 1 : fraction(timerView.rem, timerView.total));
   const secs = $derived(timerView.up ? Math.floor(timerView.rem / 1000) : Math.ceil(timerView.rem / 1000));
   const chars = $derived([...(timerView.up === "over" ? "+" : "") + clock(secs)]);
-  // Flow is a stopwatch face: no ring, and the ticks light one per second, starting over each minute.
-  const lit = $derived(timerView.up === "flow" ? (timerView.rem > 0 ? (Math.floor(timerView.rem / 1000) % 60) + 1 : 0) : litTicks(frac));
-  const knob = $derived(knobAt(frac));
+  // Flow keeps a quiet full ring; its knob is a second hand that circles once a minute, so nothing suggests an end.
+  const lit = $derived(timerView.up === "flow" ? 0 : litTicks(frac));
+  const knob = $derived.by(() => {
+    if (timerView.up !== "flow") return knobAt(frac);
+    const a = ((timerView.rem / 1000) % 60) / 60 * Math.PI * 2;
+    return { cx: +(150 + Math.sin(a) * 112).toFixed(2), cy: +(150 - Math.cos(a) * 112).toFixed(2) };
+  });
 
   // ±min rolls the digits that changed. A new phase changes them in place, under the phase-change motion; seconds keep still.
   let timeEl, before = [], beforeSecs = 0, seen = -1, beforeKey = "";

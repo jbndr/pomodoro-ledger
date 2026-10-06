@@ -1453,8 +1453,8 @@ body:not(.zen) .timer-card.timer-card #adjust.off { visibility: hidden; }
 .nudge.done { cursor: default; background: transparent; color: var(--faint); }
 .nudge.done i { background: var(--accent); border-color: var(--accent); }
 @keyframes nudge-in { from { opacity: 0; translate: 0 4px; } }
-/* Flow: a stopwatch face. No ring or knob, so nothing suggests an end; the ticks carry the seconds. */
-.dial-wrap.flow .dial :is(.track, .arc, .knob) { display: none; }
+/* Flow: a quiet full ring with a second hand; nothing suggests an end. */
+.dial-wrap.flow .dial .arc { stroke: color-mix(in oklab, var(--accent) 30%, var(--surface-2)); }
 .nudge-row { gap: 10px; }
 .nudge-copy { flex: 1; min-width: 0; display: grid; gap: 3px; }
 .nudge-copy select { justify-self: start; height: 26px; padding: 0 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-size: 12.5px; }
@@ -1463,3 +1463,4 @@ body:not(.zen) .timer-card.timer-card #adjust.off { visibility: hidden; }
 .nudge-add input { flex: 1; min-width: 0; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); font-size: 14px; }
 .recap-nudges { margin: -4px 0 0; font-size: 13px; color: var(--muted); }
 .modes button[data-mode="flow"] { --c: var(--tomato); }
+.dial-wrap.flow .dial .knob { transition: cx .25s linear, cy .25s linear; }
