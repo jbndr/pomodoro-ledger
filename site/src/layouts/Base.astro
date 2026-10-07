@@ -6,7 +6,7 @@ const { title, description = SITE.tagline, noindex = false, returning = false } 
 const full = title ? `${title} · ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const path = Astro.url.pathname.replace(/\/$/, "") || "/";
-const nav = [["/features", "Features"], ["/changelog", "Changelog"], ["/devlog", "Devlog"]];
+const nav = [["/features", "Features"], ["/#faq", "FAQ"]];
 const on = (h: string) => (path === h || path.startsWith(h + "/") ? "page" : undefined);
 ---
 <!doctype html>
@@ -30,8 +30,6 @@ const on = (h: string) => (path === h || path.startsWith(h + "/") ? "page" : und
 <meta name="theme-color" content="#0E1110" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<link rel="alternate" type="application/rss+xml" title="Pomodoro Ledger changelog" href="/changelog/rss.xml">
-<link rel="alternate" type="application/rss+xml" title="Pomodoro Ledger devlog" href="/devlog/rss.xml">
 <link rel="sitemap" href="/sitemap-index.xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -61,7 +59,6 @@ const on = (h: string) => (path === h || path.startsWith(h + "/") ? "page" : und
   <div class="col">
     <div class="grid">
       <nav aria-labelledby="fProduct"><h2 id="fProduct">Product</h2><ul><li><a href={SITE.app}>Open the app</a></li><li><a href="/app/?demo=1">Try the demo</a></li><li><a href="/features">Features</a></li></ul></nav>
-      <nav aria-labelledby="fUpdates"><h2 id="fUpdates">Updates</h2><ul><li><a href="/changelog">Changelog</a></li><li><a href="/devlog">Devlog</a></li><li><a href="/changelog/rss.xml">RSS</a></li></ul></nav>
       <nav aria-labelledby="fMore"><h2 id="fMore">More</h2><ul><li><a href="/#faq">FAQ</a></li><li><a href="/sitemap-index.xml">Sitemap</a></li></ul></nav>
     </div>
     <div class="base"><span>Made in a lot of 25-minute rounds.</span><span>© {new Date().getFullYear()} {SITE.name}</span></div>

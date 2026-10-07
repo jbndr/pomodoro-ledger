@@ -1,5 +1,4 @@
 ---
-import { getCollection } from "astro:content";
 import Base from "../layouts/Base.astro";
 import LiveApp from "../components/LiveApp.astro";
 import Showcase from "../components/Showcase.astro";
@@ -60,14 +59,6 @@ import pipD from "../assets/clips/pip-dark.mp4";
 import pipPL from "../assets/clips/pip-light.webp";
 import pipPD from "../assets/clips/pip-dark.webp";
 
-const log = (await getCollection("changelog")).sort((a, b) => b.data.n - a.data.n);
-const latest = log.slice(0, 5);
-const first = log[log.length - 1].data.date, last = log[0].data.date;
-const day = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-const days = Math.round((day(last) - day(first)) / 864e5) + 1;
-const short = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-const since = first.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });
-
 const icon = {
   timer: '<circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.3 1.6M9.5 3h5"/>',
   stopwatch: '<circle cx="12" cy="14" r="7"/><path d="M12 7V4M10 3h4M18 8l1.5-1.5M12 14l2.5-2.5"/>',
@@ -89,14 +80,12 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
 ---
 <Base returning description="Plan your day in Pomodoro rounds and see how long tasks really take. Every focus session is written down per task and label. Works in your browser, no account needed.">
   <section class="hero col">
-    <a class="pill" href="/changelog"><span class="dot"></span>{log.length} releases since {since}<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
     <h1>Find out how long things really take</h1>
     <p class="lede">Pomodoro Ledger is a focus timer that keeps the books. Plan your day in rounds, focus on your own or in a room with others, and every round is written down, so your estimates get honest and your week adds up. In your browser, no account needed.</p>
     <div class="cta">
       <a class="btn primary" href={SITE.app}>Open the app</a>
       <a class="btn" href="/app/?demo=1">Try the demo</a>
     </div>
-    <p class="latest"><span>New</span> <a href={`/changelog#${latest[0].data.n}`}>{latest[0].data.title}</a> · {short(latest[0].data.date)}</p>
   </section>
 
   <section class="hero-app col wide">
@@ -283,18 +272,6 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     </ul>
   </section>
 
-  <section class="col chapter" id="open" style="--c: var(--fg)">
-    <span class="label">Changelog</span>
-    <h2>Built in the open</h2>
-    <p>Pomodoro Ledger gets better in small steps, almost every day. <mark>{log.length} releases in {days} days</mark>, and every one of them is in the <a href="/changelog">changelog</a>.</p>
-    <ol class="log">
-      {latest.map((e) => (
-        <li><time datetime={e.data.date.toISOString()}>{short(e.data.date)}</time><a href={`/changelog#${e.data.n}`}>{e.data.title}</a></li>
-      ))}
-    </ol>
-    <p class="more"><a href="/changelog">All releases</a><a href="/devlog">Devlog</a><a href="/changelog/rss.xml">RSS</a></p>
-  </section>
-
   <section class="col chapter" id="faq">
     <h2 class="center">Questions</h2>
     <Faq />
@@ -310,18 +287,9 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
 </Base>
 <style>
   .hero { padding-top: clamp(48px, 8vw, 88px); }
-  .pill { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 10px 0 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); font: 500 13px/1 var(--f-body); color: var(--muted); text-decoration: none; transition: border-color .18s, color .18s; }
-  .pill:hover { color: var(--fg); border-color: var(--line-2); }
-  .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--tomato); }
-  .pill svg { width: 13px; height: 13px; transition: translate .2s cubic-bezier(.2, .9, .25, 1); }
-  .pill:hover svg { translate: 2px 0; }
-  h1 { font-size: clamp(38px, 6vw, 58px); line-height: 1.02; letter-spacing: -.038em; margin-top: 22px; max-width: 12em; }
+  h1 { font-size: clamp(38px, 6vw, 58px); line-height: 1.02; letter-spacing: -.038em; margin: 0; max-width: 12em; }
   .lede { font-size: 18px; line-height: 1.55; color: var(--muted); margin: 20px 0 28px; max-width: 35rem; }
   .cta { display: flex; gap: 8px; flex-wrap: wrap; }
-  .latest { margin: 20px 0 0; font-size: 13px; color: var(--faint); }
-  .latest span { display: inline-block; font-weight: 600; font-size: 11.5px; color: var(--tomato); background: color-mix(in oklab, var(--tomato) 12%, transparent); padding: 3px 6px; border-radius: 5px; margin-right: 4px; }
-  .latest a { color: var(--muted); text-decoration: none; transition: color .18s; }
-  .latest a:hover { color: var(--fg); }
 
   .hero-app { margin-top: 72px; }
   .wide { --col: 64rem; }
@@ -346,13 +314,6 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
   .checks li::before { background: color-mix(in oklab, var(--c) 15%, transparent); }
   .checks li::after { background: var(--c); --m: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6 10.5l2.7 2.6L14 7.5' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); -webkit-mask: var(--m) center / 15px no-repeat; mask: var(--m) center / 15px no-repeat; }
 
-  .log { list-style: none; margin: 26px 0 0; padding: 0; border-top: 1px solid var(--line); }
-  .log li { display: grid; grid-template-columns: 4.5rem 1fr; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
-  .log time { color: var(--faint); font-variant-numeric: tabular-nums; }
-  .log a { text-decoration: none; transition: color .18s; }
-  .log a:hover { color: var(--tomato); }
-  .chapter > p.more { display: flex; gap: 18px; font-size: 14px; margin-top: 16px; }
-  .chapter > p.more a { color: var(--muted); }
 
   .center { text-align: center; margin-bottom: 28px; }
 
