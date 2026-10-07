@@ -1,0 +1,45 @@
+---
+import Base from "../layouts/Base.astro";
+import { AREAS } from "../data/features";
+import { SITE } from "../lib";
+const count = AREAS.reduce((n, a) => n + a.items.length, 0);
+---
+<Base title="Features" description="Everything Pomodoro Ledger does: a calm Pomodoro timer, planning in rounds, a ledger of your focus, rooms and soundscapes.">
+  <div class="col">
+    <header class="page-head">
+      <h1>Everything it does</h1>
+      <p>{count} things, all working in your browser today. No account, nothing to install.</p>
+      <nav class="jump" aria-label="Areas">{AREAS.map((a) => <a href={`#${a.key}`} style={`--c:${a.color}`}><i></i>{a.label}</a>)}</nav>
+    </header>
+    {AREAS.map((a) => (
+      <section class="area" id={a.key} style={`--c:${a.color}`}>
+        <span class="label">{a.label}</span>
+        <h2>{a.title}</h2>
+        <p class="lede">{a.lede}</p>
+        <ul class="items">
+          {a.items.map((f) => (
+            <li><span class="dot" aria-hidden="true"></span><span><b>{f.title}</b><span>{f.blurb}</span></span></li>
+          ))}
+        </ul>
+      </section>
+    ))}
+    <p class="end"><a class="btn primary" href={SITE.app}>Open the app</a><a class="btn" href="/app/?demo=1">Try the demo</a></p>
+  </div>
+</Base>
+<style>
+  .jump { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .jump a { display: inline-flex; align-items: center; gap: 7px; text-decoration: none; font-size: 13.5px; padding: 6px 12px 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); transition: color .15s, border-color .15s; }
+  .jump a:hover { color: var(--fg); border-color: var(--line-2); }
+  .jump i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+  .area { padding: 56px 0 0; scroll-margin-top: 64px; }
+  .area h2 { font-size: clamp(26px, 3.6vw, 32px); }
+  .lede { color: var(--muted); font-size: 16px; margin: 10px 0 0; }
+  .items { list-style: none; margin: 26px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 22px 28px; }
+  .items li { display: flex; gap: 12px; }
+  .items .dot { width: 26px; height: 26px; border-radius: 8px; flex: none; margin-top: 1px; background: color-mix(in oklab, var(--c) 14%, var(--surface)); border: 1px solid color-mix(in oklab, var(--c) 22%, transparent); position: relative; }
+  .items .dot::after { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: var(--c); }
+  .items b { display: block; font: 600 15px/1.3 var(--f-body); margin-bottom: 3px; }
+  .items li > span:last-child > span { display: block; font-size: 14.5px; line-height: 1.5; color: var(--muted); }
+  .end { display: flex; gap: 10px; justify-content: center; margin: 72px 0 0; }
+  @media (max-width: 640px) { .items { grid-template-columns: 1fr; } }
+</style>

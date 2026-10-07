@@ -9,12 +9,12 @@
       "custom_domain": true
     }
   ],
-  // The page is built by Vite into ./dist; only /api/* (rooms and sync) reaches the Worker.
+  // Astro builds the site into ./dist and Vite the app into ./dist/app; /api/* and / (old invite links) reach the Worker.
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/", "/api/*"]
   },
   // Cloudflare Access app protecting /api/sync. See README → Sync between devices.
   "vars": {

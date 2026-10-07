@@ -1,0 +1,37 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import { day } from "../../lib";
+const entries = (await getCollection("changelog")).sort((a, b) => b.data.n - a.data.n);
+const days = new Map<string, typeof entries>();
+for (const e of entries) {
+  const k = e.data.date.toISOString().slice(0, 10);
+  days.set(k, [...(days.get(k) ?? []), e]);
+}
+---
+<Base title="Changelog" description="Every change to Pomodoro Ledger, newest first.">
+  <div class="col">
+    <header class="page-head">
+      <h1>Every change, as it ships</h1>
+      <p>{entries.length} releases so far. Follow along with <a href="/changelog/rss.xml">RSS</a>.</p>
+    </header>
+    {[...days].map(([k, list]) => (
+      <section class="day">
+        <h2><time datetime={k}>{day(list[0].data.date)}</time></h2>
+        <ol>
+          {list.map((e) => <li id={String(e.data.n)}>{e.data.title}</li>)}
+        </ol>
+      </section>
+    ))}
+  </div>
+</Base>
+<style>
+  .day { display: grid; grid-template-columns: 12rem 1fr; gap: 32px; padding: 28px 0; border-top: 1px solid var(--line); }
+  .day h2 { font: 500 14.5px/1.6 var(--f-body); color: var(--faint); position: sticky; top: 80px; align-self: start; letter-spacing: 0; }
+  ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  li { scroll-margin-top: 80px; font: 500 16px/1.5 var(--f-body); padding-left: 18px; position: relative; transition: color .2s; }
+  li::before { content: ""; position: absolute; left: 0; top: .65em; width: 6px; height: 6px; border-radius: 50%; background: var(--line-2); }
+  li:target { color: var(--tomato); }
+  li:target::before { background: var(--tomato); }
+  @media (max-width: 680px) { .day { grid-template-columns: 1fr; gap: 12px; } .day h2 { position: static; } }
+</style>

@@ -36,7 +36,7 @@ $("back").addEventListener("click", async () => {
   try { r = await ext.runtime.sendMessage({ type: "focusApp" }); } catch {}
   if (r?.ok) return;
   const { app } = await ext.storage.local.get("app");
-  location.href = app ? app + "/" : APP_URL;
+  location.href = app ? app + "/app/" : APP_URL;
 });
 
 $("pass").addEventListener("click", async () => {

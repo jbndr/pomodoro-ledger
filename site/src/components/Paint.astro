@@ -1,0 +1,65 @@
+---
+export type Kind = "dawn" | "dusk" | "meadow" | "sky" | "violet" | "ember" | "lagoon";
+interface Props { kind: Kind }
+const { kind } = Astro.props;
+const id = `pt-${kind}-${Math.random().toString(36).slice(2, 7)}`;
+const hills = [
+  "M0 318 C110 286 230 292 360 314 C500 338 630 284 800 296 L800 500 L0 500Z",
+  "M0 382 C140 346 290 362 430 390 C560 414 690 366 800 374 L800 500 L0 500Z",
+  "M0 446 C170 418 330 436 480 452 C620 466 730 438 800 442 L800 500 L0 500Z",
+];
+---
+<svg class={`paint ${kind}`} viewBox="0 0 800 500" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id={`${id}-sky`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--s0)" /><stop offset="1" stop-color="var(--s1)" /></linearGradient>
+    <filter id={`${id}-glow`} x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="48" /></filter>
+    <filter id={`${id}-soft`} x="-5%" y="-20%" width="110%" height="140%"><feGaussianBlur stdDeviation="4" /></filter>
+  </defs>
+  <rect width="800" height="500" fill={`url(#${id}-sky)`} />
+  <g filter={`url(#${id}-glow)`}>
+    <ellipse class="b1" rx="230" ry="170" fill="var(--b1)" />
+    <ellipse class="b2" rx="210" ry="150" fill="var(--b2)" />
+    <ellipse class="b3" rx="190" ry="140" fill="var(--b3)" />
+  </g>
+  <g filter={`url(#${id}-soft)`}>
+    {hills.map((d, i) => <path d={d} fill={`var(--h${i + 1})`} />)}
+  </g>
+</svg>
+<style>
+  .paint { position: absolute; inset: -4%; width: 108%; height: 108%; z-index: -1; display: block; animation: drift 38s ease-in-out infinite alternate; will-change: transform; }
+  @keyframes drift { from { transform: translate3d(-1.5%, 0, 0) scale(1); } to { transform: translate3d(1.5%, -1%, 0) scale(1.04); } }
+  @media (prefers-reduced-motion: reduce) { .paint { animation: none; } }
+  .b1 { translate: var(--p1); } .b2 { translate: var(--p2); } .b3 { translate: var(--p3); }
+
+  .dawn { --s0: #CFE0F2; --s1: #FBE3D2; --b1: #FFC4A8; --b2: #F7D6F0; --b3: #FFFFFF; --p1: 560px 330px; --p2: 140px 110px; --p3: 660px 60px;
+    --h1: #B9D6C9; --h2: #93C2AB; --h3: #6FA98E; }
+  .dusk { --s0: #E9D3F0; --s1: #FFB592; --b1: #FF7A4D; --b2: #F59AC8; --b3: #FFD39A; --p1: 230px 360px; --p2: 680px 120px; --p3: 470px 250px;
+    --h1: #D9837A; --h2: #B85A5C; --h3: #8E3F4A; }
+  .meadow { --s0: #CDE6F5; --s1: #F6F1C9; --b1: #FFF2A6; --b2: #FFFFFF; --b3: #BFE7D0; --p1: 600px 250px; --p2: 180px 90px; --p3: 380px 300px;
+    --h1: #A8D7A4; --h2: #77BC86; --h3: #4E9A6C; }
+  .sky { --s0: #8DB7F2; --s1: #DCEBFC; --b1: #FFFFFF; --b2: #FFF5D6; --b3: #F1F6FF; --p1: 200px 160px; --p2: 640px 90px; --p3: 520px 330px;
+    --h1: #C4D9F5; --h2: #A9C6EE; --h3: #8DB2E6; }
+  .violet { --s0: #8D8AF0; --s1: #F3C8E8; --b1: #C6A2FF; --b2: #FF9BCB; --b3: #A8C2FF; --p1: 180px 330px; --p2: 650px 200px; --p3: 420px 60px;
+    --h1: #9C86E6; --h2: #7D63D3; --h3: #5E46B4; }
+  .lagoon { --s0: #BFE9E4; --s1: #F3F7E8; --b1: #8FE0C8; --b2: #FFFFFF; --b3: #B8E1F5; --p1: 560px 160px; --p2: 160px 300px; --p3: 680px 380px;
+    --h1: #9FD8C6; --h2: #6CC1A7; --h3: #3F9E84; }
+  .ember { --s0: #2A1F3D; --s1: #6B2E25; --b1: #FF8A3D; --b2: #FFC46B; --b3: #B3415B; --p1: 400px 470px; --p2: 300px 420px; --p3: 680px 160px;
+    --h1: #4A2A36; --h2: #35202B; --h3: #24161E; }
+
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme="light"])) .dawn { --s0: #0E1A2E; --s1: #2B1B30; --b1: #E8643F; --b2: #5B44B0; --b3: #1F5C8E; --h1: #1D4040; --h2: #163332; --h3: #102625; }
+    :global(:root:not([data-theme="light"])) .dusk { --s0: #1D1433; --s1: #4D1E26; --b1: #E5532F; --b2: #8E2F6B; --b3: #C27A2E; --h1: #5C2532; --h2: #441A2B; --h3: #2E1220; }
+    :global(:root:not([data-theme="light"])) .meadow { --s0: #0D1D2B; --s1: #1C2A22; --b1: #B9A653; --b2: #2D5C79; --b3: #3C8A62; --h1: #1F4A35; --h2: #173B2B; --h3: #102C1F; }
+    :global(:root:not([data-theme="light"])) .sky { --s0: #0A1530; --s1: #1B3460; --b1: #3D6BC7; --b2: #7F9BE0; --b3: #23407F; --h1: #1A2E57; --h2: #142547; --h3: #0E1B36; }
+    :global(:root:not([data-theme="light"])) .violet { --s0: #16113A; --s1: #3B1846; --b1: #6E4BD8; --b2: #B03A86; --b3: #3A55C9; --h1: #2B1E66; --h2: #221852; --h3: #19113F; }
+    :global(:root:not([data-theme="light"])) .lagoon { --s0: #0B2226; --s1: #142B26; --b1: #2E8F7A; --b2: #6FB3A8; --b3: #22597A; --h1: #1A4A40; --h2: #143B33; --h3: #0E2C26; }
+    :global(:root:not([data-theme="light"])) .ember { --s0: #1B1428; --s1: #4F2019; --b1: #F07A35; --b2: #FFB45E; --b3: #9A3550; --h1: #3A222C; --h2: #2A1922; --h3: #1C1117; }
+  }
+  :global(:root[data-theme="dark"]) .dawn { --s0: #0E1A2E; --s1: #2B1B30; --b1: #E8643F; --b2: #5B44B0; --b3: #1F5C8E; --h1: #1D4040; --h2: #163332; --h3: #102625; }
+  :global(:root[data-theme="dark"]) .dusk { --s0: #1D1433; --s1: #4D1E26; --b1: #E5532F; --b2: #8E2F6B; --b3: #C27A2E; --h1: #5C2532; --h2: #441A2B; --h3: #2E1220; }
+  :global(:root[data-theme="dark"]) .meadow { --s0: #0D1D2B; --s1: #1C2A22; --b1: #B9A653; --b2: #2D5C79; --b3: #3C8A62; --h1: #1F4A35; --h2: #173B2B; --h3: #102C1F; }
+  :global(:root[data-theme="dark"]) .sky { --s0: #0A1530; --s1: #1B3460; --b1: #3D6BC7; --b2: #7F9BE0; --b3: #23407F; --h1: #1A2E57; --h2: #142547; --h3: #0E1B36; }
+  :global(:root[data-theme="dark"]) .violet { --s0: #16113A; --s1: #3B1846; --b1: #6E4BD8; --b2: #B03A86; --b3: #3A55C9; --h1: #2B1E66; --h2: #221852; --h3: #19113F; }
+  :global(:root[data-theme="dark"]) .lagoon { --s0: #0B2226; --s1: #142B26; --b1: #2E8F7A; --b2: #6FB3A8; --b3: #22597A; --h1: #1A4A40; --h2: #143B33; --h3: #0E2C26; }
+  :global(:root[data-theme="dark"]) .ember { --s0: #1B1428; --s1: #4F2019; --b1: #F07A35; --b2: #FFB45E; --b3: #9A3550; --h1: #3A222C; --h2: #2A1922; --h3: #1C1117; }
+</style>

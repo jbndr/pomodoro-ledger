@@ -1,0 +1,55 @@
+---
+import type { ImageMetadata } from "astro";
+type Frame = "card" | "window" | "none";
+interface Props { light: string; dark: string; posterLight: ImageMetadata; posterDark: ImageMetadata; label: string; w: number; radius?: string; frame?: Frame; fade?: boolean }
+const { light, dark, posterLight, posterDark, label, w, radius = "14px", frame = "card", fade = false } = Astro.props;
+const ratio = `${posterLight.width} / ${posterLight.height}`;
+---
+<div class:list={["clip", frame, { fade }]} style={`--w:${w}px;--ar:${ratio};--r:${radius}`} data-clip>
+  {frame === "window" && <div class="bar" aria-hidden="true"><i></i><i></i><i></i></div>}
+  <div class="screen">
+    <video class="on-light" muted loop playsinline preload="none" poster={posterLight.src} aria-label={label}><source src={light} type="video/mp4" /></video>
+    <video class="on-dark" muted loop playsinline preload="none" poster={posterDark.src} aria-label={label}><source src={dark} type="video/mp4" /></video>
+  </div>
+</div>
+<style>
+  .clip { width: min(var(--w), 100%); position: relative; }
+  .screen { position: relative; aspect-ratio: var(--ar); }
+  .screen video { display: block; position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: var(--r); background: transparent; }
+  .card .screen video { box-shadow: 0 0 0 1px rgb(20 24 22 / .06), 0 2px 4px rgb(20 24 22 / .06), 0 26px 50px -24px rgb(20 24 22 / .45); }
+  .none .screen { filter: drop-shadow(0 2px 3px rgb(20 24 22 / .1)) drop-shadow(0 24px 36px rgb(20 24 22 / .28)); }
+  .window { border-radius: 12px; overflow: hidden; background: var(--surface-2); box-shadow: 0 0 0 1px rgb(20 24 22 / .08), 0 2px 4px rgb(20 24 22 / .06), 0 30px 60px -28px rgb(20 24 22 / .5); }
+  .window .bar { display: flex; gap: 6px; align-items: center; height: 26px; padding: 0 11px; border-bottom: 1px solid var(--line); }
+  .window .bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-2); }
+  .window .screen video { border-radius: 0; }
+  .fade { -webkit-mask-image: linear-gradient(transparent, #000 28%); mask-image: linear-gradient(transparent, #000 28%); }
+  .fade .screen { filter: none; }
+</style>
+<script>
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  const clips = [...document.querySelectorAll<HTMLElement>("[data-clip]")];
+  const seen = new WeakSet<HTMLElement>();
+  const sync = () => {
+    for (const clip of clips) {
+      const pane = clip.closest<HTMLElement>(".pane");
+      const live = seen.has(clip) && (!pane || pane.hasAttribute("data-on")) && !document.hidden && !reduced.matches;
+      for (const v of clip.querySelectorAll("video")) {
+        const shown = getComputedStyle(v).display !== "none";
+        if (live && shown) { if (v.paused) { if (v.readyState === 0) v.load(); v.play().catch(() => {}); } }
+        else if (!v.paused) v.pause();
+      }
+    }
+  };
+  const io = new IntersectionObserver((es) => { for (const e of es) e.isIntersecting ? seen.add(e.target as HTMLElement) : seen.delete(e.target as HTMLElement); sync(); }, { threshold: 0.35 });
+  clips.forEach((c) => io.observe(c));
+  document.addEventListener("pane", (e) => {
+    const pane = (e.target as HTMLElement).querySelectorAll(".pane")[(e as CustomEvent<number>).detail];
+    pane?.querySelectorAll("video").forEach((v) => { if (v.readyState) v.currentTime = 0; });
+    sync();
+  }, true);
+  document.addEventListener("visibilitychange", sync);
+  new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", sync);
+  reduced.addEventListener("change", sync);
+  for (const clip of clips) for (const v of clip.querySelectorAll("video")) v.addEventListener("click", () => { if (reduced.matches) v.paused ? v.play() : v.pause(); });
+</script>

@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 test("a break carries one body nudge you can tick", async ({ page, isMobile }) => {
   test.skip(isMobile, "Same logic on phones");
   await page.clock.install({ time: new Date("2026-10-05T10:00:00") });
-  await page.goto("/?demo=1");
+  await page.goto("/app/?demo=1");
   await page.locator(".task").first().waitFor({ state: "attached" });
   await page.clock.runFor(3000);
   for (let i = 0; i < 3 && (await page.locator(".overlay:not([hidden])").count()); i++) await page.keyboard.press("Escape");
@@ -25,7 +25,7 @@ test("a break carries one body nudge you can tick", async ({ page, isMobile }) =
 test("your own nudge can be added in Settings", async ({ page, isMobile }) => {
   test.skip(isMobile, "Same logic on phones");
   await page.clock.install({ time: new Date("2026-10-05T10:00:00") });
-  await page.goto("/?demo=1");
+  await page.goto("/app/?demo=1");
   await page.locator(".task").first().waitFor({ state: "attached" });
   await page.clock.runFor(3000);
   for (let i = 0; i < 3 && (await page.locator(".overlay:not([hidden])").count()); i++) await page.keyboard.press("Escape");

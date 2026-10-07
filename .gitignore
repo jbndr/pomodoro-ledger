@@ -12,3 +12,4 @@ dist-extension/
 
 playwright-report/
 test-results/
+site/.astro
