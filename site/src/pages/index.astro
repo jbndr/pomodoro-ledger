@@ -23,6 +23,8 @@ import ledgerL from "../assets/shots/ledger-light.webp";
 import ledgerD from "../assets/shots/ledger-dark.webp";
 import ledgerPL from "../assets/shots/ledger-phone-light.webp";
 import ledgerPD from "../assets/shots/ledger-phone-dark.webp";
+import coverL from "../assets/shots/year-cover-light.webp";
+import coverD from "../assets/shots/year-cover-dark.webp";
 import estL from "../assets/shots/estimates-light.webp";
 import estD from "../assets/shots/estimates-dark.webp";
 import bestL from "../assets/shots/besttime-light.webp";
@@ -131,17 +133,22 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     </ul>
   </section>
 
-  <section class="col chapter" id="badges" style="--c: var(--amber)">
-    <span class="label">Badges</span>
-    <h2>Something to collect</h2>
-    <p>A ledger is honest, and honest isn't always fun. So there are twelve badges to earn over the year, from Early bird to Comeback, and each one shows how close you are.</p>
-    <Showcase kind="dawn" h={420} hm={520}>
-      <Fragment slot="p0"><Badges /></Fragment>
+  <section class="col chapter" id="year" style="--c: var(--amber)">
+    <span class="label">Your year</span>
+    <h2>Your year, wrapped</h2>
+    <p>All year, the ledger quietly keeps score. In December it comes together in Year in Focus, a story of your year made entirely from your own numbers. We won't spoil it here.</p>
+    <p>Along the way there are badges to collect, from Early bird to Century, and each one shows how close you are.</p>
+    <Showcase kind="dawn" h={520} hm={540} tabs={[
+      { label: "Year in Focus", cap: "The first card. Everything after it stays a surprise until December." },
+      { label: "Badges", cap: "Twelve to collect each year. The earned ones shine." },
+    ]}>
+      <Fragment slot="p0"><Piece light={coverL} dark={coverD} w={248} alt="The cover of Year in Focus: 2026 in focus, a look back at every cycle, label and late night" /></Fragment>
+      <Fragment slot="p1"><Badges /></Fragment>
     </Showcase>
     <ul class="checks">
-      <li>Progress on every badge, not just the ones you've earned</li>
-      <li>A fresh set every January</li>
-      <li>And in December, a Year in Focus story of everything in your ledger</li>
+      <li>A story of your year every December, made to be shared</li>
+      <li>Badges with progress, so you know what's next</li>
+      <li>A fresh set of badges every January</li>
     </ul>
   </section>
 

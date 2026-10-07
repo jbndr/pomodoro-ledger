@@ -76,6 +76,15 @@ for (const scheme of ["light", "dark"]) {
   await sharp(cut).toFile(tall);
   await page.close();
 
+  page = await open(1000, 820);
+  await page.locator(".yr-hero").scrollIntoViewIfNeeded();
+  await page.locator(".yr-hero").click();
+  await page.locator(".yr-card").waitFor();
+  await page.addStyleTag({ content: ".app{visibility:hidden!important} .overlay.yr{background:transparent!important;backdrop-filter:none!important} .yr-side,.yr-hint{visibility:hidden!important}" });
+  await page.waitForTimeout(1800);
+  await shot(page, ".yr-card", "year-cover");
+  await page.close();
+
   page = await open(940, 1100, { dpr: 4 });
   await page.locator("#tiles").scrollIntoViewIfNeeded();
   await page.waitForTimeout(500);

@@ -8,6 +8,6 @@ export async function GET(ctx: APIContext) {
     title: "Pomodoro Ledger changelog",
     description: "Every change to Pomodoro Ledger.",
     site: ctx.site!,
-    items: entries.map((e) => ({ title: e.data.title, pubDate: e.data.date, link: `/changelog#${e.data.n}`, description: e.body?.trim() || undefined })),
+    items: entries.map((e) => ({ title: e.data.title, pubDate: e.data.date, link: `/changelog#${e.data.n}` })),
   });
 }

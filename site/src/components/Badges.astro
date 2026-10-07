@@ -11,7 +11,7 @@ const LIST: { id: BadgeId; name: string; how: string; have: number; need: number
   { id: "weekend", name: "Weekend warrior", how: "Focus on 10 weekend days", have: 6, need: 10 },
   { id: "loyal", name: "Label loyalist", how: "Finish 50 cycles under one label", have: 50, need: 50 },
   { id: "goal", name: "Goal getter", how: "Reach your daily goal on 10 days", have: 10, need: 10 },
-  { id: "comeback", name: "Comeback", how: "Return after two weeks away", have: 4, need: 14 },
+  { id: "comeback", name: "Comeback", how: "Return after two weeks away", have: 0, need: 14 },
   { id: "allYear", name: "All year round", how: "Focus in every month", have: 10, need: 12 },
   { id: "month", name: "Month streak", how: "Focus 30 days in a row", have: 17, need: 30 },
   { id: "finisher", name: "Finisher", how: "Finish 25 tasks", have: 25, need: 25 },
@@ -33,7 +33,7 @@ const total = items.filter((b) => b.earned).length;
             {b.earned && <i class="glare" />}
           </span>
           <b>{b.name}</b>
-          {!b.earned && <small><span style={`--p:${(b.have / b.need) * 100}%`}></span>{b.have} of {b.need}</small>}
+          {!b.earned && b.have > 0 && <small><span style={`--p:${(b.have / b.need) * 100}%`}></span>{b.have} of {b.need}</small>}
         </button>
       </li>
     ))}
@@ -108,6 +108,13 @@ const total = items.filter((b) => b.earned).length;
       light(badge, r.left + r.width * 0.3, r.top + r.height * 0.25);
     });
     box.addEventListener("focusin", (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>(".badge"); if (b) say(b.dataset.how!); });
-    new IntersectionObserver((es, io) => { if (es.some((e) => e.isIntersecting)) { box.classList.add("go"); io.disconnect(); } }, { threshold: 0.5 }).observe(box);
+    let seen = false;
+    const sweep = () => {
+      const pane = box.closest(".pane");
+      if (!seen || (pane && !pane.hasAttribute("data-on"))) return;
+      box.classList.remove("go"); void box.offsetWidth; box.classList.add("go");
+    };
+    new IntersectionObserver((es) => { const now = es.some((e) => e.isIntersecting); if (now && !seen) { seen = true; sweep(); } else if (!now) seen = false; }, { threshold: 0.4 }).observe(box);
+    box.closest(".showcase")?.addEventListener("pane", () => requestAnimationFrame(sweep));
   }
 </script>
