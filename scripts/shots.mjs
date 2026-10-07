@@ -76,6 +76,24 @@ for (const scheme of ["light", "dark"]) {
   await sharp(cut).toFile(tall);
   await page.close();
 
+  page = await open(1280, 900);
+  await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("menuitem", { name: /Settings/ }).or(page.getByRole("button", { name: /^Settings/ })).first().click();
+  await page.locator('.st-nav button[data-sec="breaks"]').click();
+  await page.addStyleTag({ content: ".app{visibility:hidden!important}" });
+  await page.waitForTimeout(700);
+  await shot(page, ".st-sheet", "settings-breaks");
+  await page.close();
+
+  page = await open(390, 844, { mobile: true });
+  await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("menuitem", { name: /Settings/ }).or(page.getByRole("button", { name: /^Settings/ })).first().click();
+  await page.locator('.st-nav button[data-sec="breaks"]').click();
+  await page.addStyleTag({ content: ".app,.tabbar{visibility:hidden!important}" });
+  await page.waitForTimeout(700);
+  await shot(page, ".st-sheet", "settings-breaks-phone");
+  await page.close();
+
   page = await open(1000, 820);
   await page.locator(".yr-hero").scrollIntoViewIfNeeded();
   await page.locator(".yr-hero").click();

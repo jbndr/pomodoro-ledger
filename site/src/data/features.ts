@@ -23,7 +23,7 @@ export const AREAS: Area[] = [
       { title: "Soundscapes", blurb: "Rain, ocean, fire and brown noise, generated in the browser so nothing ever loops." },
       { title: "Mixes", blurb: "Layer up to three sounds, save your mixes, and give breaks a mix of their own." },
       { title: "Break nudges", blurb: "Each break brings one small nudge: rest your eyes, stand up and stretch, or drink some water. Tap it when done." },
-      { title: "Your own nudges", blurb: "Write your own and choose when they come up: every break, long breaks only, or once an hour." },
+      { title: "Your own nudges", blurb: "Write one in plain words, or pick an idea, and choose when it comes up: every few breaks, after a stretch of focus, or at a set time." },
       { title: "Gentle ticking", blurb: "An optional tick during focus, at the pace and volume you like." },
     ],
   },
@@ -49,8 +49,7 @@ export const AREAS: Area[] = [
       { title: "Focus by label", blurb: "Hours, share of focus and rounds for each label, over a week, a month or all time." },
       { title: "Weekly recap", blurb: "Total focus, best day, top labels, tasks finished and your streak, against the week before." },
       { title: "Best time of day", blurb: "When your focus actually happens, by hour and weekday, with your strongest window named." },
-      { title: "Badges", blurb: "Twelve badges to earn each year, from Early bird to Comeback, with progress on every one." },
-      { title: "Year in Focus", blurb: "In December, a story of your year: hours, top labels, biggest month and longest streak." },
+      { title: "Year in Focus", blurb: "In December, your year as a story made from your own numbers, with the badges you earned along the way." },
     ],
   },
   {

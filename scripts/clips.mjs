@@ -167,5 +167,19 @@ for (const scheme of ["light", "dark"]) {
     await ctx.close();
   }
 
+  page = await open(1280, 900);
+  await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("menuitem", { name: /Settings/ }).or(page.getByRole("button", { name: /^Settings/ })).first().click();
+  await page.locator('.st-nav button[data-sec="look"]').click();
+  await page.waitForTimeout(900);
+  const morph = page.locator(".st-morph").locator("xpath=..");
+  const mb = await morph.boundingBox();
+  console.log("morph card", Math.round(mb.width), Math.round(mb.height));
+  const style = (v) => page.locator(`.st-style[data-morph="${v}"]`);
+  await page.mouse.move(mb.x + mb.width - 6, mb.y + mb.height + 30);
+  await encode(await record(page, async () => {
+    for (const v of ["wipe", "clock", "sweep", "grey"]) { await style(v).hover(); await page.waitForTimeout(2300); }
+  }), { x: Math.round(mb.x), y: Math.round(mb.y), width: Math.round(mb.width), height: Math.round(mb.height) }, `phases-${scheme}`, 960, 1280);
+  await page.context().close();
 }
 await browser.close();

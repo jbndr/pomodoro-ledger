@@ -11,7 +11,7 @@ import Listen from "../components/Listen.astro";
 import Faq from "../components/Faq.astro";
 import Loop from "../components/Loop.astro";
 import Detail from "../components/Detail.astro";
-import Badges from "../components/Badges.astro";
+import YearTease from "../components/YearTease.astro";
 import { SITE } from "../lib";
 import flowL from "../assets/shots/timer-flow-light.webp";
 import flowD from "../assets/shots/timer-flow-dark.webp";
@@ -23,8 +23,10 @@ import ledgerL from "../assets/shots/ledger-light.webp";
 import ledgerD from "../assets/shots/ledger-dark.webp";
 import ledgerPL from "../assets/shots/ledger-phone-light.webp";
 import ledgerPD from "../assets/shots/ledger-phone-dark.webp";
-import coverL from "../assets/shots/year-cover-light.webp";
-import coverD from "../assets/shots/year-cover-dark.webp";
+import breaksSetL from "../assets/shots/settings-breaks-light.webp";
+import breaksSetD from "../assets/shots/settings-breaks-dark.webp";
+import breaksSetPL from "../assets/shots/settings-breaks-phone-light.webp";
+import breaksSetPD from "../assets/shots/settings-breaks-phone-dark.webp";
 import estL from "../assets/shots/estimates-light.webp";
 import estD from "../assets/shots/estimates-dark.webp";
 import bestL from "../assets/shots/besttime-light.webp";
@@ -49,6 +51,10 @@ import finishL from "../assets/clips/finish-light.mp4";
 import finishD from "../assets/clips/finish-dark.mp4";
 import finishPL from "../assets/clips/finish-light.webp";
 import finishPD from "../assets/clips/finish-dark.webp";
+import phasesL from "../assets/clips/phases-light.mp4";
+import phasesD from "../assets/clips/phases-dark.mp4";
+import phasesPL from "../assets/clips/phases-light.webp";
+import phasesPD from "../assets/clips/phases-dark.webp";
 import pipL from "../assets/clips/pip-light.mp4";
 import pipD from "../assets/clips/pip-dark.mp4";
 import pipPL from "../assets/clips/pip-light.webp";
@@ -137,19 +143,10 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     <span class="label">Your year</span>
     <h2>Your year, wrapped</h2>
     <p>All year, the ledger quietly keeps score. In December it comes together in Year in Focus, a story of your year made entirely from your own numbers. We won't spoil it here.</p>
-    <p>Along the way there are badges to collect, from Early bird to Century, and each one shows how close you are.</p>
-    <Showcase kind="dawn" h={520} hm={540} tabs={[
-      { label: "Year in Focus", cap: "The first card. Everything after it stays a surprise until December." },
-      { label: "Badges", cap: "Twelve to collect each year. The earned ones shine." },
-    ]}>
-      <Fragment slot="p0"><Piece light={coverL} dark={coverD} w={248} alt="The cover of Year in Focus: 2026 in focus, a look back at every cycle, label and late night" /></Fragment>
-      <Fragment slot="p1"><Badges /></Fragment>
+    <p>There are badges in it too, earned along the way while you weren't looking.</p>
+    <Showcase kind="dawn" h={480} hm={640} cap="The first card and one badge. Everything else stays a surprise until December.">
+      <Fragment slot="p0"><YearTease /></Fragment>
     </Showcase>
-    <ul class="checks">
-      <li>A story of your year every December, made to be shared</li>
-      <li>Badges with progress, so you know what's next</li>
-      <li>A fresh set of badges every January</li>
-    </ul>
   </section>
 
   <section class="col chapter" id="planning" style="--c: var(--leaf)">
@@ -199,12 +196,17 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     <h2>Breaks that actually rest you</h2>
     <p class="replaces"><b>Replaces:</b>{replaced([["stretch", "Stretch reminders"], ["drop", "Water reminder apps"]]).map(([i, t]) => <span><svg viewBox="0 0 24 24" aria-hidden="true" set:html={icon[i]} />{t}</span>)}</p>
     <p>A break spent scrolling isn't much of a break. So each one brings a single small nudge: rest your eyes, stand up and stretch, or drink a glass of water. Tap it when you've done it.</p>
-    <Showcase kind="lagoon" h={540} hm={440} cap="The first minute of a break belongs to Keep going. Then the nudge takes its place, one thing at a time.">
+    <p>Write your own in plain words, like “Drink water every 90 min”, and choose when it comes up: every few breaks, after a stretch of focus, or at a set time of day.</p>
+    <Showcase kind="lagoon" h={540} hm={460} tabs={[
+      { label: "During a break", cap: "The first minute of a break belongs to Keep going. Then the nudge takes its place, one thing at a time." },
+      { label: "Your own nudges", cap: "Start from an idea or write your own. They never interrupt focus, and the weekly recap counts them." },
+    ]}>
       <Fragment slot="p0"><Clip light={nudgeL} dark={nudgeD} posterLight={nudgePL} posterDark={nudgePD} w={440} radius="0 0 6.82% 6.82% / 0 0 6.7% 6.7%" frame="none" fade label="A short break with the nudge Rest your eyes: look 20 feet away, which gets ticked off" /></Fragment>
+      <Fragment slot="p1"><Piece light={breaksSetL} dark={breaksSetD} phoneLight={breaksSetPL} phoneDark={breaksSetPD} w={600} alt="Settings, Breaks: three nudges with their schedules, a field to add your own, and ideas like Breathe slowly for a minute" /></Fragment>
     </Showcase>
     <ul class="checks">
       <li>Rest your eyes on every break, stretch on the long ones</li>
-      <li>Write your own nudges, and choose every break, long breaks or once an hour</li>
+      <li>Ideas to start from, like breathing slowly or looking out of a window</li>
       <li>Breaks start on their own when a round ends, and the next round can too</li>
     </ul>
   </section>
@@ -264,6 +266,10 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
           <span><kbd class="cap">?</kbd><em>All shortcuts</em></span>
         </div>
         <Fragment slot="text">N adds a task from anywhere, ⌘K finds any action, Space starts and pauses, and ? shows the rest. J and K move through your tasks.</Fragment>
+      </Detail>
+      <Detail kind="violet" title="Settings that show you." wide h={400}>
+        <Clip light={phasesL} dark={phasesD} posterLight={phasesPL} posterDark={phasesPD} w={560} radius="2.39% / 3.6%" frame="none" label="Settings, Appearance: pointing at each phase change style plays it on a small timer" />
+        <Fragment slot="text">Point at a style and a small timer plays it. You pick how focus turns into a break by seeing it, not by reading about it.</Fragment>
       </Detail>
       <Detail kind="meadow" title="Finishing feels like it." wide h={420}>
         <Clip light={finishL} dark={finishD} posterLight={finishPL} posterDark={finishPD} w={430} radius="4.42% / 5.01%" frame="none" label="Finishing a task: the check fills, the title is struck through and the row folds away" />
