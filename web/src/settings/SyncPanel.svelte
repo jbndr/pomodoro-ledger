@@ -79,40 +79,35 @@
   const when = (t) => (t ? new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "");
 </script>
 
-<div class="group">
-  <div class="card">
-    <div class="toggle sync-row"><span><b id="syncTitle">{c.title}</b><small id="syncDetail">{c.detail}</small></span><span class="acts" id="syncActs">{#if c.acts === "signin"}<a class="btn small solid" href="/api/sync/login">Sign in</a>{:else if c.acts === "account" && !local}<button class="btn small" type="button" id="syncOut" onclick={signOut}>Sign out</button>{/if}</span></div>
-  </div>
-  {#if c.hint}<p class="hint" id="syncHint">{c.hint}</p>{/if}
-</div>
+<section class="st-grp"><h4>Sync</h4><div class="st-card">
+  <div class="st-row"><div class="st-lab"><span id="syncTitle">{c.title}</span><small id="syncDetail">{c.detail}</small></div><span class="st-inline" id="syncActs">{#if c.acts === "account"}<span class="st-status" class:live={api.Cloud.state === "live"}></span>{/if}{#if c.acts === "signin"}<a class="st-btn ink" href="/api/sync/login">Sign in</a>{:else if c.acts === "account" && !local}<button class="st-btn" type="button" id="syncOut" onclick={signOut}>Sign out</button>{/if}</span></div>
+</div>{#if c.hint}<p class="st-cap" id="syncHint">{c.hint}</p>{/if}</section>
 
-<fieldset class="group backup" oninput={(e) => e.stopPropagation()}>
-  <legend>Backup</legend>
-  <div class="card">
-    <div class="toggle"><span>Export<small>Tasks, history, labels and settings in one file</small>{#if !api.DEMO}<small id="lastBackup">{lastBackup(nudge.memo.at, nudge.now)}</small>{/if}</span><span class="acts"><button class="btn small" type="button" id="exportData" disabled={api.DEMO} onclick={exportFile}>Export</button></span></div>
-    <label class="toggle"><span>Remind me to back up<small>{kept ? "Not needed while signed in: sync keeps a copy." : "When it's been 30 days since an export"}</small></span><input type="checkbox" id="sBackupRemind" disabled={api.DEMO || kept} checked={!api.DEMO && !kept && !nudge.memo.off} onchange={(e) => setReminders(e.currentTarget.checked)}></label>
-    <div class="toggle"><span>Import<small>Merge or replace from an exported file</small></span><span class="acts"><button class="btn small" type="button" id="importPick" disabled={api.DEMO} onclick={() => fileInput.click()}>Choose file…</button></span></div>
-    <input type="file" id="importFile" accept=".json,application/json" hidden bind:this={fileInput} onchange={choose}>
-    {#if picked && plan}
-      <div class="import-preview" role="region" aria-label="Import preview">
-        <p><b>{summary(picked.data)}.</b> <span>{picked.name}{picked.data.exportedAt ? ", exported " + when(picked.data.exportedAt) : ""}.</span>{#if picked.data.skipped} <span>{picked.data.skipped === 1 ? "1 damaged entry" : picked.data.skipped + " damaged entries"} will be skipped.</span>{/if}</p>
-        {#if !confirming}
-          <div class="seg" role="radiogroup" aria-label="How to import">
-            <button type="button" role="radio" id="importMerge" aria-checked={String(mode === "merge")} onclick={() => (mode = "merge")}>Merge</button>
-            <button type="button" role="radio" id="importReplace" aria-checked={String(mode === "replace")} onclick={() => (mode = "replace")}>Replace</button>
-          </div>
-          <p class="sub">{mode === "replace"
-            ? "Makes this browser match the file" + (synced ? ", and your synced devices too" : "") + ". " + plural(plan.removed.length, "task") + " not in the file will be deleted."
-            : mergeNote(plan)}</p>
-          <div class="import-acts"><button class="btn small" type="button" onclick={cancel}>Cancel</button><button class="btn small solid" type="button" id="importRun" onclick={run}>{mode === "merge" ? "Merge" : "Replace…"}</button></div>
-        {:else}
-          <p class="import-warn" role="alert">Replace everything{synced ? " on all your devices" : " in this browser"}? {plan.removed.length ? "This deletes " + plural(plan.removed.length, "task") + (plan.removed.length === 1 ? " that isn't" : " that aren't") + " in the file" : "This overwrites your tasks with the file"}{picked.data.profile ? " and replaces your settings" : ""}. Export first if you might want them back.</p>
-          <div class="import-acts"><button class="btn small" type="button" id="importBack" onclick={() => (confirming = false)}>Back</button><button class="btn small danger" type="button" id="importConfirm" onclick={run}>Replace everything</button></div>
-        {/if}
-      </div>
-    {/if}
-  </div>
-  {#if api.DEMO}<p class="hint">The demo can't export or import. Open the app without ?demo=1 to back up your own ledger.</p>
-  {:else if status}<p class="hint" class:import-error={failed} role="status">{status}</p>
-  {:else}<p class="hint">Exported files work in any browser{synced ? " and include everything synced to your account" : ""}.</p>{/if}
-</fieldset>
+<section class="st-grp" oninput={(e) => e.stopPropagation()}><h4>Backup</h4><div class="st-card">
+  <div class="st-row"><div class="st-lab"><span>Export</span><small>Tasks, history, labels and settings in one file{#if !api.DEMO} · <span id="lastBackup">{lastBackup(nudge.memo.at, nudge.now)}</span>{/if}</small></div><button class="st-btn" type="button" id="exportData" disabled={api.DEMO} onclick={exportFile}>Export</button></div>
+  <div class="st-row"><div class="st-lab"><span>Import</span><small>Merge or replace from an exported file</small></div><button class="st-btn" type="button" id="importPick" disabled={api.DEMO} onclick={() => fileInput.click()}>Choose file…</button></div>
+  <input type="file" id="importFile" accept=".json,application/json" hidden bind:this={fileInput} onchange={choose}>
+  {#if picked && plan}
+    <div class="st-import" role="region" aria-label="Import preview">
+      <p><b>{summary(picked.data)}.</b> <span>{picked.name}{picked.data.exportedAt ? ", exported " + when(picked.data.exportedAt) : ""}.</span>{#if picked.data.skipped} <span>{picked.data.skipped === 1 ? "1 damaged entry" : picked.data.skipped + " damaged entries"} will be skipped.</span>{/if}</p>
+      {#if !confirming}
+        <span class="st-seg" role="group" aria-label="How to import">
+          <button type="button" id="importMerge" aria-pressed={String(mode === "merge")} onclick={() => (mode = "merge")}>Merge</button>
+          <button type="button" id="importReplace" aria-pressed={String(mode === "replace")} onclick={() => (mode = "replace")}>Replace</button>
+        </span>
+        <p class="st-sub">{mode === "replace"
+          ? "Makes this browser match the file" + (synced ? ", and your synced devices too" : "") + ". " + plural(plan.removed.length, "task") + " not in the file will be deleted."
+          : mergeNote(plan)}</p>
+        <div class="st-acts"><button class="st-btn" type="button" onclick={cancel}>Cancel</button><button class="st-btn ink" type="button" id="importRun" onclick={run}>{mode === "merge" ? "Merge" : "Replace…"}</button></div>
+      {:else}
+        <p class="st-warn" role="alert">Replace everything{synced ? " on all your devices" : " in this browser"}? {plan.removed.length ? "This deletes " + plural(plan.removed.length, "task") + (plan.removed.length === 1 ? " that isn't" : " that aren't") + " in the file" : "This overwrites your tasks with the file"}{picked.data.profile ? " and replaces your settings" : ""}. Export first if you might want them back.</p>
+        <div class="st-acts"><button class="st-btn" type="button" id="importBack" onclick={() => (confirming = false)}>Back</button><button class="st-btn danger" type="button" id="importConfirm" onclick={run}>Replace everything</button></div>
+      {/if}
+    </div>
+  {/if}
+  <div class="st-row"><div class="st-lab"><span>Remind me to back up</span><small>{kept ? "Not needed while signed in: sync keeps a copy." : "When it's been 30 days since an export"}</small></div><button class="st-tog" type="button" role="switch" id="sBackupRemind" aria-label="Remind me to back up" disabled={api.DEMO || kept} aria-checked={String(!api.DEMO && !kept && !nudge.memo.off)} onclick={() => setReminders(!!nudge.memo.off)}></button></div>
+</div>
+{#if api.DEMO}<p class="st-cap">The demo can't export or import. Open the app without ?demo=1 to back up your own ledger.</p>
+{:else if status}<p class="st-cap" class:st-error={failed} role="status">{status}</p>
+{:else}<p class="st-cap">Exported files work in any browser{synced ? " and include everything synced to your account" : ""}.</p>{/if}
+</section>

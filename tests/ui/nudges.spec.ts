@@ -31,10 +31,12 @@ test("your own nudge can be added in Settings", async ({ page, isMobile }) => {
   for (let i = 0; i < 3 && (await page.locator(".overlay:not([hidden])").count()); i++) await page.keyboard.press("Escape");
   await page.locator("#openSettings").click();
   await page.locator("#barMenu .item", { hasText: "Settings" }).click();
-  await page.locator('[data-tab="auto"]').click();
-  const add = page.locator(".nudge-add input");
-  await add.fill("5 push-ups");
+  await page.locator('.st-nav [data-sec="breaks"]').click();
+  const add = page.locator("#nudgeAdd");
+  await add.fill("5 push-ups every 2nd break on weekdays");
+  await expect(page.locator(".st-nadd-pre")).toContainText("in every 2nd break");
   await add.press("Enter");
-  await expect(page.locator(".nudge-row", { hasText: "5 push-ups" })).toBeVisible();
-  await expect(page.locator(".nudge-row")).toHaveCount(4);
+  const row = page.locator(".st-nudge", { hasText: "5 push-ups" });
+  await expect(row).toContainText("Every 2nd break · Weekdays");
+  await expect(page.locator(".st-nudge")).toHaveCount(4);
 });
