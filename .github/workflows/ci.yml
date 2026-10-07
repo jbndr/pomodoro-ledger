@@ -33,6 +33,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Build the site and the app
+        run: npm run build
+
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
 
