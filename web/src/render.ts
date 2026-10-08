@@ -19,7 +19,7 @@ import { closeLabelPop, ui } from "./ui";
 import { syncActive } from "./tasks/actions";
 import { showMode } from "./timer/morph";
 
-let lastPhase = "", lastTxt = "", startEstimateMinute = -1, renderedDay = "";
+let lastPhase = "", lastTxt = "", lastFrac = 1, startEstimateMinute = -1, renderedDay = "";
 
 export function renderTimer(force?: boolean) {
   if (force) syncTicking();
@@ -35,6 +35,7 @@ export function renderTimer(force?: boolean) {
     document.title = T.status === "idle" ? "Pomodoro Ledger" : txt + " · " + (kind === "flow" ? "Flow" : MODE_NAME[T.mode]) + (T.status === "paused" ? " (paused)" : "");
   }
   timerView.set(rem, total, kind);
+  lastFrac = frac;
   renderFloating(txt, frac);
   renderTaskStarts(force);
   const tabTime = T.status === "running" ? txt : "Timer";
@@ -45,7 +46,7 @@ export function renderTimer(force?: boolean) {
 }
 
 /** Repaints the floating timer after a theme change. */
-export const rethemeFloat = () => renderFloating(lastTxt, 0);
+export const rethemeFloat = () => renderFloating(lastTxt, lastFrac);
 
 export function renderTaskStarts(force = false) {
   if (ui.list?.dragging()) return;
