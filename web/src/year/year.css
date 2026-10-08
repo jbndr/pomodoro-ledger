@@ -182,60 +182,6 @@
   .yr-screen { padding-inline: 22px; }
 }
 
-/* The way in, at the top of Progress: dark in both modes so it stands apart from the page */
-.yr-hero {
-  --hero-bg: #141816; --hero-fg: #F5F3EE; --hero-mute: #A9B1AC;
-  position: relative; isolation: isolate; overflow: hidden; display: flex; align-items: center; gap: 20px; width: 100%; min-height: 132px;
-  padding: 20px 22px 20px 24px; border: 1px solid transparent; border-radius: 24px; background: var(--hero-bg); color: var(--hero-fg); text-align: left;
-  box-shadow: 0 22px 44px -26px rgba(20, 24, 22, .7); transition: translate .3s cubic-bezier(.22, 1, .36, 1), box-shadow .3s;
-}
-:root[data-theme="dark"] .yr-hero { --hero-bg: #1B201E; border-color: #2C3330; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .yr-hero { --hero-bg: #1B201E; border-color: #2C3330; } }
-.yr-hero-glow {
-  position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(38% 90% at 6% 120%, rgba(216, 66, 31, .75), transparent 70%),
-    radial-gradient(30% 80% at 58% -30%, rgba(110, 169, 236, .38), transparent 70%),
-    radial-gradient(26% 70% at 96% 110%, rgba(74, 196, 146, .4), transparent 70%),
-    radial-gradient(20% 60% at 80% 0%, rgba(185, 155, 255, .32), transparent 70%);
-  transition: translate 1.2s cubic-bezier(.22, 1, .36, 1), scale 1.2s cubic-bezier(.22, 1, .36, 1);
-}
-.yr-hero-text { display: grid; gap: 4px; min-width: 0; flex: 1; }
-.yr-hero-eye { font: 650 11.5px var(--f-body); letter-spacing: .14em; text-transform: uppercase; color: var(--hero-mute); }
-.yr-hero-year {
-  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font: 800 clamp(46px, 6vw, 64px)/.86 var(--f-display); letter-spacing: -.055em; font-variant-numeric: tabular-nums;
-  background: linear-gradient(100deg, #FFFFFF 0%, #FFFFFF 22%, #FFD36B 36%, #FF8A63 48%, #D98BFF 60%, #6FC8FF 72%, #FFFFFF 86%) 0 0 / 260% 100%;
-  -webkit-background-clip: text; background-clip: text; color: transparent; transition: background-position 1.1s cubic-bezier(.22, 1, .36, 1);
-}
-.yr-hero-year em { font: 700 clamp(19px, 2.2vw, 24px)/1 var(--f-display); letter-spacing: -.02em; font-style: normal; -webkit-text-fill-color: var(--hero-fg); }
-.yr-hero-stats { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; margin-top: 6px; font-size: 14px; color: var(--hero-mute); }
-.yr-hero-stats b { margin-right: 3px; font-weight: 650; color: var(--hero-fg); font-variant-numeric: tabular-nums; }
-.yr-hero-stats i { width: 3px; height: 3px; border-radius: 50%; background: var(--hero-mute); opacity: .7; }
-.yr-hero-fan { flex: none; display: flex; align-items: center; padding-right: 6px; }
-.yr-hero-fan > span { width: 62px; height: 62px; margin-left: -16px; rotate: calc(var(--k) * 9deg); translate: 0 calc(var(--k) * var(--k) * 3px); transition: rotate .45s cubic-bezier(.22, 1, .36, 1), translate .45s cubic-bezier(.22, 1, .36, 1), margin .45s cubic-bezier(.22, 1, .36, 1); }
-.yr-hero-fan > span:first-child { margin-left: 0; }
-.yr-hero-play { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--hero-fg); color: var(--hero-bg); transition: scale .3s cubic-bezier(.22, 1, .36, 1); }
-.yr-hero-play svg { width: 22px; height: 22px; margin-left: 2px; }
-.yr-hero:focus-visible { outline: 2px solid var(--tomato); outline-offset: 3px; }
-@media (hover: hover) {
-  .yr-hero:hover { translate: 0 -2px; box-shadow: 0 28px 54px -26px rgba(20, 24, 22, .75); }
-  .yr-hero:hover .yr-hero-glow { translate: 4% -6%; scale: 1.08; }
-  .yr-hero:hover .yr-hero-year { background-position: var(--hx, 100%) 0; transition-duration: .5s; }
-  .yr-hero:hover .yr-hero-fan > span { rotate: 0deg; translate: 0 0; margin-left: 6px; }
-  .yr-hero:hover .yr-hero-fan > span:first-child { margin-left: 0; }
-  .yr-hero:hover .yr-hero-play { scale: 1.08; }
-}
-.yr-hero:active { translate: 0 0; }
-@media (max-width: 640px) {
-  .yr-hero { gap: 12px; min-height: 0; padding: 18px 16px 18px 18px; border-radius: 22px; }
-  .yr-hero-year { font-size: 44px; }
-  .yr-hero-year em { font-size: 18px; }
-  .yr-hero-stats { font-size: 13px; }
-  .yr-hero-fan { position: absolute; top: 14px; right: 14px; padding: 0; }
-  .yr-hero-fan > span { width: 38px; height: 38px; margin-left: -12px; }
-  .yr-hero-play { align-self: flex-end; width: 44px; height: 44px; }
-}
-@media (prefers-reduced-motion: reduce) { .yr-hero, .yr-hero-glow, .yr-hero-year, .yr-hero-fan > span, .yr-hero-play { transition: none; } }
 /* Medals: enamel with a holo foil that follows the pointer or a finger dragged across them */
 .medal { position: relative; display: block; width: 100%; height: 100%; transition: transform .7s var(--yr-ease); }
 .medal.on { transform: perspective(420px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .12s linear; }

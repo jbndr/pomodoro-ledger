@@ -1,6 +1,6 @@
 <script>
   import { addDays } from "../lib/dates";
-  import { bestWindow, hourGrid, hourSpan, relLevel, WEEKDAYS } from "../lib/insights";
+  import { bestWindow, cellAt, hourGrid, hourSpan, relLevel, WEEKDAYS } from "../lib/insights";
 
   let { api, tasks, today } = $props();
   const uid = $props.id();
@@ -15,15 +15,16 @@
   const best = $derived(bestWindow(g));
   const c = $derived.by(() => {
     const W = Math.max(300, Math.min(1100, width || 600)), { from, to } = hourSpan(g), n = to - from, band = (W - ml - mr) / n, cw = band - cg;
-    const hours = [...Array(n)].map((_, i) => from + i), maxH = Math.max(1, ...hours.map((h) => g.hours[h]));
-    const maxCell = Math.max(0, ...g.ms.flatMap((row) => hours.map((h) => row[h])));
+    const hours = [...Array(n)].map((_, i) => from + i), maxH = Math.max(1, ...hours.map((h) => g.hours[h % 24]));
+    const maxCell = Math.max(0, ...g.ms.flatMap((_, d) => hours.map((h) => cellAt(g, d, h))));
     const every = band >= 26 ? 1 : band >= 15 ? 2 : 3;
     return { W, hours, band, cw, maxH, maxCell, every, x: (h) => ml + (h - from) * band + cg / 2 };
   });
   const inWin = (h) => best && best.share >= 0.3 && h >= best.from && h < best.to;
-  const span = (h) => h + "–" + (h + 1);
-  const hourTip = (h) => "<b>" + span(h) + "</b><br>" + (g.hours[h] ? api.fmtDur(g.hours[h]) + " · " + Math.round((g.hours[h] / g.total) * 100) + "% of focus" : "No focus");
-  const cellTip = (d, h) => "<b>" + WEEKDAYS[d] + " " + span(h) + "</b><br>" + (g.ms[d][h] ? api.fmtDur(g.ms[d][h]) : "No focus");
+  const span = (h) => (h % 24) + "–" + ((h + 1) % 24);
+  const hourTip = (h) => "<b>" + span(h) + "</b><br>" + (g.hours[h % 24] ? api.fmtDur(g.hours[h % 24]) + " · " + Math.round((g.hours[h % 24] / g.total) * 100) + "% of focus" : "No focus");
+  // Past midnight the row keeps the night going, so the tooltip names the day it really was.
+  const cellTip = (d, h) => "<b>" + WEEKDAYS[(d + (h >= 24 ? 1 : 0)) % 7] + " " + span(h) + "</b><br>" + (cellAt(g, d, h) ? api.fmtDur(cellAt(g, d, h)) : "No focus");
 </script>
 
 <figure class="chart-card best-time" id="bestTime">
@@ -50,11 +51,11 @@
           {@const y = mt + hh + gap + d * (ch + cg)}
           <text x="0" y={y + 12.5}>{day.slice(0, 3)}</text>
           {#each c.hours as h, i (h)}
-            <rect class="cell l{relLevel(g.ms[d][h], c.maxCell)}" data-tip={cellTip(d, h)} x={c.x(h)} y={y} width={c.cw} height={ch} rx="3" style:--i={i} />
+            <rect class="cell l{relLevel(cellAt(g, d, h), c.maxCell)}" data-tip={cellTip(d, h)} x={c.x(h)} y={y} width={c.cw} height={ch} rx="3" style:--i={i} />
           {/each}
         {/each}
         {#each c.hours as h (h)}
-          {#if h % c.every === 0}<text class={inWin(h) ? "val" : null} x={c.x(h)} y={H - 6}>{h}</text>{/if}
+          {#if h % c.every === 0}<text class={inWin(h) ? "val" : null} x={c.x(h)} y={H - 6}>{h % 24}</text>{/if}
         {/each}
       </svg>
     </div>

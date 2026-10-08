@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays, dayKey, sod } from "./dates";
-import { bestWindow, firstWeek, hourGrid, hourSpan, recapDue, relLevel, weekday, weekRecap, weekStart, windowText, type HourGrid } from "./insights";
+import { bestWindow, cellAt, firstWeek, hourGrid, hourOrigin, hourSpan, recapDue, relLevel, weekday, weekRecap, weekStart, windowText, type HourGrid } from "./insights";
 import type { Session, Task, Tasks } from "./tasks";
 
 // Saturday, 3 October 2026; the week started on Monday 28 September.
@@ -58,6 +58,12 @@ describe("bestWindow", () => {
     expect(bestWindow(grid([[5, 15, 5], [6, 16, 5], [0, 15, 1]]))!.text).toBe("You focus best 15–17 on weekend afternoons.");
     expect(bestWindow(grid([[1, 20, 6], [3, 20, 2], [4, 20, 2], [6, 20, 2]]))!.text).toBe("You focus best 20–21 on Tuesday evenings.");
   });
+  it("finds a window that runs past midnight", () => {
+    const w = bestWindow(grid([[0, 23, 3], [1, 0, 3], [2, 1, 3], [3, 23, 3], [4, 0, 2]]))!;
+    expect([w.from, w.to]).toEqual([23, 25]);
+    expect(w.share).toBeGreaterThan(0.7);
+    expect(w.text).toBe("You focus best 23–1 on weekday nights.");
+  });
   it("says so when focus is spread out", () => {
     const w = bestWindow(grid([[0, 8, 3], [1, 11, 3], [2, 14, 3], [3, 17, 3], [4, 20, 3]]))!;
     expect(w.share).toBeLessThan(0.3);
@@ -74,6 +80,8 @@ describe("windowText", () => {
     [11, 13, null, "You focus best 11–13 around midday."],
     [22, 24, null, "You focus best 22–24 at night."],
     [18, 20, 4, "You focus best 18–20 on Friday evenings."],
+    [22, 26, 4, "You focus best 22–2 on Friday nights."],
+    [25, 27, null, "You focus best 1–3 at night."],
   ] as const)("%i–%i, %s", (from, to, days, text) => {
     expect(windowText(from, to, days, 0.5)).toBe(text);
   });
@@ -83,6 +91,14 @@ describe("chart helpers", () => {
   it("charts at least 8 to 18 and any hour with focus", () => {
     expect(hourSpan(grid([[0, 10, 1]]))).toEqual({ from: 8, to: 18 });
     expect(hourSpan(grid([[0, 7, 1], [0, 21, 1]]))).toEqual({ from: 7, to: 22 });
+  });
+  it("keeps night focus in one piece across midnight", () => {
+    const g = grid([[0, 22, 1], [1, 1, 1]]);
+    expect(hourOrigin(g.hours)).toBe(22);
+    expect(hourSpan(g)).toEqual({ from: 19, to: 29 });
+    expect(hourOrigin(grid([[0, 9, 9], [0, 22, 1], [1, 1, 1]]).hours)).toBe(0);
+    expect(cellAt(g, 0, 21)).toBe(g.ms[0][21]);
+    expect(cellAt(g, 0, 24)).toBe(g.ms[1][0]);
   });
   it("shades relative to the busiest cell", () => {
     expect([0, 1, 25, 26, 50, 100].map((v) => relLevel(v, 100))).toEqual([0, 1, 1, 2, 2, 4]);
