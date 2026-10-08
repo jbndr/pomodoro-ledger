@@ -15,12 +15,13 @@
     for (let col = 0; col < weeks; col++) {
       const colStart = addDays(start, col * 7), month = new Date(colStart).getMonth();
       if (month !== lastMonth) {
-        if (col < weeks - 1) months.push({ x: ml + col * (cs + gap), name: api.fmtDate(colStart, { month: "short" }) });
+        // A month that starts in the last days of the first column would sit on top of the next one, so it's left out.
+        if (col < weeks - 1) { if (months.length && col - months.at(-1).col < 3) months.pop(); months.push({ col, x: ml + col * (cs + gap), name: api.fmtDate(colStart, { month: "short" }) }); }
         lastMonth = month;
       }
       for (let row = 0; row < 7; row++) {
         const t = addDays(start, col * 7 + row);
-        if (t > today) continue;
+        if (t > today) { cells.push({ key: col * 7 + row, col, x: ml + col * (cs + gap), y: mt + row * (cs + gap), future: true }); continue; }
         const o = days.get(dayKey(t)) || { ms: 0, cycles: 0 }, min = o.ms / 60000;
         const tip = "<b>" + api.fmtDate(t, { weekday: "short", day: "numeric", month: "short" }) + "</b><br>" + (min ? api.fmtDur(o.ms) + " · " + api.plural(o.cycles, "cycle") + labelTip(api, split.get(dayKey(t))) : "No focus");
         cells.push({ key: col * 7 + row, col, x: ml + col * (cs + gap), y: mt + row * (cs + gap), level: heatLevel(min), today: t === today, tip });
@@ -34,7 +35,8 @@
   <svg viewBox="0 0 {W} {H}" role="img" aria-label="Focus calendar for the last 20 weeks">
     {#each c.months as mo (mo.x)}<text x={mo.x} y="11">{mo.name}</text>{/each}
     {#each c.cells as cell (cell.key)}
-      <rect class="cell l{cell.level}" class:today={cell.today} data-tip={cell.tip} x={cell.x} y={cell.y} width={cs} height={cs} rx="3" style:--i={cell.col} />
+      {#if cell.future}<rect class="cell future" x={cell.x + .5} y={cell.y + .5} width={cs - 1} height={cs - 1} rx="3" />
+      {:else}<rect class="cell l{cell.level}" class:today={cell.today} data-tip={cell.tip} x={cell.x} y={cell.y} width={cs} height={cs} rx="3" style:--i={cell.col} />{/if}
     {/each}
     {#each DAYS as label, r (r)}{#if label}<text x="0" y={mt + r * (cs + gap) + 10}>{label}</text>{/if}{/each}
   </svg>

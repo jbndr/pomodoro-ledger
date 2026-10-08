@@ -11,10 +11,10 @@
   import Ledger from "./Ledger.svelte";
   import Sessions from "./Sessions.svelte";
   import WeekGoals from "./WeekGoals.svelte";
-  import YearEntry from "../year/Entry.svelte";
 
   let { api } = $props();
-  let filter = $state("");
+  let filter = $state(""), allChips = $state(false);
+  const TOP = 5;
 
   const m = $derived.by(() => {
     progress.version;
@@ -22,15 +22,15 @@
     const f = !names.length || (filter.startsWith("project:") && !names.includes(filter.slice(8))) ? "" : filter;
     const vt = focusTasks(all, f), days = dayTotals(vt);
     const focusFor = (v) => [...focusTasks(all, v).values()].reduce((a, t) => a + timeOf(t), 0);
-    const chips = [
-      { v: "", name: "All", ms: focusFor("") },
-      ...names.filter((n) => f === "project:" + n || !api.labelHidden(n)).map((n) => ({ v: "project:" + n, name: n, hue: labelHue(n), ms: focusFor("project:" + n) })),
-      { v: "none", name: "No label", ms: focusFor("none") },
-    ];
+    // The five labels with the most focus stay in view, plus the picked one; the rest wait behind "+N more".
+    const named = names.filter((n) => f === "project:" + n || !api.labelHidden(n)).map((n) => ({ v: "project:" + n, name: n, hue: labelHue(n), ms: focusFor("project:" + n) })).sort((a, b) => b.ms - a.ms);
+    const shown = allChips ? named : named.filter((c, i) => i < TOP || c.v === f);
+    const chips = [{ v: "", name: "All", ms: focusFor("") }, ...shown, { v: "none", name: "No label", ms: focusFor("none") }];
+    const more = named.length - shown.length;
     const ledger = f ? new Map([...all].filter(([, t]) => matchLabel(t, f))) : all;
     const week = sumDays(days, today, 7), before = sumDays(days, addDays(today, -7), 7);
     return {
-      all, names, f, today, vt, days, chips, ledger,
+      all, names, f, today, vt, days, chips, more, ledger,
       split: f ? new Map() : dayLabels(vt),
       todayTotal: days.get(dayKey(now)) || { ms: 0, cycles: 0 },
       goal: api.S.settings.goal,
@@ -55,11 +55,11 @@
     <button class="btn small recap-btn" type="button" id="openRecap" onclick={() => api.openRecap()}>Weekly recap</button>
     <span class="sub">Every finished focus block counts as one cycle. Stopped sessions over a minute still count toward focus time.</span>
   </div>
-  <YearEntry {api} tasks={m.all} />
   <div class="label-filter" id="statsFilter" role="group" aria-label="Show progress for one label" hidden={!m.names.length}>
     {#each m.chips as c (c.v)}
       <button type="button" data-filter={c.v} aria-pressed={String(m.f === c.v)} onclick={() => (filter = c.v)}>{#if c.hue != null}<i class="label-dot" style:--h={c.hue}></i>{/if}<span>{c.name}</span><em>{api.fmtDur(c.ms)}</em></button>
     {/each}
+    {#if m.more || allChips}<button type="button" class="chips-more" aria-expanded={String(allChips)} onclick={() => (allChips = !allChips)}><span>{allChips ? "Fewer" : "+" + m.more + " more"}</span></button>{/if}
   </div>
   <div class="tiles" id="tiles">
     <div class="tile">

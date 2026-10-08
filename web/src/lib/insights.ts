@@ -52,7 +52,8 @@ const sum = (a: number[], from = 0, to = a.length) => a.slice(from, to).reduce((
 /** The run of up to four hours that holds the most focus, or null with too little history. */
 export function bestWindow(g: HourGrid): FocusWindow | null {
   if (g.sessions < ENOUGH.sessions || g.days < ENOUGH.days || !g.total) return null;
-  const h = g.hours;
+  // Work from the end of the longest quiet stretch, so a window can run past midnight.
+  const o = hourOrigin(g.hours), h = [...Array(24)].map((_, i) => g.hours[(o + i) % 24]);
   let from = 0;
   for (let i = 1; i < 23; i++) if (h[i] + h[i + 1] > h[from] + h[from + 1]) from = i;
   let to = from + 2;
@@ -65,20 +66,38 @@ export function bestWindow(g: HourGrid): FocusWindow | null {
   while (h[from] < peak / 4) from++;
   while (h[to - 1] < peak / 4) to--;
   const win = sum(h, from, to), share = win / g.total;
-  const by = g.ms.map((row) => sum(row, from, to)), weekend = (by[5] + by[6]) / win, top = by.indexOf(Math.max(...by));
+  from += o; to += o;
+  const by = g.ms.map((_, d) => { let v = 0; for (let x = from; x < to; x++) v += cellAt(g, d, x); return v; });
+  const weekend = (by[5] + by[6]) / win, top = by.indexOf(Math.max(...by));
   const days: WindowDays = weekend <= 0.15 ? "weekdays" : weekend >= 0.7 ? "weekends" : by[top] / win >= 0.4 ? top : null;
   return { from, to, share, days, text: windowText(from, to, days, share) };
 }
 
+/** Where the day starts for charts: midnight, or for night focus the hour right after the longest stretch without focus. */
+export function hourOrigin(hours: number[]): number {
+  if (!sum(hours, 20, 24) || sum(hours, 0, 5) < sum(hours) * 0.1) return 0;
+  let origin = 0, gap = 0;
+  for (let s = 0; s < 24; s++) {
+    if (hours[s] || !hours[(s + 23) % 24]) continue;
+    let n = 0;
+    while (n < 24 && !hours[(s + n) % 24]) n++;
+    if (n > gap) { gap = n; origin = (s + n) % 24; }
+  }
+  return origin;
+}
+
+/** Focus in a chart cell; hours past 23 belong to the night that started on weekday `d`. */
+export const cellAt = (g: HourGrid, d: number, h: number) => (h < 24 ? g.ms[d][h] : g.ms[(d + 1) % 7][h - 24]);
+
 const partOf = (from: number, to: number) => {
   if (from < 12 && to > 12) return "midday";
-  const mid = (from + to) / 2;
+  const mid = ((from + to) / 2) % 24;
   return mid < 5 ? "night" : mid < 12 ? "morning" : mid < 17 ? "afternoon" : mid < 21 ? "evening" : "night";
 };
 
 /** A sentence naming the window, such as "You focus best 9–11 on weekday mornings." */
 export function windowText(from: number, to: number, days: WindowDays, share: number): string {
-  const hours = from + "–" + to;
+  const hours = (from % 24) + "–" + (to > 24 ? to - 24 : to);
   if (share < 0.3) return "Your focus is spread across the day, most often " + hours + ".";
   const part = partOf(from, to);
   const who = days === "weekdays" ? "weekday" : days === "weekends" ? "weekend" : days == null ? "" : WEEKDAYS[days];
@@ -88,10 +107,13 @@ export function windowText(from: number, to: number, days: WindowDays, share: nu
   return "You focus best " + hours + " " + when + ".";
 }
 
-/** Hours to chart: those with focus, at least 8 to 18. */
+/** Hours to chart: at least 8 to 18 and every hour with focus; night focus stays in one piece across midnight. */
 export function hourSpan(g: HourGrid): { from: number; to: number } {
-  const used = g.hours.flatMap((v, i) => (v ? [i] : []));
-  return { from: Math.min(8, ...used), to: Math.max(18, ...used.map((i) => i + 1)) };
+  const o = hourOrigin(g.hours), used = [...Array(24)].map((_, i) => o + i).filter((h) => g.hours[h % 24]);
+  if (!used.length || used.at(-1)! < 24) return { from: Math.min(8, ...used), to: Math.max(18, ...used.map((i) => i + 1)) };
+  let from = used[0], to = used.at(-1)! + 1;
+  while (to - from < 10) if ((to - from) % 2) from--; else to++;
+  return { from, to };
 }
 
 /** Shade 0 to 4 for a value relative to the largest one. */
