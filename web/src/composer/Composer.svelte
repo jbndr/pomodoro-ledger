@@ -3,6 +3,7 @@
   import { addDays, dayKey } from "../lib/dates";
   import { labelMatches } from "../lib/labels";
   import { firstDue, repeatText } from "../lib/repeat";
+  import { DOTS, MAX_EST } from "../lib/estimate";
   import { linkHost, linkLabel, takeLinks } from "../lib/links";
   import { breaksBetween, dropToken, hashToken, parseTitle } from "../lib/quickEntry";
   import { labelHue } from "../lib/tasks";
@@ -16,6 +17,7 @@
 
   const NOTE = /\s\/\/\s*/;
   const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+  const MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg>', PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>';
   const alt = mac ? "⌥" : "Alt+";
 
   /** The title parser's result, with each recognised token in the words the hint shows; " // " starts a note. */
@@ -37,7 +39,7 @@
     const parsed = parseNew(title), est = parsed.est || api.S.newEst, breaks = breaksBetween(est, api.S.settings.longEvery, api.dur("short"), api.dur("long"));
     return {
       parsed, est, when: whenNow(parsed), label: api.S.newLabel, repeat: parsed.repeat || api.S.newRepeat,
-      circles: Math.min(16, Math.max(8, est + 1)),
+      circles: Math.max(8, est + 1),
       estTitle: api.fmtDur(est * api.dur("focus")) + " focus" + (breaks ? " + " + api.fmtDur(breaks) + " breaks" : ""),
     };
   });
@@ -163,7 +165,7 @@
 
   function estKey(e) {
     const step = e.key === "ArrowRight" || e.key === "ArrowUp" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 0;
-    const n = step ? Math.max(1, Math.min(24, v.est + step)) : /^[1-9]$/.test(e.key) ? +e.key : 0;
+    const n = step ? Math.max(1, Math.min(MAX_EST, v.est + step)) : /^[1-9]$/.test(e.key) ? +e.key : 0;
     if (!n) return;
     e.preventDefault();
     pickEst(n);
@@ -202,11 +204,19 @@
         <button class="card-btn set" class:auto={!!v.parsed.when} type="button" id="newWhen" data-sched aria-haspopup="dialog" bind:this={whenBtn} title="When? Or type it: tomorrow, fri, next week, 12 oct" onclick={pickWhen}>{@html v.when === "today" ? api.ICON.star : api.ICON.cal}{v.when === "today" ? "Today" : v.when === "later" ? "Later" : api.dayName(v.when)}{#if v.repeat}<span class="rep" title={repeatText(v.repeat)}>{@html api.ICON.repeat}</span>{/if}<kbd class="key-hint" aria-hidden="true">{alt}D</kbd></button>
         <button class="card-btn" class:set={!!v.label} type="button" id="newLabel" aria-haspopup="listbox" aria-expanded="false" title="Label, or type #name" aria-label={api.labelChipName(v.label)} bind:this={labelBtn} onclick={pickLabel}>{#if v.label}<i class="label-dot" style:--h={labelHue(v.label)}></i>{:else}{@html api.ICON.tag}{/if}<span>{v.label || "Label"}</span><kbd class="key-hint" aria-hidden="true">{alt}L</kbd></button>
         <span class="card-est" class:auto={!!v.parsed.est} id="newEst"><kbd class="key-hint" aria-hidden="true">{alt}1–9</kbd>
-          <span class="est-pick" role="radiogroup" aria-label="Estimated cycles" tabindex="-1" onkeydown={estKey}>
-            {#each { length: v.circles } as _, i (i)}
-              <button type="button" role="radio" aria-checked={String(i + 1 === v.est)} tabindex={i + 1 === v.est ? 0 : -1} aria-label={api.plural(i + 1, "cycle")} data-nset={i + 1} class={i < v.est ? "on" : ""} onclick={() => pickEst(i + 1)}><i></i></button>
-            {/each}
-          </span><output id="estOut" title={v.estTitle}>{api.plural(v.est, "cycle")}</output>
+          {#if v.est > DOTS}
+            <span class="est-step" role="group" aria-label="Estimated cycles">
+              <button type="button" aria-label="One cycle fewer" onclick={() => pickEst(v.est - 1)}>{@html MINUS}</button>
+              <output id="estOut" title={v.estTitle} aria-live="polite">{api.plural(v.est, "cycle")}</output>
+              <button type="button" aria-label="One cycle more" disabled={v.est >= MAX_EST} onclick={() => pickEst(v.est + 1)}>{@html PLUS}</button>
+            </span>
+          {:else}
+            <span class="est-pick" role="radiogroup" aria-label="Estimated cycles" tabindex="-1" onkeydown={estKey}>
+              {#each { length: v.circles } as _, i (i)}
+                <button type="button" role="radio" aria-checked={String(i + 1 === v.est)} tabindex={i + 1 === v.est ? 0 : -1} aria-label={api.plural(i + 1, "cycle")} data-nset={i + 1} class={i < v.est ? "on" : ""} onclick={() => pickEst(i + 1)}><i></i></button>
+              {/each}
+            </span><output id="estOut" title={v.estTitle}>{api.plural(v.est, "cycle")}</output>
+          {/if}
         </span>
         <span class="spacer"></span>
         <button class="btn small solid" type="submit">Add <kbd>↵</kbd></button>

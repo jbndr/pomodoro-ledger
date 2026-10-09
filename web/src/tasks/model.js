@@ -57,7 +57,7 @@ function taskRow(a, t, dated, tk, goalOf) {
     notes: !!t.notes,
     link: linkChip(t),
     repeat: !rule ? null : isPaused(t, tk)
-      ? { paused: true, short: "Paused", title: repeatText(rule) + ", paused " + (t.paused.until ? "until " + a.shortDay(t.plan) : "until you resume it") }
+      ? { paused: true, short: repeatShort(rule), title: repeatText(rule) + ", paused " + (t.paused.until ? "until " + a.shortDay(t.plan) : "until you resume it") }
       : { short: repeatShort(rule), title: repeatText(rule) },
     goal: today ? goalOf(t) : null,
     carry: today && t.plan && t.plan < tk ? "from " + a.fmtDate(a.keyTime(t.plan), { weekday: "short" }) : "",
@@ -75,7 +75,7 @@ function linkChip(t) {
 function taskCard(a, t, c, est, project, subs) {
   const bucket = a.bucketOf(t), ms = a.timeOf(t);
   return {
-    title: t.title, notes: t.notes || "", est, circles: Math.min(16, Math.max(8, est + 1)), estText: a.plural(est, "cycle"),
+    title: t.title, notes: t.notes || "", est, circles: Math.max(8, est + 1), estText: a.plural(est, "cycle"),
     bucket, whenText: bucket === "today" ? "Today" : bucket === "later" ? "When" : a.dayName(t.plan),
     labelName: a.labelChipName(project),
     del: a.S.confirmDel === t.id,
