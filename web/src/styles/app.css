@@ -499,6 +499,14 @@ td.barcell { width: 38%; min-width: 120px; }
 .card-est .est-pick button { width: 17px; height: 26px; }
 .card-est .est-pick button i { width: 11px; height: 11px; }
 .card-est output { font: 12.5px var(--f-body); color: var(--muted); white-space: nowrap; }
+.est-step { display: inline-flex; align-items: center; gap: 2px; height: 30px; padding: 2px; border-radius: 999px; border: 1px solid var(--line); }
+.est-step button { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--muted); transition: background .15s, color .15s; }
+.est-step button svg { width: 13px; height: 13px; }
+.est-step button:disabled { opacity: .35; }
+@media (hover: hover) { .est-step button:not(:disabled):hover { background: var(--surface-2); color: var(--fg); } }
+.est-step output { min-width: 7.5ch; padding: 0 4px; text-align: center; font: 550 12.5px var(--f-body); color: var(--fg); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.card-bar > .card-btn { flex-shrink: 0; }
+.card-bar > .card-btn span { max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (hover: hover) { .est-pick:hover button i { border-color: var(--line-2); background: transparent; } .est-pick:hover button:hover i, .est-pick button:has(~ button:hover) i { border-color: var(--tomato); background: var(--tomato); } }
 .est-pick button[aria-checked="true"] i { animation: check-pop .28s cubic-bezier(.2, .8, .2, 1.4); }
 .add-scrim { position: fixed; inset: 0; z-index: 42; background: var(--scrim); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: when-fade .18s ease-out; }
@@ -850,7 +858,8 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .rep-days button[aria-pressed="true"] { background: var(--leaf); color: var(--on-accent); }
 @media (hover: hover) { .rep-days button:not([aria-pressed="true"]):hover { color: var(--fg); } }
 .task-meta .repeat { color: var(--leaf); }
-.task-meta .repeat.paused { color: var(--muted); }
+.task-meta .repeat.paused { color: var(--faint); }
+.task-meta .repeat em { font-style: normal; }
 .task-meta .goal-mark { font-variant-numeric: tabular-nums; }
 .task-meta .goal-mark.reached { color: var(--good); }
 .card-btn .rep { display: inline-flex; color: var(--leaf); }

@@ -1,6 +1,8 @@
 <script>
   import { tick } from "svelte";
+  import { DOTS, MAX_EST } from "../lib/estimate";
   let { api, row, card, start } = $props();
+  const MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg>', PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>';
   let notesTimer = 0, linking = $state(false), linkEl = $state();
 
   function notesInput(e) {
@@ -84,12 +86,20 @@
     <button class="card-btn" class:set={card.bucket !== "later"} type="button" data-act="sched" data-sched aria-haspopup="dialog" title="When? (D)" onclick={(e) => api.sched(e.currentTarget, row.id)}>{@html card.bucket === "today" ? api.ICON.star : api.ICON.cal}{card.whenText}</button>
     <button class="card-btn" class:set={!!row.project} type="button" data-act="label" title={row.project || null} aria-haspopup="listbox" aria-expanded="false" aria-label={card.labelName} onclick={() => api.label(row.id)}>{#if row.project}<i class="label-dot" style:--h={row.hue}></i><span>{row.project}</span>{:else}{@html api.ICON.tag}<span>Label</span>{/if}</button>
     <span class="card-est">
-      <span class="est-pick" role="radiogroup" aria-label="Estimated cycles">
-        {#each { length: card.circles } as _, i (i)}
-          <button type="button" role="radio" aria-checked={String(i + 1 === card.est)} aria-label={api.plural(i + 1, "cycle")} data-cest={i + 1} class={i < card.est ? "on" : ""} onclick={() => api.setEst(row.id, i + 1)}><i></i></button>
-        {/each}
-      </span>
-      <output>{card.estText}</output>
+      {#if card.est > DOTS}
+        <span class="est-step" role="group" aria-label="Estimated cycles">
+          <button type="button" aria-label="One cycle fewer" onclick={() => api.setEst(row.id, card.est - 1)}>{@html MINUS}</button>
+          <output aria-live="polite">{card.estText}</output>
+          <button type="button" aria-label="One cycle more" disabled={card.est >= MAX_EST} onclick={() => api.setEst(row.id, card.est + 1)}>{@html PLUS}</button>
+        </span>
+      {:else}
+        <span class="est-pick" role="radiogroup" aria-label="Estimated cycles">
+          {#each { length: card.circles } as _, i (i)}
+            <button type="button" role="radio" aria-checked={String(i + 1 === card.est)} aria-label={api.plural(i + 1, "cycle")} data-cest={i + 1} class={i < card.est ? "on" : ""} onclick={() => api.setEst(row.id, i + 1)}><i></i></button>
+          {/each}
+        </span>
+        <output>{card.estText}</output>
+      {/if}
     </span>
     <span class="spacer"></span>
     <span class="card-actions">

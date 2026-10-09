@@ -276,6 +276,7 @@ export function resumeRepeat(id: string) {
 }
 
 export function setEstimate(id: string, est: number) {
+  est = Math.max(1, Math.min(99, Math.round(est)));
   const t = S.tasks.get(id);
   if (guardPreview() || !t || (t.est || 0) === est) return;
   const n = clone(t); n.est = est; Store.saveTask(n);
