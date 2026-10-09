@@ -38,7 +38,7 @@ import { deleteSession, labelSession, moveItems, moveSession } from "./progress/
 import Progress from "./progress/Progress.svelte";
 import Recap from "./progress/Recap.svelte";
 import { renderAll, renderEstPick, renderPill, renderStats, renderTasks, renderTimer, rethemeFloat } from "./render";
-import RoomDialog from "./room/RoomDialog.svelte";
+import Together from "./room/Together.svelte";
 import RoomStrip from "./room/RoomStrip.svelte";
 import { followRoom, reactionsChanged, reactionsOn, reactWait, renderRoom, RM, roomConnect, roomCreate, roomEnter, roomInStep, roomList, roomReact, roomReset, roomSend } from "./room/net";
 import { Sched, watchReminders } from "./room/sched";
@@ -58,7 +58,7 @@ import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
 import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, freshRounds, keepGoing, nudgeDone, readyFlow, resetRounds, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
-import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, openSettings, openShare, openWhen, openYear, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type SettingsUI, type ShareUI, type Sheet, type WhenUI, type YearUI } from "./ui";
+import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, toggleRoom, openSettings, openShare, openWhen, openYear, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type RoomUI, type SettingsUI, type ShareUI, type Sheet, type WhenUI, type YearUI } from "./ui";
 import Year from "./year/Year.svelte";
 import ShareSheet from "./year/ShareSheet.svelte";
 import { fsEl, setZen, toggleZen } from "./zen";
@@ -95,10 +95,10 @@ mount(Progress, { target: $(".app"), props: { api: {
   S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
   deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap, openPlan, weekGoals, openYear,
 } } });
-const roomApi = { RM, ls, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
+const roomApi = { RM, S, ls, esc, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
   roomReact, reactWait, reactionsOn };
 mount(BarTools, { target: $(".bar-right"), props: { api: {
-  RM, ls, S, Cloud, DEMO, preview, openRoom, openKeys, openPalette, openSettings: () => openSettings(),
+  RM, ls, S, Cloud, DEMO, preview, openRoom: toggleRoom, openKeys, openPalette, openSettings: () => openSettings(),
   openSync: () => { if (!DEMO) openSettings("sync"); },
   themed: rethemeFloat,
 } } });
@@ -107,7 +107,7 @@ timerLayout.observe($("#roomStrip"));
 mount(BulkBar, { target: document.body, props: { api: { S, ICON, shown: (t: Task) => bucketOf(t) === S.taskView && inProject(t), toTop: moveTasksToTop, labelMany: labelTasks, schedMany: schedTasks, finishMany: finishTasks, deleteMany: deleteTasks } } });
 mount(Tip, { target: document.body });
 mount(Toast, { target: document.body });
-ui.room = mount(RoomDialog, { target: document.body, props: { api: roomApi } }) as Sheet;
+ui.room = mount(Together, { target: document.body, props: { api: roomApi } }) as RoomUI;
 watchReminders(openRoom);
 ui.keys = mount(Keys, { target: document.body, props: { api: { setOverlay, MOD, openPalette } } }) as Sheet;
 ui.recap = mount(Recap, { target: document.body, props: { api: {

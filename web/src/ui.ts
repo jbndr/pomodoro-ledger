@@ -12,6 +12,7 @@ export interface LabelUI {
 }
 export interface SettingsUI { fill(): void; open(tab?: string): void; close(): void; renderSync(): void }
 export interface Sheet { open(): void; close(): void }
+export interface RoomUI extends Sheet { isOpen(): boolean }
 export interface PaletteUI extends Sheet { toggle(): void }
 export interface RecapUI { open(week?: number): void; close(): void; maybeOpen(): void }
 export interface YearUI { open(year?: number): void; close(): void; maybeOpen(): void }
@@ -20,7 +21,7 @@ export interface ShareUI { open(r: ShareRequest): void; close(): void }
 export interface ListUI { moveTask(id: string, up: boolean, far: boolean): { from: string; to: string } | null; moveToTop(ids: string[]): boolean; dragging(): boolean }
 
 /** What the mounted components expose; set during boot. */
-export const ui: { pop?: PopUI; when?: WhenUI; label?: LabelUI; settings?: SettingsUI; keys?: Sheet; room?: Sheet; list?: ListUI; recap?: RecapUI; palette?: PaletteUI; plan?: Sheet; year?: YearUI; share?: ShareUI } = {};
+export const ui: { pop?: PopUI; when?: WhenUI; label?: LabelUI; settings?: SettingsUI; keys?: Sheet; room?: RoomUI; list?: ListUI; recap?: RecapUI; palette?: PaletteUI; plan?: Sheet; year?: YearUI; share?: ShareUI } = {};
 
 export const openPop: PopUI["open"] = (...a) => ui.pop!.open(...a);
 export const closePop = (refocus?: boolean) => ui.pop?.close(refocus);
@@ -36,6 +37,7 @@ export const renderSyncTab = () => ui.settings!.renderSync();
 export const openKeys = () => ui.keys!.open();
 export const closeKeys = () => ui.keys!.close();
 export const openRoom = () => ui.room!.open();
+export const toggleRoom = () => (ui.room!.isOpen() ? ui.room!.close() : ui.room!.open());
 export const closeRoom = () => ui.room!.close();
 export const openRecap = (week?: number) => ui.recap!.open(week);
 export const closeRecap = () => ui.recap!.close();
