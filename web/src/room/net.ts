@@ -24,6 +24,8 @@ export const RM = {
   you: null as string | null, members: [] as Member[], prop: null as Proposal | null, live: false, tries: 0,
   pub: readPub(), fresh: false,
   bubbles: [] as Bubble[], bucket: null as Bucket | null, cheerUntil: 0,
+  /** Reactions rising from the face of whoever sent them. */
+  floats: [] as { key: number; e: string; by: string }[],
   /** How far this device's clock is ahead of the server's. */
   skew: 0,
   timer: undefined as ReturnType<typeof setTimeout> | undefined, fade: undefined as ReturnType<typeof setTimeout> | undefined, ping: undefined as ReturnType<typeof setInterval> | undefined, sent: "",
@@ -46,7 +48,7 @@ export function roomReset() {
   clearTimeout(RM.timer); clearInterval(RM.ping);
   const ws = RM.ws;
   RM.owner = false; RM.ws = null; RM.code = null; RM.live = false; RM.members = []; RM.prop = null; RM.tries = 0; RM.pub = null; RM.fresh = false;
-  RM.bubbles = []; RM.cheerUntil = 0; clearTimeout(RM.fade);
+  RM.bubbles = []; RM.floats = []; RM.cheerUntil = 0; clearTimeout(RM.fade);
   ss.set("pl.room", null); ss.set("pl.roomPub", null);
   if (ws) try { ws.close(1000); } catch {}
   renderRoom();
@@ -78,7 +80,7 @@ export function roomConnect() {
 function roomMsg(m: RoomMsg) {
   if (m.t === "note") toast(m.msg);
   else if (m.t === "sync") applySync(m);
-  else if (m.t === "react") { if (reactionsOn() && REACTIONS.includes(m.e)) bubble(m.e, m.name); }
+  else if (m.t === "react") { if (reactionsOn() && REACTIONS.includes(m.e)) bubble(m.e, m.name, m.by); }
   else if (m.t === "room") {
     const skew = Date.now() - m.now, had = RM.prop;
     RM.skew = skew;
@@ -151,8 +153,16 @@ export async function roomList(): Promise<{ now: number; rooms: Listed[]; upcomi
 
 export const reactionsOn = () => S.settings.reactions !== false;
 
-function bubble(e: string, name: string) {
+let floatKey = 0;
+const FLOAT_MS = 1400;
+
+function bubble(e: string, name: string, by: string | null) {
   RM.bubbles = addBubble(RM.bubbles, e, name, Date.now());
+  if (by) {
+    const key = ++floatKey;
+    RM.floats = [...RM.floats, { key, e, by }];
+    setTimeout(() => { RM.floats = RM.floats.filter((f) => f.key !== key); renderRoom(); }, FLOAT_MS);
+  }
   fadeBubbles();
 }
 
@@ -170,14 +180,14 @@ export function roomReact(e: string) {
   if (!RM.live || !reactionsOn() || !REACTIONS.includes(e) || !b) return false;
   RM.bucket = b; RM.cheerUntil = 0;
   roomSend({ t: "react", e });
-  bubble(e, "You");
+  bubble(e, "You", RM.you);
   return true;
 }
 
 export const reactWait = () => tokenIn(RM.bucket, Date.now());
 
 export function reactionsChanged() {
-  if (!reactionsOn()) { RM.bubbles = []; RM.cheerUntil = 0; }
+  if (!reactionsOn()) { RM.bubbles = []; RM.floats = []; RM.cheerUntil = 0; }
   fadeBubbles();
 }
 

@@ -15,7 +15,9 @@
   const roomName = $derived.by(() => { room.version; return api.RM.code ? api.RM.pub?.title || "your room" : ""; });
   const hueOf = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
   const initials = (n) => n.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
-  const faces = $derived(people.slice(0, 3).map((n) => ({ ini: initials(n), hue: hueOf(n) })));
+  // In a room the pill shows the others there, never you; outside one, whoever is in a room right now.
+  const others = $derived.by(() => { room.version; return api.RM.code ? api.RM.members.filter((m) => m.id !== api.RM.you).map((m) => m.name) : []; });
+  const faces = $derived((roomName ? others : people).slice(0, 3).map((n) => ({ ini: initials(n), hue: hueOf(n) })));
   const label = $derived(roomName ? "In " + roomName : people.length ? people.length + " in rooms now" : "Work together");
 
   // Only names come back from the lobby; what anyone works on stays on their own device.
@@ -54,8 +56,8 @@
   });
 </script>
 
-<button class="together" class:in={!!roomName} id="openRoom" type="button" aria-label={label + ". Work together"} onclick={() => api.openRoom()}>
-  {#if faces.length}<span class="faces" aria-hidden="true">{#each faces as f, i (i)}<span class="face" style:--h={f.hue}>{f.ini}</span>{/each}</span>{:else}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.2.2 3.6 1.6 4 3.8"/></svg>{/if}
+<button class="together" class:in={!!roomName} id="openRoom" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label={label + ". Work together"} onclick={() => api.openRoom()}>
+  {#if roomName && !faces.length}<i class="live" aria-hidden="true"></i>{:else if faces.length}<span class="faces" aria-hidden="true">{#each faces as f, i (i)}<span class="face" style:--h={f.hue}>{f.ini}</span>{/each}</span>{:else}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.2.2 3.6 1.6 4 3.8"/></svg>{/if}
   <span class="together-label">{label}</span>
 </button>
 <div class="bar-menu-wrap" bind:this={menuEl} onfocusout={(e) => { if (e.relatedTarget && !menuEl.contains(e.relatedTarget)) close(); }}>
