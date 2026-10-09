@@ -809,6 +809,12 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .rep-head svg { width: 16px; height: 16px; color: var(--leaf); }
 .rep-head span { flex: 1; }
 .rep-head em { font: 500 12px var(--f-body); font-style: normal; color: var(--leaf); }
+.rep-pause { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; padding: 6px 2px 0 6px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.rep-pause-opts { display: flex; gap: 4px; }
+.rep-pause-opts button, .rep-resume { height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: none; color: var(--muted); font: 550 12.5px var(--f-body); white-space: nowrap; transition: background .15s, color .15s, border-color .15s; }
+@media (hover: hover) { .rep-pause-opts button:hover, .rep-resume:hover { background: var(--surface-2); color: var(--fg); border-color: var(--line-2); } }
+.rep-resume { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+@media (hover: hover) { .rep-resume:hover { background: var(--fg); color: var(--bg); opacity: .9; } }
 .seg-ctl { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: 3px; border-radius: 11px; background: var(--surface-2); }
 .seg-ctl > button, .seg-ctl > label { height: 28px; padding: 0 4px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: 550 12px var(--f-body); white-space: nowrap; cursor: pointer; transition: background .15s, color .15s, box-shadow .15s; }
 .seg-ctl > [aria-checked="true"], .seg-ctl > label:has(:checked) { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(0,0,0,.1), 0 0 0 .5px var(--line-2); }
@@ -828,6 +834,7 @@ td.t { font-weight: 550; max-width: 320px; overflow-wrap: anywhere; }
 .rep-days button[aria-pressed="true"] { background: var(--leaf); color: var(--on-accent); }
 @media (hover: hover) { .rep-days button:not([aria-pressed="true"]):hover { color: var(--fg); } }
 .task-meta .repeat { color: var(--leaf); }
+.task-meta .repeat.paused { color: var(--muted); }
 .task-meta .goal-mark { font-variant-numeric: tabular-nums; }
 .task-meta .goal-mark.reached { color: var(--good); }
 .card-btn .rep { display: inline-flex; color: var(--leaf); }

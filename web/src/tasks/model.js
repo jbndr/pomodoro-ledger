@@ -1,4 +1,4 @@
-import { cleanRepeat, repeatShort, repeatText } from "../lib/repeat";
+import { cleanRepeat, isPaused, repeatShort, repeatText } from "../lib/repeat";
 
 /** The task list as plain rows for the current view: headings and tasks, in display order. */
 export function buildList(a) {
@@ -54,7 +54,9 @@ function taskRow(a, t, dated, tk, goalOf) {
     when: dated && t.plan ? a.shortDay(t.plan) : "",
     subs: subs.length ? { done: subs.filter((s) => s.done).length, n: subs.length } : null,
     notes: !!t.notes,
-    repeat: rule ? { short: repeatShort(rule), title: repeatText(rule) } : null,
+    repeat: !rule ? null : isPaused(t, tk)
+      ? { paused: true, short: "Paused", title: repeatText(rule) + ", paused " + (t.paused.until ? "until " + a.shortDay(t.plan) : "until you resume it") }
+      : { short: repeatShort(rule), title: repeatText(rule) },
     goal: today ? goalOf(t) : null,
     carry: today && t.plan && t.plan < tk ? "from " + a.fmtDate(a.keyTime(t.plan), { weekday: "short" }) : "",
     pips: n > 12 ? { mini: est ? Math.min(100, (c / est) * 100) : 100 } : { dots: [...Array(n)].map((_, i) => (i < c ? (i >= est ? "o" : "f") : "")) },
