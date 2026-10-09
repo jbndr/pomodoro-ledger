@@ -57,7 +57,9 @@
     {:else if v.on}
       {#each v.people as m (m.id)}
         {@const ring = mateProgress(m.s, now)}
-        <li class="mate" data-mode={m.s ? m.s.mode : ""} data-status={m.s ? m.s.status : "idle"} class:you={m.id === api.RM.you} style:--progress={ring.deg} data-tip={tip(m)} animate:flip={move()} in:pop out:fade>
+        {@const done = parseFloat(ring.deg) / 3.6}
+        <li class="mate" data-mode={m.s ? m.s.mode : ""} data-status={m.s ? m.s.status : "idle"} class:you={m.id === api.RM.you} data-tip={tip(m)} animate:flip={move()} in:pop out:fade>
+          <svg class="mate-ring" viewBox="0 0 40 40" aria-hidden="true"><circle class="track" cx="20" cy="20" r="18.6"/>{#if done > 0}<circle class="arc" cx="20" cy="20" r="18.6" pathLength="100" stroke-dasharray="{done} 100" transform="rotate(-90 20 20)"/>{/if}</svg>
           <span class="face" style:--h={hueOf(m.name)} role="img" aria-label={(m.id === api.RM.you ? "You" : m.name) + ": " + statusOf(m)}>{initials(m.name)}</span>
           {#each v.floats.filter((f) => f.by === m.id) as f (f.key)}<span class="float" aria-hidden="true">{f.e}</span>{/each}
           {#if v.owner && !m.owner && m.id !== api.RM.you}<button class="kick" type="button" aria-label="Remove {m.name} from room" title="Remove from room" onclick={() => { if (api.RM.owner) api.roomSend({ t: "kick", id: m.id }); }}>×</button>{/if}
