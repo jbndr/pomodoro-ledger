@@ -2,7 +2,7 @@
   import { flushSync } from "svelte";
   import { calMove, monthGrid, monthOf, stepMonth, weekStartOf } from "../lib/calendar";
   import { addDays, dayKey, keyTime } from "../lib/dates";
-  import { anchored, cleanRepeat, firstDue, MAX_N, ordinal } from "../lib/repeat";
+  import { anchored, cleanRepeat, firstDue, isPaused, MAX_N, ordinal } from "../lib/repeat";
   import { whenOptions } from "../lib/when";
   import { whenPop } from "./state.svelte";
 
@@ -75,6 +75,18 @@
   function pickItem(o) {
     if (!o || o.off) return;
     if (o.repeat) { const { from, ...r } = o.repeat; setRule(r); close(true); } else choose(o.g);
+  }
+
+  const dayText = (k) => api.fmtDate(keyTime(k), { weekday: "short", day: "numeric", month: "short" });
+  function pause(days) {
+    const t = task;
+    close(true);
+    if (t) api.pauseRepeat(t.id, days ? dayKey(addDays(Date.now(), days)) : null);
+  }
+  function resume() {
+    const t = task;
+    close(true);
+    if (t) api.resumeRepeat(t.id);
   }
 
   const startKey = () => { const tk = api.todayKey(); return task && task.plan && task.plan > tk ? task.plan : tk; };
@@ -212,7 +224,7 @@
     {/each}
   </div>
   <div class="when-repeat">
-    <div class="rep-head">{@html ICON.repeat}<span id="repLabel">Repeat</span>{#if rule}<em>Next {next}</em>{/if}</div>
+    <div class="rep-head">{@html ICON.repeat}<span id="repLabel">Repeat</span>{#if rule && !(task && !onRepeat && isPaused(task, api.todayKey()))}<em>Next {next}</em>{/if}</div>
     <div class="seg-ctl rep-kinds" role="radiogroup" aria-labelledby="repLabel">
       {#each KINDS as [k, name], i (k)}
         {@const on = (rule ? rule.every : "") === k}
@@ -233,6 +245,20 @@
           {@const wd = new Date(d.t).getDay()}
           <button type="button" aria-pressed={String(rule.days.includes(wd))} aria-label={api.fmtDate(d.t, { weekday: "long" })} onclick={() => toggleDay(wd)}>{api.fmtDate(d.t, { weekday: "short" }).slice(0, 2)}</button>
         {/each}
+      </div>
+    {/if}
+    {#if rule && task && !onRepeat && task.repeat}
+      {@const held = isPaused(task, api.todayKey())}
+      <div class="rep-pause">
+        {#if held}
+          <span>{task.paused.until ? "Paused · back " + dayText(task.plan) : "Paused until you resume it"}</span>
+          <button class="rep-resume" type="button" onclick={resume}>Resume</button>
+        {:else}
+          <span id="pauseLabel">Pause</span>
+          <div class="rep-pause-opts" role="group" aria-labelledby="pauseLabel">
+            <button type="button" onclick={() => pause(7)}>1 week</button><button type="button" onclick={() => pause(14)}>2 weeks</button><button type="button" onclick={() => pause(0)}>Until I resume</button>
+          </div>
+        {/if}
       </div>
     {/if}
   </div>

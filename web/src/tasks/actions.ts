@@ -1,9 +1,9 @@
 import { toast } from "../chrome/notice.svelte";
 import { $, calm, taskRow, taskRows } from "../dom";
 import { fmtDur, plural } from "../format";
-import { addDays, dayKey } from "../lib/dates";
+import { addDays, dayKey, type DayKey } from "../lib/dates";
 import type { Placement } from "../lib/order";
-import { nextOccurrence, repeatText, seriesOf, withRepeat, type Repeat } from "../lib/repeat";
+import { nextOccurrence, paused, repeatText, resumed, seriesOf, withRepeat, type Repeat } from "../lib/repeat";
 import { cyclesOf, projectOf, timeOf, type Subtask } from "../lib/tasks";
 import { phone, showPage } from "../pages";
 import { whenPop } from "../popovers/state.svelte";
@@ -234,6 +234,23 @@ export function setRepeat(id: string, r: Repeat | null) {
   const n = withRepeat(clone(t), r, todayKey());
   Store.saveTask(n);
   toast(r ? "“" + t.title + "” repeats e" + repeatText(r).slice(1) + "." + (n.plan === todayKey() ? "" : " Next: " + shortDay(n.plan!) + ".") : "“" + t.title + "” no longer repeats.");
+}
+
+/** Puts a recurring task on hold until `until`, or until it's resumed when that's null. */
+export function pauseRepeat(id: string, until: DayKey | null) {
+  const t = S.tasks.get(id);
+  if (guardPreview() || !t || !t.repeat) return;
+  const n = paused(clone(t), until);
+  Store.saveTask(n);
+  toast(until ? "“" + t.title + "” is paused. It's back on " + shortDay(n.plan!) + "." : "“" + t.title + "” is paused. It waits under Later until you resume it.");
+}
+
+export function resumeRepeat(id: string) {
+  const t = S.tasks.get(id);
+  if (guardPreview() || !t || !t.paused) return;
+  const n = resumed(clone(t), todayKey());
+  Store.saveTask(n);
+  toast("“" + t.title + "” is back." + (n.plan === todayKey() ? " It's on today." : " Next: " + shortDay(n.plan!) + "."));
 }
 
 export function setEstimate(id: string, est: number) {

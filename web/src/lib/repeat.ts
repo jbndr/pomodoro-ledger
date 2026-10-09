@@ -173,6 +173,30 @@ export function parseRepeat(raw: string, now = Date.now()): Repeat | undefined {
 
 export const seriesOf = (t: Task) => t.series || t.id;
 
+/** On hold: until a day still ahead, or until resumed. */
+export const isPaused = (t: Task, tk: DayKey) => !!cleanRepeat(t.repeat) && !!t.paused && (!t.paused.until || t.paused.until > tk);
+
+/** A recurring task put on hold. With a day it waits on its first due day from then; without one it leaves the plan until resumed. */
+export function paused(t: Task, until: DayKey | null): Task {
+  const r = cleanRepeat(t.repeat);
+  if (!r) return t;
+  const n: Task = { ...t, today: false, paused: until ? { until } : {} };
+  if (until) n.plan = firstDue(r, until);
+  else delete n.plan;
+  return n;
+}
+
+/** Back on its rule from today. */
+export function resumed(t: Task, tk: DayKey): Task {
+  const n: Task = { ...t };
+  delete n.paused;
+  const r = cleanRepeat(t.repeat);
+  if (!r) return n;
+  n.plan = firstDue(r, tk);
+  n.today = n.plan === tk;
+  return n;
+}
+
 /** The next occurrence of a finished recurring task, on its next due day after today or after its own day. */
 export function nextOccurrence(t: Task, tk: DayKey, now = Date.now()): Task | null {
   const r = cleanRepeat(t.repeat);
@@ -212,6 +236,7 @@ export function catchUp(tasks: Iterable<Task>, tk: DayKey): { save: Task[]; drop
 /** A task with its repeat set or cleared, planned for the rule's first due day from today or its own later day. */
 export function withRepeat(t: Task, r: Repeat | null, tk: DayKey): Task {
   const n: Task = { ...t };
+  delete n.paused;
   if (!r) { delete n.repeat; return n; }
   const start = t.plan && t.plan > tk ? t.plan : tk;
   n.repeat = r = anchored(r, start);

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { anchored, catchUp, cleanRepeat, firstDue, isDue, lastDue, nextDue, nextOccurrence, parseRepeat, repeatShort, repeatText, withRepeat, type Repeat } from "./repeat";
+import { anchored, catchUp, cleanRepeat, firstDue, isDue, isPaused, lastDue, nextDue, nextOccurrence, parseRepeat, paused, repeatShort, repeatText, resumed, withRepeat, type Repeat } from "./repeat";
 import type { Task } from "./tasks";
 
 // Saturday, 3 October 2026.
@@ -294,5 +294,31 @@ describe.each([["Europe/Berlin", -60], ["America/New_York", 300], ["Australia/Lo
     expect(parseRepeat("every 2 weeks on sun", at)).toEqual({ every: "week", days: [0], n: 2, from: "2026-03-29" });
     const t = task({ id: "s", repeat: { every: "day", n: 2, from: "2026-10-24" }, plan: "2026-10-24", done: true });
     expect(nextOccurrence(t, "2026-10-24", 1)?.id).toBe("s-20261026");
+  });
+});
+
+describe("pausing a recurring task", () => {
+  const daily: Task = { id: "lc", title: "Leetcode", repeat: { every: "day" }, plan: "2026-10-09", today: true };
+  it("waits on its first due day after a timed pause and leaves the plan when paused until resumed", () => {
+    const p = paused(daily, "2026-10-16");
+    expect(p).toMatchObject({ plan: "2026-10-16", today: false, paused: { until: "2026-10-16" } });
+    expect(isPaused(p, "2026-10-09")).toBe(true);
+    expect(isPaused(p, "2026-10-16")).toBe(false);
+    const open = paused(daily, null);
+    expect(open.plan).toBeUndefined();
+    expect(isPaused(open, "2030-01-01")).toBe(true);
+    const mon: Task = { ...daily, repeat: { every: "week", days: [1] } };
+    expect(paused(mon, "2026-10-16").plan).toBe("2026-10-19");
+  });
+  it("comes back on its rule from today when resumed", () => {
+    const r = resumed(paused(daily, null), "2026-10-12");
+    expect(r.paused).toBeUndefined();
+    expect(r).toMatchObject({ plan: "2026-10-12", today: true });
+  });
+  it("isn't moved to today by catch-up while paused", () => {
+    expect(catchUp([paused(daily, "2026-10-16"), paused({ ...daily, id: "b", series: "b" }, null)], "2026-10-12").save).toEqual([]);
+  });
+  it("is never paused without a rule", () => {
+    expect(isPaused({ ...daily, repeat: undefined, paused: {} }, "2026-10-09")).toBe(false);
   });
 });

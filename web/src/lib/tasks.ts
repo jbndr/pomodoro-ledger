@@ -40,6 +40,8 @@ export interface Task {
   repeat?: Repeat;
   /** The first occurrence's id, shared by every occurrence of a recurring task. */
   series?: string;
+  /** A recurring task on hold, until a day or, without one, until it's resumed. */
+  paused?: { until?: DayKey };
 }
 
 export type Tasks = Map<string, Task>;

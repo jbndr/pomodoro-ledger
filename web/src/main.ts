@@ -48,7 +48,7 @@ import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, prev
 import { cancelScapePreview, scapePlaying } from "./soundscape";
 import { DEMO, EMBED, ls, S, ss, T, type Task } from "./state";
 import { Labels, Store } from "./store";
-import { addSection, addSubtasks, addTask, commitPlacements, completeTask, completing, deleteSubtask, deleteTask, deleteTasks, dismissCard, editSubtask, finishTasks, focusOnTask, focusRow, labelTask, labelTasks, moveSection, moveTasksToTop, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, schedTasks, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
+import { addSection, addSubtasks, addTask, commitPlacements, pauseRepeat, resumeRepeat, completeTask, completing, deleteSubtask, deleteTask, deleteTasks, dismissCard, editSubtask, finishTasks, focusOnTask, focusRow, labelTask, labelTasks, moveSection, moveTasksToTop, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, schedTasks, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
 import { bucketOf, dayName, enterDemo, filterLabel, groupName, guardPreview, inProject, isToday, labelChipName, labelHidden, listHead, markStarted, openOf, preview, sections, shortDay, subsOf, todayKey, viewTasks } from "./tasks/derived";
 import ListFoot from "./tasks/ListFoot.svelte";
 import ListHead from "./tasks/ListHead.svelte";
@@ -143,7 +143,7 @@ mount(TimerCard, { target: $(".timer-card"), props: { api: {
   toggle, skip, adjust, setMode, flushPartial, buzz, toggleZen, setActive, keepGoing, canKeepGoing, nudgeDone, readyFlow, resetRounds,
 } } });
 ui.pop = mount(Pop, { target: document.body, anchor: $("#toast"), props: { api: { ICON } } }) as PopUI;
-ui.when = mount(WhenPop, { target: document.body, anchor: $("#toast"), props: { api: { S, todayKey, openOf, isToday, scheduleTask, setRepeat, fmtDate, plural } } }) as WhenUI;
+ui.when = mount(WhenPop, { target: document.body, anchor: $("#toast"), props: { api: { S, todayKey, openOf, isToday, scheduleTask, setRepeat, pauseRepeat, resumeRepeat, fmtDate, plural } } }) as WhenUI;
 ui.label = mount(LabelPop, { target: document.body, anchor: $("#toast"), props: { api: { S, ICON, renderTasks, saveSettings: () => Store.saveSettings(), setLabelHue: (name: string, hue: number) => { Labels.setHue(name, hue); renderAll(); } } } }) as LabelUI;
 const panel = $(".top > .panel"), headApi = { S, ss, listHead, plural, fmtDur, fmtClock, preview, guardPreview, filterLabel, renderTasks, moveToTomorrow, leftoverPrompt, moveAsked, leaveAsked };
 mount(TaskViews, { target: $(".tasks-head"), props: { api: headApi } });

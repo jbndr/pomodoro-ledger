@@ -57,6 +57,8 @@ export function placed(t: Task, g: string, order: number) {
   // Today's tasks keep the day they were planned for, so tomorrow they count as leftovers.
   if (n.today) n.plan = todayKey(); else if (g === "later") delete n.plan; else n.plan = g;
   if (sec) n.section = sec; else delete n.section;
+  // Giving a paused task a day brings it back.
+  if (g !== "later") delete n.paused;
   return n;
 }
 export const inGroup = (t: Task, g: string) => (g === "today" ? isToday(t) : g.startsWith("sec:") ? isToday(t) && t.section === g.slice(4) : g === "later" ? bucketOf(t) === "later" : bucketOf(t) === "upcoming" && t.plan === g);
