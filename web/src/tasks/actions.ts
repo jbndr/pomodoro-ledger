@@ -3,6 +3,7 @@ import { $, calm, taskRow, taskRows } from "../dom";
 import { fmtDur, plural } from "../format";
 import { addDays, dayKey, type DayKey } from "../lib/dates";
 import type { Placement } from "../lib/order";
+import { cleanLink, linksOf, MAX_LINKS } from "../lib/links";
 import { nextOccurrence, paused, repeatText, resumed, seriesOf, withRepeat, type Repeat } from "../lib/repeat";
 import { cyclesOf, projectOf, timeOf, type Subtask } from "../lib/tasks";
 import { phone, showPage } from "../pages";
@@ -61,13 +62,14 @@ export function commitPlacements(order: Placement[]) {
   if (changed.length) Store.saveTasks(changed); else renderTasks();
 }
 
-export function addTask(title: string, est: number, into: string, notes: string, repeat?: Repeat | null): string {
+export function addTask(title: string, est: number, into: string, notes: string, repeat?: Repeat | null, links: string[] = []): string {
   markStarted(true);
   const id = "t" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const last = Math.max(-1, ...openOf(S.tasks).filter((x) => inGroup(x, into)).map(ord));
   const t = placed({ id, title, est, done: false, createdAt: Date.now(), doneAt: null, sessions: [], subtasks: [], ...(notes ? { notes } : {}) }, into, last + 1);
   if (S.newLabel) t.project = Labels.use(S.newLabel);
   if (repeat) t.repeat = repeat;
+  if (links.length) t.links = links.slice(0, MAX_LINKS);
   if (!S.activeId || !S.tasks.get(S.activeId) || S.tasks.get(S.activeId)!.done) { S.activeId = id; saveTimer(); }
   if (!inProject(t)) S.projectFilter = "";
   Store.saveTask(t);
@@ -234,6 +236,26 @@ export function setRepeat(id: string, r: Repeat | null) {
   const n = withRepeat(clone(t), r, todayKey());
   Store.saveTask(n);
   toast(r ? "“" + t.title + "” repeats e" + repeatText(r).slice(1) + "." + (n.plan === todayKey() ? "" : " Next: " + shortDay(n.plan!) + ".") : "“" + t.title + "” no longer repeats.");
+}
+
+/** Adds a web address to a task; says why when it isn't one. */
+export function addLink(id: string, raw: string): boolean {
+  const t = S.tasks.get(id), u = cleanLink(raw, true);
+  if (guardPreview() || !t) return false;
+  if (!u) { toast("That doesn't look like a web address."); return false; }
+  const links = linksOf(t);
+  if (links.includes(u)) return true;
+  if (links.length >= MAX_LINKS) { toast("A task keeps up to " + MAX_LINKS + " links."); return false; }
+  Store.saveTask({ ...clone(t), links: [...links, u] });
+  return true;
+}
+
+export function removeLink(id: string, u: string) {
+  const t = S.tasks.get(id);
+  if (guardPreview() || !t) return;
+  const n = clone(t), rest = linksOf(t).filter((x) => x !== u);
+  if (rest.length) n.links = rest; else delete n.links;
+  Store.saveTask(n);
 }
 
 /** Puts a recurring task on hold until `until`, or until it's resumed when that's null. */

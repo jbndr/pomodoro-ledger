@@ -3,6 +3,7 @@
   import { addDays, dayKey } from "../lib/dates";
   import { labelMatches } from "../lib/labels";
   import { firstDue, repeatText } from "../lib/repeat";
+  import { linkHost, linkLabel, takeLinks } from "../lib/links";
   import { breaksBetween, dropToken, hashToken, parseTitle } from "../lib/quickEntry";
   import { labelHue } from "../lib/tasks";
   import { LP, labelPop } from "../popovers/state.svelte";
@@ -19,10 +20,15 @@
 
   /** The title parser's result, with each recognised token in the words the hint shows; " // " starts a note. */
   function parseNew(raw) {
+    const found = takeLinks(raw);
+    raw = found.text;
     const cut = raw.search(NOTE), head = cut > 0 ? raw.slice(0, cut) : raw, note = cut > 0 ? raw.slice(cut).replace(NOTE, "").trim() : "";
     const parsed = parseTitle(head, api.S.newKeep);
     if (note) parsed.tokens.push({ text: "// " + note, kind: "note" });
-    return { ...parsed, note, tokens: parsed.tokens.map((x) => ({ text: x.text, label: x.kind === "note" ? "note" : x.kind === "est" ? api.plural(x.est, "cycle") : x.kind === "repeat" ? repeatText(x.repeat) : x.when === "later" ? "Later" : api.dayName(x.when === "today" ? api.todayKey() : x.when) })) };
+    for (const u of found.links) parsed.tokens.push({ text: linkHost(u), kind: "link" });
+    if (!parsed.title && found.links.length) parsed.title = linkLabel(found.links[0]);
+    parsed.links = found.links;
+    return { ...parsed, note, tokens: parsed.tokens.map((x) => ({ text: x.text, label: x.kind === "note" ? "note" : x.kind === "link" ? "link" : x.kind === "est" ? api.plural(x.est, "cycle") : x.kind === "repeat" ? repeatText(x.repeat) : x.when === "later" ? "Later" : api.dayName(x.when === "today" ? api.todayKey() : x.when) })) };
   }
   const whenNow = (parsed) => parsed.when || api.S.newWhen || (api.S.taskView === "upcoming" ? dayKey(addDays(Date.now(), 1)) : api.S.taskView);
 
@@ -68,7 +74,7 @@
   }
 
   function keep() {
-    api.S.newKeep.push(...parseNew(input.value).tokens.filter((x) => x.label !== "note").map((x) => x.text.toLowerCase()));
+    api.S.newKeep.push(...parseNew(input.value).tokens.filter((x) => x.label !== "note" && x.label !== "link").map((x) => x.text.toLowerCase()));
     composer.refresh(); input.focus();
   }
 
@@ -128,7 +134,7 @@
     if (!name) { input.focus(); return; }
     const into = whenNow(parsed), text = [notes.value.trim(), parsed.note].filter(Boolean).join("\n"), est = parsed.est || api.S.newEst, repeat = parsed.repeat || api.S.newRepeat;
     setTitle(""); notes.value = ""; api.S.newWhen = null; api.S.newRepeat = null; api.S.newKeep = [];
-    const id = api.addTask(name, est, into, text, repeat);
+    const id = api.addTask(name, est, into, text, repeat, parsed.links);
     input.focus();
     unfold(id);
   }
@@ -189,7 +195,7 @@
   <div class="add-body">
     <input type="text" id="newTitle" maxlength="160" placeholder={composer.quick ? "New task, e.g. Call Sam fri 2c #work // agenda" : "New task"} aria-label="New task title" aria-describedby="newParsed" bind:this={input} bind:value={() => title, (v) => { title = v; typing(); }} onkeydown={titleKey} onblur={() => { if (hashOpen() && document.hasFocus()) api.closeLabelPop(); }} />
     <div class="new-task-options" id="newTaskOptions" hidden={!open}>
-      <div class="new-parsed" id="newParsed" aria-live="polite" hidden={!v.parsed.tokens.length}>{#each v.parsed.tokens as x, i (i)}{i ? " · " : ""}<mark>{x.text}</mark> → {x.label}{/each}{#if v.parsed.tokens.length}{" "}<button type="button" id="newKeep" onclick={keep}>Keep as text</button>{/if}</div>
+      <div class="new-parsed" id="newParsed" aria-live="polite" hidden={!v.parsed.tokens.length}>{#each v.parsed.tokens as x, i (i)}{i ? " · " : ""}<mark>{x.text}</mark> → {x.label}{/each}{#if v.parsed.tokens.some((x) => x.label !== "note" && x.label !== "link")}{" "}<button type="button" id="newKeep" onclick={keep}>Keep as text</button>{/if}</div>
       <span class="key-hint notes-hint" aria-hidden="true">↓</span>
       <textarea id="newNotes" rows="1" maxlength="4000" placeholder="Notes" aria-label="Notes" bind:this={notes}></textarea>
       <div class="card-bar">

@@ -34,6 +34,8 @@ export interface Task {
   section?: string;
   order?: number;
   notes?: string;
+  /** Web addresses kept with the task. */
+  links?: string[];
   updatedAt?: number;
   sessions?: Session[];
   subtasks?: Subtask[];

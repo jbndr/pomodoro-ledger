@@ -1,3 +1,4 @@
+import { linkHost, linkLabel, linksOf } from "../lib/links";
 import { cleanRepeat, isPaused, repeatShort, repeatText } from "../lib/repeat";
 
 /** The task list as plain rows for the current view: headings and tasks, in display order. */
@@ -54,6 +55,7 @@ function taskRow(a, t, dated, tk, goalOf) {
     when: dated && t.plan ? a.shortDay(t.plan) : "",
     subs: subs.length ? { done: subs.filter((s) => s.done).length, n: subs.length } : null,
     notes: !!t.notes,
+    link: linkChip(t),
     repeat: !rule ? null : isPaused(t, tk)
       ? { paused: true, short: "Paused", title: repeatText(rule) + ", paused " + (t.paused.until ? "until " + a.shortDay(t.plan) : "until you resume it") }
       : { short: repeatShort(rule), title: repeatText(rule) },
@@ -63,6 +65,11 @@ function taskRow(a, t, dated, tk, goalOf) {
     cycTitle: c + " of " + a.plural(est, "planned cycle"),
     card: open ? taskCard(a, t, c, est, project, subs) : null,
   };
+}
+
+function linkChip(t) {
+  const links = linksOf(t);
+  return links.length ? { href: links[0], host: linkHost(links[0]), more: links.length - 1 } : null;
 }
 
 function taskCard(a, t, c, est, project, subs) {
@@ -76,5 +83,6 @@ function taskCard(a, t, c, est, project, subs) {
     added: t.createdAt > 1 ? " · added " + a.fmtDate(t.createdAt) : "",
     subtasks: subs.map((s) => ({ id: s.id, title: s.title, done: !!s.done })),
     draft: a.S.subtaskDrafts.get(t.id) || "",
+    links: linksOf(t).map((href) => ({ href, label: linkLabel(href) })),
   };
 }
