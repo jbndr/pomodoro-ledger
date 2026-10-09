@@ -1,12 +1,12 @@
 <script>
   import { flushSync } from "svelte";
-  import { labelOptions, sameLabel } from "../lib/labels";
+  import { HUE_NAMES, LABEL_HUES, labelOptions, sameLabel } from "../lib/labels";
   import { labelHue } from "../lib/tasks";
   import { LP, labelPop } from "./state.svelte";
 
   let { api } = $props();
   let el, search, ul;
-  let opts = $state.raw([]), idx = $state(-1), text = $state(""), manage = $state(false), hash = $state(false), value = $state("");
+  let opts = $state.raw([]), idx = $state(-1), text = $state(""), manage = $state(false), tinting = $state(""), hash = $state(false), value = $state("");
   let left = $state(0), top = $state(0), bottom = $state(null);
   let query = "", find = null, cb = null, skip = "";
 
@@ -96,7 +96,14 @@
 
   function click(e) {
     const hide = e.target.closest("[data-label-archive]"), li = e.target.closest("li[data-i]");
-    if (hide) {
+    const tint = e.target.closest("[data-label-tint]"), swatch = e.target.closest("[data-hue]");
+    if (tint) {
+      tinting = tinting === tint.dataset.labelTint ? "" : tint.dataset.labelTint;
+    } else if (swatch) {
+      api.setLabelHue(swatch.dataset.for, +swatch.dataset.hue);
+      tinting = ""; render();
+      el.querySelector(`[data-label-tint="${CSS.escape(swatch.dataset.for)}"]`)?.focus();
+    } else if (hide) {
       const label = api.S.labels.find((l) => l.name === hide.dataset.labelArchive);
       if (!label) return;
       label.archived = !label.archived; label.updatedAt = Date.now();
@@ -147,7 +154,11 @@
       <li class="plain empty-note">{manage ? "No labels yet." : "No labels yet. Type a name to create your first one."}</li>
     {:else if manage}
       {#each opts as o (o.name)}
-        <li class={"plain" + (o.archived ? " off" : "")}><i class="label-dot" style:--h={labelHue(o.name)}></i><span>{o.name}</span><button class="btn small" type="button" data-label-archive={o.name}>{o.archived ? "Restore" : "Hide"}</button></li>
+        {@const hue = labelHue(o.name)}
+        <li class={"plain" + (o.archived ? " off" : "")}><button class="tint" type="button" data-label-tint={o.name} aria-expanded={String(tinting === o.name)} aria-label={"Colour of " + o.name + ": " + (HUE_NAMES[hue] || "")} title="Change colour"><i class="label-dot" style:--h={hue}></i></button><span>{o.name}</span><button class="btn small" type="button" data-label-archive={o.name}>{o.archived ? "Restore" : "Hide"}</button></li>
+        {#if tinting === o.name}
+          <li class="plain swatches" role="group" aria-label={"Colour of " + o.name}>{#each LABEL_HUES as h (h)}<button type="button" data-hue={h} data-for={o.name} aria-label={HUE_NAMES[h]} aria-pressed={String(hue === h)} title={HUE_NAMES[h]} style:--h={h}></button>{/each}</li>
+        {/if}
       {/each}
     {:else}
       {#each opts as o, i (optKey(o))}
@@ -156,5 +167,5 @@
       {/each}
     {/if}
   </ul>
-  <div class="label-pop-foot" id="labelPopFoot" hidden={hash}><span id="labelPopHint">{manage ? "Hidden labels aren’t suggested" : LP.key.startsWith("session:") ? "Applies only to this session" : "Or type # in a new task"}</span><button class="link" type="button" id="labelManage">{manage ? "Done" : "Manage"}</button></div>
+  <div class="label-pop-foot" id="labelPopFoot" hidden={hash}><span id="labelPopHint">{manage ? "Tap a dot to change its colour" : LP.key.startsWith("session:") ? "Applies only to this session" : "Or type # in a new task"}</span><button class="link" type="button" id="labelManage">{manage ? "Done" : "Manage"}</button></div>
 </div>

@@ -335,6 +335,14 @@ td.barcell { width: 38%; min-width: 120px; }
 .label-pop li > svg { width: 15px; height: 15px; flex: none; color: var(--accent); }
 .label-pop li.plain { cursor: default; }
 .label-pop li.empty-note { color: var(--muted); font-size: 13px; }
+.label-pop .tint { width: 22px; height: 22px; margin: -4px -3px -4px -5px; display: grid; place-items: center; flex: none; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; transition: background .15s; }
+@media (hover: hover) { .label-pop .tint:hover { background: var(--surface-2); } }
+.label-pop .tint[aria-expanded="true"] { background: var(--surface-2); }
+.label-pop li.swatches { flex-wrap: wrap; gap: 6px; min-height: 0; padding: 2px 8px 10px 30px; animation: swatches .22s cubic-bezier(.32, .72, 0, 1); }
+@keyframes swatches { from { opacity: 0; translate: 0 -4px; } }
+.label-pop .swatches button { width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; background: oklch(.68 .15 var(--h)); cursor: pointer; transition: scale .2s cubic-bezier(.32, .72, 0, 1), box-shadow .15s; }
+@media (hover: hover) { .label-pop .swatches button:hover { scale: 1.12; } }
+.label-pop .swatches button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px oklch(.68 .15 var(--h)); }
 .label-pop li.off > span { color: var(--faint); text-decoration: line-through; }
 .label-pop-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; padding: 5px 8px 3px; border-top: 1px solid var(--line); font-size: 12px; color: var(--faint); }
 .label-pop-foot .link { font-size: 12px; }

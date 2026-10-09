@@ -1,4 +1,5 @@
 import type { DayKey } from "./dates";
+import { isHue, LABEL_HUES, type Label } from "./labels";
 import type { Repeat } from "./repeat";
 
 export interface Session {
@@ -74,11 +75,28 @@ export function focusTasks(tasks: Tasks, filter: LabelFilter): Tasks {
   );
 }
 
-const LABEL_HUES = [25, 60, 100, 150, 195, 245, 290, 335];
+// Labels made before colours could be picked keep the colour their name always gave them.
+const HASH_HUES = [25, 60, 100, 150, 195, 245, 290, 335];
+const chosen = new Map<string, number>();
 
-/** A stable colour for a label name, the same in any letter case. */
+/** Remembers each label's own colour, so every view paints it the same way. */
+export function setLabelHues(labels: Label[]) {
+  chosen.clear();
+  for (const l of labels) if (l && typeof l.name === "string" && isHue(l.hue)) chosen.set(l.name.toLocaleLowerCase(), l.hue);
+}
+
+/** A label's colour, the same in any letter case. */
 export function labelHue(name: string): number {
+  const own = chosen.get(name.toLocaleLowerCase());
+  if (own != null) return own;
   let h = 0;
   for (const c of name.toLocaleLowerCase()) h = (h * 31 + c.codePointAt(0)!) >>> 0;
-  return LABEL_HUES[h % LABEL_HUES.length];
+  return HASH_HUES[h % HASH_HUES.length];
+}
+
+/** The colour fewest of the visible labels use, so a new label stands apart from the rest. */
+export function nextLabelHue(labels: Label[]): number {
+  const used = new Map(LABEL_HUES.map((h) => [h, 0]));
+  for (const l of labels) if (!l.archived) { const h = labelHue(l.name); used.set(h, (used.get(h) || 0) + 1); }
+  return LABEL_HUES.reduce((best, h) => (used.get(h)! < used.get(best)! ? h : best), LABEL_HUES[0]);
 }
