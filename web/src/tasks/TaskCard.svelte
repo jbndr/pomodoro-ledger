@@ -1,6 +1,7 @@
 <script>
+  import { tick } from "svelte";
   let { api, row, card, start } = $props();
-  let notesTimer = 0;
+  let notesTimer = 0, linking = $state(false), linkEl = $state();
 
   function notesInput(e) {
     clearTimeout(notesTimer);
@@ -26,6 +27,21 @@
     input.value = "";
     api.addSubtasks(row.id, [title]);
   }
+  async function openLink() {
+    linking = true;
+    await tick();
+    linkEl?.focus();
+  }
+  function addLink(e) {
+    e.preventDefault();
+    const v = linkEl.value.trim();
+    if (!v) { linking = false; return; }
+    if (api.addLink(row.id, v)) { linkEl.value = ""; linking = false; }
+  }
+  function linkKey(e) {
+    if (e.key === "Escape") { e.stopPropagation(); linking = false; }
+  }
+
   function pasteSubs(e) {
     const lines = (e.clipboardData ? e.clipboardData.getData("text") : "").split(/\r?\n/).map((l) => l.replace(/^\s*(?:[-*•]|\d+[.)])?\s*(?:\[[ xX]?\]\s*)?/, "").trim()).filter(Boolean);
     if (lines.length < 2) return;
@@ -39,6 +55,16 @@
 <div class="task-card">
   <input class="card-title" type="text" data-field="title" maxlength="140" value={card.title} aria-label="Title" onkeydown={titleKey} onblur={fieldBlur} />
   <textarea class="card-notes" data-field="notes" rows="1" maxlength="4000" placeholder="Notes" aria-label="Notes" value={card.notes} oninput={notesInput} onblur={fieldBlur}></textarea>
+  <div class="card-links">
+    {#each card.links as l (l.href)}
+      <span class="card-link"><a href={l.href} target="_blank" rel="noopener noreferrer" title={l.href}>{@html api.ICON.link}<span>{l.label}</span></a><button type="button" aria-label={"Remove link " + l.label} title="Remove link" onclick={() => api.removeLink(row.id, l.href)}>×</button></span>
+    {/each}
+    {#if linking}
+      <form class="card-link-add" autocomplete="off" onsubmit={addLink}><input type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Paste a link" aria-label="Link" bind:this={linkEl} onkeydown={linkKey} onblur={(e) => { if (!e.currentTarget.value.trim()) linking = false; }} /><button class="btn small" type="submit">Add</button></form>
+    {:else}
+      <button class="card-link-new" type="button" onclick={openLink}>{@html api.ICON.link}{card.links.length ? "Add link" : "Add a link"}</button>
+    {/if}
+  </div>
   <div class="subplan">
     <ul class="subtasks">
       {#each card.subtasks as sub (sub.id)}

@@ -48,7 +48,7 @@ import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, prev
 import { cancelScapePreview, scapePlaying } from "./soundscape";
 import { DEMO, EMBED, ls, S, ss, T, type Task } from "./state";
 import { Labels, Store } from "./store";
-import { addSection, addSubtasks, addTask, commitPlacements, pauseRepeat, resumeRepeat, completeTask, completing, deleteSubtask, deleteTask, deleteTasks, dismissCard, editSubtask, finishTasks, focusOnTask, focusRow, labelTask, labelTasks, moveSection, moveTasksToTop, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, schedTasks, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
+import { addLink, addSection, addSubtasks, addTask, commitPlacements, pauseRepeat, removeLink, resumeRepeat, completeTask, completing, deleteSubtask, deleteTask, deleteTasks, dismissCard, editSubtask, finishTasks, focusOnTask, focusRow, labelTask, labelTasks, moveSection, moveTasksToTop, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, schedTasks, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
 import { bucketOf, dayName, enterDemo, filterLabel, groupName, guardPreview, inProject, isToday, labelChipName, labelHidden, listHead, markStarted, openOf, preview, sections, shortDay, subsOf, todayKey, viewTasks } from "./tasks/derived";
 import ListFoot from "./tasks/ListFoot.svelte";
 import ListHead from "./tasks/ListHead.svelte";
@@ -159,7 +159,7 @@ ui.list = mount(TaskList, { target: panel, anchor: $("#taskFoot"), props: { api:
   plural, fmtDur, fmtDate, fmtClock, shortDay, dayName, keyTime, dayKey, addDays, sod, dur, groupName,
   renderTasks, commit: commitPlacements, focusRow, hover: setHover, goalLookup,
   open: toggleCard, complete: completeTask, focus: focusOnTask, label: labelTask, sched: schedTask, del: deleteTask, setEst: setEstimate, toTop: moveTasksToTop, buzz,
-  saveField, addSubtasks, subDone: (id: string, subid: string, done: boolean) => editSubtask(id, subid, (s) => { s.done = done; }), renameSub: renameSubtask, deleteSub: deleteSubtask,
+  saveField, addSubtasks, addLink, removeLink, subDone: (id: string, subid: string, done: boolean) => editSubtask(id, subid, (s) => { s.done = done; }), renameSub: renameSubtask, deleteSub: deleteSubtask,
   addSection, removeSection, renameSection, moveSection,
 } } }) as ListUI;
 ui.palette = mount(Palette, { target: document.body, props: { api: { ls, setOverlay, commands, MOD, closeOthers: () => {

@@ -409,6 +409,10 @@ td.barcell { width: 38%; min-width: 120px; }
 .task:not(.open) .check, .task:not(.open) .grip { margin-top: 0; }
 .task-meta svg { width: 13px; height: 13px; flex: none; }
 .task-meta .done-all { color: var(--good); }
+.task-meta .link-chip { display: inline-flex; align-items: center; gap: 4px; min-width: 0; max-width: 18ch; margin: -3px -6px; padding: 3px 6px; border-radius: 7px; color: var(--muted); text-decoration: none; transition: background .15s, color .15s; }
+.task-meta .link-chip span { overflow: hidden; text-overflow: ellipsis; }
+.task-meta .link-chip small { flex: none; font-size: 11px; color: var(--faint); }
+@media (hover: hover) { .task-meta .link-chip:hover { background: var(--surface-2); color: var(--fg); } }
 .task-side { grid-column: 4; display: flex; align-items: center; justify-content: flex-end; gap: 12px; height: 32px; }
 .side-info { display: flex; align-items: center; gap: 12px; }
 .side-acts { display: none; gap: 0; }
@@ -428,6 +432,18 @@ td.barcell { width: 38%; min-width: 120px; }
 .card-notes { width: 100%; min-height: 1.5em; resize: none; border: 0; background: transparent; padding: 0; font: 14px/1.5 var(--f-body); color: var(--muted); field-sizing: content; }
 .card-title:focus, .card-notes:focus { outline: none; }
 .card-notes::placeholder { color: var(--faint); }
+.card-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.card-link { display: inline-flex; align-items: center; min-width: 0; max-width: 100%; height: 28px; border-radius: 999px; background: var(--surface-2); }
+.card-link a { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 0 4px 0 10px; color: var(--fg); font-size: 12.5px; font-weight: 500; text-decoration: none; }
+.card-link a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-link svg, .card-link-new svg { width: 13px; height: 13px; flex: none; color: var(--muted); }
+@media (hover: hover) { .card-link a:hover span { text-decoration: underline; text-underline-offset: 2px; } }
+.card-link button { width: 24px; height: 24px; margin-right: 2px; display: grid; place-items: center; flex: none; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--faint); font-size: 15px; line-height: 1; }
+@media (hover: hover) { .card-link button:hover { background: var(--surface); color: var(--fg); } }
+.card-link-new { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px 0 8px; border: 0; border-radius: 999px; background: none; color: var(--faint); font-size: 12.5px; font-weight: 500; transition: background .15s, color .15s; }
+@media (hover: hover) { .card-link-new:hover { background: var(--surface-2); color: var(--muted); } }
+.card-link-add { display: flex; gap: 6px; flex: 1; min-width: 220px; }
+.card-link-add input { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--line-2); background: var(--surface); color: var(--fg); font: 400 13px var(--f-body); outline: none; }
 .task-card .subplan { display: grid; gap: 2px; min-width: 0; margin: 2px 0 0 -8px; }
 .card-bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--line); }
 .card-btn { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); font: 550 12.5px var(--f-body); white-space: nowrap; }
