@@ -3,7 +3,14 @@ export interface Label {
   lastUsed?: number;
   archived?: boolean;
   updatedAt?: number;
+  /** A hue from LABEL_HUES, picked by the person or given when the label was made. */
+  hue?: number;
 }
+
+/** The label colours, in the order new labels take them. Orange is the focus colour, so it comes last. */
+export const LABEL_HUES = [290, 195, 335, 245, 150, 75, 45, 15];
+export const HUE_NAMES: Record<number, string> = { 290: "Violet", 195: "Teal", 335: "Pink", 245: "Blue", 150: "Green", 75: "Gold", 45: "Orange", 15: "Red" };
+export const isHue = (h: unknown): h is number => typeof h === "number" && LABEL_HUES.includes(h);
 
 export interface LabelOption {
   name: string;
@@ -41,7 +48,7 @@ export function mergeLabels(a: Label[], b: Label[]): Label[] {
   for (const label of [...a, ...b]) {
     if (!label || typeof label.name !== "string" || !label.name.trim()) continue;
     const name = label.name.trim().slice(0, 80), key = name.toLocaleLowerCase(), old = byName.get(key);
-    if (!old || (label.updatedAt || 0) >= (old.updatedAt || 0)) byName.set(key, { name, lastUsed: Number(label.lastUsed) || 0, archived: !!label.archived, updatedAt: Number(label.updatedAt) || 0 });
+    if (!old || (label.updatedAt || 0) >= (old.updatedAt || 0)) byName.set(key, { name, lastUsed: Number(label.lastUsed) || 0, archived: !!label.archived, updatedAt: Number(label.updatedAt) || 0, ...(isHue(label.hue) ? { hue: label.hue } : {}) });
   }
   return [...byName.values()];
 }

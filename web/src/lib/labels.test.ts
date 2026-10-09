@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { labelMatches, labelOptions, sameLabel } from "./labels";
+import { labelMatches, labelOptions, mergeLabels, sameLabel } from "./labels";
 
 const labels = [
   { name: "Docs" },
@@ -50,5 +50,16 @@ describe("labelOptions", () => {
   it("compares names without case", () => {
     expect(sameLabel("Docs", "dOCS")).toBe(true);
     expect(sameLabel("Docs", "Doc")).toBe(false);
+  });
+});
+
+describe("label colours", () => {
+  it("keep a picked colour through a merge and drop one that isn't in the palette", () => {
+    const [a] = mergeLabels([{ name: "Docs", hue: 245, updatedAt: 1 }], []);
+    expect(a.hue).toBe(245);
+    const [b] = mergeLabels([{ name: "Docs", hue: 12, updatedAt: 1 }], []);
+    expect(b.hue).toBeUndefined();
+    const [c] = mergeLabels([{ name: "Docs", hue: 245, updatedAt: 1 }], [{ name: "docs", hue: 150, updatedAt: 2 }]);
+    expect(c.hue).toBe(150);
   });
 });

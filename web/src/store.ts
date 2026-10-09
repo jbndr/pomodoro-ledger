@@ -2,7 +2,7 @@ import { toast } from "./chrome/notice.svelte";
 import { Cloud } from "./cloud";
 import { autoFloatHandler } from "./float";
 import { mergeLabels, type Label } from "./lib/labels";
-import { projectOf, sessionProject } from "./lib/tasks";
+import { nextLabelHue, projectOf, sessionProject, setLabelHues } from "./lib/tasks";
 import { renderAll, renderPill, renderStats, renderTimer } from "./render";
 import { clone, DEF, ls, S, type Settings, type Task } from "./state";
 import { markStarted } from "./tasks/derived";
@@ -30,6 +30,7 @@ export const Store = {
     ls.get<Task[]>("pl.tasks", []).forEach((t) => t && t.id && S.tasks.set(t.id, t));
     S.settings = { ...DEF, ...ls.get("pl.settings", {}) };
     S.labels = Array.isArray(ls.get("pl.labels", [])) ? ls.get("pl.labels", []) : [];
+    setLabelHues(S.labels);
     Labels.merge([]);
   },
   cache() { ls.set("pl.tasks", [...S.tasks.values()]); ls.set("pl.settings", S.settings); ls.set("pl.labels", S.labels); },
@@ -120,13 +121,14 @@ export const Store = {
 };
 
 export const Labels = {
-  merge(list: Label[]) { S.labels = mergeLabels(S.labels, list); },
+  merge(list: Label[]) { S.labels = mergeLabels(S.labels, list); setLabelHues(S.labels); },
   importTasks(tasks: Map<string, Task>) {
     let changed = false;
     for (const t of tasks.values()) {
       for (const name of [projectOf(t), ...(t.sessions || []).map((s) => sessionProject(t, s))]) {
         if (!name || S.labels.some((l) => l.name.toLocaleLowerCase() === name.toLocaleLowerCase())) continue;
-        S.labels.push({ name, lastUsed: t.updatedAt || t.createdAt || 0, archived: false, updatedAt: Date.now() });
+        S.labels.push({ name, lastUsed: t.updatedAt || t.createdAt || 0, archived: false, updatedAt: Date.now(), hue: nextLabelHue(S.labels) });
+        setLabelHues(S.labels);
         changed = true;
       }
     }
@@ -136,7 +138,7 @@ export const Labels = {
     name = name.trim().slice(0, 80);
     if (!name) return "";
     let label = S.labels.find((l) => l.name.toLocaleLowerCase() === name.toLocaleLowerCase());
-    if (!label) { label = { name, lastUsed: 0, archived: false }; S.labels.push(label); }
+    if (!label) { label = { name, lastUsed: 0, archived: false, hue: nextLabelHue(S.labels) }; S.labels.push(label); setLabelHues(S.labels); }
     label.archived = false;
     label.updatedAt = Date.now();
     if (used) label.lastUsed = Date.now();
@@ -144,4 +146,11 @@ export const Labels = {
     return label.name;
   },
   use(name: string) { return this.add(name, true); },
+  setHue(name: string, hue: number) {
+    const label = S.labels.find((l) => l.name.toLocaleLowerCase() === name.toLocaleLowerCase());
+    if (!label) return;
+    label.hue = hue; label.updatedAt = Date.now();
+    setLabelHues(S.labels);
+    Store.saveSettings(); refreshLabelPop();
+  },
 };

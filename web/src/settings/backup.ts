@@ -2,6 +2,7 @@ import { noteExport } from "../chrome/backupNudge.svelte";
 import { Cloud } from "../cloud";
 import { autoFloatHandler } from "../float";
 import { applyImport, buildFile, fileName, type Imported, type ImportMode } from "../lib/backup";
+import { setLabelHues } from "../lib/tasks";
 import { renderAll } from "../render";
 import { clone, DEF, ls, S, T, type Settings } from "../state";
 import { Store } from "../store";
@@ -31,7 +32,7 @@ export function importLedger(d: Imported, mode: ImportMode) {
   for (const id of r.removed) Store.deleteTask(id, false);
   if (S.activeId && !r.tasks.has(S.activeId)) { S.activeId = null; saveTimer(); }
   if (r.profileChanged) {
-    S.settings = r.settings as unknown as Settings; S.labels = r.labels;
+    S.settings = r.settings as unknown as Settings; S.labels = r.labels; setLabelHues(S.labels);
     Store.saveSettings(); fillSettings(); refreshLabelPop(); autoFloatHandler();
   }
   markStarted(true);
