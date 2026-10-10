@@ -237,7 +237,7 @@
             </div></section>
             <section class="st-grp"><h4>Goal</h4><div class="st-card">
               {#snippet goal()}{@render stepper("goal", "rounds", "Daily goal")}{/snippet}
-              {@render row("Daily goal", "Shown in Progress and the round row", goal)}
+              {@render row("Daily goal", "Shown in Insights and the round row", goal)}
             </div></section>
             {#if extOn}
               <section class="st-grp" id="blockRow"><h4>While you focus</h4><div class="st-card">

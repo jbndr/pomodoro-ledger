@@ -5,6 +5,7 @@ import { autoFloat } from "../float";
 import { fmtDur } from "../format";
 import { MIN } from "../lib/dates";
 import { dayKey } from "../lib/dates";
+import { logBreak } from "../lib/day";
 import { logNudge, nudgesOf, pickNudge, type NudgeContext } from "../lib/nudges";
 import { extraBreakMin, flowBreakMin, MODES, roundsStale, type Mode } from "../lib/timer";
 import { renderAll, renderTimer } from "../render";
@@ -67,6 +68,17 @@ function logFocus(ms: number, full: boolean, at: number, run?: string) {
   Store.saveTask(t);
 }
 
+/** Logs the break that's ending, if it ran for at least a minute. A paused break ends where its clock stopped. */
+function endBreak(at: number) {
+  const from = T.breakFrom;
+  if (!from) return;
+  delete T.breakFrom;
+  const to = T.status === "paused" ? Math.min(at, from + Math.max(0, T.total - (T.remaining ?? 0))) : at;
+  if (T.mode === "focus" || to - from < MIN) return;
+  S.settings.breakLog = logBreak(S.settings.breakLog, { from, to, ...(T.mode === "long" ? { long: true } : {}), ...(T.nudge?.done ? { nudge: T.nudge.text } : {}) });
+  Store.saveSettings();
+}
+
 export function flushPartial() {
   if (T.mode !== "focus" || T.status === "idle") return;
   const el = T.up ? upNow() : (T.total || dur("focus")) - remNow();
@@ -74,6 +86,7 @@ export function flushPartial() {
 }
 
 export function setMode(m: Mode, keep?: boolean) {
+  endBreak(Date.now());
   if (!keep) delete T.adj[T.mode];
   delete T.up; delete T.upKind; delete T.flowReady;
   if (m === "focus") delete T.nudge;
@@ -90,7 +103,10 @@ export function start(from?: number) {
   if (preview()) { markStarted(); }
   if (T.status === "running") return;
   if (T.flowReady && T.status === "idle") { startFlow(from || Date.now()); return; }
-  if (T.status === "idle") { T.total = base(T.mode); T.remaining = T.total; T.run = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); delete T.adj[T.mode]; }
+  if (T.status === "idle") {
+    T.total = base(T.mode); T.remaining = T.total; T.run = Date.now().toString(36) + Math.random().toString(36).slice(2, 8); delete T.adj[T.mode];
+    if (T.mode !== "focus") T.breakFrom = from || Date.now();
+  }
   T.endsAt = (from || Date.now()) + (T.remaining ?? 0);
   T.status = "running";
   scheduleEnd(); saveTimer(); wakeOn(); renderTimer(true);
@@ -122,7 +138,7 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
     if (follow && T.setIndex >= S.settings.longEvery) T.setIndex = 0;
     next = T.setIndex >= S.settings.longEvery ? "long" : "short";
     dropHeldBreaks();
-  } else next = "focus";
+  } else { endBreak(at); next = "focus"; }
   if (wasFocus && !stale && !follow) T.bellAt = at; else delete T.bellAt;
   const rang = releaseBell(at);
   if (!rang && !stale) playSound(wasFocus ? "focus" : "break");
@@ -210,7 +226,7 @@ export function keepGoing() {
   if (!canKeepGoing()) { toast(RM.code ? "In a room, the room's clock leads." : "Keep going works for ten minutes after a cycle ends."); return; }
   const since = T.bellAt!;
   cancelEnd();
-  delete T.saved.focus; delete T.bellAt;
+  delete T.saved.focus; delete T.bellAt; delete T.breakFrom;
   // The end sits at the longest allowed session, so the blocker, soundscapes and other devices treat it as a running focus.
   Object.assign(T, { mode: "focus", status: "running", up: since, upKind: "over", total: 0, remaining: null, endsAt: since + MAX_RUN, run: "ot-" + since.toString(36) });
   scheduleEnd(); saveTimer(); wakeOn(); renderTimer(true);

@@ -50,6 +50,7 @@ describe("estimateAccuracy", () => {
       { id: "b", title: "B", done: true, est: 2, sessions: [cycle(1)] },
       { id: "c", title: "C", done: false, est: 5, sessions: [] },
       { id: "d", title: "D", done: true, sessions: [cycle(1)] },
+      { id: "e", title: "E", done: true, est: 3, sessions: [] },
     ]);
     expect(r).toEqual({ ratio: 1, diff: 0, count: 2 });
   });

@@ -135,7 +135,7 @@ addCommands(() => {
     out.push({ id: "go.timer", group: "Go to", title: "Timer", words: "page", icon: G.timer, run: () => showPage("timer") });
     out.push({ id: "go.tasks", group: "Go to", title: "Tasks", words: "page", icon: ICON.list, run: () => showPage("tasks") });
   }
-  out.push({ id: "go.progress", group: "Go to", title: "Progress", words: "stats charts history ledger", icon: G.progress,
+  out.push({ id: "go.progress", group: "Go to", title: "Insights", words: "progress stats charts history ledger day breaks sessions", icon: G.progress,
     run: () => (phone() ? showPage("progress") : $(".progress").scrollIntoView({ block: "start", behavior: smooth() })) });
   out.push({ id: "go.recap", group: "Go to", title: "Weekly recap", words: "review last week summary", icon: G.recap, run: () => openRecap() });
 

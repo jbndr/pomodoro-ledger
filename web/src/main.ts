@@ -56,7 +56,7 @@ import { leaveAsked, leftoverPrompt, moveAsked, newDay } from "./tasks/rollover"
 import BulkBar from "./tasks/BulkBar.svelte";
 import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
-import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, freshRounds, keepGoing, nudgeDone, readyFlow, resetRounds, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
+import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, freshRounds, keepGoing, nudgeDone, readyFlow, remNow, resetRounds, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
 import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, toggleRoom, openSettings, openShare, openWhen, openYear, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type RoomUI, type SettingsUI, type ShareUI, type Sheet, type WhenUI, type YearUI } from "./ui";
 import Year from "./year/Year.svelte";
@@ -92,7 +92,7 @@ const invite = normCode(new URLSearchParams(location.search).get("room") || "");
 const view = ss.get("pl.taskView");
 if (view === "today" || view === "upcoming" || view === "later") S.taskView = view;
 mount(Progress, { target: $(".app"), props: { api: {
-  S, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
+  S, T, remNow, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
   deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap, openPlan, weekGoals, openYear,
 } } });
 const roomApi = { RM, S, ls, esc, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,

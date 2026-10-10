@@ -40,9 +40,9 @@ export function streaks(days: Map<DayKey, DayTotal>, today: number): { current: 
   return { current, best };
 }
 
-/** How finished tasks compared to their estimates: actual cycles over planned ones, and the difference in percent. */
+/** How finished tasks compared to their estimates: actual cycles over planned ones, and the difference in percent. Tasks finished without any focus logged don't count. */
 export function estimateAccuracy(tasks: Iterable<Task>): { ratio: number | null; diff: number; count: number } {
-  const fin = [...tasks].filter((t) => t.done && !t.system && (t.est || 0) > 0);
+  const fin = [...tasks].filter((t) => t.done && !t.system && (t.est || 0) > 0 && (t.sessions || []).length > 0);
   const planned = fin.reduce((a, t) => a + t.est!, 0), took = fin.reduce((a, t) => a + cyclesOf(t), 0);
   const ratio = planned ? took / planned : null;
   return { ratio, diff: ratio == null ? 0 : Math.round((ratio - 1) * 100), count: fin.length };
