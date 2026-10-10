@@ -27,24 +27,20 @@ export function timerRing(v: unknown): TimerRing {
   return RINGS.some(([id]) => id === v) ? (v as TimerRing) : "arc";
 }
 
-export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "weather";
+export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "sky";
 
 export const BACKDROPS: [TimerBackdrop, string, string][] = [
   ["glow", "Glow", "A soft glow in the colour of the phase"],
   ["plain", "Plain", "Nothing behind the dial"],
   ["paper", "Paper", "Warm, grainy paper"],
   ["aurora", "Aurora", "Colour that drifts slowly while a session runs"],
-  ["weather", "Weather", "The sky and weather where you are, right now"],
+  ["sky", "Sky", "The sky where you are, from dawn to night"],
 ];
 
 /** A stored background, falling back to the glow. */
 export function timerBackdrop(v: unknown): TimerBackdrop {
   return BACKDROPS.some(([id]) => id === v) ? (v as TimerBackdrop) : "glow";
 }
-
-export type SkyPhase = "dawn" | "day" | "dusk" | "night";
-
-export const skyPhase = (hour: number): SkyPhase => (hour >= 5 && hour < 8 ? "dawn" : hour >= 8 && hour < 17 ? "day" : hour >= 17 && hour < 21 ? "dusk" : "night");
 
 const GLYPHS: Record<string, string[]> = {
   "0": [".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],

@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { hit, stats } from "./hits.js";
 import { pushBody, pushReady, readSub, sendPush } from "./push.js";
 import { handleSync } from "./sync.js";
-import { handleWeather } from "./weather.js";
+import { handleHere } from "./here.js";
 import { nextSession, readTimes, scheduleOf, sessionCode, startStep } from "../web/src/lib/schedule.ts";
 
 export { Ledger } from "./sync.js";
@@ -75,7 +75,7 @@ export default {
     // Links shared before the app moved to /app/ (invites, sync return, demo) keep working.
     if (url.pathname === "/" && /[?&](room|synced|demo)(=|&|$)/.test(url.search)) return Response.redirect(url.origin + "/app/" + url.search, 302);
     if (url.pathname === "/api/rooms" && request.method === "GET") return lobby(env).fetch("https://lobby/rooms");
-    if (url.pathname === "/api/weather" && request.method === "GET") return handleWeather(request);
+    if (url.pathname === "/api/here" && request.method === "GET") return handleHere(request);
     if (url.pathname === "/api/push" && request.method === "GET") return json({ key: pushReady(env) ? env.VAPID_PUBLIC_KEY.trim() : null });
     if (url.pathname === "/api/room" && request.method === "POST") {
       const body = await request.json().catch(() => null);

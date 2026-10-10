@@ -10,6 +10,8 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .st-sheet { --st-card: #1B201D; --st-sunk: #171B19; --st-ring: 0 0 0 1px var(--line); } }
 :root[data-theme="dark"] .st-sheet { --st-card: #1B201D; --st-sunk: #171B19; --st-ring: 0 0 0 1px var(--line); }
 .overlay:not([hidden]) > .st-sheet { animation: when-in .22s cubic-bezier(.2, .8, .2, 1); }
+/* The timer face previews move, and anything moving over a blurred backdrop makes the browser redo the whole blur every frame. */
+#settings.overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
 
 /* Sections */
 .st-nav { display: flex; flex-direction: column; gap: 2px; min-height: 0; padding: 14px 12px; overflow-y: auto; scrollbar-width: none; background: var(--surface-2); border-right: 1px solid var(--line); }
@@ -196,7 +198,8 @@ button.st-row { width: 100%; border: 0; background: none; text-align: left; colo
 .st-stage { position: relative; width: 100%; aspect-ratio: 1; display: grid; place-items: center; overflow: hidden; isolation: isolate; container-type: inline-size; border-radius: 10px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .2s var(--st-spring); }
 .st-face[aria-checked="true"] .st-stage { box-shadow: inset 0 0 0 2px var(--fg); }
 .st-stage .dial { position: absolute; inset: 0; }
-.st-stage .time { font-size: 26cqw; }
+/* Out of flow, a changing digit can't resize the stage, so it doesn't re-lay out the whole sheet every second. */
+.st-stage > .time { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 26cqw; }
 .st-stage :is(.face-flap, .face-nixie) { font-size: 21cqw; }
 .st-stage .face-matrix { width: 80cqw; }
 .st-stage[data-ring="none"]::after { content: ""; position: absolute; inset: 16%; border-radius: 50%; border: 1.5px dashed var(--line-2); }

@@ -4,17 +4,16 @@
   import { clock, knobAt, litTicks } from "../lib/timer";
   import DialRing from "../timer/DialRing.svelte";
   import FaceDigits from "../timer/FaceDigits.svelte";
-  import WeatherLayers from "../timer/WeatherLayers.svelte";
-  import { weatherWords } from "../lib/weather";
-  import { wantWeather, weather } from "../weather.svelte";
+  import { fmtClock } from "../format";
+  import { sky, wantPlace } from "../sky.svelte";
 
   let { face, ring, backdrop, onface, onring, onbackdrop } = $props();
 
   const START = 17 * 60 + 30, TOTAL = 25 * 60;
   let secs = $state(Object.fromEntries([...FACES, ...RINGS].map(([id]) => [id, START]))), playing = $state(""), timer = 0, root;
   const name = (list, id) => list.find(([k]) => k === id)?.[1];
-  const outside = $derived(weather.now ? [weather.now.place, weatherWords(weather.now), "data from MET Norway"].filter(Boolean).join(" · ") : "");
-  const hint = $derived((playing === "weather" && outside) || [...FACES, ...RINGS, ...BACKDROPS].find(([id]) => id === playing)?.[2] || [name(FACES, face), ring === "none" ? "No ring" : name(RINGS, ring) + " ring", name(BACKDROPS, backdrop)].join(" · "));
+  const skyHint = $derived(sky.turn ? [sky.here?.place, (sky.turn.rise ? "Sunrise at " : "Sunset at ") + fmtClock(sky.turn.at)].filter(Boolean).join(" · ") : "");
+  const hint = $derived((playing === "sky" && skyHint) ||[...FACES, ...RINGS, ...BACKDROPS].find(([id]) => id === playing)?.[2] || [name(FACES, face), ring === "none" ? "No ring" : name(RINGS, ring) + " ring", name(BACKDROPS, backdrop)].join(" · "));
 
   // Pointing at a face ticks its preview in real seconds; a ring runs down 25 seconds a step, so a tile turns or a dot goes out each time.
   function play(id, step = 1) {
@@ -60,8 +59,8 @@
     <span class="st-pick-label" id="backdropLabel">Background</span>
     <div class="st-faces" role="radiogroup" aria-labelledby="backdropLabel">
       {#each BACKDROPS as [id, label] (id)}
-        <button class="st-face" type="button" role="radio" aria-checked={String(backdrop === id)} onclick={() => onbackdrop(id)} onpointerover={() => { if (id === "weather") wantWeather(); }} {...hover(id)}>
-          <span class="st-stage st-swatch" data-backdrop={id} aria-hidden="true"><span class="glow">{#if id === "weather"}<WeatherLayers />{/if}</span></span><b>{label}</b>
+        <button class="st-face" type="button" role="radio" aria-checked={String(backdrop === id)} onclick={() => onbackdrop(id)} onpointerover={() => { if (id === "sky") wantPlace(); }} {...hover(id)}>
+          <span class="st-stage st-swatch" data-backdrop={id} aria-hidden="true"><span class="glow"></span></span><b>{label}</b>
         </button>
       {/each}
     </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BACKDROPS, FACES, matrix, MATRIX_ROWS, RINGS, skyPhase, timerBackdrop, timerFace, timerRing } from "./faces";
+import { BACKDROPS, FACES, matrix, MATRIX_ROWS, RINGS, timerBackdrop, timerFace, timerRing } from "./faces";
 
 describe("timerFace", () => {
   it("defaults to the classic dial", () => {
@@ -28,12 +28,6 @@ describe("timerBackdrop", () => {
     expect(timerBackdrop(undefined)).toBe("glow");
     expect(timerBackdrop("lava")).toBe("glow");
     for (const [id] of BACKDROPS) expect(timerBackdrop(id)).toBe(id);
-  });
-});
-
-describe("skyPhase", () => {
-  it("follows the hour", () => {
-    expect([0, 4, 5, 7, 8, 16, 17, 20, 21, 23].map(skyPhase)).toEqual(["night", "night", "dawn", "dawn", "day", "day", "dusk", "dusk", "night", "night"]);
   });
 });
 

@@ -13,3 +13,28 @@ export function sunPosition(t: number, lat: number, lon: number): { elevation: n
   const azimuth = Math.atan2(-Math.sin(ha), Math.tan(dec) * Math.cos(phi) - Math.sin(phi) * Math.cos(ha)) / RAD;
   return { elevation, azimuth: (azimuth + 360) % 360 };
 }
+
+export type SkyPhase = "dawn" | "day" | "dusk" | "night";
+
+/** The sky's phase from the sun's height: twilight runs from 8° below the horizon to 6° above it. */
+export const skyPhaseAt = (elevation: number, azimuth: number): SkyPhase =>
+  elevation < -8 ? "night" : elevation < 6 ? (azimuth < 180 ? "dawn" : "dusk") : "day";
+
+/** The next sunrise or sunset within a day, to the minute, or null in polar day or night. */
+export function nextSunTurn(t: number, lat: number, lon: number): { at: number; rise: boolean } | null {
+  const up = (x: number) => sunPosition(x, lat, lon).elevation > -0.833;
+  const was = up(t);
+  for (let x = t + 600_000; x <= t + 86_400_000; x += 600_000) {
+    if (up(x) === was) continue;
+    let lo = x - 600_000, hi = x;
+    while (hi - lo > 60_000) { const mid = (lo + hi) / 2; if (up(mid) === was) lo = mid; else hi = mid; }
+    return { at: hi, rise: !was };
+  }
+  return null;
+}
+
+/** A stand-in place from the time zone alone: its standard-time longitude and a middling latitude. */
+export function guessPlace(now: number): { lat: number; lon: number } {
+  const y = new Date(now).getFullYear(), standard = Math.max(new Date(y, 0, 1).getTimezoneOffset(), new Date(y, 6, 1).getTimezoneOffset());
+  return { lat: 45, lon: -standard / 4 };
+}
