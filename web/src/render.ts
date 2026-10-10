@@ -12,6 +12,7 @@ import { syncTicking } from "./sound";
 import { S, T } from "./state";
 import { Labels } from "./store";
 import { todayKey, viewTasks } from "./tasks/derived";
+import { withBest } from "./tasks/best";
 import { taskStartPlan } from "./tasks/plan";
 import { remNow, totalNow, upNow } from "./timer/engine";
 import { timerView } from "./timer/state.svelte";
@@ -54,7 +55,7 @@ export function renderTaskStarts(force = false) {
   const minute = Math.floor(Date.now() / MIN);
   if (!force && minute === startEstimateMinute) return;
   startEstimateMinute = minute;
-  list.setPlan(taskStartPlan());
+  list.setPlan(withBest(taskStartPlan()));
 }
 
 export function renderTasks() {

@@ -38,7 +38,7 @@
     return {
       focus: s.focus, short: s.short, long: s.long, longEvery: s.longEvery, goal: s.goal,
       autoBreak: !!s.autoBreak, autoFocus: !!s.autoFocus, sound: !!s.sound, notify: !!s.notify, ticking: !!s.ticking, autoFloat: !!s.autoFloat,
-      weeklyRecap: !!s.weeklyRecap, weeklyPlan: !!s.weeklyPlan, reactions: s.reactions !== false,
+      weeklyRecap: !!s.weeklyRecap, weeklyPlan: !!s.weeklyPlan, reactions: s.reactions !== false, bestTime: s.bestTime !== false, bestRemind: !!s.bestRemind,
       tickVolume: s.tickVolume, tickPace: String(s.tickPace), workdayEnd: s.workdayEnd || "",
       rollover: rolloverMode(s.rollover), phaseMorph: phaseMorph(s.phaseMorph),
     };
@@ -49,7 +49,7 @@
   let f = $state(read());
   let sec = $state(savedSection()), sub = $state(""), inside = $state(false);
   let flashOn = $state(false), syncVersion = $state(0), mixVersion = $state(0), extOn = $state(false), listening = $state(false);
-  let dayEnd = $state(read().workdayEnd || "18:00");
+  let dayEnd = $state(read().workdayEnd || "18:00"), bestNote = $state("");
   let bodyEl = $state(), nudgeUI = $state(), fadeTop = $state(false), fadeBottom = $state(false);
   let flashT = 0, listenT = 0;
 
@@ -60,6 +60,7 @@
     const held = document.activeElement?.dataset?.held;
     for (const [k, v] of Object.entries(read())) if (k !== held) f[k] = v;
     if (f.workdayEnd) dayEnd = f.workdayEnd;
+    bestNote = api.bestLine();
     mixVersion++;
     flushSync();
   }
@@ -127,7 +128,7 @@
     s[k] = v; f[k] = v;
     if (k === "longEvery" && api.T.setIndex > v) api.T.setIndex = 0;
     save(() => {
-      if (k === "notify" && v) askNotify();
+      if ((k === "notify" || k === "bestRemind") && v) askNotify(k);
       if (k === "sound") { if (v) api.scheduleEnd(); else api.cancelEnd(); }
       if (k === "autoFloat") api.autoFloatHandler();
       if (k === "reactions") api.reactionsChanged();
@@ -142,11 +143,11 @@
     set(k, Math.max(min, Math.min(max, n)));
   }
 
-  async function askNotify() {
+  async function askNotify(k) {
     let p = "Notification" in window ? Notification.permission : "unsupported";
     if (p === "default") { try { p = await Notification.requestPermission(); } catch {} }
     if (p === "granted") return;
-    api.S.settings.notify = false; f.notify = false; api.Store.saveSettings();
+    api.S.settings[k] = false; f[k] = false; api.Store.saveSettings();
     api.toast(p === "unsupported" ? "This browser can't show notifications." : p === "denied" ? "Notifications are blocked for this site. Allow them in the browser's site settings." : "Notifications weren't allowed.");
   }
 
@@ -283,6 +284,12 @@
               {@render row("Weekly recap", "Last week at a glance on your first visit", recap)}
               {@render row("Offer to plan the week", "Sunday to Tuesday · P opens it any time", plan)}
             </div></section>
+            <section class="st-grp"><h4>Best time</h4><div class="st-card">
+              {#snippet bestPlan()}{@render tog("bestTime", "Plan around your best time")}{/snippet}
+              {#snippet bestRemind()}{@render tog("bestRemind", "Remind me when it starts")}{/snippet}
+              {@render row("Plan around it", "Today offers to line up your biggest task for it", bestPlan)}
+              {@render row("Remind me when it starts", "If the timer isn't running yet", bestRemind)}
+            </div><p class="st-cap">{bestNote}</p></section>
           </div>
         {:else if sec === "rooms"}
           <div class="st-pane" data-sec="rooms">

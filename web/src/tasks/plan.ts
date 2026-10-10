@@ -5,17 +5,22 @@ import { S, T, type Task } from "../state";
 import { dur, remNow } from "../timer/engine";
 import { isToday, openOf, viewTasks } from "./derived";
 
-export interface TaskStart { late?: boolean; start?: number; end?: number; text: string; hint: string }
+export interface TaskStart { late?: boolean; best?: boolean; start?: number; end?: number; text: string; hint: string }
 
 /** When each of Today's tasks should start and end, and the day's totals. */
 export type StartPlan = Map<string, TaskStart> & {
   focus: number; breaks: number; end: number; endAt: number; over: boolean;
   /** Tasks that won't finish before the workday ends, and every task still to start. */
   late: string[]; rest: string[];
+  /** Today's run of your best time, and the move that would put the biggest task in it. */
+  best?: BestPlan;
 };
 
-export function taskStartPlan(): StartPlan {
-  const today = openOf(viewTasks()).filter(isToday);
+export interface BestPlan { start: number; end: number; hours: string; offer: { id: string; title: string; before: string | null; start: number; now: boolean } | null }
+
+/** Plans Today in its list order, or in the given order. */
+export function taskStartPlan(order?: Task[]): StartPlan {
+  const today = order || openOf(viewTasks()).filter(isToday);
   const current = T.mode === "focus" && T.status !== "idle" ? today.find((t) => t.id === S.activeId) : null;
   const sequence = current ? [current, ...today.filter((t) => t !== current)] : today;
   const remaining = (t: Task) => Math.max(t === current ? 1 : 0, (t.est || 0) - cyclesOf(t));

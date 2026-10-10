@@ -95,9 +95,12 @@ const partOf = (from: number, to: number) => {
   return mid < 5 ? "night" : mid < 12 ? "morning" : mid < 17 ? "afternoon" : mid < 21 ? "evening" : "night";
 };
 
+/** Hours like "9–11" or "22–1". */
+export const windowHours = (from: number, to: number) => (from % 24) + "–" + (to > 24 ? to - 24 : to);
+
 /** A sentence naming the window, such as "You focus best 9–11 on weekday mornings." */
 export function windowText(from: number, to: number, days: WindowDays, share: number): string {
-  const hours = (from % 24) + "–" + (to > 24 ? to - 24 : to);
+  const hours = windowHours(from, to);
   if (share < 0.3) return "Your focus is spread across the day, most often " + hours + ".";
   const part = partOf(from, to);
   const who = days === "weekdays" ? "weekday" : days === "weekends" ? "weekend" : days == null ? "" : WEEKDAYS[days];
