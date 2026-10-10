@@ -184,6 +184,16 @@ button.st-row { width: 100%; border: 0; background: none; text-align: left; colo
 .st-mini .mt { position: absolute; top: 105px; left: 0; right: 0; text-align: center; font: 650 30px/1 var(--f-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--fg); }
 .st-mini .mb { position: absolute; bottom: 14px; left: 50%; translate: -50% 0; height: 26px; padding: 0 14px; display: inline-flex; align-items: center; border-radius: 99px; font-size: 11px; font-weight: 600; color: var(--acc); background: color-mix(in oklab, var(--acc) 15%, var(--st-card)); }
 .st-speed button { height: 24px; padding: 0 9px; font-size: 12px; }
+.st-faces-wrap { display: grid; gap: 8px; padding: 12px 12px 10px; }
+.st-faces { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.st-face { display: grid; justify-items: center; gap: 7px; min-width: 0; padding: 10px 6px 9px; border: 0; border-radius: 12px; background: none; color: inherit; font: inherit; transition: background .15s, box-shadow .2s var(--st-spring); }
+@media (hover: hover) { .st-face:hover { background: var(--st-sunk); } }
+.st-face[aria-checked="true"] { background: var(--st-sunk); box-shadow: inset 0 0 0 1.5px var(--fg); }
+.st-face b { font-size: 13px; font-weight: 550; line-height: 1.2; }
+.st-face .dial-wrap { width: 100%; max-width: 112px; pointer-events: none; }
+.st-face .dial-wrap::before { box-shadow: var(--disc-lift); }
+.st-face-hint { margin: 0; padding: 0 4px; min-height: 1lh; font-size: 12.5px; color: var(--faint); text-align: center; text-wrap: balance; }
+@media (max-width: 560px) { .st-faces { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .st-styles { display: grid; gap: 2px; }
 .st-style { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 12px; align-items: start; margin: 0 -10px; padding: 9px 10px; border: 0; border-radius: 10px; background: none; text-align: left; color: inherit; transition: background .15s; }
 @media (hover: hover) { .st-style:hover { background: var(--st-sunk); } }

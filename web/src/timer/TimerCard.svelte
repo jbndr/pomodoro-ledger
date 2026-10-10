@@ -1,4 +1,5 @@
 <script>
+  import { timerFace } from "../lib/faces";
   import { clock, MODE_NAME, MODES, roundDots, startLabel } from "../lib/timer";
   import Dial from "./Dial.svelte";
   import { onMount } from "svelte";
@@ -26,7 +27,7 @@
     timerView.version;
     const T = api.T, every = api.S.settings.longEvery;
     return {
-      mode: T.mode, status: T.status,
+      mode: T.mode, status: T.status, face: timerFace(api.S.settings.face),
       dots: roundDots(T.mode, T.setIndex, every), round: Math.min(Math.min(T.setIndex || 0, every) + 1, every), every,
       canReset: T.setIndex > 0 && T.status !== "running", up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), bellAt: T.bellAt || 0, flowSince: T.upKind === "flow" ? T.up : 0, flow: T.upKind === "flow" || !!T.flowReady, nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
       sub: T.up ? (T.upKind === "flow" ? "started " + api.fmtClock(T.up) : "past the bell") : T.flowReady ? "" : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
@@ -62,7 +63,7 @@
     <button class="icon-btn full-btn" type="button" id="fullBtn" aria-label={zenLabel} title={timerView.zen ? zenLabel : "Fill the page (F) · Shift-click for browser full screen (Shift+F)"} onclick={(e) => api.toggleZen(e.shiftKey)}>{@html timerView.zen ? api.ICON.shrink : api.ICON.expand}</button>
   </div>
 </div>
-<Dial sub={flowSub || c.sub} flow={c.flow} mode={c.mode} />
+<Dial sub={flowSub || c.sub} flow={c.flow} mode={c.mode} face={c.face} />
 {#if showKeep}
   <div class="cycle"><button class="keep-going" type="button" title="Go back to focus, counting from the bell (O)" onclick={() => api.keepGoing()}>{@html api.ICON.play}Keep going</button></div>
 {:else if showNudge}

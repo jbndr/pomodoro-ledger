@@ -4,9 +4,11 @@
   import { applyTheme, theme } from "../chrome/theme.svelte";
   import { extensionVersion } from "../extension";
   import { mixLabel } from "../lib/mix";
+  import { timerFace } from "../lib/faces";
   import { phaseMorph } from "../lib/phaseMorph";
   import { rolloverMode } from "../lib/rollover";
   import { tickPace, tickVolume, workdayEnd } from "../lib/settings";
+  import FacePicker from "./FacePicker.svelte";
   import Mixer from "./Mixer.svelte";
   import NudgeSettings from "./NudgeSettings.svelte";
   import PhasePreview from "./PhasePreview.svelte";
@@ -40,7 +42,7 @@
       autoBreak: !!s.autoBreak, autoFocus: !!s.autoFocus, sound: !!s.sound, notify: !!s.notify, ticking: !!s.ticking, autoFloat: !!s.autoFloat,
       weeklyRecap: !!s.weeklyRecap, weeklyPlan: !!s.weeklyPlan, reactions: s.reactions !== false, bestTime: s.bestTime !== false, bestRemind: !!s.bestRemind,
       tickVolume: s.tickVolume, tickPace: String(s.tickPace), workdayEnd: s.workdayEnd || "",
-      rollover: rolloverMode(s.rollover), phaseMorph: phaseMorph(s.phaseMorph),
+      rollover: rolloverMode(s.rollover), phaseMorph: phaseMorph(s.phaseMorph), face: timerFace(s.face),
     };
   };
   const known = (k) => SECTIONS.some(([name]) => name === k);
@@ -305,6 +307,9 @@
               {#snippet float()}{@render tog("autoFloat", "Open the floating timer automatically")}{/snippet}
               {@render row("Theme", "", themeCtl)}
               {#if api.floatable}{@render row("Floating timer", "Opens when a session starts or you switch tabs", float)}{/if}
+            </div></section>
+            <section class="st-grp"><h4>Timer face</h4><div class="st-card">
+              <FacePicker value={f.face} onpick={(v) => set("face", timerFace(v))} />
             </div></section>
             <section class="st-grp"><h4>Phase change</h4><div class="st-card">
               <PhasePreview value={f.phaseMorph} onpick={(v) => set("phaseMorph", phaseMorph(v))} />

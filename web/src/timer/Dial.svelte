@@ -1,9 +1,11 @@
 <script>
-  import { arcOffset, CIRCUMFERENCE, clock, clockLabel, fraction, knobAt, litTicks, TICKS } from "../lib/timer";
+  import { clock, clockLabel, fraction, knobAt, litTicks } from "../lib/timer";
   import { rollDigits } from "../lib/roll";
   import { timerView } from "./state.svelte";
+  import DialRing from "./DialRing.svelte";
+  import FaceDigits from "./FaceDigits.svelte";
 
-  let { sub, flow = false, mode = "" } = $props();
+  let { sub, flow = false, mode = "", face = "classic" } = $props();
 
   // Flow has no end, so its ring is a quiet, full circle and only the digits move.
   const frac = $derived(timerView.up === "over" || timerView.up === "flow" ? 1 : fraction(timerView.rem, timerView.total));
@@ -16,26 +18,22 @@
     const a = ((timerView.rem / 1000) % 60) / 60 * Math.PI * 2;
     return { cx: +(150 + Math.sin(a) * 112).toFixed(2), cy: +(150 - Math.cos(a) * 112).toFixed(2) };
   });
+  const lead = $derived(timerView.up === "flow" ? Math.floor(timerView.rem / 1000) % 60 : timerView.up ? -1 : lit - 1);
 
   // ±min rolls the digits that changed. A new phase changes them in place, under the phase-change motion; seconds keep still.
   let timeEl, before = [], beforeSecs = 0, seen = -1, beforeKey = "";
   $effect(() => {
     const now = chars, v = timerView.version;
-    const key = mode + (flow ? ":flow" : "");
-    if (v !== seen && seen >= 0 && key === beforeKey && before.length === now.length) rollDigits([...timeEl.children], before, now, secs > beforeSecs);
+    const key = mode + (flow ? ":flow" : "") + face;
+    if (v !== seen && seen >= 0 && key === beforeKey && before.length === now.length && face === "classic") rollDigits([...timeEl.children], before, now, secs > beforeSecs);
     before = now; beforeSecs = secs; seen = v; beforeKey = key;
   });
 </script>
 
-<div class="dial-wrap" class:flow>
-  <svg class="dial" viewBox="0 0 300 300" aria-hidden="true">
-    <g id="ticks">{#each TICKS as t, i}<line x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} class={"tick" + (t.major ? " major" : "") + (i < lit ? " lit" : "")} />{/each}</g>
-    <circle class="track" cx="150" cy="150" r="112" />
-    <circle class="arc" id="arc" cx="150" cy="150" r="112" transform="rotate(-90 150 150)" stroke-dasharray={CIRCUMFERENCE.toFixed(2)} stroke-dashoffset={arcOffset(frac)} />
-    <circle class="knob" id="knob" cx={knob.cx} cy={knob.cy} r="9" />
-  </svg>
+<div class="dial-wrap" class:flow data-face={face}>
+  <DialRing {face} {frac} {lit} {lead} {knob} />
   <div class="dial-center" aria-live="off">
-    <div class="time" class:counting={timerView.up === "over"} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + (timerView.up === "flow" ? " seconds of flow" : " seconds past the bell") : clockLabel(secs)}>{#each chars as c}<span class={c === ":" ? "c" : c === "+" ? "p" : "d"}>{c}</span>{/each}</div>
+    <div class="time" class:counting={timerView.up === "over"} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + (timerView.up === "flow" ? " seconds of flow" : " seconds past the bell") : clockLabel(secs)}><FaceDigits {face} {chars} /></div>
     <div class="dial-sub" id="dialSub">{sub}</div>
   </div>
 </div>
