@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FACES, matrix, MATRIX_ROWS, timerFace } from "./faces";
+import { FACES, matrix, MATRIX_ROWS, RINGS, timerFace, timerRing } from "./faces";
 
 describe("timerFace", () => {
   it("defaults to the classic dial", () => {
@@ -11,6 +11,19 @@ describe("timerFace", () => {
 
   it("keeps every known face", () => {
     for (const [id] of FACES) expect(timerFace(id)).toBe(id);
+  });
+});
+
+describe("timerRing", () => {
+  it("follows the face until one is picked", () => {
+    expect(timerRing("classic", undefined)).toBe("arc");
+    expect(timerRing("flap", undefined)).toBe("tiles");
+    expect(timerRing("matrix", "")).toBe("dots");
+    expect(timerRing("nixie", "halo")).toBe("glow");
+  });
+
+  it("keeps a ring picked on purpose", () => {
+    for (const [id] of RINGS) expect(timerRing("nixie", id)).toBe(id);
   });
 });
 

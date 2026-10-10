@@ -5,7 +5,7 @@
   import DialRing from "./DialRing.svelte";
   import FaceDigits from "./FaceDigits.svelte";
 
-  let { sub, flow = false, mode = "", face = "classic" } = $props();
+  let { sub, flow = false, mode = "", face = "classic", ring = "arc" } = $props();
 
   // Flow has no end, so its ring is a quiet, full circle and only the digits move.
   const frac = $derived(timerView.up === "over" || timerView.up === "flow" ? 1 : fraction(timerView.rem, timerView.total));
@@ -30,8 +30,8 @@
   });
 </script>
 
-<div class="dial-wrap" class:flow data-face={face}>
-  <DialRing {face} {frac} {lit} {lead} {knob} />
+<div class="dial-wrap" class:flow data-face={face} data-ring={ring}>
+  <DialRing {ring} {frac} {lit} {lead} {knob} />
   <div class="dial-center" aria-live="off">
     <div class="time" class:counting={timerView.up === "over"} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + (timerView.up === "flow" ? " seconds of flow" : " seconds past the bell") : clockLabel(secs)}><FaceDigits {face} {chars} /></div>
     <div class="dial-sub" id="dialSub">{sub}</div>

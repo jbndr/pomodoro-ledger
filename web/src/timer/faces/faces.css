@@ -2,18 +2,21 @@
 :root {
   --fl-top-a: #FFFFFF; --fl-top-b: #F6F7F5; --fl-bot-a: #F1F2F0; --fl-bot-b: #E8EAE7; --fl-ink: #161918; --fl-slit: #C3C8C2; --fl-colon: color-mix(in oklab, var(--fg) 62%, transparent);
   --fl-lift: 0 .012em 0 rgba(20,24,22,.06), 0 .05em .1em -.03em rgba(20,24,22,.22);
+  --fl-off: #E7EAE6; --fl-edge: rgba(20,24,22,.07); --fl-gap: rgba(20,24,22,.2);
   --mx-off: color-mix(in oklab, var(--fg) 7%, transparent); --face-glow: 0; --nx-dot: #F0661F;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --fl-top-a: #2B302D; --fl-top-b: #232825; --fl-bot-a: #1E2220; --fl-bot-b: #191C1B; --fl-ink: #EDF0EE; --fl-slit: #070808;
     --fl-lift: 0 .012em 0 rgba(255,255,255,.04), 0 .06em .14em -.02em rgba(0,0,0,.6);
+    --fl-off: #262B28; --fl-edge: rgba(255,255,255,.04); --fl-gap: rgba(0,0,0,.6);
     --mx-off: color-mix(in oklab, var(--fg) 8%, transparent); --face-glow: 1; --nx-dot: #FFD2A6;
   }
 }
 :root[data-theme="dark"] {
   --fl-top-a: #2B302D; --fl-top-b: #232825; --fl-bot-a: #1E2220; --fl-bot-b: #191C1B; --fl-ink: #EDF0EE; --fl-slit: #070808;
   --fl-lift: 0 .012em 0 rgba(255,255,255,.04), 0 .06em .14em -.02em rgba(0,0,0,.6);
+  --fl-off: #262B28; --fl-edge: rgba(255,255,255,.04); --fl-gap: rgba(0,0,0,.6);
   --mx-off: color-mix(in oklab, var(--fg) 8%, transparent); --face-glow: 1; --nx-dot: #FFD2A6;
 }
 
@@ -58,3 +61,17 @@ body.morphing .dial .mx-ring circle, body.morphing .face-matrix circle { transit
 .nx-colon { display: grid; gap: .24em; padding: 0 .02em; }
 .nx-colon i { width: .07em; height: .07em; border-radius: 50%; background: var(--nx-dot); box-shadow: 0 0 .025em #FFB070, 0 0 .09em #FF6A1F, 0 0 .2em rgba(255, 90, 20, .5); }
 .nx-plus { font-size: .6em; font-weight: 300; color: #FF9E52; text-shadow: 0 0 .1em rgba(255, 92, 24, .6); padding-right: .06em; }
+
+/* Rings: each face brings its own, and any ring goes with any face. */
+.dial .fl-ring rect { fill: var(--fl-off); stroke: var(--fl-edge); stroke-width: .6; transform-box: fill-box; transform-origin: center; transition: fill .3s; }
+.dial .fl-ring rect.lit, .dial-wrap.flow .dial .fl-ring rect.lead { fill: var(--accent); stroke: none; }
+.dial .fl-slit { fill: none; stroke: var(--fl-gap); stroke-width: 1.1; }
+.dial { --gl-core: color-mix(in oklab, var(--accent), #fff calc(var(--face-glow) * 50%)); }
+.dial .gl-tube { fill: none; stroke: color-mix(in oklab, var(--fg) 5%, transparent); stroke-width: 15; }
+.dial .gl-glass { fill: none; stroke: color-mix(in oklab, var(--fg) 9%, transparent); stroke-width: .8; }
+.dial .gl-arc { fill: none; stroke: var(--gl-core); stroke-width: 3.4; stroke-linecap: round; filter: drop-shadow(0 0 2px var(--accent)) drop-shadow(0 0 6px color-mix(in oklab, var(--accent) 70%, transparent)); }
+.dial .gl-knob { fill: var(--gl-core); filter: drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 8px var(--accent)); }
+.dial .gl-marks circle { fill: color-mix(in oklab, var(--fg) 22%, transparent); }
+.dial-wrap.flow .dial .gl-arc { stroke: color-mix(in oklab, var(--accent) 30%, transparent); filter: none; }
+.dial-wrap.flow .dial .gl-knob { transition: cx .25s linear, cy .25s linear; }
+body.morphing .dial .fl-ring rect { transition: none; }

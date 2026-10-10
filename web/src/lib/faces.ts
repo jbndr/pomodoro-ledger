@@ -12,6 +12,22 @@ export function timerFace(v: unknown): TimerFace {
   return FACES.some(([id]) => id === v) ? (v as TimerFace) : "classic";
 }
 
+export type TimerRing = "arc" | "tiles" | "dots" | "glow";
+
+export const RINGS: [TimerRing, string, string][] = [
+  ["arc", "Arc", "A solid arc with a knob at the time left"],
+  ["tiles", "Tiles", "Small flaps that turn over as the time runs down"],
+  ["dots", "Dots", "LED dots that go out one by one"],
+  ["glow", "Glow", "A lit filament in a glass tube"],
+];
+
+const OWN_RING: Record<TimerFace, TimerRing> = { classic: "arc", flap: "tiles", matrix: "dots", nixie: "glow" };
+
+/** The ring around the digits: one picked on purpose, or the face's own. */
+export function timerRing(face: TimerFace, v: unknown): TimerRing {
+  return RINGS.some(([id]) => id === v) ? (v as TimerRing) : OWN_RING[face];
+}
+
 const GLYPHS: Record<string, string[]> = {
   "0": [".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],
   "1": ["..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."],
