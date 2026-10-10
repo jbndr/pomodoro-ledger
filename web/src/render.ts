@@ -3,6 +3,7 @@ import { composer } from "./composer/state.svelte";
 import { $ } from "./dom";
 import { renderFloating } from "./float";
 import { MIN } from "./lib/dates";
+import { timerBackdrop } from "./lib/faces";
 import { list, pill, progress } from "./lib/redraw.svelte";
 import { projectNames } from "./lib/tasks";
 import { clock, MODE_NAME } from "./lib/timer";
@@ -19,6 +20,7 @@ import { timerView } from "./timer/state.svelte";
 import { closeLabelPop, ui } from "./ui";
 import { syncActive } from "./tasks/actions";
 import { showMode } from "./timer/morph";
+import { applySky } from "./weather.svelte";
 
 let lastPhase = "", lastTxt = "", lastFrac = 1, startEstimateMinute = -1, renderedDay = "";
 
@@ -27,6 +29,9 @@ export function renderTimer(force?: boolean) {
   if (T.mode + T.status !== lastPhase) { lastPhase = T.mode + T.status; syncActive(); }
   showMode(T.mode);
   if (document.body.dataset.status !== T.status) document.body.dataset.status = T.status;
+  const backdrop = timerBackdrop(S.settings.backdrop);
+  if (document.body.dataset.backdrop !== backdrop) document.body.dataset.backdrop = backdrop;
+  applySky(document.body, backdrop === "weather");
   // Past the bell shows "+12:40" on a full ring; flow counts from zero and fills the ring once an hour.
   const kind = T.up ? T.upKind || "over" : T.flowReady ? "flow" : "", total = kind ? 1 : totalNow(), rem = kind ? upNow() : remNow();
   const frac = kind ? 1 : Math.max(0, Math.min(1, rem / total));

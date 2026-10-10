@@ -4,7 +4,7 @@
   import { applyTheme, theme } from "../chrome/theme.svelte";
   import { extensionVersion } from "../extension";
   import { mixLabel } from "../lib/mix";
-  import { timerFace, timerRing } from "../lib/faces";
+  import { timerBackdrop, timerFace, timerRing } from "../lib/faces";
   import { phaseMorph } from "../lib/phaseMorph";
   import { rolloverMode } from "../lib/rollover";
   import { tickPace, tickVolume, workdayEnd } from "../lib/settings";
@@ -42,7 +42,7 @@
       autoBreak: !!s.autoBreak, autoFocus: !!s.autoFocus, sound: !!s.sound, notify: !!s.notify, ticking: !!s.ticking, autoFloat: !!s.autoFloat,
       weeklyRecap: !!s.weeklyRecap, weeklyPlan: !!s.weeklyPlan, reactions: s.reactions !== false, bestTime: s.bestTime !== false, bestRemind: !!s.bestRemind,
       tickVolume: s.tickVolume, tickPace: String(s.tickPace), workdayEnd: s.workdayEnd || "",
-      rollover: rolloverMode(s.rollover), phaseMorph: phaseMorph(s.phaseMorph), face: timerFace(s.face), ring: timerRing(timerFace(s.face), s.ring),
+      rollover: rolloverMode(s.rollover), phaseMorph: phaseMorph(s.phaseMorph), face: timerFace(s.face), ring: timerRing(s.ring), backdrop: timerBackdrop(s.backdrop),
     };
   };
   const known = (k) => SECTIONS.some(([name]) => name === k);
@@ -136,14 +136,6 @@
       if (k === "reactions") api.reactionsChanged();
       if (k === "ticking" || k === "tickVolume" || k === "tickPace") { api.cancelTickPreview(); api.syncTicking(); }
     });
-  }
-
-  // A new face brings its own ring; picking a ring afterwards keeps the mix.
-  function pickFace(v) {
-    const s = api.S.settings, face = timerFace(v);
-    s.face = face; delete s.ring;
-    f.face = face; f.ring = timerRing(face, undefined);
-    save();
   }
 
   const LIMIT = Object.fromEntries([...LENGTHS.map(([k, , , min, max]) => [k, [min, max]]), ["longEvery", [2, 12]], ["goal", [1, 30]]]);
@@ -317,7 +309,7 @@
               {#if api.floatable}{@render row("Floating timer", "Opens when a session starts or you switch tabs", float)}{/if}
             </div></section>
             <section class="st-grp"><h4>Timer face</h4><div class="st-card">
-              <FacePicker face={f.face} ring={f.ring} onface={pickFace} onring={(v) => set("ring", timerRing(f.face, v))} />
+              <FacePicker face={f.face} ring={f.ring} backdrop={f.backdrop} onface={(v) => set("face", timerFace(v))} onring={(v) => set("ring", timerRing(v))} onbackdrop={(v) => set("backdrop", timerBackdrop(v))} />
             </div></section>
             <section class="st-grp"><h4>Phase change</h4><div class="st-card">
               <PhasePreview value={f.phaseMorph} onpick={(v) => set("phaseMorph", phaseMorph(v))} />

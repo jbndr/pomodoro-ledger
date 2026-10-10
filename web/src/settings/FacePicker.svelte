@@ -1,55 +1,70 @@
 <script>
   import { onDestroy } from "svelte";
-  import { FACES, RINGS, timerRing } from "../lib/faces";
+  import { BACKDROPS, FACES, RINGS } from "../lib/faces";
   import { clock, knobAt, litTicks } from "../lib/timer";
   import DialRing from "../timer/DialRing.svelte";
   import FaceDigits from "../timer/FaceDigits.svelte";
+  import WeatherLayers from "../timer/WeatherLayers.svelte";
+  import { weatherWords } from "../lib/weather";
+  import { wantWeather, weather } from "../weather.svelte";
 
-  let { face, ring, onface, onring } = $props();
+  let { face, ring, backdrop, onface, onring, onbackdrop } = $props();
 
-  const START = 17 * 60 + 30, OPTIONS = [...FACES, ...RINGS];
-  let secs = $state(Object.fromEntries(OPTIONS.map(([id]) => [id, START]))), playing = $state(""), timer = 0, root;
-  const hint = $derived((OPTIONS.find(([id]) => id === playing) || FACES.find(([id]) => id === face) || FACES[0])[2]);
+  const START = 17 * 60 + 30, TOTAL = 25 * 60;
+  let secs = $state(Object.fromEntries([...FACES, ...RINGS].map(([id]) => [id, START]))), playing = $state(""), timer = 0, root;
+  const name = (list, id) => list.find(([k]) => k === id)?.[1];
+  const outside = $derived(weather.now ? [weather.now.place, weatherWords(weather.now), "data from MET Norway"].filter(Boolean).join(" · ") : "");
+  const hint = $derived((playing === "weather" && outside) || [...FACES, ...RINGS, ...BACKDROPS].find(([id]) => id === playing)?.[2] || [name(FACES, face), ring === "none" ? "No ring" : name(RINGS, ring) + " ring", name(BACKDROPS, backdrop)].join(" · "));
 
-  // Pointing at an option (or picking one) lets its preview tick down, one real second at a time, until Settings closes.
-  function play(id) {
+  // Pointing at a face ticks its preview in real seconds; a ring runs down 25 seconds a step, so a tile turns or a dot goes out each time.
+  function play(id, step = 1) {
     if (playing === id) return;
     clearInterval(timer);
     playing = id;
-    const step = () => {
+    const tick = () => {
       if (!root?.offsetParent) { stop(id); return; }
-      secs[id] = secs[id] > 1 ? secs[id] - 1 : START;
+      if (id in secs) secs[id] = secs[id] > step ? secs[id] - step : START;
     };
-    step();
-    timer = setInterval(step, 1000);
+    tick();
+    timer = setInterval(tick, 1000);
   }
   function stop(id) { if (playing !== id) return; clearInterval(timer); playing = ""; }
-  const hover = (id) => ({ onpointerenter: (e) => { if (e.pointerType === "mouse") play(id); }, onpointerleave: () => stop(id), onfocus: () => play(id), onblur: () => stop(id) });
+  const hover = (id, step) => ({ onpointerenter: (e) => { if (e.pointerType === "mouse") play(id, step); }, onpointerleave: () => stop(id), onfocus: () => play(id, step), onblur: () => stop(id) });
 
   onDestroy(() => clearInterval(timer));
 </script>
 
-{#snippet preview(id, digits, around)}
-  {@const frac = secs[id] / (25 * 60)}
-  <span class="dial-wrap" data-face={digits} data-ring={around} aria-hidden="true">
-    <DialRing ring={around} {frac} lit={litTicks(frac)} knob={knobAt(frac)} />
-    <span class="dial-center"><span class="time"><FaceDigits face={digits} chars={[...clock(secs[id])]} /></span></span>
-  </span>
-{/snippet}
-
 <div class="st-faces-wrap" bind:this={root}>
-  <div class="st-faces" role="radiogroup" aria-label="Timer face">
-    {#each FACES as [id, name] (id)}
-      <button class="st-face" type="button" role="radio" aria-checked={String(face === id)} data-face={id} onclick={() => { onface(id); play(id); }} {...hover(id)}>{@render preview(id, id, timerRing(id, undefined))}<b>{name}</b></button>
-    {/each}
-  </div>
-  <p class="st-face-hint" aria-live="polite">{hint}</p>
-  <div class="st-rings-row">
-    <span class="st-rings-label" id="ringLabel">Ring</span>
-    <div class="st-faces st-rings" role="radiogroup" aria-labelledby="ringLabel">
-      {#each RINGS as [id, name] (id)}
-        <button class="st-face" type="button" role="radio" aria-checked={String(ring === id)} data-ring={id} onclick={() => { onring(id); play(id); }} {...hover(id)}>{@render preview(id, face, id)}<b>{name}</b></button>
+  <div class="st-pick-row">
+    <span class="st-pick-label" id="faceLabel">Face</span>
+    <div class="st-faces" role="radiogroup" aria-labelledby="faceLabel">
+      {#each FACES as [id, label] (id)}
+        <button class="st-face" type="button" role="radio" aria-checked={String(face === id)} onclick={() => { onface(id); play(id); }} {...hover(id, 1)}>
+          <span class="st-stage" aria-hidden="true"><span class="time"><FaceDigits face={id} chars={[...clock(secs[id])]} /></span></span><b>{label}</b>
+        </button>
       {/each}
     </div>
   </div>
+  <div class="st-pick-row">
+    <span class="st-pick-label" id="ringLabel">Ring</span>
+    <div class="st-faces" role="radiogroup" aria-labelledby="ringLabel">
+      {#each RINGS as [id, label] (id)}
+        {@const frac = secs[id] / TOTAL}
+        <button class="st-face" type="button" role="radio" aria-checked={String(ring === id)} onclick={() => { onring(id); play(id, 25); }} {...hover(id, 25)}>
+          <span class="st-stage" data-ring={id} aria-hidden="true"><DialRing ring={id} {frac} lit={litTicks(frac)} knob={knobAt(frac)} /></span><b>{label}</b>
+        </button>
+      {/each}
+    </div>
+  </div>
+  <div class="st-pick-row">
+    <span class="st-pick-label" id="backdropLabel">Background</span>
+    <div class="st-faces" role="radiogroup" aria-labelledby="backdropLabel">
+      {#each BACKDROPS as [id, label] (id)}
+        <button class="st-face" type="button" role="radio" aria-checked={String(backdrop === id)} onclick={() => onbackdrop(id)} onpointerover={() => { if (id === "weather") wantWeather(); }} {...hover(id)}>
+          <span class="st-stage st-swatch" data-backdrop={id} aria-hidden="true"><span class="glow">{#if id === "weather"}<WeatherLayers />{/if}</span></span><b>{label}</b>
+        </button>
+      {/each}
+    </div>
+  </div>
+  <p class="st-face-hint" aria-live="polite">{hint}</p>
 </div>

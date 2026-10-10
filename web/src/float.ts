@@ -4,12 +4,13 @@ import { $ } from "./dom";
 import { fmtClock } from "./format";
 import { ICON } from "./icons";
 import { MIN } from "./lib/dates";
-import { timerFace, timerRing } from "./lib/faces";
+import { timerBackdrop, timerFace, timerRing } from "./lib/faces";
 import { MODE_NAME } from "./lib/timer";
 import { S, T } from "./state";
 import { adjust, MAX_RUN, remNow, skip, tick, toggle, totalNow, upNow } from "./timer/engine";
 import FaceDigits from "./timer/FaceDigits.svelte";
 import FloatBar from "./timer/FloatBar.svelte";
+import FloatWeather from "./timer/FloatWeather.svelte";
 import facesCss from "./timer/faces/faces.css?inline";
 import { floatView } from "./timer/state.svelte";
 
@@ -30,7 +31,8 @@ export function initFloat() {
 let lastState = "", lastNudge = "";
 
 const TOKENS = ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--accent", "--acc-l", "--acc-c", "--acc-h", "--glow-o", "--ember", "--paper", "--grain-o", "--go-l-max", "--f-display", "--f-body",
-  "--fl-top-a", "--fl-top-b", "--fl-bot-a", "--fl-bot-b", "--fl-ink", "--fl-slit", "--fl-colon", "--fl-lift", "--fl-off", "--fl-edge", "--fl-gap", "--mx-off", "--face-glow", "--nx-dot"];
+  "--fl-top-a", "--fl-top-b", "--fl-bot-a", "--fl-bot-b", "--fl-ink", "--fl-slit", "--fl-colon", "--fl-lift", "--fl-off", "--fl-edge", "--fl-gap", "--mx-off", "--face-glow", "--nx-dot", "--pp-a", "--pp-b", "--pp-edge", "--sky-l",
+  "--wx-grey", "--wx-cloud", "--wx-storm", "--wx-drop", "--wx-flake", "--wx-fog", "--wx-sun-o", "--cloud", "--precip", "--sun-x", "--sun-y"];
 
 export function renderFloating(txt: string, frac: number) {
   if (!floatWindow || floatWindow.closed) return;
@@ -38,6 +40,7 @@ export function renderFloating(txt: string, frac: number) {
   const theme = getComputedStyle(document.body);
   for (const name of TOKENS) root.style.setProperty(name, theme.getPropertyValue(name));
   root.style.colorScheme = getComputedStyle(document.documentElement).colorScheme;
+  for (const k of ["backdrop", "sky", "weather", "status"]) if (doc.body.dataset[k] !== document.body.dataset[k]) doc.body.dataset[k] = document.body.dataset[k] || "";
   const flow = T.upKind === "flow" || !!T.flowReady, over = !!T.up && !flow;
   doc.title = txt + " · " + (flow ? "Flow" : MODE_NAME[T.mode]);
 
@@ -53,7 +56,7 @@ export function renderFloating(txt: string, frac: number) {
   main.classList.toggle("over", over);
 
   const time = $("#miniTime", doc), face = timerFace(S.settings.face);
-  floatView.face = face; floatView.ring = timerRing(face, S.settings.ring); floatView.chars = [...txt]; floatView.frac = flow ? 1 : frac;
+  floatView.face = face; floatView.ring = timerRing(S.settings.ring); floatView.backdrop = timerBackdrop(S.settings.backdrop); floatView.chars = [...txt]; floatView.frac = flow ? 1 : frac;
   const secs = T.up ? Math.floor(upNow() / 1000) : Math.ceil(remNow() / 1000);
   time.setAttribute("aria-label", Math.floor(secs / 60) + " minutes " + (secs % 60) + (T.up ? (flow ? " seconds of flow" : " seconds past the bell") : " seconds remaining"));
 
@@ -159,7 +162,7 @@ async function openFloating(quiet?: boolean) {
       .bar[data-ring="glow"] { height: 5rem; overflow: visible; padding: 1.5rem; background: color-mix(in oklab, var(--fg) 6%, transparent); }
       .bar[data-ring="glow"] #miniBar { background: color-mix(in oklab, var(--accent), #fff calc(var(--face-glow) * 50%)); box-shadow: 0 0 3rem var(--accent), 0 0 8rem color-mix(in oklab, var(--accent) 60%, transparent); }
       main.bell #miniTime { animation: pop .6s cubic-bezier(.34, 1.56, .64, 1); }
-      main.bell .glow { animation: glow 2.2s ease; }
+      main.bell .glow, [data-backdrop] main.bell .glow { animation: glow 2.2s ease; }
       @keyframes pop { 40% { scale: 1.05; } }
       @keyframes glow { 15% { opacity: 1; filter: saturate(1.6) brightness(1.04); } }
       @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -170,7 +173,7 @@ async function openFloating(quiet?: boolean) {
       + '<div class="step" role="group" aria-label="Adjust this session"><button type="button" data-adj="-1" aria-label="1 minute less" title="1 minute less (−)">−1</button><button type="button" data-adj="1" aria-label="1 minute more" title="1 minute more (+)">+1</button><button type="button" id="miniSkip" aria-label="Skip to next phase" title="Skip to next phase">' + $("#skipBtn").innerHTML + "</button></div></div></div>"
       + '<button id="miniToggle" type="button"></button>'
       + "</main>";
-    const faceParts = [mount(FaceDigits, { target: $("#miniTime", doc), props: floatView }), mount(FloatBar, { target: $("main", doc), props: floatView })];
+    const faceParts = [mount(FaceDigits, { target: $("#miniTime", doc), props: floatView }), mount(FloatBar, { target: $("main", doc), props: floatView }), mount(FloatWeather, { target: $(".glow", doc), props: floatView })];
     lastState = "";
     $("#miniToggle", doc).addEventListener("click", toggle);
     $("#miniSkip", doc).addEventListener("click", skip);

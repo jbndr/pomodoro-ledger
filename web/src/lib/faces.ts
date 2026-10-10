@@ -12,21 +12,39 @@ export function timerFace(v: unknown): TimerFace {
   return FACES.some(([id]) => id === v) ? (v as TimerFace) : "classic";
 }
 
-export type TimerRing = "arc" | "tiles" | "dots" | "glow";
+export type TimerRing = "none" | "arc" | "tiles" | "dots" | "glow";
 
 export const RINGS: [TimerRing, string, string][] = [
+  ["none", "None", "Just the numbers"],
   ["arc", "Arc", "A solid arc with a knob at the time left"],
   ["tiles", "Tiles", "Small flaps that turn over as the time runs down"],
   ["dots", "Dots", "LED dots that go out one by one"],
   ["glow", "Glow", "A lit filament in a glass tube"],
 ];
 
-const OWN_RING: Record<TimerFace, TimerRing> = { classic: "arc", flap: "tiles", matrix: "dots", nixie: "glow" };
-
-/** The ring around the digits: one picked on purpose, or the face's own. */
-export function timerRing(face: TimerFace, v: unknown): TimerRing {
-  return RINGS.some(([id]) => id === v) ? (v as TimerRing) : OWN_RING[face];
+/** A stored ring, falling back to the arc. */
+export function timerRing(v: unknown): TimerRing {
+  return RINGS.some(([id]) => id === v) ? (v as TimerRing) : "arc";
 }
+
+export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "weather";
+
+export const BACKDROPS: [TimerBackdrop, string, string][] = [
+  ["glow", "Glow", "A soft glow in the colour of the phase"],
+  ["plain", "Plain", "Nothing behind the dial"],
+  ["paper", "Paper", "Warm, grainy paper"],
+  ["aurora", "Aurora", "Colour that drifts slowly while a session runs"],
+  ["weather", "Weather", "The sky and weather where you are, right now"],
+];
+
+/** A stored background, falling back to the glow. */
+export function timerBackdrop(v: unknown): TimerBackdrop {
+  return BACKDROPS.some(([id]) => id === v) ? (v as TimerBackdrop) : "glow";
+}
+
+export type SkyPhase = "dawn" | "day" | "dusk" | "night";
+
+export const skyPhase = (hour: number): SkyPhase => (hour >= 5 && hour < 8 ? "dawn" : hour >= 8 && hour < 17 ? "day" : hour >= 17 && hour < 21 ? "dusk" : "night");
 
 const GLYPHS: Record<string, string[]> = {
   "0": [".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],

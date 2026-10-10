@@ -23,7 +23,8 @@
 </script>
 
 <svg class="dial" viewBox="0 0 300 300" aria-hidden="true">
-  {#if ring === "dots"}
+  {#if ring === "none"}
+  {:else if ring === "dots"}
     <g class="mx-ring">{#each DOTS as d, i}<circle cx={d.cx} cy={d.cy} r="3.6" class:lit={i < lit} class:lead={i === lead} />{/each}</g>
   {:else if ring === "tiles"}
     <g class="fl-ring" bind:this={tilesEl}>{#each TILES as d, i}<g transform="rotate({d.deg} 150 150)"><rect x={150 - TILE_W / 2} y="17.5" width={TILE_W} height="15" rx="1.5" class:lit={i < lit} class:lead={i === lead} /></g>{/each}</g>

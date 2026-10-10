@@ -1,6 +1,6 @@
 import type { Label } from "./lib/labels";
 import type { SavedMix } from "./lib/mix";
-import type { TimerFace, TimerRing } from "./lib/faces";
+import type { TimerBackdrop, TimerFace, TimerRing } from "./lib/faces";
 import type { PhaseMorph } from "./lib/phaseMorph";
 import type { BreakEntry } from "./lib/day";
 import type { Nudge } from "./lib/nudges";
@@ -56,6 +56,8 @@ export interface Settings {
   face?: TimerFace;
   /** The ring around the digits; unset means the face's own. */
   ring?: TimerRing;
+  /** What sits behind the dial; unset means the glow. */
+  backdrop?: TimerBackdrop;
 }
 
 export const DEF: Settings = { focus: 25, short: 5, long: 15, longEvery: 4, autoBreak: true, autoFocus: false, sound: true, notify: false, goal: 8, ticking: false, tickVolume: 20, tickPace: 2, autoFloat: false, workdayEnd: "", sections: [], scapeMixes: [], weeklyRecap: true, recapSeen: "", weeklyPlan: true, plans: [], planSeen: "" };

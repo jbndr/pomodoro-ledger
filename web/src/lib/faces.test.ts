@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FACES, matrix, MATRIX_ROWS, RINGS, timerFace, timerRing } from "./faces";
+import { BACKDROPS, FACES, matrix, MATRIX_ROWS, RINGS, skyPhase, timerBackdrop, timerFace, timerRing } from "./faces";
 
 describe("timerFace", () => {
   it("defaults to the classic dial", () => {
@@ -15,15 +15,25 @@ describe("timerFace", () => {
 });
 
 describe("timerRing", () => {
-  it("follows the face until one is picked", () => {
-    expect(timerRing("classic", undefined)).toBe("arc");
-    expect(timerRing("flap", undefined)).toBe("tiles");
-    expect(timerRing("matrix", "")).toBe("dots");
-    expect(timerRing("nixie", "halo")).toBe("glow");
+  it("defaults to the arc and keeps every known ring, none included", () => {
+    expect(timerRing(undefined)).toBe("arc");
+    expect(timerRing("halo")).toBe("arc");
+    for (const [id] of RINGS) expect(timerRing(id)).toBe(id);
+    expect(timerRing("none")).toBe("none");
   });
+});
 
-  it("keeps a ring picked on purpose", () => {
-    for (const [id] of RINGS) expect(timerRing("nixie", id)).toBe(id);
+describe("timerBackdrop", () => {
+  it("defaults to the glow and keeps every known background", () => {
+    expect(timerBackdrop(undefined)).toBe("glow");
+    expect(timerBackdrop("lava")).toBe("glow");
+    for (const [id] of BACKDROPS) expect(timerBackdrop(id)).toBe(id);
+  });
+});
+
+describe("skyPhase", () => {
+  it("follows the hour", () => {
+    expect([0, 4, 5, 7, 8, 16, 17, 20, 21, 23].map(skyPhase)).toEqual(["night", "night", "dawn", "dawn", "day", "day", "dusk", "dusk", "night", "night"]);
   });
 });
 

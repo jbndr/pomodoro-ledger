@@ -1,7 +1,8 @@
 <script>
-  import { timerFace, timerRing } from "../lib/faces";
+  import { timerBackdrop, timerFace, timerRing } from "../lib/faces";
   import { clock, MODE_NAME, MODES, roundDots, startLabel } from "../lib/timer";
   import Dial from "./Dial.svelte";
+  import WeatherLayers from "./WeatherLayers.svelte";
   import { onMount } from "svelte";
   import { calm } from "../dom";
   import { timerView } from "./state.svelte";
@@ -27,7 +28,7 @@
     timerView.version;
     const T = api.T, every = api.S.settings.longEvery;
     return {
-      mode: T.mode, status: T.status, face: timerFace(api.S.settings.face), ring: timerRing(timerFace(api.S.settings.face), api.S.settings.ring),
+      mode: T.mode, status: T.status, face: timerFace(api.S.settings.face), ring: timerRing(api.S.settings.ring), backdrop: timerBackdrop(api.S.settings.backdrop),
       dots: roundDots(T.mode, T.setIndex, every), round: Math.min(Math.min(T.setIndex || 0, every) + 1, every), every,
       canReset: T.setIndex > 0 && T.status !== "running", up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), bellAt: T.bellAt || 0, flowSince: T.upKind === "flow" ? T.up : 0, flow: T.upKind === "flow" || !!T.flowReady, nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
       sub: T.up ? (T.upKind === "flow" ? "started " + api.fmtClock(T.up) : "past the bell") : T.flowReady ? "" : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
@@ -54,7 +55,7 @@
   const adoptFloatBtn = (el) => { el.prepend(api.floatBtn); };
 </script>
 
-<div class="glow" aria-hidden="true"></div>
+<div class="glow" aria-hidden="true">{#if c.backdrop === "weather"}<WeatherLayers />{/if}</div>
 <div class="card-head">
   <div class="modes" role="tablist" aria-label="Timer mode">
     {#each MODES as m}<button type="button" role="tab" data-mode={m} aria-label={MODE_NAME[m]} aria-selected={String(m === c.mode && !c.flow)} data-held={c.held[m] ? "" : null} title={c.held[m]} onclick={() => { if (api.T.up) api.toggle(); if (m !== api.T.mode || api.T.flowReady) api.setMode(m, true); }}>{m === "focus" ? "Focus" : m === "short" ? "Short" : "Long"}</button>{/each}<button type="button" role="tab" data-mode="flow" aria-label="Flow: count up until you stop" aria-selected={String(c.flow)} title="Count up from zero until you stop" onclick={() => api.readyFlow()}>Flow</button>
