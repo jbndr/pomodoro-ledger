@@ -148,3 +148,6 @@ body .st-face:hover [data-backdrop] .glow { animation-play-state: running; }
   body[data-backdrop]:not([data-backdrop="glow"])[data-page="timer"] .timer-card > .glow { display: block; position: fixed; }
   body.zen[data-page][data-backdrop]:not([data-backdrop="glow"]) .timer-card { background: var(--bg); }
 }
+
+/* Behind an open sheet the page is blurred; anything still moving there makes the browser redo that blur every frame. */
+body.modal-open .glow, body.modal-open .glow *, body.modal-open::before { animation-play-state: paused; }
