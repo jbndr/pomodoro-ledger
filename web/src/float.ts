@@ -21,7 +21,7 @@ export function initFloat() {
   autoFloatHandler();
 }
 
-let lastState = "";
+let lastState = "", lastNudge = "";
 
 const TOKENS = ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--accent", "--acc-l", "--acc-c", "--acc-h", "--glow-o", "--ember", "--paper", "--grain-o", "--go-l-max", "--f-display", "--f-body"];
 
@@ -52,9 +52,13 @@ export function renderFloating(txt: string, frac: number) {
 
   const task = S.activeId && S.tasks.get(S.activeId);
   const taskEl = $("#miniTask", doc);
-  taskEl.textContent = task ? task.title : T.mode === "focus" ? "Time to focus" : "Take a breather";
-  taskEl.classList.toggle("none", !task);
-  taskEl.title = task ? task.title : "";
+  // A break's nudge takes the line, since this window is what stays in view.
+  const nudge = T.mode !== "focus" && !flow && !over && T.nudge && !T.nudge.done ? T.nudge.text : "";
+  if (nudge !== lastNudge) { if (lastState && nudge) replay(taskEl, "swap"); lastNudge = nudge; }
+  taskEl.textContent = nudge || (task ? task.title : T.mode === "focus" ? "Time to focus" : "Take a breather");
+  taskEl.classList.toggle("none", !task && !nudge);
+  taskEl.classList.toggle("nudge", !!nudge);
+  taskEl.title = nudge || (task ? task.title : "");
   $("#miniBar", doc).style.scale = (flow ? 1 : frac) + " 1";
 
   const [less, more] = doc.querySelectorAll<HTMLButtonElement>("[data-adj]");
@@ -118,6 +122,7 @@ async function openFloating(quiet?: boolean) {
       .line > * { grid-area: 1 / 1; min-width: 0; align-self: center; transition: opacity .18s, translate .18s; }
       #miniTask { overflow: hidden; font-size: 14rem; font-weight: 600; letter-spacing: -.01em; text-overflow: ellipsis; white-space: nowrap; }
       #miniTask.none { color: var(--muted); font-weight: 500; }
+      #miniTask.nudge { color: oklch(min(var(--acc-l), var(--go-l-max)) var(--acc-c) var(--acc-h)); }
       #miniTask.swap { animation: swap .32s cubic-bezier(.32, .72, 0, 1); }
       @keyframes swap { from { opacity: 0; filter: blur(2px); translate: 0 3rem; } }
       .step { display: flex; gap: 4rem; opacity: 0; translate: 0 3rem; pointer-events: none; }
