@@ -1244,14 +1244,16 @@ body:not(.zen) .timer-card.timer-card #adjust.off { visibility: hidden; }
 
 
 /* A break's body nudge: a soft row under the dial that wraps for longer text you can tick. */
-.nudge { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 300px; padding: 8px 12px; border: 0; border-radius: 14px; background: color-mix(in oklab, var(--accent) 10%, transparent); color: var(--fg); text-align: left; font-size: 13.5px; font-weight: 500; line-height: 1.35; cursor: pointer; transition: background .25s, color .25s; animation: nudge-in .45s cubic-bezier(.32, .72, 0, 1) both; }
+.nudge { display: flex; align-items: center; gap: 11px; width: 100%; max-width: 320px; padding: 11px 15px 11px 12px; border: 0; border-radius: 16px; background: color-mix(in oklab, var(--accent) 14%, var(--surface)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 24%, transparent); color: var(--fg); text-align: left; font-size: 14.5px; font-weight: 560; letter-spacing: -.005em; line-height: 1.35; cursor: pointer; transition: background .25s, color .25s, box-shadow .25s; animation: nudge-in .5s cubic-bezier(.32, .72, 0, 1) both, nudge-call 1.6s .4s ease-out 2; }
 .nudge span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.nudge i { flex: none; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; border: 1.5px solid color-mix(in oklab, var(--accent) 70%, var(--line-2)); color: var(--on-accent); transition: background .25s, border-color .25s; }
-.nudge i svg { width: 10px; height: 10px; }
-@media (hover: hover) { .nudge:not(.done):hover { background: color-mix(in oklab, var(--accent) 15%, transparent); } }
-.nudge.done { cursor: default; background: transparent; color: var(--faint); }
+.nudge i { flex: none; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; border: 1.75px solid color-mix(in oklab, var(--accent) 80%, var(--line-2)); color: var(--on-accent); transition: background .25s, border-color .25s; }
+.nudge i svg { width: 11px; height: 11px; }
+@media (hover: hover) { .nudge:not(.done):hover { background: color-mix(in oklab, var(--accent) 20%, var(--surface)); } }
+.nudge.done { cursor: default; background: transparent; box-shadow: none; color: var(--faint); font-weight: 500; animation: none; }
 .nudge.done i { background: var(--accent); border-color: var(--accent); }
-@keyframes nudge-in { from { opacity: 0; translate: 0 4px; } }
+@keyframes nudge-in { from { opacity: 0; translate: 0 6px; scale: .97; } }
+/* Two soft rings on arrival: enough to catch an eye that has drifted, then it sits still. */
+@keyframes nudge-call { from { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 24%, transparent), 0 0 0 0 color-mix(in oklab, var(--accent) 38%, transparent); } to { box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent) 24%, transparent), 0 0 0 12px transparent; } }
 /* Flow: a quiet full ring with a second hand; nothing suggests an end. */
 .dial-wrap.flow .dial .arc { stroke: color-mix(in oklab, var(--accent) 30%, var(--surface-2)); }
 .recap-nudges { margin: -4px 0 0; font-size: 13px; color: var(--muted); }

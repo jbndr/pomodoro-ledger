@@ -136,7 +136,7 @@ function advance(at: number, wasFocus: boolean, stale: boolean) {
   const t = S.activeId && S.tasks.get(S.activeId);
   const msg = wasFocus ? ("Cycle done" + (t ? " on “" + t.title + "”" : "") + ". " + (next === "long" ? "Take a long break." : "Take a short break.")) : "Break's over. Ready for the next cycle.";
   toast(msg);
-  if (!stale) notify(msg);
+  if (!stale) notify(T.nudge ? msg + "\n" + T.nudge.text : msg);
   if (wasFocus && !stale) roomRoundEnded();
 }
 
