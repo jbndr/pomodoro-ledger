@@ -23,7 +23,7 @@ const count = AREAS.reduce((n, a) => n + a.items.length, 0);
         </ul>
       </section>
     ))}
-    <p class="end"><a class="btn primary" href={SITE.app}>Open the app</a><a class="btn" href="/app/?demo=1">Try the demo</a></p>
+    <p class="end"><a class="btn primary" href={SITE.app} data-hit="open-app:end">Open the app</a><a class="btn" href="/app/?demo=1" data-hit="try-demo:end">Try the demo</a></p>
   </div>
 </Base>
 <style>

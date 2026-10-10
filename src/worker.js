@@ -1,9 +1,11 @@
 import { DurableObject } from "cloudflare:workers";
+import { hit, stats } from "./hits.js";
 import { pushBody, pushReady, readSub, sendPush } from "./push.js";
 import { handleSync } from "./sync.js";
 import { nextSession, readTimes, scheduleOf, sessionCode, startStep } from "../web/src/lib/schedule.ts";
 
 export { Ledger } from "./sync.js";
+export { Counts } from "./hits.js";
 
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const MODES = ["focus", "short", "long"];
@@ -67,7 +69,7 @@ function houseRoom(code) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     // Links shared before the app moved to /app/ (invites, sync return, demo) keep working.
     if (url.pathname === "/" && /[?&](room|synced|demo)(=|&|$)/.test(url.search)) return Response.redirect(url.origin + "/app/" + url.search, 302);
@@ -99,6 +101,8 @@ export default {
       if (origin && new URL(origin).host !== url.host) return json({ error: "forbidden" }, 403);
       return room(env, m[1]).fetch(request);
     }
+    if (url.pathname === "/api/hit") return hit(request, env, url, ctx);
+    if (url.pathname === "/api/sync/stats") return stats(request, env, url);
     if (url.pathname === "/api/sync" || url.pathname.startsWith("/api/sync/")) return handleSync(request, env, url);
     if (url.pathname.startsWith("/api/")) return json({ error: "not found" }, 404);
     return env.ASSETS.fetch(request);

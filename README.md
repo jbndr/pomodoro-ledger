@@ -48,7 +48,7 @@ web/                 the app (Vite root)
   src/chrome/        top bar tools, banner, shortcut sheet, toast and tooltip
   src/styles/app.css styles
   public/            copied as-is: service worker, manifest, icons
-src/                 Cloudflare Worker: rooms and the public room lobby (worker.js) and sync (sync.js)
+src/                 Cloudflare Worker: rooms and the public room lobby (worker.js), sync (sync.js) and landing page counts (hits.js)
 extension/           an experimental site blocker browser extension, not released (see extension/README.md)
 tests/               Worker tests (node:test)
 ```
@@ -157,6 +157,27 @@ ACCESS_TEAM_DOMAIN=
 ACCESS_AUD=
 DEV_USER_EMAIL=you@example.com
 ```
+
+## Landing page counts
+
+The landing page and `/features` count their own views and clicks on Open the
+app, Try the demo and Try it right here, per placement (`open-app:hero`,
+`open-app:header` and so on). A small inline script sends a beacon to
+`/api/hit` and the `Counts` Durable Object keeps one number per UTC day, page
+and event. No cookies, no IP addresses, nothing per visitor. Visitors with Do
+Not Track or Global Privacy Control, automated browsers and crawlers that don't
+run scripts aren't counted, and nothing inside `/app/` is.
+
+The numbers are at `/api/sync/stats` (`?format=json` for JSON). That path sits
+behind the same Access app as sync, and the Worker only shows it to addresses
+in the `STATS_EMAILS` secret, comma-separated:
+
+```sh
+npx wrangler secret put STATS_EMAILS
+```
+
+Locally, add `STATS_EMAILS` with your `DEV_USER_EMAIL` to `.dev.vars` and open
+`http://localhost:8787/api/sync/stats`.
 
 ## Shared rooms
 
