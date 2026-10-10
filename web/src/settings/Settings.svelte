@@ -261,7 +261,7 @@
             </div></section>
             <section class="st-grp"><h4>While you focus</h4><div class="st-card">
               {#snippet ticking()}{@render tog("ticking", "Ticking")}{/snippet}
-              {@render row("Ticking", "A soft tap, only while focus runs", ticking)}
+              {@render row("Ticking", "A soft tap in your timer face's sound, only while focus runs", ticking)}
               <div class="st-fold" class:open={f.ticking} id="tickingOptions"><div><div class="st-nest">
                 <div class="st-opt"><span>Volume</span>{@render vol(f.tickVolume, "Ticking volume", (e) => set("tickVolume", tickVolume(e.currentTarget.value)))}</div>
                 <div class="st-opt"><span>Pace</span><div class="st-opt-end">
