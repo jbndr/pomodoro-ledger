@@ -83,8 +83,8 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     <h1>Find out how long things really take</h1>
     <p class="lede">Pomodoro Ledger is a focus timer that keeps the books. Plan your day in rounds, focus on your own or in a room with others, and every round is written down, so your estimates get honest and your week adds up. In your browser, no account needed.</p>
     <div class="cta">
-      <a class="btn primary" href={SITE.app}>Open the app</a>
-      <a class="btn" href="/app/?demo=1">Try the demo</a>
+      <a class="btn primary" href={SITE.app} data-hit="open-app:hero">Open the app</a>
+      <a class="btn" href="/app/?demo=1" data-hit="try-demo:hero">Try the demo</a>
     </div>
   </section>
 
@@ -280,8 +280,8 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
   <section class="col signoff">
     <p>The first round takes 25 minutes. The ledger takes it from there.</p>
     <div class="links">
-      <a href={SITE.app}>Open the app<svg class="arr" viewBox="0 0 16 16" aria-hidden="true" set:html={arrow} /></a>
-      <a href="/app/?demo=1">Try the demo<svg class="arr" viewBox="0 0 16 16" aria-hidden="true" set:html={arrow} /></a>
+      <a href={SITE.app} data-hit="open-app:end">Open the app<svg class="arr" viewBox="0 0 16 16" aria-hidden="true" set:html={arrow} /></a>
+      <a href="/app/?demo=1" data-hit="try-demo:end">Try the demo<svg class="arr" viewBox="0 0 16 16" aria-hidden="true" set:html={arrow} /></a>
     </div>
   </section>
 </Base>

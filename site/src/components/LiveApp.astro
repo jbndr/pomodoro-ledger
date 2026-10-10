@@ -25,13 +25,13 @@ const [dl, dd, pl, pd] = await Promise.all([
         <script is:inline>for (const p of document.currentScript.parentElement.querySelectorAll("picture")) if (getComputedStyle(p).display !== "none") { const i = p.querySelector("img"); i.loading = "eager"; i.fetchPriority = "high"; }</script>
       </div>
     </div>
-    <button class="try" type="button" data-try>
+    <button class="try" type="button" data-try data-hit="try-here:live">
       <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7.5-4.5z" fill="currentColor" /></svg>
       Try it right here
     </button>
     <span class="badge" aria-hidden="true">Live demo · nothing is saved</span>
   </div>
-  <a class="try phone-only" href="/app/?demo=1">
+  <a class="try phone-only" href="/app/?demo=1" data-hit="try-demo:live">
     <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5v9l7.5-4.5z" fill="currentColor" /></svg>
     Try the demo
   </a>

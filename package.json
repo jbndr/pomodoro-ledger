@@ -6,7 +6,7 @@
     "build": "astro build --root site && vite build",
     "deploy": "npm run build && wrangler deploy",
     "typecheck": "tsc --noEmit && astro check --root site",
-    "test": "tsc --noEmit && vitest run && node --test tests/room.cjs tests/sync.cjs tests/push.cjs tests/extension.mjs",
+    "test": "tsc --noEmit && vitest run && node --test tests/room.cjs tests/sync.cjs tests/hits.cjs tests/push.cjs tests/extension.mjs",
     "vapid": "node scripts/vapid.mjs",
     "extension:zip": "node scripts/zip-extension.mjs",
     "test:ui": "playwright test",
