@@ -696,11 +696,16 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .sg-line { margin: 0; font-size: 13px; color: var(--muted); min-height: 1.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .sg-line i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--c); vertical-align: .5px; }
 .sg-line b { color: var(--fg); font-weight: 600; }
+.sg-reset { height: 22px; margin-right: 8px; padding: 0 9px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--surface); color: var(--fg); font: 600 12px var(--f-body); vertical-align: 1px; transition: background .15s; }
+@media (hover: hover) { .sg-reset:hover { background: var(--surface-2); } }
+.sg-hint { align-self: end; padding-bottom: 6px; font-size: 11px; color: var(--faint); opacity: 0; transition: opacity .2s; pointer-events: none; }
+@media (hover: hover) { .sg-chart:hover .sg-hint { opacity: 1; } }
+@media (hover: none) { .sg-hint { display: none; } }
 .sg-nav { display: flex; align-items: center; gap: 2px; flex: none; margin-right: -6px; }
 .sg-nav .icon-btn:disabled { opacity: .3; cursor: default; background: transparent; }
 .sg-date { min-width: 96px; text-align: center; font-size: 13.5px; font-weight: 600; white-space: nowrap; }
 .sg-chart { display: grid; grid-template-columns: 158px minmax(0, 1fr); column-gap: 14px; }
-.sg-lanes { display: grid; grid-template-rows: repeat(4, 40px); align-content: start; }
+.sg-lanes { display: grid; grid-template-rows: repeat(4, 40px) 24px; align-content: start; }
 .sg-lane { display: flex; align-items: center; gap: 9px; min-width: 0; font-size: 13px; color: var(--muted); }
 .sg-lane span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sg-lane b { margin-left: auto; color: var(--fg); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -708,7 +713,9 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .sg-sw { width: 10px; height: 10px; flex: none; border-radius: 3px; background: var(--c); }
 .sg-sw.f { --c: var(--c-f); } .sg-sw.s { --c: var(--c-s); } .sg-sw.l { --c: var(--c-l); }
 .sg-sw.i { background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--faint) 45%, transparent) 0 1.5px, transparent 1.5px 4px); box-shadow: inset 0 0 0 1px var(--line-2); }
-.sg-plot { position: relative; min-width: 0; touch-action: pan-y; cursor: col-resize; user-select: none; -webkit-user-select: none; }
+.sg-plot { position: relative; min-width: 0; touch-action: pan-y; cursor: crosshair; user-select: none; -webkit-user-select: none; border-radius: 6px; }
+.sg-plot:focus { outline: none; }
+.sg-plot:focus-visible { outline: 2px solid var(--fg); outline-offset: 4px; }
 .sg-plot svg { display: block; width: 100%; height: auto; overflow: visible; }
 .sg-plot .sep { stroke: var(--line); }
 .sg-plot .hr { stroke: var(--line); stroke-dasharray: 2 4; }
@@ -727,6 +734,7 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .sg-plot .ax.now { fill: var(--fg); font-weight: 600; }
 .sg-plot .nowl { stroke: var(--fg); stroke-width: 1.2; stroke-dasharray: 3 3; opacity: .55; }
 .sg-plot .hair { stroke: var(--fg); stroke-width: 1; }
+.sg-plot .sel { fill: color-mix(in oklab, var(--fg) 7%, transparent); stroke: color-mix(in oklab, var(--fg) 35%, transparent); stroke-width: 1; }
 .sg-plot .knob { fill: var(--surface); stroke: var(--fg); stroke-width: 1.5; }
 .sg-plot.dim .blk:not(.on), .sg-plot.dim .cn { opacity: .28; }
 
