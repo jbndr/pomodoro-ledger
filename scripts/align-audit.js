@@ -7,6 +7,7 @@
     ["New task circle", ".add", ".add-check", "#newTitle"],
     ["Task circle", ".task:not(.open)", ":scope > .check", ".task-main", "block"],
     ["Task side dots", ".task:not(.open)", ".side-info .cyc", ".task-main", "block"],
+    ["Task best-time mark", ".task:not(.open)", ".side-info .best-flag", ".task-main", "block"],
     ["Task handle", ".task:not(.open)", ":scope > .grip", ".task-main", "block"],
     ["Subtask box", ".subtask", "input[type=checkbox]", "input[type=text]"],
     ["Menu icon", ".bar-menu .item", "svg, i", ":scope"],

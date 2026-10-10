@@ -49,6 +49,7 @@ import { cancelScapePreview, scapePlaying } from "./soundscape";
 import { DEMO, EMBED, ls, S, ss, T, type Task } from "./state";
 import { Labels, Store } from "./store";
 import { addLink, addSection, addSubtasks, addTask, commitPlacements, pauseRepeat, removeLink, resumeRepeat, completeTask, completing, deleteSubtask, deleteTask, deleteTasks, dismissCard, editSubtask, finishTasks, focusOnTask, focusRow, labelTask, labelTasks, moveSection, moveTasksToTop, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, schedTasks, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
+import { bestLine, lineUp, notToday, remindBest } from "./tasks/best";
 import { bucketOf, dayName, enterDemo, filterLabel, groupName, guardPreview, inProject, isToday, labelChipName, labelHidden, listHead, markStarted, openOf, preview, sections, shortDay, subsOf, todayKey, viewTasks } from "./tasks/derived";
 import ListFoot from "./tasks/ListFoot.svelte";
 import ListHead from "./tasks/ListHead.svelte";
@@ -70,7 +71,7 @@ document.addEventListener("pointerdown", dismissCard);
 document.addEventListener("keydown", onKey);
 initPages();
 setInterval(tick, 250);
-setInterval(() => { newDay(); freshRounds(); }, 60000);
+setInterval(() => { newDay(); freshRounds(); remindBest(); }, 60000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) { sizeTimer(); tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); Cloud.wake(); newDay(); freshRounds(); } });
 mount(PreviewBanner, { target: $(".app"), anchor: $("main.top"), props: { api: { DEMO, EMBED, preview, markStarted } } });
 mount(BackupPrompt, { target: $(".app"), anchor: $("main.top"), props: { api: { exportLedger, toast } } });
@@ -136,7 +137,7 @@ ui.settings = mount(Settings, { target: document.body, props: { api: {
   ensureAudio, playSound, scheduleEnd, cancelEnd, cancelTickPreview, syncTicking, previewTicking,
   previewSoundscape, cancelScapePreview, scapePlaying,
   autoFloatHandler, renderTimer, renderStats, renderEstPick,
-  reactionsChanged, DEMO, backup: { exportLedger, planImport, importLedger },
+  reactionsChanged, bestLine, DEMO, backup: { exportLedger, planImport, importLedger },
 } } }) as SettingsUI;
 mount(TimerCard, { target: $(".timer-card"), props: { api: {
   T, S, ICON, floatBtn, fmtClock, fmtDur, plural, viewTasks, openOf,
@@ -145,7 +146,7 @@ mount(TimerCard, { target: $(".timer-card"), props: { api: {
 ui.pop = mount(Pop, { target: document.body, anchor: $("#toast"), props: { api: { ICON } } }) as PopUI;
 ui.when = mount(WhenPop, { target: document.body, anchor: $("#toast"), props: { api: { S, todayKey, openOf, isToday, scheduleTask, setRepeat, pauseRepeat, resumeRepeat, fmtDate, plural } } }) as WhenUI;
 ui.label = mount(LabelPop, { target: document.body, anchor: $("#toast"), props: { api: { S, ICON, renderTasks, saveSettings: () => Store.saveSettings(), setLabelHue: (name: string, hue: number) => { Labels.setHue(name, hue); renderAll(); } } } }) as LabelUI;
-const panel = $(".top > .panel"), headApi = { S, ss, listHead, plural, fmtDur, fmtClock, preview, guardPreview, filterLabel, renderTasks, moveToTomorrow, leftoverPrompt, moveAsked, leaveAsked };
+const panel = $(".top > .panel"), headApi = { S, ss, listHead, plural, fmtDur, fmtClock, preview, guardPreview, filterLabel, renderTasks, moveToTomorrow, leftoverPrompt, moveAsked, leaveAsked, lineUp, notToday };
 mount(TaskViews, { target: $(".tasks-head"), props: { api: headApi } });
 mount(ListHead, { target: panel, props: { api: headApi } });
 mount(ListFoot, { target: panel, props: { api: headApi } });

@@ -379,6 +379,8 @@ td.barcell { width: 38%; min-width: 120px; }
 .late-flag[hidden] { display: none; }
 .late-flag svg { width: 14px; height: 14px; }
 .task-start.late { color: var(--warn); }
+.best-flag { display: inline-grid; color: var(--tomato); }
+.best-flag svg { width: 13px; height: 13px; }
 .carry { color: var(--faint); }
 .grip { grid-column: 1; width: 22px; height: 30px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--line-2); cursor: grab; touch-action: none; }
 .task.dragging .grip { color: var(--muted); }
@@ -552,6 +554,12 @@ body.sec-sorting, body.sec-sorting * { user-select: none; -webkit-user-select: n
 .day-fit.leftover::before { background: var(--sky); }
 .day-fit.leftover .acts { display: inline-flex; gap: 12px; }
 .day-fit.leftover #leftoversLeave { color: var(--muted); font-weight: 500; }
+.day-fit.best { color: var(--muted); align-items: flex-start; }
+.day-fit.best::before { background: var(--tomato); margin-top: calc((1lh - 7px) / 2); }
+.day-fit.best .fit-body { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+.day-fit.best .best-task { display: inline-block; max-width: 26ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; color: var(--fg); }
+.day-fit.best .acts { display: inline-flex; gap: 12px; }
+.day-fit.best #bestSkip { color: var(--muted); font-weight: 500; }
 .field .opt { font-size: 11px; color: var(--faint); }
 .subtask input[type="checkbox"] { appearance: none; -webkit-appearance: none; width: 17px; height: 17px; margin: 0 3px; border: 1.5px solid var(--line-2); border-radius: 5px; display: grid; place-items: center; transition: background .15s, border-color .15s; }
 .subtask input[type="checkbox"]:checked { background: var(--accent); border-color: var(--accent); }

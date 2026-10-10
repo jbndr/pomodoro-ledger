@@ -21,6 +21,11 @@
   });
 
   const left = $derived.by(() => { list.version; return api.leftoverPrompt(); });
+  // Waits its turn behind the other prompts.
+  const offer = $derived.by(() => {
+    const o = list.plan?.best?.offer;
+    return o && !fit.shown && !left && api.S.taskView === "today" && !api.preview() ? o : null;
+  });
 
   function pick(v) {
     api.S.projectFilter = v;
@@ -40,4 +45,5 @@
 </div></div></div>
 <div class="day-fit" class:over={fit.over} id="dayFit" role="status" hidden={!fit.shown} data-ids={fit.shown ? fit.ids.join(",") : null}><span id="dayFitText">{fit.text}</span><button class="btn small" type="button" id="dayFitMove" onclick={moveFit}>{fit.move}</button></div>
 <div class="day-fit leftover" id="leftovers" role="status" hidden={!left}><span>{left?.text}</span><span class="acts"><button class="btn small" type="button" id="leftoversMove" onclick={api.moveAsked}>Move to today</button><button class="btn small" type="button" id="leftoversLeave" onclick={api.leaveAsked}>Leave</button></span></div>
+<div class="day-fit best" id="bestFit" role="status" hidden={!offer}>{#if offer}<span class="fit-body"><span>{#if offer.now}It's your best time, {list.plan.best.hours}. Do “<span class="best-task">{offer.title}</span>” next?{:else}You focus best {list.plan.best.hours}. Line up “<span class="best-task">{offer.title}</span>” for then?{/if}</span><span class="acts"><button class="btn small" type="button" id="bestMove" onclick={() => api.lineUp(offer)}>{offer.now ? "Move it up" : "Line it up"}</button><button class="btn small" type="button" id="bestSkip" onclick={api.notToday}>Not today</button></span></span>{/if}</div>
 <div class="sub" id="projectSummary" hidden={!h.filter}>{api.plural(h.open, "open task")} · {api.plural(h.done, "finished task")} · {api.fmtDur(h.focus)} focus logged</div>

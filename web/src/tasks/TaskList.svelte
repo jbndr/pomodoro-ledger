@@ -72,6 +72,14 @@
     return true;
   }
 
+  /** Moves a task to sit right before another one, or to the end. */
+  export function moveBefore(id, before) {
+    const now = entries(), at = before ? now.findIndex((e) => e.kind === "task" && e.id === before) : null;
+    if (at === -1 || !now.some((e) => e.kind === "task" && e.id === id)) return false;
+    flip(() => save(place(now, id, at)));
+    return true;
+  }
+
   export const dragging = () => !!drag;
 
   const taskIds = () => entries().filter((e) => e.kind === "task").map((e) => e.id);

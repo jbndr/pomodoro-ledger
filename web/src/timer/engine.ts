@@ -288,12 +288,17 @@ export function adjust(min: number) {
 }
 
 export function notify(body: string) {
-  if (!S.settings.notify || !("Notification" in window) || Notification.permission !== "granted") return;
-  if (!document.hidden && document.hasFocus()) return;
+  if (S.settings.notify) ping(body);
+}
+
+/** A system notification while the tab is in the background; false when none was shown. */
+export function ping(body: string) {
+  if (!("Notification" in window) || Notification.permission !== "granted" || (!document.hidden && document.hasFocus())) return false;
   try {
     const n = new Notification("Pomodoro Ledger", { body, tag: "pomodoro-ledger" });
     n.onclick = () => { window.focus(); n.close(); };
-  } catch {}
+    return true;
+  } catch { return false; }
 }
 
 // Skipping keeps the clock going if it was running.

@@ -43,6 +43,10 @@ export interface Settings {
   weeklyPlan: boolean; plans: WeekPlan[];
   /** The week whose planning prompt was answered or waved off. */
   planSeen: string;
+  /** Planning around your best time; unset means on. The reminder when it starts is off unless set. */
+  bestTime?: boolean; bestRemind?: boolean;
+  /** The day the best-time suggestion was waved off. */
+  bestSeen?: string;
   /** The year whose Year in focus was already offered in December. */
   yearSeen?: number;
   /** How the timer changes colour between phases; unset means the wipe. */

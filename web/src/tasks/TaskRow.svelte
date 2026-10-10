@@ -34,6 +34,7 @@
   <div class="task-side">
     <div class="side-info">
       {#if row.today}<span class="late-flag" hidden={!start?.late} title={start?.late ? "Won't finish before " + api.fmtClock(plan.endAt) + " · " + start.text : ""}>{@html api.ICON.clock}</span>{/if}
+      {#if start?.best}<span class="best-flag" title={start.text + ". In your best time, " + plan.best.hours + "."}>{@html api.ICON.peak}</span>{/if}
       <span class="cyc" title={row.cycTitle}>{#if row.pips.mini != null}<span class="mini" aria-hidden="true"><b style:width={row.pips.mini + "%"}></b></span>{:else}<span class="pips" aria-hidden="true">{#each row.pips.dots as dot, i (i)}<i class={dot}></i>{/each}</span>{/if}</span>
     </div>
     <div class="side-acts">
