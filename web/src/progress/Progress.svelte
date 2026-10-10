@@ -7,13 +7,14 @@
   import Bars from "./Bars.svelte";
   import BestTime from "./BestTime.svelte";
   import ByLabel from "./ByLabel.svelte";
+  import DayCard from "./DayCard.svelte";
   import Heat from "./Heat.svelte";
   import Ledger from "./Ledger.svelte";
   import Sessions from "./Sessions.svelte";
   import WeekGoals from "./WeekGoals.svelte";
 
   let { api } = $props();
-  let filter = $state(""), allChips = $state(false);
+  let filter = $state(""), allChips = $state(false), picked = $state(0), dir = $state(1);
   const TOP = 5;
 
   const m = $derived.by(() => {
@@ -41,6 +42,17 @@
     };
   });
 
+  // The day shown in Your day: one of the last 14, today unless another was picked; a pick from before midnight falls back to today.
+  const first = $derived(addDays(m.today, -13));
+  const day = $derived(picked >= first && picked <= m.today ? picked : m.today);
+  function pick(t) {
+    if (t < first || t > m.today || t === day) return;
+    dir = t > day ? 1 : -1;
+    picked = t;
+  }
+
+  const estLine = $derived(Math.abs(m.estimates.diff) < 5 ? "Close to plan" : Math.abs(m.estimates.diff) + "% " + (m.estimates.diff > 0 ? "more" : "fewer") + " cycles than planned");
+
   /** Splits "2h 5m" so the units can be set smaller. */
   const parts = (ms) => api.fmtDur(ms).split(" ").map((p) => [p.slice(0, -1), p.slice(-1)]);
 
@@ -50,7 +62,7 @@
 
 <section class="progress" aria-labelledby="progH">
   <div class="sec-head">
-    <h2 id="progH">Progress</h2>
+    <h2 id="progH">Insights</h2>
     <button class="btn small recap-btn" type="button" id="openPlan" onclick={() => api.openPlan()}>Plan the week</button>
     <button class="btn small recap-btn" type="button" id="openRecap" onclick={() => api.openRecap()}>Weekly recap</button>
     <span class="sub">Every finished focus block counts as one cycle. Stopped sessions over a minute still count toward focus time.</span>
@@ -80,15 +92,16 @@
     <div class="tile">
       <div class="k">Estimates</div>
       <div class="v" {@attach roll}>{#if m.estimates.ratio == null}–{:else}{m.estimates.ratio.toFixed(2)}<small>×</small>{/if}</div>
-      <div class="s">{#if m.estimates.ratio == null}Finish a task to compare plan and reality{:else}{Math.abs(m.estimates.diff) < 5 ? "Finished tasks land close to plan" : "Tasks take " + Math.abs(m.estimates.diff) + "% " + (m.estimates.diff > 0 ? "more" : "fewer") + " cycles than planned"} · {api.plural(m.estimates.count, "task")}{/if}</div>
+      <div class="s" data-tip={m.estimates.ratio == null ? null : estLine + " · " + api.plural(m.estimates.count, "finished task")}>{#if m.estimates.ratio == null}Finish a task to compare{:else}{estLine} · {api.plural(m.estimates.count, "task")}{/if}</div>
     </div>
   </div>
+  <DayCard {api} tasks={m.all} {day} {dir} {first} today={m.today} filter={m.f} onpick={pick} />
   {#if m.goals}<WeekGoals {api} week={m.goals} today={m.today} />{/if}
   <div class="charts">
     <figure class="chart-card">
       <h3>Focus per day</h3>
       <div class="sub">Last 14 days, in minutes. Dashed line is your daily goal.</div>
-      <Bars {api} days={m.days} today={m.today} split={m.split} goalMin={m.goal * api.S.settings.focus} />
+      <Bars {api} days={m.days} today={m.today} split={m.split} goalMin={m.goal * api.S.settings.focus} selected={day} onpick={pick} />
     </figure>
     <figure class="chart-card">
       <h3>Focus calendar</h3>

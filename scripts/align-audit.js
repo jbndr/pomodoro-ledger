@@ -14,6 +14,9 @@
     ["Work together", ".together", ".faces, svg", ".together-label"],
     ["Filter chip dot", ".label-filter button", ".label-dot", "span"],
     ["Row label dot", ".task-meta .meta-chip", ".label-dot", "span"],
+    ["Session label dot", "#sesTable .meta-chip", ".label-dot", "span"],
+    ["Stages lane swatch", ".sg-lane", ".sg-sw", ":scope > span"],
+    ["Stages readout dot", ".sg-k", "i", ":scope"],
   ];
   const firstLine = (el) => {
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {

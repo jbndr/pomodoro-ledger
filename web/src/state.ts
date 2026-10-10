@@ -1,6 +1,7 @@
 import type { Label } from "./lib/labels";
 import type { SavedMix } from "./lib/mix";
 import type { PhaseMorph } from "./lib/phaseMorph";
+import type { BreakEntry } from "./lib/day";
 import type { Nudge } from "./lib/nudges";
 import type { Repeat } from "./lib/repeat";
 import type { Rollover } from "./lib/rollover";
@@ -35,6 +36,8 @@ export interface Settings {
   nudges?: Nudge[];
   /** When each nudge was last offered, and how many were done per day. */
   nudgeSeen?: Record<string, number>; nudgeLog?: Record<string, number>;
+  /** Finished breaks of the last month, for the day timeline. */
+  breakLog?: BreakEntry[];
   /** The week (its first day) whose visit already showed a recap. */
   recapSeen: string;
   weeklyPlan: boolean; plans: WeekPlan[];
@@ -95,6 +98,8 @@ export interface Timer {
   roundAt?: number;
   /** The break's nudge, if any. */
   nudge?: { id: string; text: string; done?: boolean };
+  /** When the running break first started. */
+  breakFrom?: number;
 }
 
 const timerOf = (o: object): Timer => Object.assign({ mode: "focus", status: "idle", remaining: null, endsAt: 0, total: 0, setIndex: 0, saved: {}, adj: {} } as Timer, o);
