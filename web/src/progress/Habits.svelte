@@ -1,41 +1,63 @@
 <script>
-  import { addDays } from "../lib/dates";
+  import { addDays, MIN } from "../lib/dates";
   import { timerHabits } from "../lib/patterns";
 
   let { api, tasks, today } = $props();
 
+  // Past these, the oldest marks drop off; the numbers above them still count everything.
+  const DOTS = 48, PIES = 24, LINES = 6;
   const days = $derived([...Array(7)].map((_, i) => addDays(today, i - 6)));
   const h = $derived(timerHabits(tasks, api.S.settings.breakLog, days));
-  const any = $derived(h.due || h.overN || h.flowN || h.early.some(Boolean) || h.over.some(Boolean));
-  const earlyN = $derived(h.early.reduce((a, b) => a + b, 0));
-  const skipped = $derived(h.due - h.taken);
+  const focus = $derived(api.S.settings.focus * MIN);
+  const any = $derived(h.breaks.length || h.overN || h.stopped.length || h.flows.length);
+  const taken = $derived(h.breaks.filter(Boolean).length);
+  const overMs = $derived(h.over.reduce((a, b) => a + b, 0));
+  const overTop = $derived(Math.max(1, ...h.over));
+  const flowMs = $derived(h.flows.reduce((a, s) => a + s.ms, 0));
+  const flowTop = $derived(Math.max(2 * focus, ...h.flows.map((s) => s.ms)));
 
+  /** Splits "1h 5m" so the units can be set smaller. */
+  const parts = (ms) => api.fmtDur(ms).split(" ").map((p) => [p.slice(0, -1), p.slice(-1)]);
   const dayName = (i) => (i === 6 ? "Today" : api.fmtDate(days[i], { weekday: "short", day: "numeric" }));
-  const rows = $derived([
-    { key: "over", n: h.overN, text: "Kept going past the bell " + api.plural(h.overN, "time"), sub: api.fmtDur(h.over.reduce((a, b) => a + b, 0)) + " on top of the cycles", none: "Every cycle stopped at the bell.", bars: bars(h.over, api.fmtDur) },
-    { key: "early", n: earlyN, text: "Stopped " + api.plural(earlyN, "cycle") + " early", sub: h.earlyTop ? "Mostly " + h.earlyTop : "Mostly without a label", none: "No cycles stopped early.", bars: bars(h.early, (n) => api.plural(n, "cycle")) },
-    { key: "flow", n: h.flowN, text: api.plural(h.flowN, "flow session"), sub: h.flowN ? api.fmtDur(h.flow.reduce((a, b) => a + b, 0) / h.flowN) + " on average" : "", none: "No flow sessions.", bars: bars(h.flow, api.fmtDur) },
-  ]);
-  function bars(v, fmt) {
-    const max = Math.max(1, ...v);
-    return v.map((n, i) => ({ h: n ? Math.max(14, (n / max) * 100) : 0, tip: "<b>" + dayName(i) + "</b><br>" + (n ? fmt(n) : "None") }));
-  }
 </script>
 
+{#snippet dur(ms)}{#each parts(ms) as [n, unit], i (i)}{i ? " " : ""}{n}<small>{unit}</small>{/each}{/snippet}
+
 {#if any}
-  <div class="chart-card habits" id="habits">
+  <figure class="chart-card habits" id="habits">
     <div class="sec-head"><h3>Timer habits</h3><span class="sub">Last seven days</span></div>
-    <ul class="hb">
-      <li>
-        <p>{#if h.due}Took {h.taken} of {api.plural(h.due, "break")}<span>{skipped ? (skipped === 1 ? "One was skipped." : skipped + " were skipped or started late.") : "None skipped."}</span>{:else}No breaks due yet.{/if}</p>
-        {#if h.due}<div class="meter good" role="img" aria-label="{h.taken} of {h.due} breaks taken"><b style:width={(h.taken / h.due) * 100 + "%"}></b></div>{/if}
-      </li>
-      {#each rows as r (r.key)}
-        <li>
-          <p>{#if r.n}{r.text}<span>{r.sub}</span>{:else}{r.none}{/if}</p>
-          {#if r.n}<span class="hb-bars">{#each r.bars as b, i (i)}<i class:z={!b.h} style:height={b.h ? b.h + "%" : null} style:--i={i} data-tip={b.tip}></i>{/each}</span>{/if}
-        </li>
-      {/each}
-    </ul>
-  </div>
+    <div class="ht-grid">
+      <div class="ht">
+        <span class="ht-k">Breaks</span>
+        <span class="ht-v">{#if h.breaks.length}{taken}<small>/{h.breaks.length}</small>{:else}–{/if}</span>
+        <span class="ht-viz" aria-hidden="true">{#each h.breaks.slice(-DOTS) as b, i (i)}<i class="ht-dot" class:no={!b} style:--i={i}></i>{/each}</span>
+        <span class="ht-s">{!h.breaks.length ? "No breaks due yet" : taken < h.breaks.length ? api.plural(h.breaks.length - taken, "break") + " skipped or started late" : "None skipped"}</span>
+      </div>
+      <div class="ht">
+        <span class="ht-k">Past the bell</span>
+        <span class="ht-v">{#if h.overN}+{@render dur(overMs)}{:else}0{/if}</span>
+        <span class="ht-viz"><span class="hb-bars">{#each h.over as v, i (i)}<i class:z={!v} style:height={v ? Math.max(14, (v / overTop) * 100) + "%" : null} style:--i={i} data-tip={"<b>" + dayName(i) + "</b><br>" + (v ? api.fmtDur(v) + " past the bell" : "Stopped at the bell")}></i>{/each}</span></span>
+        <span class="ht-s">{h.overN ? api.plural(h.overN, "time") + ", about " + api.fmtDur(overMs / h.overN) + " each" : "Every cycle stopped at the bell"}</span>
+      </div>
+      <div class="ht">
+        <span class="ht-k">Stopped early</span>
+        <span class="ht-v">{h.stopped.length}</span>
+        <span class="ht-viz">{#each h.stopped.slice(-PIES) as s, i (i)}<i class="ht-pie" style:--p={Math.min(1, s.ms / focus)} style:--i={i} data-tip={"<b>" + api.esc(s.title) + "</b><br>Stopped after " + api.fmtDur(s.ms) + " of " + api.fmtDur(focus)}></i>{/each}</span>
+        <span class="ht-s">{h.stopped.length ? "Filled to where you stopped. Mostly " + (h.earlyTop || "without a label") : "Every cycle ran to the bell"}</span>
+      </div>
+      <div class="ht">
+        <span class="ht-k">Flow</span>
+        <span class="ht-v">{#if h.flows.length}{@render dur(flowMs / h.flows.length)}{:else}0{/if}</span>
+        <span class="ht-viz">
+          {#if h.flows.length}
+            <span class="ht-flow">
+              {#each h.flows.slice(-LINES) as s, i (i)}<i style:width={(s.ms / flowTop) * 100 + "%"} style:--i={i} data-tip={"<b>" + api.esc(s.title) + "</b><br>Flow · " + api.fmtDur(s.ms)}></i>{/each}
+              <span class="ht-mark" style:left={(focus / flowTop) * 100 + "%"}><b>{api.S.settings.focus}m</b></span>
+            </span>
+          {/if}
+        </span>
+        <span class="ht-s">{h.flows.length ? "Average of " + api.plural(h.flows.length, "flow session") : "No flow sessions"}</span>
+      </div>
+    </div>
+  </figure>
 {/if}

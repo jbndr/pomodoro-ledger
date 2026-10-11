@@ -61,16 +61,19 @@ export function dayGaps(items: DayItem[]) {
  */
 export function breaksTaken(items: DayItem[]) {
   let due = 0, taken = 0;
+  const seq: boolean[] = [];
   items.forEach((x, i) => {
     if (x.kind !== "focus" || x.live || !(x.full || x.flow)) return;
     let j = i + 1;
     while (items[j]?.kind === "focus" && (items[j] as { over?: boolean }).over) j++;
     const next = items[j];
     if (!next) return;
+    const took = next.kind === "break" && next.from - items[j - 1].to < IDLE_MIN;
     due++;
-    if (next.kind === "break" && next.from - items[j - 1].to < IDLE_MIN) taken++;
+    if (took) taken++;
+    seq.push(took);
   });
-  return { due, taken };
+  return { due, taken, seq };
 }
 
 /** The day's totals: focus, full cycles, short and long breaks, the nudges done in them, and the time between. What's still running counts once it's logged. */
