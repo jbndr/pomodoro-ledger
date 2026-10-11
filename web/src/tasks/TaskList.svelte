@@ -1,6 +1,6 @@
 <script>
   import { flushSync } from "svelte";
-  import { groupAt, jump, place, placements, step, toTop } from "../lib/order";
+  import { cut, groupAt, jump, place, placements, step, toTop } from "../lib/order";
   import { list } from "../lib/redraw.svelte";
   import { roll } from "../lib/roll";
   import { buildList } from "./model.js";
@@ -54,6 +54,14 @@
       const d = before.get(el) - (top + el.offsetTop);
       if (Math.abs(d) > 0.5) el.animate([{ transform: "translateY(" + d + "px)" }, { transform: "none" }], { duration: 220, easing: EASE });
     }
+  }
+
+  // A cut line sits above each Today row; it starts a section there, taking that task and the rest of its group along.
+  const cuttable = $derived(api.S.taskView === "today" && !api.S.projectFilter && !drag && !sec);
+  function cutAt(id) {
+    const next = cut(entries(), id, "sec:new"), i = next.findIndex((e) => e.kind === "group" && e.g === "sec:new");
+    const at = next.slice(0, i).filter((e) => e.kind === "group" && e.g.startsWith("sec:")).length;
+    flip(() => api.addSection(at, placements(next, fallback())));
   }
 
   function save(order) {
@@ -353,15 +361,15 @@
   onkeydown={keydown}
   onclickcapture={(e) => { if (!pickClick(e)) swallowClick(e); }}
 >
-  {#each shown as it (it.key)}
+  {#each shown as it, i (it.key)}
     {#if it.kind === "task"}
-      <TaskRow {api} row={it} {plan} best={inBest.has(it.id)} lifted={lifted.has(it.key)} drag={drag && drag.id === it.id ? drag : null} />
+      <TaskRow {api} row={it} {plan} best={inBest.has(it.id)} lifted={lifted.has(it.key)} drag={drag && drag.id === it.id ? drag : null} cut={cuttable && shown[i - 1]?.kind !== "section" ? () => cutAt(it.id) : null} />
     {:else if it.kind === "slot"}
       <li class="task-drop" aria-hidden="true" style:height={drag.height + "px"}></li>
     {:else if it.kind === "today"}
       <li class="group today-head" data-g="today"><span class="vh">Today</span>{#if it.cycles}<div class="day-plan" data-cycles={it.cycles} data-tasks={it.tasks} title={dayTitle(it)}><b {@attach roll}>{api.plural(it.tasks, "task")}</b> · about <strong class="net" {@attach roll}>{plan ? api.fmtDur(plan.focus) : ""}</strong> of focus · done around <strong class="eta" class:late={plan && plan.end > plan.endAt && !plan.over}>{plan ? api.fmtClock(plan.end) : ""}</strong></div>{:else}<span class="day-plan">{it.tasks ? api.plural(it.tasks, "task") + " · all planned cycles done" : "Nothing planned yet"}</span>{/if}<button class="add-sec" type="button" data-addsec title="Add a section, like Morning or Admin" onclick={() => api.addSection()}>+ Section</button></li>
     {:else if it.kind === "section"}
-      <li class="group section" class:sec-lifted={lifted.has(it.key)} data-g={it.g}><button class="grip sec-grip" type="button" aria-label={"Move section " + it.title + ": drag, or press the up and down arrow keys"} title="Drag to reorder">{@html api.ICON.grip}</button><input class="sec-title" type="text" maxlength="60" value={it.title} aria-label="Section name" data-sec={it.id} onchange={(e) => api.renameSection(e.currentTarget)} /><span class="sec-time">{secTime(it)}</span><span class="sec-sum">{it.ids.length ? "" : "Drag tasks here"}</span><button class="icon-btn sec-del" type="button" data-secdel={it.id} aria-label={"Remove section " + it.title} title="Remove section (its tasks stay in Today)" onclick={() => api.removeSection(it.id)}>{@html api.ICON.x}</button></li>
+      <li class="group section" class:sec-lifted={lifted.has(it.key)} data-g={it.g}><button class="grip sec-grip" type="button" aria-label={"Move section " + it.title + ": drag, or press the up and down arrow keys"} title="Drag to reorder">{@html api.ICON.grip}</button><input class="sec-title" type="text" maxlength="60" value={it.title} aria-label="Section name" data-sec={it.id} onchange={(e) => api.renameSection(e.currentTarget)} /><span class="sec-time">{secTime(it)}</span><span class="sec-sum">{it.ids.length ? "" : "Drag tasks here"}</span><button class="icon-btn sec-del" type="button" data-secdel={it.id} aria-label={"Remove section " + it.title} title="Remove section (its tasks join the one above)" onclick={() => api.removeSection(it.id)}>{@html api.ICON.x}</button></li>
     {:else if it.kind === "day"}
       <li class="group day" class:empty={it.empty} data-g={it.g}><b>{it.num}</b>{it.name}<span>{it.summary}</span></li>
     {:else if it.kind === "month"}

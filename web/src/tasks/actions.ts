@@ -147,19 +147,34 @@ export function renameSection(input: HTMLInputElement) {
   if (title !== sec.title) saveSections(all.map((x) => (x === sec ? { ...x, title } : x)));
 }
 
-export function addSection() {
+/** Adds a section at `at` (the end by default); with `moves`, tasks land in it as they're placed. */
+export function addSection(at = sections().length, moves: Placement[] = []) {
   if (guardPreview()) return;
-  const id = "s" + Date.now().toString(36);
-  saveSections([...sections(), { id, title: "New section" }]);
+  const id = "s" + Date.now().toString(36), all = sections();
+  saveSections([...all.slice(0, at), { id, title: "New section" }, ...all.slice(at)]);
+  if (moves.length) { commitPlacements(moves.map((p) => (p.g === "sec:new" ? { ...p, g: "sec:" + id } : p))); return; }
   const input = $<HTMLInputElement>('#taskList [data-sec="' + id + '"]');
   if (input) { input.focus(); input.select(); }
 }
 
+/** Removes a section; its tasks join the section above it, or loose Today. */
 export function removeSection(id: string) {
   if (guardPreview()) return;
-  const sec = sections().find((x) => x.id === id);
-  saveSections(sections().filter((x) => x !== sec));
-  if (sec) toast("Removed “" + sec.title + "”. Its tasks stay in Today.");
+  const all = sections(), i = all.findIndex((x) => x.id === id);
+  if (i < 0) return;
+  const above = i > 0 ? all[i - 1].id : "";
+  const open = openOf(S.tasks).filter((t) => isToday(t) && !t.done);
+  const known = new Set(all.map((x) => x.id));
+  const inAbove = (t: Task) => (above ? t.section === above : !known.has(t.section || ""));
+  let next = Math.max(-1, ...open.filter(inAbove).map(ord)) + 1;
+  const moved = open.filter((t) => t.section === id).map((t) => {
+    const n = clone(t); n.order = next++;
+    if (above) n.section = above; else delete n.section;
+    return n;
+  });
+  saveSections(all.filter((x) => x.id !== id));
+  if (moved.length) Store.saveTasks(moved);
+  toast("Removed “" + all[i].title + "”. Its tasks joined " + (above ? "“" + all[i - 1].title + "”" : "Today") + ".");
 }
 
 export const completing = new Map<string, ReturnType<typeof setTimeout>>();

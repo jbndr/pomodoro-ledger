@@ -17,7 +17,7 @@ import { cancelEnd, cancelTickPreview, previewSoundscape, scheduleEnd, syncTicki
 import { cancelScapePreview, scapePlaying } from "../soundscape";
 import { S, ss, T, type View } from "../state";
 import { Store } from "../store";
-import { focusOnTask, focusRow, toggleCard } from "../tasks/actions";
+import { addSection, focusOnTask, focusRow, toggleCard } from "../tasks/actions";
 import { bucketOf, dayName, inProject, listHead, viewTasks } from "../tasks/derived";
 import { adjust, canKeepGoing, flushPartial, keepGoing, readyFlow, resetRounds, setMode, skip, start, toggle } from "../timer/engine";
 import { fillSettings, openCustomize, openKeys, openRecap, openRoom, openSettings } from "../ui";
@@ -128,6 +128,7 @@ addCommands(() => {
   }
 
   out.push({ id: "task.new", group: "Tasks", suggest: true, keys: ["N"], title: "New task", words: "add create quick", icon: G.plus, run: quickAdd });
+  out.push({ id: "task.section", group: "Tasks", title: "New section in Today", words: "add heading group divider split", icon: G.plus, run: () => { click('#taskViews [data-view="today"]'); showTasks(); addSection(); } });
   const open = [...viewTasks().values()].filter((t) => !t.done && !t.system);
   const rank = (t: (typeof open)[number]) => (t.id === S.activeId ? 0 : { today: 1, upcoming: 2, later: 3 }[bucketOf(t)]);
   for (const t of open.sort((a, b) => rank(a) - rank(b))) {
