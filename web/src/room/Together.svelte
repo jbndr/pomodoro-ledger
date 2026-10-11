@@ -4,6 +4,7 @@
 
 <script>
   import { flushSync, tick } from "svelte";
+  import { slide } from "svelte/transition";
   import { calm, hold } from "../dom";
   import { pad } from "../lib/dates";
   import { GOAL_STEPS, goalStep, normCode } from "../lib/room";
@@ -23,6 +24,7 @@
   const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
   const BELL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
   const MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg>';
+  const FLAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 20.5V4.5"/><path d="M6 4.5h11l-2.4 4 2.4 4H6"/></svg>';
   const PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>';
   const slot = (m) => pad(Math.floor(m / 60)) + ":" + pad(m % 60);
 
@@ -42,14 +44,19 @@
   const invited = $derived(api.invite.length === 6 && !v.on);
 
   const mine = () => (api.S.settings.focus >= 45 ? "50/10" : "25/5");
-  const rooms = $derived(data ? sortRooms(data.rooms) : []);
+  // Listings you reported stay hidden here; for a few seconds after reporting, the row offers Undo instead.
+  let hidden = $state(api.ls.get("pl.hidden", {})), undoing = $state({});
+  const undoT = {};
+  const keyOf = (r) => (r.sched ? "s:" + r.sched : "r:" + r.code);
+  const visible = (k) => !hidden[k] || k in undoing;
+  const rooms = $derived(data ? sortRooms(data.rooms).filter((r) => visible(keyOf(r))) : []);
   const quick = $derived.by(() => {
-    const open = rooms.filter((r) => r.names.length < r.max), want = mine();
+    const open = rooms.filter((r) => r.names.length < r.max && !hidden[keyOf(r)]), want = mine();
     return open.find((r) => r.rhythm === want && r.names.length) || open.find((r) => r.names.length) || open.find((r) => r.rhythm === want) || open[0] || null;
   });
   const top = $derived(rooms.slice(0, TOP));
   const listed = $derived(rooms.filter((r) => filter === "all" || r.rhythm === filter));
-  const upcoming = $derived(data ? [...(data.upcoming || [])].sort((a, b) => a.start - b.start) : []);
+  const upcoming = $derived(data ? [...(data.upcoming || [])].filter((u) => visible("s:" + u.id)).sort((a, b) => a.start - b.start) : []);
   const sched = $derived(allSched ? upcoming : upcoming.slice(0, 2));
   const busyRoom = $derived(rooms.find((r) => r.rhythm === rhythm && r.names.length >= 2 && r.names.length < r.max));
   const lastStart = $derived(1440 - startStep(rhythm));
@@ -221,6 +228,16 @@
   };
   const quickSub = (r) => r.names.length ? "Joins " + r.title + ", " + r.names.length + " focusing on " + r.rhythm : "Opens " + r.title + " on " + r.rhythm + ". Others can drop in";
   const pane = () => calm() ? "" : "in-" + dir;
+
+  function report(k, on, e) {
+    const [kind, id] = k.split(":"), { [k]: _, ...rest } = hidden, h = e?.currentTarget.closest(".tg-row")?.offsetHeight || 0;
+    hidden = on ? { ...Object.fromEntries(Object.entries(hidden).slice(-99)), [k]: Date.now() } : rest;
+    api.ls.set("pl.hidden", hidden);
+    clearTimeout(undoT[k]);
+    if (on) { undoing = { ...undoing, [k]: h }; undoT[k] = setTimeout(() => { const { [k]: _, ...left } = undoing; undoing = left; }, 6000); }
+    else { const { [k]: _, ...left } = undoing; undoing = left; }
+    api.report(kind, id, on);
+  }
 </script>
 
 <Ask {api} />
@@ -233,12 +250,25 @@
   <div class="tg-spin"><button type="button" tabindex="-1" aria-label="Lower goal" disabled={n <= 0} {@attach hold(() => set(goalStep(n, -1)))}>{@html MINUS}</button><span role="spinbutton" tabindex="0" aria-label={label} aria-valuemin={0} aria-valuemax={TOP_GOAL} aria-valuenow={n} aria-valuetext={n ? n + " rounds" : "No goal"} onkeydown={(e) => goalKey(e, n, set)}>{goalLabel(n)}</span><button type="button" tabindex="-1" aria-label="Higher goal" disabled={n >= TOP_GOAL} {@attach hold(() => set(goalStep(n, 1)))}>{@html PLUS}</button></div>
 {/snippet}
 
+{#snippet flag(k, title)}
+  <button class="tg-flag" type="button" aria-label={"Report “" + title + "”"} title="Report" onclick={(e) => report(k, true, e)}>{@html FLAG}</button>
+{/snippet}
+
+{#snippet gone(k)}
+  <div class="tg-row tg-gone" style:min-height="{undoing[k]}px" out:slide={{ duration: calm() ? 0 : 220 }}><div class="tg-what"><b>Reported</b><span>It's hidden for you now.</span></div><button class="tg-remind" type="button" onclick={() => report(k, false)}>Undo</button></div>
+{/snippet}
+
 {#snippet roomRow(r)}
   {@const full = r.names.length >= r.max}
-  <div class="tg-row">
-    <div class="tg-what"><b>{r.title}<span>{" · " + r.rhythm}</span></b><span>{#if r.names.length}{@render faces(r.names)}{/if}{here(r)}</span></div>
-    <button class="tg-join" type="button" disabled={full} aria-label={full ? r.title + " is full" : "Join " + r.title} onclick={() => enter(r.code)}>{full ? "Full" : "Join"}</button>
-  </div>
+  {@const k = keyOf(r)}
+  {#if k in undoing}{@render gone(k)}
+  {:else}
+    <div class="tg-row">
+      <div class="tg-what"><b>{r.title}<span>{" · " + r.rhythm}</span></b><span>{#if r.names.length}{@render faces(r.names)}{/if}{here(r)}</span></div>
+      {#if !r.house && !(r.sched && owns(r.sched))}{@render flag(k, r.title)}{/if}
+      <button class="tg-join" type="button" disabled={full} aria-label={full ? r.title + " is full" : "Join " + r.title} onclick={() => enter(r.code)}>{full ? "Full" : "Join"}</button>
+    </div>
+  {/if}
 {/snippet}
 
 <div class="tg" id="room" hidden={!shown} bind:this={rootEl} style:--tg-top="{place.top}px" style:--tg-left="{place.left}px">
@@ -336,10 +366,14 @@
               <h4 id="tgSchedH">Scheduled{#if upcoming.length > 2}<small>next 2</small>{/if}</h4>
               {#each sched as s (s.id)}
                 {@const on = reminded(s.id)}
-                <div class="tg-row">
-                  <div class="tg-what"><b>{s.title}</b><span>{dayTag(s.start, now)} {clockIn(s.start)} · {s.rhythm}{s.going ? " · " + s.going + " going" : ""}{#if owns(s.id)} · <button class="tg-inline" type="button" onclick={() => remove(s)}>Remove</button>{/if}</span></div>
-                  <button class="tg-remind" type="button" aria-pressed={String(on)} aria-label={(on ? "Reminding you about " : "Remind me about ") + s.title} onclick={() => remind(s)}>{@html BELL}<span>{on ? "Reminding" : "Remind me"}</span></button>
-                </div>
+                {#if "s:" + s.id in undoing}{@render gone("s:" + s.id)}
+                {:else}
+                  <div class="tg-row">
+                    <div class="tg-what"><b>{s.title}</b><span>{dayTag(s.start, now)} {clockIn(s.start)} · {s.rhythm}{s.going ? " · " + s.going + " going" : ""}{#if owns(s.id)} · <button class="tg-inline" type="button" onclick={() => remove(s)}>Remove</button>{/if}</span></div>
+                    {#if !owns(s.id)}{@render flag("s:" + s.id, s.title)}{/if}
+                    <button class="tg-remind" type="button" aria-pressed={String(on)} aria-label={(on ? "Reminding you about " : "Remind me about ") + s.title} onclick={() => remind(s)}>{@html BELL}<span>{on ? "Reminding" : "Remind me"}</span></button>
+                  </div>
+                {/if}
               {/each}
               {#if upcoming.length > 2}<button class="tg-link" type="button" aria-expanded={String(allSched)} onclick={() => (allSched = !allSched)}>{allSched ? "Fewer" : "Full schedule"}</button>{/if}
             </section>

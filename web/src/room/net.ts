@@ -173,6 +173,9 @@ export async function roomList(): Promise<{ now: number; rooms: Listed[]; upcomi
 
 export const reactionsOn = () => S.settings.reactions !== false;
 
+/** Reports a public room ("r") or a scheduled session ("s") to the lobby, or takes the report back. */
+export const roomReport = (kind: string, id: string, on: boolean) => { fetch("/api/report", { method: "POST", body: JSON.stringify({ kind, id, on }) }).catch(() => {}); };
+
 function goalMet(g: Goal) {
   RM.metAt = Date.now();
   toast("Goal reached: " + g.n + " rounds together.");
