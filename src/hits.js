@@ -107,9 +107,7 @@ function render(data) {
 <meta name="robots" content="noindex">
 <title>Landing page counts</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..700&family=Geist:wght@400..600&display=swap">
+<link rel="stylesheet" href="/fonts/fonts.css">
 <script>try { const t = JSON.parse(localStorage.getItem("pl.theme")); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch {}</script>
 <style>${CSS}</style>
 </head>

@@ -9,7 +9,7 @@ const { kind, title, wide = false, h = 300 } = Astro.props;
 </figure>
 <style>
   .detail { margin: 0; display: grid; gap: 14px; align-content: start; }
-  .stage { height: var(--h); border-radius: 18px; }
+  .stage { height: var(--h); --wp-r: 18px; }
   .art { position: relative; height: 100%; display: grid; place-items: center; padding: 22px; }
   figcaption { font-size: 14.5px; line-height: 1.55; color: var(--muted); padding: 0 4px; }
   figcaption b { color: var(--fg); font-weight: 600; }

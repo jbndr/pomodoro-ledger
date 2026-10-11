@@ -107,7 +107,7 @@ async function openFloating(quiet?: boolean) {
   try {
     opened = await window.documentPictureInPicture!.requestWindow({ width: 320, height: 110 });
     const doc = opened.document;
-    for (const link of document.querySelectorAll('link[rel="stylesheet"][href*="fonts.googleapis.com"]')) doc.head.appendChild(link.cloneNode());
+    for (const link of document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href^="/fonts/"]')) doc.head.appendChild(Object.assign(doc.createElement("link"), { rel: "stylesheet", href: link.href }));
     const style = doc.createElement("style");
     style.textContent = facesCss + `
       * { box-sizing: border-box; }
