@@ -22,7 +22,7 @@ import { Store } from "../store";
 import { addSection, focusOnTask, focusRow, toggleCard } from "../tasks/actions";
 import { bucketOf, dayName, inProject, listHead, viewTasks } from "../tasks/derived";
 import { adjust, canKeepGoing, flushPartial, keepGoing, readyFlow, resetRounds, setMode, skip, start, toggle } from "../timer/engine";
-import { fillSettings, openCustomize, openKeys, openRecap, openRoom, openSettings } from "../ui";
+import { fillSettings, openCustomize, openKeys, openRecap, openRoom, openSettings, openTimesheet } from "../ui";
 import { labelFilter } from "../tasks/filter.svelte";
 import { fsEl, toggleZen } from "../zen";
 import { addCommands, type Command } from "./registry";
@@ -50,6 +50,7 @@ const G = {
   room: svg('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.2.2 3.6 1.6 4 3.8"/>'),
   theme: svg('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/>'),
   download: svg('<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/>'),
+  sheet: svg('<rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M4 9.5h16M4 14.5h16M10 9.5V20"/>'),
   sync: svg('<path d="M7 18.5h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.2 10.6 4 4 0 0 0 7 18.5z"/>'),
   ring: '<i class="pal-ring" aria-hidden="true"></i>',
 };
@@ -155,6 +156,7 @@ addCommands(() => {
   out.push({ id: "go.progress", group: "Go to", title: "Insights", words: "progress stats charts history ledger day breaks sessions", icon: G.progress,
     run: () => (phone() ? showPage("progress") : $(".progress").scrollIntoView({ block: "start", behavior: smooth() })) });
   out.push({ id: "go.recap", group: "Go to", title: "Weekly recap", words: "review last week summary", icon: G.recap, run: () => openRecap() });
+  out.push({ id: "go.timesheet", group: "Go to", title: "Timesheet", words: "hours report invoice export csv copy table time tracking labels clients", icon: G.sheet, run: () => openTimesheet() });
 
   if (h.labeled) {
     for (const c of h.chips) {

@@ -1176,7 +1176,8 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .sheet-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* Weekly plan */
-.progress > .sec-head #openPlan + .recap-btn { margin-left: -4px; }
+.progress > .sec-head .recap-btn + .recap-btn { margin-left: -4px; }
+@media (max-width: 640px) { .progress > .sec-head { justify-content: flex-start; gap: 8px; } .progress > .sec-head > h2 { flex-basis: 100%; } .progress > .sec-head .recap-btn { margin-left: 0; } }
 .sheet.plan-sheet { height: min(620px, calc(100dvh - var(--dlg-top) - 16px)); display: flex; flex-direction: column; overflow: hidden; }
 .plan-sheet:focus { outline: none; }
 .plan-sheet > * { flex: none; }

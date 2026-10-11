@@ -46,6 +46,7 @@
     <h2 id="progH">Insights</h2>
     <button class="btn small recap-btn" type="button" id="openPlan" onclick={() => api.openPlan()}>Plan the week</button>
     <button class="btn small recap-btn" type="button" id="openRecap" onclick={() => api.openRecap()}>Weekly recap</button>
+    <button class="btn small recap-btn" type="button" id="openTimesheet" onclick={() => api.openTimesheet(m.f)}>Timesheet</button>
   </div>
   <div class="ins-head">
     <TodayLine {api} tasks={m.vt} days={m.days} today={m.today} now={m.now} />

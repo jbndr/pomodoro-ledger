@@ -1,0 +1,63 @@
+/* Timesheet: the settings look, with one card per label or day. */
+.ts-sheet {
+  position: relative; width: min(100%, 640px); height: min(640px, calc(100dvh - var(--dlg-top) - 16px));
+  display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
+  border-radius: 22px; background: var(--surface); border: 1px solid var(--line); overflow: hidden;
+  box-shadow: 0 30px 80px -30px rgba(0,0,0,.45), var(--shadow); font-size: 14px;
+}
+.overlay:not([hidden]) > .ts-sheet { animation: when-in .22s cubic-bezier(.2, .8, .2, 1); }
+.ts-sheet:focus { outline: 0; }
+.ts-sheet :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+.ts-top { display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 14px 14px 4px 28px; }
+.ts-head { display: flex; align-items: baseline; gap: 10px; flex: 1; min-width: 0; }
+.ts-head h2 { margin: 0; flex: none; font: 650 20px var(--f-display); letter-spacing: -.015em; }
+.ts-span { min-width: 0; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts-top .st-x { display: grid; }
+@media (hover: hover) { .ts-top .st-x:hover { background: var(--surface-2); color: var(--fg); } }
+
+.ts-ctl { display: grid; padding: 6px 28px 14px; }
+.ts-ctl > .ts-range { display: flex; margin-bottom: 10px; }
+.ts-range button { flex: 1; justify-content: center; }
+.ts-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ts-gap { flex: 1; }
+.ts-menu { min-width: 0; }
+.ts-menu > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-row > .ts-range-menu { display: none; }
+.ts-dates { display: flex; flex-wrap: wrap; gap: 8px 16px; padding-top: 10px; }
+.ts-dates label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 550; color: var(--muted); }
+.ts-dates .st-time { width: 150px; }
+
+.ts-body { display: grid; align-content: start; gap: 20px; padding-top: 6px; }
+.ts-body:has(> .ts-empty) { align-content: center; }
+.ts-gh { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ts-gh b { flex: none; font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; }
+.ts-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.ts-name > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ts-item { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 46px; padding: 10px 16px; }
+.ts-time { flex: none; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.ts-foot { display: flex; align-items: center; gap: 8px; padding: 14px 28px; border-top: 1px solid var(--line); }
+.ts-total { display: inline-flex; align-items: baseline; gap: 8px; margin-right: auto; font-size: 13px; color: var(--muted); }
+.ts-total b { font: 650 18px var(--f-display); letter-spacing: -.01em; color: var(--fg); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 640px) {
+  .ts-sheet { width: 100%; height: calc(100% - 24px); border-radius: 22px 22px 0 0; border-bottom: 0; }
+  .overlay:not([hidden]) > .ts-sheet { animation: when-up .26s cubic-bezier(.2, .8, .2, 1); }
+  .ts-top { min-height: 0; padding: 12px 6px 2px 16px; }
+  .ts-top .st-x { width: 44px; height: 44px; }
+  .ts-ctl { padding: 6px 16px 12px; }
+  .ts-ctl > .ts-range { display: none; }
+  .ts-row { flex-wrap: wrap; }
+  .ts-row > .ts-menu, .ts-row > .ts-range-menu { display: inline-flex; flex: 1 1 0; justify-content: flex-start; }
+  .ts-row > .ts-menu > svg:last-child { margin-left: auto; }
+  .ts-gap { display: none; }
+  .ts-row > .st-seg { flex-basis: 100%; }
+  .ts-row > .st-seg button { flex: 1; justify-content: center; height: 34px; }
+  .ts-dates { flex-wrap: nowrap; gap: 12px; }
+  .ts-dates label { flex: 1 1 0; min-width: 0; flex-direction: column; align-items: stretch; gap: 4px; padding-left: 2px; }
+  .ts-dates .st-time { flex: 1; min-width: 0; width: auto; font-size: 16px; }
+  .ts-foot { flex-wrap: wrap; padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  .ts-total { flex-basis: 100%; }
+  .ts-foot .st-btn { flex: 1; justify-content: center; height: 40px; }
+}

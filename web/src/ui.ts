@@ -16,13 +16,14 @@ export interface CustomizeUI { open(tab?: string, look?: string): void; close(ke
 export interface RoomUI extends Sheet { isOpen(): boolean }
 export interface PaletteUI extends Sheet { toggle(): void }
 export interface RecapUI { open(week?: number): void; close(): void; maybeOpen(): void }
+export interface TimesheetUI { open(filter?: string): void; close(): void }
 export interface YearUI { open(year?: number): void; close(): void; maybeOpen(): void }
 export interface ShareRequest { kind: string; theme: string; heading: string; name: string; title: string; make(theme: string): Promise<Blob>; tall?: boolean; onclose?(): void }
 export interface ShareUI { open(r: ShareRequest): void; close(): void }
 export interface ListUI { moveTask(id: string, up: boolean, far: boolean): { from: string; to: string } | null; moveToTop(ids: string[]): boolean; moveBefore(id: string, before: string | null): boolean; dragging(): boolean }
 
 /** What the mounted components expose; set during boot. */
-export const ui: { pop?: PopUI; when?: WhenUI; label?: LabelUI; settings?: SettingsUI; keys?: Sheet; room?: RoomUI; list?: ListUI; recap?: RecapUI; palette?: PaletteUI; plan?: Sheet; year?: YearUI; share?: ShareUI; customize?: CustomizeUI } = {};
+export const ui: { pop?: PopUI; when?: WhenUI; label?: LabelUI; settings?: SettingsUI; keys?: Sheet; room?: RoomUI; list?: ListUI; recap?: RecapUI; timesheet?: TimesheetUI; palette?: PaletteUI; plan?: Sheet; year?: YearUI; share?: ShareUI; customize?: CustomizeUI } = {};
 
 export const openPop: PopUI["open"] = (...a) => ui.pop!.open(...a);
 export const closePop = (refocus?: boolean) => ui.pop?.close(refocus);
@@ -43,6 +44,7 @@ export const toggleRoom = () => (ui.room!.isOpen() ? ui.room!.close() : ui.room!
 export const closeRoom = () => ui.room!.close();
 export const openRecap = (week?: number) => ui.recap!.open(week);
 export const closeRecap = () => ui.recap!.close();
+export const openTimesheet = (filter?: string) => ui.timesheet!.open(filter);
 export const openPalette = () => ui.palette!.open();
 export const togglePalette = () => ui.palette?.toggle();
 export const openPlan = () => ui.plan!.open();
