@@ -16,7 +16,7 @@ const source = fs.readFileSync('src/worker.js', 'utf8')
 const clock = { now: null };
 const FakeDate = class extends Date { static now() { return clock.now ?? Date.now(); } };
 const net = { fetch: async () => { throw new Error('no network in tests'); } };
-const { Room, Lobby, worker } = vm.runInNewContext(schedule + push + source + '\n({ Room, Lobby, worker })', {
+const { Room, Lobby, worker, inviteMeta } = vm.runInNewContext(schedule + push + source + '\n({ Room, Lobby, worker, inviteMeta })', {
   DurableObject: class { constructor(ctx, env) { this.ctx = ctx; this.env = env; } },
   WebSocketRequestResponsePair: class {}, crypto: webcrypto, Date: FakeDate, Intl, Request, JSON, URL, TextEncoder, btoa, atob,
   fetch: (...a) => net.fetch(...a),
@@ -292,6 +292,21 @@ test('a public room keeps the goal it was started with', async () => {
   assert.deepEqual(goalOf(ana), { n: 20, done: 0 });
 });
 
+test('an invite shows a public room by name and rhythm, and a private one without anything about it', () => {
+  assert.deepEqual({ ...inviteMeta(null) }, { title: 'Join my focus room', description: "Focus together on Pomodoro Ledger. You see each other's timers, never each other's tasks.", image: '/og-room.png' });
+  const deep = inviteMeta({ title: 'Thesis writing', rhythm: '50/10' });
+  assert.equal(deep.title, 'Thesis writing · a focus room');
+  assert.equal(deep.image, '/og-room-50.png');
+  assert.match(deep.description, /^50 minutes of deep work/);
+  assert.equal(inviteMeta({ title: 'Pomodoro', rhythm: '25/5' }).image, '/og-room-25.png');
+});
+
+test('a room tells an invite only its public name and rhythm', async () => {
+  const info = async (cfg) => (await setup(cfg).room.fetch(new Request('https://room/info'))).json();
+  assert.equal(await info(), null);
+  assert.deepEqual(await info(pub), { title: 'Thesis writing', rhythm: '50/10' });
+});
+
 const reactsOf = (ws) => ws.messages.filter((m) => m.t === 'react');
 const notesOf = (ws) => ws.messages.filter((m) => m.t === 'note');
 
@@ -380,6 +395,14 @@ test('a schedule is upcoming, then a live room for that day, then upcoming again
   ({ upcoming, rooms } = await list());
   assert.equal(rooms.some((r) => r.sched), false);
   assert.equal(upcoming[0].start, Date.parse('2026-10-06T07:00:00Z'));
+}));
+
+test('a schedule tells anyone only its title and rhythm', at(MON_10_BERLIN, async () => {
+  const { call } = lobby();
+  const made = await call('POST', '/schedule', deepWork);
+  const seen = await call('GET', '/schedule/' + made.body.id);
+  assert.deepEqual(seen, { status: 200, body: { title: 'Deep work', rhythm: '50/10' } });
+  assert.equal((await call('GET', '/schedule/ZZZ')).status, 404);
 }));
 
 test('creating a schedule checks the title, rhythm, size and times', at(MON_10_BERLIN, async () => {
