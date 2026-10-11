@@ -71,6 +71,8 @@ export function initLayout() {
   new ResizeObserver(barHeight).observe($(".bar"));
   addEventListener("scroll", scrolled, { passive: true });
   [$(".bar"), $("#previewBanner")].forEach((el) => timerLayout.observe(el));
+  // On a phone the card gets whatever height the banners above it leave, so the dial follows when one appears later.
+  new ResizeObserver(() => { if (matchMedia("(max-width: 640px)").matches) requestAnimationFrame(sizeTimer); }).observe($(".timer-card"));
   addEventListener("resize", sizeTimer);
   // The observer above doesn't run in background tabs, and web fonts change heights after the first measure.
   if (document.fonts) document.fonts.ready.then(sizeTimer);

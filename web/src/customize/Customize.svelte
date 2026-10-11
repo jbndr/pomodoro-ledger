@@ -3,7 +3,7 @@
   import { cubicOut } from "svelte/easing";
   import { fade, fly } from "svelte/transition";
   import { calm } from "../dom";
-  import { timerBackdrop, timerFace, timerRing } from "../lib/faces";
+  import { lookOf, LOOKS, timerBackdrop, timerFace, timerRing } from "../lib/faces";
   import { cz, ZONES } from "./state.svelte";
   import Tiles from "./Tiles.svelte";
   import "./customize.css";
@@ -12,13 +12,14 @@
 
   // While the look changes, the timer's own controls and the rest of the page are out of play; its face, ring and background become the way to choose what to change.
   const CHROME = ".bar, .room, .banner, .panel, .progress, .tabbar, .timer-card > :is(.card-head, .cycle, .adjust, .controls)";
-  const NAME = Object.fromEntries(ZONES);
+  const SECTIONS = [["looks", "Looks"], ...ZONES], NAME = Object.fromEntries(SECTIONS), ORDER = SECTIONS.map(([k]) => k);
   const wideQuery = matchMedia("(min-width: 901px)");
   let wide = $state(wideQuery.matches), dir = $state(1), look = $state({ face: "classic", ring: "arc", backdrop: "glow" }), hints = $state({});
-  let before = null, opener = null, inerted = [], morphs = 0, lastZone = "face", tray = $state();
+  let before = null, opener = null, inerted = [], morphs = 0, lastZone = "looks", tray = $state();
 
   const read = () => ({ face: timerFace(api.S.settings.face), ring: timerRing(api.S.settings.ring), backdrop: timerBackdrop(api.S.settings.backdrop) });
   const hint = $derived(hints[(wide && cz.hover) || cz.zone] || "");
+  const value = (k) => (k === "looks" ? lookOf(look.face, look.ring, look.backdrop)?.id || "" : look[k]);
 
   // Where the browser can, each change is a view transition: the dial glides to its new size and a new look crossfades in.
   function morph(change) {
@@ -47,9 +48,10 @@
 
   const selected = () => tray?.querySelector(wide ? `.cz-sec[data-zone="${cz.zone}"] [aria-checked="true"]` : '[aria-checked="true"]');
 
-  export function open(which) {
-    if (cz.open) { if (which) cz.zone = which; return; }
-    cz.zone = which || "face";
+  /** Opens on a part of the timer, or on the ready-made looks; with a look's id, tries that look on straight away. */
+  export function open(which, tryLook) {
+    if (cz.open) { if (which) cz.zone = which; if (tryLook) pickLook(tryLook); return; }
+    cz.zone = which || "looks";
     opener = document.activeElement;
     if (api.zen()) api.setZen(false);
     if (api.phone() && document.body.dataset.page !== "timer") api.showPage("timer");
@@ -62,9 +64,10 @@
       flushSync();
       if (!api.phone() && !wide) window.scrollTo(0, 0);
       fit();
-      selected()?.focus({ preventScroll: true });
+      (selected() || tray?.querySelector(".st-face"))?.focus({ preventScroll: true });
       if (wide) reveal(cz.zone, false);
     });
+    if (tryLook) pickLook(tryLook);
   }
 
   export function close(keep) {
@@ -92,6 +95,14 @@
     morph(() => { look[k] = id; apply({ [k]: id }); });
   }
 
+  function pickLook(id) {
+    const l = LOOKS.find((x) => x.id === id);
+    cz.zone = "looks";
+    if (!l || value("looks") === id) return;
+    const next = { face: l.face, ring: l.ring, backdrop: l.backdrop };
+    morph(() => { look = next; apply(next); });
+  }
+
   const section = (k) => tray?.querySelector(`.cz-sec[data-zone="${k}"]`);
 
   // Scrolls only the panel, never the page, just far enough to show the whole group.
@@ -103,12 +114,11 @@
     if (to !== box.scrollTop) box.scrollTo({ top: to, behavior: smooth && !calm() ? "smooth" : "auto" });
   }
 
-  // Choosing a part on the timer slides its tiles in from the side it sits on in the order face, ring, background; on a wide screen its group scrolls into view.
+  // Choosing a part on the timer slides its tiles in from the side it sits on in the order looks, face, ring, background; on a wide screen its group scrolls into view.
   $effect(() => {
     const k = cz.zone;
     if (k === lastZone) return;
-    const order = ZONES.map(([z]) => z);
-    dir = order.indexOf(k) > order.indexOf(lastZone) ? 1 : -1;
+    dir = ORDER.indexOf(k) > ORDER.indexOf(lastZone) ? 1 : -1;
     lastZone = k;
     if (cz.open && wide) tick().then(() => reveal(k, true));
   });
@@ -142,22 +152,23 @@
       <button class="cz-btn" type="button" onclick={() => close(false)}>Cancel</button>
       <div class="cz-title" aria-live="polite">
         {#if wide}<b>Customize timer</b><small>Click a part of the timer to jump to it</small>
-        {:else}{#key cz.zone}<b in:fade={{ duration: calm() ? 0 : 180 }}>{NAME[cz.zone]}</b>{/key}{/if}
+        {:else if cz.zone === "looks"}<b>Looks</b>
+        {:else}<span class="cz-crumb"><button type="button" onclick={() => (cz.zone = "looks")}>Looks</button><i aria-hidden="true">›</i>{#key cz.zone}<b in:fade={{ duration: calm() ? 0 : 180 }}>{NAME[cz.zone]}</b>{/key}</span>{/if}
       </div>
       <button class="cz-btn cz-done" type="button" onclick={() => close(true)}>Done</button>
     </header>
     {#if wide}
       <div class="cz-scroll">
-        {#each ZONES as [k, label] (k)}
+        {#each SECTIONS as [k, label] (k)}
           <section class="cz-sec" class:on={cz.zone === k} data-zone={k} aria-label={label} onpointerenter={() => (cz.hover = k)} onpointerleave={() => (cz.hover = "")} onfocusin={() => (cz.zone = k)}>
             <h3>{label}</h3>
-            <Tiles kind={k} value={look[k]} onpick={(id) => pick(k, id)} onhint={(t) => (hints[k] = t)} />
+            <Tiles kind={k} value={value(k)} onpick={(id) => (k === "looks" ? pickLook(id) : pick(k, id))} onhint={(t) => (hints[k] = t)} />
           </section>
         {/each}
       </div>
     {:else}
       <div class="cz-panel">
-        {#key cz.zone}<div in:fly={{ x: calm() ? 0 : dir * 16, duration: calm() ? 0 : 280, easing: cubicOut }}><Tiles kind={cz.zone} value={look[cz.zone]} onpick={(id) => pick(cz.zone, id)} onhint={(t) => (hints[cz.zone] = t)} /></div>{/key}
+        {#key cz.zone}<div in:fly={{ x: calm() ? 0 : dir * 16, duration: calm() ? 0 : 280, easing: cubicOut }}><Tiles kind={cz.zone} value={value(cz.zone)} onpick={(id) => (cz.zone === "looks" ? pickLook(id) : pick(cz.zone, id))} onhint={(t) => (hints[cz.zone] = t)} /></div>{/key}
       </div>
     {/if}
     <p class="cz-hint">{hint}</p>

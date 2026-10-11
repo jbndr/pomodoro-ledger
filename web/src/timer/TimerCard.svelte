@@ -1,7 +1,8 @@
 <script>
-  import { timerFace, timerRing } from "../lib/faces";
+  import { timerBackdrop, timerFace, timerRing } from "../lib/faces";
   import { clock, MODE_NAME, MODES, roundDots, startLabel } from "../lib/timer";
   import Dial from "./Dial.svelte";
+  import WeatherLayers from "./WeatherLayers.svelte";
   import { onMount } from "svelte";
   import { calm } from "../dom";
   import { timerView } from "./state.svelte";
@@ -44,7 +45,7 @@
     timerView.version;
     const T = api.T, every = api.S.settings.longEvery;
     return {
-      mode: T.mode, status: T.status, face: timerFace(api.S.settings.face), ring: timerRing(api.S.settings.ring),
+      mode: T.mode, status: T.status, face: timerFace(api.S.settings.face), ring: timerRing(api.S.settings.ring), backdrop: timerBackdrop(api.S.settings.backdrop),
       dots: roundDots(T.mode, T.setIndex, every), round: Math.min(Math.min(T.setIndex || 0, every) + 1, every), every,
       canReset: T.setIndex > 0 && T.status !== "running", up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), bellAt: T.bellAt || 0, flowSince: T.upKind === "flow" ? T.up : 0, flow: T.upKind === "flow" || !!T.flowReady, nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
       sub: T.up ? (T.upKind === "flow" ? "started " + api.fmtClock(T.up) : "past the bell") : T.flowReady ? "" : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
@@ -72,7 +73,7 @@
   const adoptFloatBtn = (el) => { el.prepend(api.floatBtn); };
 </script>
 
-<div class="glow" aria-hidden="true"></div>
+<div class="glow" aria-hidden="true">{#if c.backdrop === "weather"}<WeatherLayers />{/if}</div>
 {#if cz.open}<button class="cz-zone cz-zone-backdrop" class:hot={cz.hover === "backdrop"} type="button" aria-pressed={String(cz.zone === "backdrop")} aria-label="Change the background" onclick={() => (cz.zone = "backdrop")}><span>Background</span></button>{/if}
 <div class="card-head">
   <div class="modes" role="tablist" aria-label="Timer mode">
