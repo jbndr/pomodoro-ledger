@@ -141,7 +141,7 @@
   const name = (list, id) => list.find(([k]) => k === id)?.[1];
   const current = $derived(lookOf(f.face, f.ring, f.backdrop)?.name || [name(FACES, f.face), f.ring === "none" ? "No ring" : name(RINGS, f.ring) + " ring", name(BACKDROPS, f.backdrop)].join(" · "));
   // Three looks fanned out like cards to show how far the timer can go; each one tries itself on.
-  const SHOWCASE = [["night-shift", "17:30", 0.7], ["tide", "24:12", 0.97], ["notebook", "18:45", 0.35]].map(([id, time, frac]) => ({ look: LOOKS.find((l) => l.id === id), time, frac }));
+  const SHOWCASE = [["bold", "17:30", 0.7], ["forecast", "24:12", 0.97], ["notebook", "18:45", 0.35]].map(([id, time, frac]) => ({ look: LOOKS.find((l) => l.id === id), time, frac }));
   const touch = matchMedia("(hover: none)").matches;
   function customize(tab, look) { close(); api.customize(tab, look); }
 

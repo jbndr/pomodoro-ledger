@@ -43,8 +43,8 @@ describe("LOOKS", () => {
   });
 
   it("finds the look a combination makes, and none for a mix of your own", () => {
-    expect(lookOf("nixie", "glow", "stars")?.id).toBe("night-shift");
-    expect(lookOf("nixie", "arc", "stars")).toBeUndefined();
+    expect(lookOf("serif", "none", "paper")?.id).toBe("notebook");
+    expect(lookOf("serif", "arc", "paper")).toBeUndefined();
   });
 });
 

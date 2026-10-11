@@ -63,16 +63,11 @@ export type Look = { id: string; name: string; note: string; face: TimerFace; ri
 
 /** Ready-made combinations of face, ring and background, to start from instead of mixing all three. */
 export const LOOKS: Look[] = [
-  { id: "kitchen", name: "Kitchen", note: "The dial as it came: clean numbers in the phase colour", face: "classic", ring: "arc", backdrop: "glow" },
-  { id: "night-shift", name: "Night shift", note: "Glowing tubes under drifting stars", face: "nixie", ring: "glow", backdrop: "stars" },
-  { id: "tide", name: "Tide", note: "Big round numbers over water that fills as you focus", face: "stack", ring: "arc", backdrop: "water" },
+  { id: "default", name: "Default", note: "The dial as it came: clean numbers in the phase colour", face: "classic", ring: "arc", backdrop: "glow" },
+  { id: "bold", name: "Bold", note: "The whole card in the phase colour, with tiles that turn over", face: "classic", ring: "tiles", backdrop: "wash" },
   { id: "notebook", name: "Notebook", note: "Italic minutes on warm paper, nothing else", face: "serif", ring: "none", backdrop: "paper" },
   { id: "forecast", name: "Forecast", note: "The time in words, over the weather outside", face: "words", ring: "none", backdrop: "weather" },
-  { id: "departures", name: "Departures", note: "A station board: flaps and tiles that turn over", face: "flap", ring: "tiles", backdrop: "plain" },
-  { id: "hifi", name: "Hi-fi", note: "Cyan segments glowing in the dark", face: "vfd", ring: "glow", backdrop: "film" },
-  { id: "wristwatch", name: "Wristwatch", note: "A reflective watch display under today's sky", face: "lcd", ring: "dots", backdrop: "sky" },
-  { id: "arcade", name: "Arcade", note: "LED dots over soft colour that slowly turns", face: "matrix", ring: "dots", backdrop: "mesh" },
-  { id: "workshop", name: "Workshop", note: "Number wheels with a corner of print dots", face: "odo", ring: "tiles", backdrop: "halftone" },
+  { id: "midnight", name: "Midnight", note: "LED dots among drifting stars, and nothing else", face: "matrix", ring: "none", backdrop: "stars" },
 ];
 
 /** The look that matches a face, ring and background exactly, if one does. */
