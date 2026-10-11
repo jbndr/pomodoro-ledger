@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays } from "./dates";
-import { bestSlot, inWindow, overlap, planWindow, windowOn } from "./bestTime";
+import { bestSlot, inWindow, overlap, planWindow, trackHours, trackSpan, windowOn } from "./bestTime";
 import type { FocusWindow } from "./insights";
 import type { Session, Task } from "./tasks";
 
@@ -80,5 +80,29 @@ describe("bestSlot", () => {
     const wide = span(at(MON, 9), at(MON, 13));
     const two = [span(at(MON, 11), at(MON, 12)), span(at(MON, 9, 30), at(MON, 10, 30)), span(at(MON, 13), at(MON, 14))];
     expect(bestSlot(two, wide, 2, gain)).toBe(1);
+  });
+});
+
+describe("trackSpan", () => {
+  const w = span(at(MON, 9), at(MON, 11));
+  it("runs from the hour before the window to eight hours on", () => {
+    expect(trackSpan(w, at(MON, 8, 10), at(MON, 12, 15))).toEqual(span(at(MON, 8), at(MON, 16)));
+  });
+  it("starts at the current hour when that's earlier, and stretches to the end of the plan", () => {
+    expect(trackSpan(w, at(MON, 6, 40), at(MON, 17, 20))).toEqual(span(at(MON, 6), at(MON, 18)));
+  });
+  it("stops sixteen hours in when the plan runs on", () => {
+    expect(trackSpan(w, at(MON, 8, 10), at(MON, 8) + 30 * HOUR)).toEqual(span(at(MON, 8), at(MON, 24)));
+  });
+  it("keeps a window past midnight in one piece", () => {
+    const night = span(at(MON, 22), at(MON, 25));
+    expect(trackSpan(night, at(MON, 21, 30))).toEqual(span(at(MON, 21), at(MON, 29)));
+  });
+});
+
+describe("trackHours", () => {
+  it("labels the window's edges and the even hours outside it", () => {
+    const w = span(at(MON, 9), at(MON, 11)), hours = trackHours(span(at(MON, 8), at(MON, 16)), w);
+    expect(hours.map((h) => [new Date(h.at).getHours(), h.edge])).toEqual([[9, true], [11, true], [12, false], [14, false]]);
   });
 });

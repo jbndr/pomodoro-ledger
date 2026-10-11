@@ -287,7 +287,7 @@
             <section class="st-grp"><h4>Best time</h4><div class="st-card">
               {#snippet bestPlan()}{@render tog("bestTime", "Plan around your best time")}{/snippet}
               {#snippet bestRemind()}{@render tog("bestRemind", "Remind me when it starts")}{/snippet}
-              {@render row("Plan around it", "Today offers to line up your biggest task for it", bestPlan)}
+              {@render row("Plan around it", "Today shows it and offers to line up your biggest task", bestPlan)}
               {@render row("Remind me when it starts", "If the timer isn't running yet", bestRemind)}
             </div><p class="st-cap">{bestNote}</p></section>
           </div>

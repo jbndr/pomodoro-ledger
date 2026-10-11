@@ -27,6 +27,11 @@
     return o && !fit.shown && !left && api.S.taskView === "today" && !api.preview() ? o : null;
   });
 
+  const strip = $derived.by(() => {
+    const plan = list.plan;
+    return plan?.best && api.S.taskView === "today" && !api.preview() ? api.bestTrack(plan) : null;
+  });
+
   function pick(v) {
     api.S.projectFilter = v;
     if (!(document.getElementById("newTitle")?.value ?? "").trim()) { api.S.newLabel = api.filterLabel(); composer.refresh(); }
@@ -43,6 +48,7 @@
 <div class="filter-fold" class:open={labelFilter.open} hidden={!h.labeled}><div><div class="label-filter" id="projectFilter" role="group" aria-label="Filter tasks by label" bind:this={chipsEl}>
   {#each h.chips as c (c.v)}<button type="button" data-filter={c.v} aria-pressed={String(h.filter === c.v)} onclick={() => pick(c.v)}>{#if c.hue != null}<i class="label-dot" style:--h={c.hue}></i>{/if}<span>{c.name}</span><em>{c.n}</em></button>{/each}
 </div></div></div>
+{#if strip}<div class="best-day" id="bestDay"><div class="bd-cap"><span class="bd-name">{@html api.ICON.peak}Best time <b>{strip.hours}</b></span><span class="bd-when">{strip.when}</span></div><div class="bd-track" aria-hidden="true" style:--a={strip.from} style:--b={strip.to} style:--n={strip.now}><i class="bd-past"></i><i class="bd-zone"></i><i class="bd-now"></i></div><div class="bd-hours" aria-hidden="true">{#each strip.marks as m (m.x)}<span class:edge={m.edge} style:--x={m.x}>{m.label}</span>{/each}</div></div>{/if}
 <div class="day-fit" class:over={fit.over} id="dayFit" role="status" hidden={!fit.shown} data-ids={fit.shown ? fit.ids.join(",") : null}><span id="dayFitText">{fit.text}</span><button class="btn small" type="button" id="dayFitMove" onclick={moveFit}>{fit.move}</button></div>
 <div class="day-fit leftover" id="leftovers" role="status" hidden={!left}><span>{left?.text}</span><span class="acts"><button class="btn small" type="button" id="leftoversMove" onclick={api.moveAsked}>Move to today</button><button class="btn small" type="button" id="leftoversLeave" onclick={api.leaveAsked}>Leave</button></span></div>
 <div class="day-fit best" id="bestFit" role="status" hidden={!offer}>{#if offer}<span class="fit-body"><span>{#if offer.now}It's your best time, {list.plan.best.hours}. Do “<span class="best-task">{offer.title}</span>” next?{:else}You focus best {list.plan.best.hours}. Line up “<span class="best-task">{offer.title}</span>” for then?{/if}</span><span class="acts"><button class="btn small" type="button" id="bestMove" onclick={() => api.lineUp(offer)}>{offer.now ? "Move it up" : "Line it up"}</button><button class="btn small" type="button" id="bestSkip" onclick={api.notToday}>Not today</button></span></span>{/if}</div>

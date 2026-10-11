@@ -1,6 +1,6 @@
 import { toast } from "../chrome/notice.svelte";
-import { fmtClock } from "../format";
-import { bestSlot, inWindow, planWindow, windowOn, type Span } from "../lib/bestTime";
+import { fmtClock, fmtDur } from "../format";
+import { bestSlot, inWindow, planWindow, trackHours, trackSpan, windowOn, type Span } from "../lib/bestTime";
 import { dayKey, MIN } from "../lib/dates";
 import { windowHours, type FocusWindow } from "../lib/insights";
 import { cyclesOf } from "../lib/tasks";
@@ -35,6 +35,17 @@ export function withBest(plan: StartPlan): StartPlan {
   }
   plan.best = { start: win.start, end: win.end, hours, offer: offerFor(win) };
   return plan;
+}
+
+/** Today's best time on a track of the day, for the strip under the Today heading. */
+export function bestTrack(plan: StartPlan, now = Date.now()) {
+  const b = plan.best!, t = trackSpan(b, now, plan.end), x = (at: number) => ((Math.min(Math.max(at, t.start), t.end) - t.start) / (t.end - t.start)) * 100;
+  return {
+    hours: b.hours,
+    when: now < b.start ? "in " + fmtDur(b.start - now) : fmtDur(b.end - now) + " left",
+    from: x(b.start), to: x(b.end), now: x(now),
+    marks: trackHours(t, b).map((h) => ({ x: x(h.at), label: String(new Date(h.at).getHours()), edge: h.edge })),
+  };
 }
 
 function offerFor(win: Span): Offer | null {

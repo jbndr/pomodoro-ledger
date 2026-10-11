@@ -2,7 +2,7 @@
   import { picked } from "./selection.svelte";
   import TaskCard from "./TaskCard.svelte";
 
-  let { api, row, plan, lifted = false, drag = null } = $props();
+  let { api, row, plan, zone = null, lifted = false, drag = null } = $props();
   const start = $derived(plan && plan.get(row.id));
   const selected = $derived(picked.ids.includes(row.id));
 </script>
@@ -16,6 +16,9 @@
   class:dragging={!!drag}
   class:sec-lifted={lifted}
   class:selected
+  class:zone={!!zone}
+  class:zone-first={zone?.first}
+  class:zone-last={zone?.last}
   style:top={drag ? drag.top + "px" : null}
   style:left={drag ? drag.left + "px" : null}
   style:width={drag ? drag.width + "px" : null}
@@ -34,7 +37,6 @@
   <div class="task-side">
     <div class="side-info">
       {#if row.today}<span class="late-flag" hidden={!start?.late} title={start?.late ? "Won't finish before " + api.fmtClock(plan.endAt) + " · " + start.text : ""}>{@html api.ICON.clock}</span>{/if}
-      {#if start?.best}<span class="best-flag" title={start.text + ". In your best time, " + plan.best.hours + "."}>{@html api.ICON.peak}</span>{/if}
       <span class="cyc" title={row.cycTitle}>{#if row.pips.mini != null}<span class="mini" aria-hidden="true"><b style:width={row.pips.mini + "%"}></b></span>{:else}<span class="pips" aria-hidden="true">{#each row.pips.dots as dot, i (i)}<i class={dot}></i>{/each}</span>{/if}</span>
     </div>
     <div class="side-acts">

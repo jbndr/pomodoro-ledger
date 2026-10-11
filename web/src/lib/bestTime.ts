@@ -1,4 +1,4 @@
-import { addDays, sod } from "./dates";
+import { addDays, MIN, sod } from "./dates";
 import { bestWindow, hourGrid, type FocusWindow } from "./insights";
 import type { Tasks } from "./tasks";
 
@@ -36,4 +36,23 @@ export function bestSlot(spans: Span[], w: Span, at: number, gain: number): numb
     if (d > 60_000 || (d >= -60_000 && Math.abs(s.start - w.start) < Math.abs(spans[best].start - w.start))) best = i;
   });
   return overlap(spans[best], w) - overlap(spans[at], w) >= gain ? best : -1;
+}
+
+const HOUR = 60 * MIN;
+const onHour = (t: number) => { const d = new Date(t); d.setMinutes(0, 0, 0); return d.getTime(); };
+
+/** The stretch of the day a track of the window covers: from an hour before it or now, to an hour after it or the end of the plan, eight to sixteen hours. */
+export function trackSpan(w: Span, now: number, end = now): Span {
+  const start = onHour(Math.min(now, w.start - HOUR)), last = Math.max(Math.min(end, start + 16 * HOUR), w.end + HOUR);
+  return { start, end: Math.max(onHour(last) + (onHour(last) < last ? HOUR : 0), start + 8 * HOUR) };
+}
+
+/** Hours to label on a track: the window's edges, and every even hour outside it. */
+export function trackHours(t: Span, w: Span): { at: number; edge: boolean }[] {
+  const out = [];
+  for (let at = t.start + HOUR; at < t.end; at += HOUR) {
+    const edge = at === w.start || at === w.end;
+    if (edge || ((at < w.start || at > w.end) && new Date(at).getHours() % 2 === 0)) out.push({ at, edge });
+  }
+  return out;
 }
