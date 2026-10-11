@@ -2,7 +2,7 @@
   import { backOut, cubicOut } from "svelte/easing";
   import { flip } from "svelte/animate";
   import { calm } from "../dom";
-  import { bubbleNames, mateClock, mateProgress, MODE_NAME, REACTIONS, signalOf, SIGNALS } from "../lib/room";
+  import { bubbleNames, goalText, mateClock, mateProgress, MODE_NAME, REACTIONS, signalOf, SIGNALS } from "../lib/room";
   import { room, roomClock } from "../lib/redraw.svelte";
   import { hueOf, initials } from "../lib/rhythm";
   import { copyInvite } from "./invite";
@@ -18,6 +18,7 @@
       people: [...(you ? [you] : []), ...api.RM.members.filter((m) => m.id !== api.RM.you)],
       alone: api.RM.members.filter((m) => m.id !== api.RM.you).length === 0,
       reacts: api.reactionsOn(), bubbles: api.RM.bubbles, floats: api.RM.floats, cheer: api.RM.cheerUntil > Date.now(),
+      goal: api.RM.goal && api.RM.goal.n ? api.RM.goal : null, metAt: api.RM.metAt,
     };
   });
   const now = $derived.by(() => { roomClock.version; room.version; return Date.now(); });
@@ -83,6 +84,14 @@
           {#if v.owner && !m.owner && m.id !== api.RM.you}<button class="kick" type="button" aria-label="Remove {m.name} from room" title="Remove from room" onclick={() => { if (api.RM.owner) api.roomSend({ t: "kick", id: m.id }); }}>×</button>{/if}
         </li>
       {/each}
+      {#if v.goal}
+        {@const met = v.goal.done >= v.goal.n}
+        <li class="goal" class:met data-tip={"<b>Room goal</b><br>" + goalText(v.goal) + (met ? ", reached" : "") + '<br><span class="tip-k">Every finished focus round here counts</span>'} aria-label={"Room goal: " + goalText(v.goal)} in:fade>
+          <span class="goal-fill" style:--p={Math.min(1, v.goal.done / v.goal.n)}></span>
+          {#key v.metAt}{#if v.metAt && Date.now() - v.metAt < 2000}<span class="goal-shine" aria-hidden="true"></span>{/if}{/key}
+          <span class="goal-n"><b>{v.goal.done}</b>/{v.goal.n}<small>{v.goal.n === 1 ? "round" : "rounds"}</small></span>
+        </li>
+      {/if}
       {#if v.alone}
         <li class="seat" in:fade><button type="button" aria-label="Copy invite link" data-tip="Invite someone" onclick={() => copyInvite(api.RM.code)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg></button></li>
         <li class="hint" in:fade>Just you so far</li>
