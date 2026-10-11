@@ -10,11 +10,13 @@ import { Store } from "../store";
 import { dur, ping } from "../timer/engine";
 import { ui } from "../ui";
 import { guardPreview, isToday, openOf, preview, todayKey, topOfToday, viewTasks } from "./derived";
-import { taskStartPlan, type BestPlan, type StartPlan } from "./plan";
+import { taskStartPlan, type BestPlan, type StartPlan, type TaskStart } from "./plan";
 
 type Offer = NonNullable<BestPlan["offer"]>;
 
 let memo: { key: string; w: FocusWindow | null } = { key: "", w: null };
+
+const lands = (s: TaskStart, win: Span) => s.start != null && s.end != null && inWindow({ start: s.start, end: s.end }, win);
 
 function todaysWindow(now: number): (Span & { w: FocusWindow }) | null {
   const tasks = viewTasks(), key = dayKey(now) + ":" + tasks.size;
@@ -29,12 +31,21 @@ export function withBest(plan: StartPlan): StartPlan {
   if (!win) return plan;
   const hours = windowHours(win.w.from, win.w.to);
   for (const s of plan.values()) {
-    if (s.start == null || s.end == null || !inWindow({ start: s.start, end: s.end }, win)) continue;
+    if (!lands(s, win)) continue;
     s.best = true;
     s.hint += " In your best time, " + hours + ".";
   }
   plan.best = { start: win.start, end: win.end, hours, offer: offerFor(win) };
   return plan;
+}
+
+/** The tasks that would land in today's best time if Today ran in this order. */
+export function bestIn(ids: string[]): Set<string> {
+  const win = S.settings.bestTime === false ? null : todaysWindow(Date.now()), out = new Set<string>();
+  if (!win) return out;
+  const rank = new Map(ids.map((id, i) => [id, i])), at = (t: Task) => rank.get(t.id) ?? ids.length;
+  for (const [id, s] of taskStartPlan(openOf(viewTasks()).filter(isToday).sort((a, b) => at(a) - at(b)))) if (lands(s, win)) out.add(id);
+  return out;
 }
 
 /** Today's best time on a track of the day, for the strip under the Today heading. */

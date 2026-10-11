@@ -29,6 +29,16 @@
     return out;
   });
   const lifted = $derived(new Set(sec ? sec.blocks[sec.from].keys : []));
+  // A rail runs along the tasks that land in today's best time. While dragging it shows where they'd land with the task dropped at the slot.
+  const zones = $derived.by(() => {
+    const out = new Map();
+    if (!plan?.best || api.S.taskView !== "today") return out;
+    const rows = shown.filter((it) => !(it.kind === "task" && it.id === drag?.id)), idOf = (it) => (it?.kind === "slot" ? drag.id : it?.kind === "task" ? it.id : null);
+    const inside = drag ? api.bestIn(rows.map(idOf).filter(Boolean)) : null, on = (it) => idOf(it) != null && (inside ? inside.has(idOf(it)) : !!plan.get(it.id)?.best);
+    rows.forEach((it, i) => { if (on(it)) out.set(it.key, { first: !on(rows[i - 1]), last: !on(rows[i + 1]) }); });
+    if (out.has("slot")) out.set("t:" + drag.id, { first: true, last: true });
+    return out;
+  });
 
   const fallback = () => (api.S.taskView === "today" ? "today" : "later");
   const entries = () => items.map((it) => (it.kind === "task" ? { kind: "task", id: it.id } : { kind: "group", g: it.g, end: it.end }));
@@ -349,9 +359,9 @@
 >
   {#each shown as it (it.key)}
     {#if it.kind === "task"}
-      <TaskRow {api} row={it} {plan} lifted={lifted.has(it.key)} drag={drag && drag.id === it.id ? drag : null} />
+      <TaskRow {api} row={it} {plan} zone={zones.get(it.key)} lifted={lifted.has(it.key)} drag={drag && drag.id === it.id ? drag : null} />
     {:else if it.kind === "slot"}
-      <li class="task-drop" aria-hidden="true" style:height={drag.height + "px"}></li>
+      <li class="task-drop" class:zone={zones.has("slot")} class:zone-first={zones.get("slot")?.first} class:zone-last={zones.get("slot")?.last} aria-hidden="true" style:height={drag.height + "px"}></li>
     {:else if it.kind === "today"}
       <li class="group today-head" data-g="today"><span class="vh">Today</span>{#if it.cycles}<div class="day-plan" data-cycles={it.cycles} data-tasks={it.tasks} title={dayTitle(it)}><b {@attach roll}>{api.plural(it.tasks, "task")}</b> · about <strong class="net" {@attach roll}>{plan ? api.fmtDur(plan.focus) : ""}</strong> of focus · done around <strong class="eta" class:late={plan && plan.end > plan.endAt && !plan.over}>{plan ? api.fmtClock(plan.end) : ""}</strong></div>{:else}<span class="day-plan">{it.tasks ? api.plural(it.tasks, "task") + " · all planned cycles done" : "Nothing planned yet"}</span>{/if}<button class="add-sec" type="button" data-addsec title="Add a section, like Morning or Admin" onclick={() => api.addSection()}>+ Section</button></li>
     {:else if it.kind === "section"}

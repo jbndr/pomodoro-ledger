@@ -49,7 +49,7 @@ import { cancelScapePreview, scapePlaying } from "./soundscape";
 import { DEMO, EMBED, ls, S, ss, T, type Task } from "./state";
 import { Labels, Store } from "./store";
 import { addLink, addSection, addSubtasks, addTask, commitPlacements, pauseRepeat, removeLink, resumeRepeat, completeTask, completing, deleteSubtask, deleteTask, deleteTasks, dismissCard, editSubtask, finishTasks, focusOnTask, focusRow, labelTask, labelTasks, moveSection, moveTasksToTop, moveToTomorrow, removeSection, renameSection, renameSubtask, reopenTask, saveField, schedTask, schedTasks, scheduleTask, setActive, setEstimate, setRepeat, toggleCard } from "./tasks/actions";
-import { bestLine, bestTrack, lineUp, notToday, remindBest } from "./tasks/best";
+import { bestIn, bestLine, bestTrack, lineUp, notToday, remindBest } from "./tasks/best";
 import { bucketOf, dayName, enterDemo, filterLabel, groupName, guardPreview, inProject, isToday, labelChipName, labelHidden, listHead, markStarted, openOf, preview, sections, shortDay, subsOf, todayKey, viewTasks } from "./tasks/derived";
 import ListFoot from "./tasks/ListFoot.svelte";
 import ListHead from "./tasks/ListHead.svelte";
@@ -155,7 +155,7 @@ mount(Composer, { target: panel, anchor: $(".filter-fold"), props: { api: {
   openWhen, openLabelPop, closeLabelPop, labelKey: (e: KeyboardEvent) => ui.label!.key(e), filterLabels: (q: string) => ui.label!.filter(q),
 } } });
 ui.list = mount(TaskList, { target: panel, anchor: $("#taskFoot"), props: { api: {
-  S, ICON, completing, calm, guardPreview,
+  S, ICON, completing, calm, guardPreview, bestIn,
   todayKey, bucketOf, isToday, sections, openOf, viewTasks, inProject, cyclesOf, timeOf, projectOf, labelHue, labelChipName, subsOf,
   plural, fmtDur, fmtDate, fmtClock, shortDay, dayName, keyTime, dayKey, addDays, sod, dur, groupName,
   renderTasks, commit: commitPlacements, focusRow, hover: setHover, goalLookup,

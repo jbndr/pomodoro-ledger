@@ -379,6 +379,12 @@ td.barcell { width: 38%; min-width: 120px; }
 .late-flag[hidden] { display: none; }
 .late-flag svg { width: 14px; height: 14px; }
 .task-start.late { color: var(--warn); }
+/* A thin rail along the tasks that land in today's best time; each row draws its piece and bridges the gap to the next. */
+.task.zone:not(.open)::before, .task-drop.zone::before { content: ""; position: absolute; left: 3px; top: -1px; bottom: -1px; width: 3px; background: var(--tomato); pointer-events: none; }
+.task.zone-first:not(.open)::before, .task-drop.zone-first::before { top: 10px; border-radius: 3px 3px 0 0; }
+.task.zone-last:not(.open)::before, .task-drop.zone-last::before { bottom: 10px; border-radius: 0 0 3px 3px; }
+.task.zone-first.zone-last:not(.open)::before, .task-drop.zone-first.zone-last::before { border-radius: 3px; }
+.task-drop.zone { position: relative; }
 .carry { color: var(--faint); }
 .grip { grid-column: 1; width: 22px; height: 30px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--line-2); cursor: grab; touch-action: none; }
 .task.dragging .grip { color: var(--muted); }
