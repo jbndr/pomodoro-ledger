@@ -1,11 +1,11 @@
 import { addDays, sod } from "./dates";
-import { breaksTaken, dayItems, runStart, type BreakEntry } from "./day";
-import { matchesLabel, sessionProject, type LabelFilter, type Session, type Task, type Tasks } from "./tasks";
+import { breaksTaken, dayItems, sessionStart, type BreakEntry } from "./day";
+import { cyclesIn, matchesLabel, sessionProject, type LabelFilter, type Session, type Task, type Tasks } from "./tasks";
 
-export type SessionKind = "cycle" | "flow" | "over" | "early";
+export type SessionKind = "cycle" | "flow" | "over" | "early" | "hand";
 
-/** What a logged session was: a full cycle, flow, time past the bell, or a cycle stopped early. */
-export const sessionKind = (s: Session): SessionKind => (s.full ? "cycle" : s.run?.startsWith("fl-") ? "flow" : s.run?.startsWith("ot-") ? "over" : "early");
+/** What a logged session was: a full cycle, flow, time past the bell, a cycle stopped early, or time entered by hand. */
+export const sessionKind = (s: Session): SessionKind => (s.hand ? "hand" : s.full ? "cycle" : s.run?.startsWith("fl-") ? "flow" : s.run?.startsWith("ot-") ? "over" : "early");
 
 /** Took ÷ planned in words, to finish "Tasks take …". */
 export function ratioWords(r: number): string {
@@ -25,7 +25,7 @@ export function labelTotals(tasks: Tasks, from: number, to: number): Map<string,
     if (!s.ms || s.at < from || s.at >= to) continue;
     const name = sessionProject(t, s), r = by.get(name) || { ms: 0, cycles: 0 };
     r.ms += s.ms;
-    if (s.full) r.cycles++;
+    r.cycles += cyclesIn(s);
     by.set(name, r);
   }
   return by;
@@ -45,7 +45,7 @@ export interface Habits {
   earlyTop: string | null;
 }
 
-/** How the timer was used on each of `days`: breaks, time past the bell, stopped cycles and flow. */
+/** How the timer was used on each of `days`: breaks, time past the bell, stopped cycles and flow. Time entered by hand is left out. */
 export function timerHabits(tasks: Tasks, breaks: BreakEntry[] | undefined, days: number[]): Habits {
   const h: Habits = { breaks: [], over: [], overN: 0, stopped: [], flows: [], earlyTop: null };
   const count = new Map<string, number>();
@@ -54,7 +54,7 @@ export function timerHabits(tasks: Tasks, breaks: BreakEntry[] | undefined, days
     let over = 0;
     h.breaks.push(...breaksTaken(items).seq);
     for (const x of items) {
-      if (x.kind !== "focus") continue;
+      if (x.kind !== "focus" || x.hand) continue;
       const s = { ms: x.ms, title: x.title, label: x.label };
       if (x.over) { over += x.ms; h.overN++; }
       else if (x.flow) h.flows.push(s);
@@ -76,7 +76,7 @@ export function journal(tasks: Tasks, filter: LabelFilter = ""): JournalDay[] {
   for (const t of tasks.values()) (t.sessions || []).forEach((s, i) => {
     const label = sessionProject(t, s), ms = s.ms || 0;
     if (!ms || !matchesLabel(label, filter)) return;
-    const from = runStart(s.run, s.at, ms), day = sod(from);
+    const from = sessionStart(s), day = sod(from);
     let d = days.get(day);
     if (!d) days.set(day, (d = { day, ms: 0, from, to: s.at, tasks: [] }));
     let jt = d.tasks.find((x) => x.id === t.id);

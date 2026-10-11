@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { breaksTaken, dayGaps, dayItems, daySummary, logBreak, runStart, type DayItem } from "./day";
+import { breaksTaken, dayGaps, dayItems, daySummary, logBreak, runStart, sessionStart, type DayItem } from "./day";
 import type { Session, Task } from "./tasks";
 
 const DAY = new Date(2026, 9, 10).getTime(), MIN = 60000, HOUR = 60 * MIN;
@@ -18,6 +18,13 @@ describe("runStart", () => {
     expect(runStart(undefined, at(10), 25 * MIN)).toBe(at(9, 35));
     expect(runStart("zzzzzzzz", at(10), 25 * MIN)).toBe(at(9, 35));
     expect(runStart(runAt(at(9, 50)), at(10), 25 * MIN)).toBe(at(9, 35));
+  });
+});
+
+describe("sessionStart", () => {
+  it("takes a session entered by hand at its word, even with a timer run id", () => {
+    expect(sessionStart({ at: at(10), ms: 40 * MIN, hand: true, run: "fl-" + at(8).toString(36) })).toBe(at(9, 20));
+    expect(sessionStart({ at: at(10), ms: 40 * MIN, run: "fl-" + at(9).toString(36) })).toBe(at(9));
   });
 });
 
@@ -57,6 +64,14 @@ describe("dayItems", () => {
   it("sums the day", () => {
     expect(daySummary(dayItems(tasks, breaks, at(12)))).toMatchObject({ focus: 60 * MIN, cycles: 2, breaks: 1, rest: 6 * MIN, long: 0, nudges: 1, idle: 3 * HOUR + 20 * MIN, start: at(9), end: at(13, 25), due: 1, taken: 1 });
   });
+
+  it("marks time entered by hand, counts its cycles and owes it no break", () => {
+    const hand = task("Read", [{ at: at(15), ms: 50 * MIN, hand: true, full: true, cycles: 2, run: "fl-" + at(12).toString(36) }]);
+    const items = dayItems([...tasks, hand], breaks, at(12));
+    expect(items.at(-1)).toMatchObject({ from: at(14, 10), to: at(15), hand: true, cycles: 2, full: true });
+    expect(items.at(-1)).not.toHaveProperty("flow");
+    expect(daySummary(items)).toMatchObject({ focus: 110 * MIN, cycles: 4, due: 2, taken: 1 });
+  });
 });
 
 describe("dayGaps", () => {
@@ -82,6 +97,9 @@ describe("breaksTaken", () => {
   });
   it("ignores the day's last cycle, stopped sessions and a break that came after idle time", () => {
     expect(breaksTaken([f(9, 0, 10, { full: false }), b(9, 10, 5), f(9, 30, 25), b(10, 20, 5), f(10, 25, 25)])).toEqual({ due: 1, taken: 0, seq: [false] });
+  });
+  it("owes nothing after time entered by hand", () => {
+    expect(breaksTaken([f(9, 0, 50, { hand: true, cycles: 2 }), f(9, 50, 25)])).toEqual({ due: 0, taken: 0, seq: [] });
   });
   it("counts flow like a cycle", () => {
     expect(breaksTaken([f(9, 0, 50, { full: false, flow: true }), b(9, 50, 10)])).toEqual({ due: 1, taken: 1, seq: [true] });

@@ -6,6 +6,10 @@ export interface Session {
   at: number;
   ms?: number;
   full?: boolean;
+  /** Added or corrected by hand, so its times are the user's, not the timer's. */
+  hand?: boolean;
+  /** How many cycles a session added by hand counts as, when it's more than one. */
+  cycles?: number;
   /** Overrides the task's label for this session; "" means no label. */
   project?: string;
   /** The timer run that logged it, so two synced devices log a cycle once. */
@@ -51,7 +55,8 @@ export type Tasks = Map<string, Task>;
 /** "" for everything, "none" for unlabeled, or "project:<name>". */
 export type LabelFilter = string;
 
-export const cyclesOf = (t: Task) => (t.sessions || []).filter((s) => s.full).length;
+export const cyclesIn = (s: Session) => (!s.full ? 0 : s.cycles! > 1 ? Math.floor(s.cycles!) : 1);
+export const cyclesOf = (t: Task) => (t.sessions || []).reduce((a, s) => a + cyclesIn(s), 0);
 export const timeOf = (t: Task) => (t.sessions || []).reduce((a, s) => a + (s.ms || 0), 0);
 
 export const projectOf = (t: { project?: unknown }) => (typeof t.project === "string" ? t.project.trim() : "");

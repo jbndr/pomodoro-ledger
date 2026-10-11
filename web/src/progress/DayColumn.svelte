@@ -8,7 +8,7 @@
   let { api, day, items, gaps, isToday, now, filter = "", line, name, dir = 1, canPrev, canNext, onstep } = $props();
 
   const HOUR = 60 * MIN, PPM = 0.8, GAP = 25 * MIN, FOLD = 60 * MIN, KEEP = 10 * MIN, FOLD_H = 28;
-  const kindOf = (it) => (it.flow ? "f" : it.over ? "o" : it.full ? "c" : it.live ? "l" : "p");
+  const kindOf = (it) => (it.hand ? "h" : it.flow ? "f" : it.over ? "o" : it.full ? "c" : it.live ? "l" : "p");
   const lane = (it) => (it.kind === "focus" ? "f" : it.kind === "break" ? (it.long ? "l" : "s") : "i");
   const off = (label) => !!filter && !matchesLabel(label, filter);
 
@@ -57,7 +57,7 @@
   const clock = (t) => api.fmtClock(t);
   const count = (r) => {
     const n = (k) => r.items.filter((x) => kindOf(x) === k).length;
-    return [n("c") && api.plural(n("c"), "cycle"), n("f") && api.plural(n("f"), "flow session"), n("p") && n("p") + " stopped early", n("o") && api.fmtDur(r.items.filter((x) => x.over).reduce((a, x) => a + x.ms, 0)) + " past the bell"].filter(Boolean).join(" · ");
+    return [n("c") && api.plural(n("c"), "cycle"), n("f") && api.plural(n("f"), "flow session"), n("p") && n("p") + " stopped early", n("o") && api.fmtDur(r.items.filter((x) => x.over).reduce((a, x) => a + x.ms, 0)) + " past the bell", n("h") && api.fmtDur(r.items.filter((x) => x.hand).reduce((a, x) => a + x.ms, 0)) + " by hand"].filter(Boolean).join(" · ");
   };
   const runTip = (r) => "<b>" + api.esc(r.title) + "</b><br>" + (r.label ? api.esc(r.label) + " · " : "") + clock(r.from) + "–" + (r.items.at(-1).live ? "now" : clock(r.to)) + " · " + api.fmtDur(Math.max(MIN, r.ms)) + (count(r) ? "<br>" + count(r) : "");
   const railTip = (x) => {

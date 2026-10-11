@@ -61,7 +61,7 @@
     for (const it of seq) if (!it.live) t[laneOf(it)] += Math.max(0, Math.min(it.to, zoom.to) - Math.max(it.from, zoom.from));
     return t;
   });
-  const kindLine = (it) => it.flow ? "Flow" : it.over ? "Past the bell" : it.live ? "In focus now" : it.full ? "Cycle" : "Stopped early";
+  const kindLine = (it) => it.hand ? "By hand" : it.flow ? "Flow" : it.over ? "Past the bell" : it.live ? "In focus now" : it.full ? "Cycle" : "Stopped early";
   const detail = (it, k) => {
     const span = clock(it.from) + "–" + (it.live ? "now" : clock(it.to)) + " · " + api.fmtDur(Math.max(MIN, it.to - it.from));
     if (k === "f") return it.title + (it.label ? " · " + it.label : "") + " · " + span + " · " + kindLine(it);

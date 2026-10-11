@@ -474,7 +474,11 @@ td.barcell { width: 38%; min-width: 120px; }
 @media (hover: hover) { .card-btn:hover { border-color: var(--line-2); color: var(--fg); } }
 .card-bar .spacer { flex: 1; }
 .card-bar .icon-btn { width: 32px; height: 32px; }
-.card-stats { font-size: 12px; color: var(--faint); }
+.card-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 12px; color: var(--faint); }
+.card-stats > span { min-width: 0; }
+.card-log { flex: none; height: 24px; margin: -3px -8px -3px auto; font-size: 12px; }
+.card-log-form > .sf { padding: 4px 0 2px; }
+.card-log-form .sf-fields { flex-basis: 100%; }
 .tasks-head { align-items: center; }
 .tasks-head { display: flex; justify-content: space-between; gap: 12px; }
 .tasks-head .task-views { margin: 0 0 0 -9px; flex: none; }
@@ -726,7 +730,7 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .legend { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); justify-content: flex-end; }
 .legend i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
 .legend span { margin: 0 4px; }
-.best-time .sec-head, .by-label .sec-head { align-items: center; }
+.best-time .sec-head, .by-label .sec-head, .journal .sec-head { align-items: center; }
 .chart-card .label-filter { margin-top: 0; }
 .best-line { margin: -2px 0 0; font-family: var(--f-display); font-size: 18px; font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
 .best-line.quiet { font-family: var(--f-body); font-size: 13.5px; font-weight: 400; letter-spacing: 0; color: var(--muted); }
@@ -837,6 +841,7 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .dcol-c .cyc i.f { width: 16px; border-radius: 3px; }
 .dcol-c .cyc i.o { width: 4px; height: 4px; background: var(--faint); }
 .dcol-c .cyc i.l { background: var(--tomato); }
+.dcol-c .cyc i.h { background: var(--faint); }
 .dcol-now { position: absolute; left: 40px; right: 0; z-index: 1; height: 0; border-top: 1.5px solid var(--fg); }
 .dcol-now span { position: absolute; left: -40px; top: -8px; padding-right: 4px; background: var(--surface); font-size: 11px; font-weight: 600; }
 
@@ -946,6 +951,25 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .jn-acts .meta-chip { margin-right: 4px; }
 .jn-acts .icon-btn { width: 30px; height: 30px; }
 .jn-acts .icon-btn svg { width: 15px; height: 15px; }
+.journal #addSession { margin-block: -6px; }
+.jn-add > .sf { margin-bottom: 4px; padding: 10px 10px 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.jn-s.jn-edit { display: block; padding: 6px 6px 8px 24px; }
+
+/* Adding or changing a session by hand, in the journal and on a task */
+.sf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-width: 0; }
+.sf-fields { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.sf-span { display: flex; align-items: center; gap: 6px; }
+.sf-pick { gap: 6px; max-width: 100%; padding: 0 8px 0 10px; background: var(--surface); }
+.sf-pick span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sf-pick svg { width: 14px; height: 14px; color: var(--faint); }
+.sf-task { max-width: min(100%, 28ch); }
+.sf-in { height: 32px; padding: 0 9px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--surface); color: var(--fg); font: 500 13px var(--f-body); font-variant-numeric: tabular-nums; outline: none; transition: border-color .15s, box-shadow .15s; }
+.sf-in:focus-visible { border-color: color-mix(in oklab, var(--accent) 55%, var(--line-2)); box-shadow: 0 0 0 3px var(--accent-soft); }
+.sf-len { width: 8ch; }
+.sf-for { padding-inline: 2px; font-size: 13px; color: var(--muted); }
+.sf-note { flex: 1 0 auto; max-width: 100%; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sf-note.bad { color: var(--tomato); }
+.sf-acts { display: flex; gap: 6px; margin-left: auto; }
 @media (max-width: 640px) {
   .tl-v { font-size: 34px; }
   .sg-line { white-space: normal; }
@@ -961,6 +985,8 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
   .jn-s { grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; padding-left: 16px; padding-block: 4px; }
   .jn-time em { display: block; margin: 0; }
   .jn-acts .icon-btn { width: 40px; height: 40px; }
+  .sf-in { height: 44px; font-size: 16px; }
+  .jn-s.jn-edit { padding-left: 16px; }
 }
 
 /* Weekly recap */

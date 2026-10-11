@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { addDays } from "./dates";
-import { cyclesIn, decimalComma, rangeOf, sessionStart, sheetFileName, sheetRows, timesheet, toCSV, toTSV } from "./timesheet";
-import type { Session, Task, Tasks } from "./tasks";
+import { sessionStart } from "./day";
+import { decimalComma, rangeOf, sheetFileName, sheetRows, timesheet, toCSV, toTSV } from "./timesheet";
+import { cyclesIn, type Session, type Task, type Tasks } from "./tasks";
 
 // Saturday, 3 October 2026; the week started on Monday 28 September.
 const NOW = new Date(2026, 9, 3, 15, 30).getTime();

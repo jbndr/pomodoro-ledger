@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { focusTasks, labelHue, matchesLabel, nextLabelHue, progressLabelNames, projectNames, sessionProject, setLabelHues, type Tasks } from "./tasks";
+import { cyclesIn, cyclesOf, focusTasks, labelHue, matchesLabel, nextLabelHue, progressLabelNames, projectNames, sessionProject, setLabelHues, type Tasks } from "./tasks";
 import { LABEL_HUES } from "./labels";
 
 const list: Tasks = new Map([
@@ -46,5 +46,15 @@ describe("labels", () => {
     setLabelHues(all);
     expect(nextLabelHue(all)).toBe(LABEL_HUES.at(-1));
     setLabelHues([]);
+  });
+});
+
+describe("cycles", () => {
+  it("counts a cycle per full session, and what a session entered by hand stands for", () => {
+    expect(cyclesIn({ at: 1, ms: 1, full: true })).toBe(1);
+    expect(cyclesIn({ at: 1, ms: 1 })).toBe(0);
+    expect(cyclesIn({ at: 1, ms: 1, hand: true, full: true, cycles: 3 })).toBe(3);
+    expect(cyclesIn({ at: 1, ms: 1, hand: true, cycles: 3 })).toBe(0);
+    expect(cyclesOf({ id: "a", title: "A", sessions: [{ at: 1, full: true }, { at: 2 }, { at: 3, hand: true, full: true, cycles: 2 }] })).toBe(3);
   });
 });

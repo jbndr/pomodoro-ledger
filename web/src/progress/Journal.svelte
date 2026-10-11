@@ -1,14 +1,21 @@
 <script>
+  import { tick } from "svelte";
+  import { cubicOut } from "svelte/easing";
   import { SvelteSet } from "svelte/reactivity";
+  import { slide } from "svelte/transition";
+  import { calm } from "../dom";
   import { addDays, MIN, sod } from "../lib/dates";
   import { journal } from "../lib/patterns";
   import { labelHue } from "../lib/tasks";
+  import SessionForm from "./SessionForm.svelte";
 
   let { api, tasks, filter } = $props();
   let count = $state(4), hl = $state(""), confirming = $state(""), width = $state(0), timer = 0;
+  let adding = $state(false), editing = $state(""), addBtn, back = null;
   const open = new SvelteSet();
 
-  const HOUR = 60 * MIN, KIND = { cycle: "Cycle", flow: "Flow", over: "Past the bell", early: "Stopped early" };
+  const HOUR = 60 * MIN, KIND = { cycle: "Cycle", flow: "Flow", over: "Past the bell", early: "Stopped early", hand: "By hand" };
+  const fold = () => ({ duration: calm() ? 0 : 240, easing: cubicOut });
   const days = $derived(journal(tasks, filter));
   const shown = $derived(days.slice(0, count));
   const c = $derived.by(() => {
@@ -39,6 +46,27 @@
     const el = e.currentTarget;
     api.openLabelPop("session:" + s.key, () => (el.isConnected ? el : null), s.label, (name) => api.labelSession(s.key, name));
   }
+  function add() {
+    if (!adding && api.guardPreview()) return;
+    editing = "";
+    adding = !adding;
+  }
+  function added(key, from) {
+    adding = false;
+    addBtn.focus({ preventScroll: true });
+    if (key) open.add(sod(from) + "|" + key.slice(0, key.lastIndexOf(":")));
+  }
+  function edit(e, s) {
+    if (api.guardPreview()) return;
+    back = e.currentTarget.closest(".jn-task")?.querySelector(".jn-row");
+    adding = false;
+    editing = s.key;
+  }
+  async function edited() {
+    editing = "";
+    await tick();
+    if (back?.isConnected) back.focus({ preventScroll: true });
+  }
   function move(e, s, t) {
     if (!api.popHidden()) { api.closePop(); return; }
     if (api.guardPreview()) return;
@@ -47,8 +75,12 @@
 </script>
 
 <div class="chart-card journal" id="journal">
-  <h3>Journal</h3>
-  <p class="sub">What each day went to. Open a task to label, move or delete a session.</p>
+  <div class="sec-head">
+    <h3>Journal</h3>
+    <button class="btn small" type="button" id="addSession" aria-expanded={String(adding)} bind:this={addBtn} onclick={add}>Add a session</button>
+  </div>
+  <p class="sub">What each day went to. Open a task to change, label, move or delete a session.</p>
+  {#if adding}<div class="jn-add" transition:slide={fold()}><SessionForm {api} onclose={added} /></div>{/if}
   {#if c}
     <div class="jn" bind:clientWidth={width}>
       <div class="jn-axis" aria-hidden="true">{#each c.hours as h (h)}<span style:left="{c.x(h)}px">{Math.round(h / HOUR) % 24}</span>{/each}</div>
@@ -75,15 +107,20 @@
                 </button>
                 <div class="jn-ses" inert={!open.has(k)}><div>
                   {#each t.sessions as s (s.key)}
-                    <div class="jn-s">
-                      <span class="jn-time">{api.fmtClock(s.from)}–{api.fmtClock(s.to)}<em>{KIND[s.kind]}</em></span>
-                      <span class="jn-len">{api.fmtDur(s.ms)}</span>
-                      <span class="jn-acts">
-                        <button class="meta-chip session-label" class:none={!s.label} type="button" aria-haspopup="listbox" aria-label={s.label ? "Session label: " + s.label + ". Change label" : "Add a label to this session"} title="Change label for this session" onclick={(e) => label(e, s)}>{#if s.label}<i class="label-dot" style:--h={labelHue(s.label)}></i>{:else}{@html api.ICON.tag}{/if}<span>{s.label || "Label"}</span></button>
-                        <button class="icon-btn" type="button" data-move aria-haspopup="listbox" aria-label="Move this session to another task" title="Move to another task" onclick={(e) => move(e, s, t)}>{@html api.ICON.move}</button>
-                        <button class="icon-btn" class:danger={confirming === s.key} type="button" data-sdel aria-label={confirming === s.key ? null : "Delete this session"} title={confirming === s.key ? null : "Delete"} onclick={() => del(s.key)}>{#if confirming === s.key}Delete?{:else}{@html api.ICON.trash}{/if}</button>
-                      </span>
-                    </div>
+                    {#if editing === s.key}
+                      <div class="jn-s jn-edit"><SessionForm {api} session={{ key: s.key, from: s.from, ms: s.ms }} onclose={edited} /></div>
+                    {:else}
+                      <div class="jn-s">
+                        <span class="jn-time">{api.fmtClock(s.from)}–{api.fmtClock(s.to)}<em>{KIND[s.kind]}</em></span>
+                        <span class="jn-len">{api.fmtDur(s.ms)}</span>
+                        <span class="jn-acts">
+                          <button class="meta-chip session-label" class:none={!s.label} type="button" aria-haspopup="listbox" aria-label={s.label ? "Session label: " + s.label + ". Change label" : "Add a label to this session"} title="Change label for this session" onclick={(e) => label(e, s)}>{#if s.label}<i class="label-dot" style:--h={labelHue(s.label)}></i>{:else}{@html api.ICON.tag}{/if}<span>{s.label || "Label"}</span></button>
+                          <button class="icon-btn" type="button" aria-label="Change when this session ran" title="Change time" onclick={(e) => edit(e, s)}>{@html api.ICON.edit}</button>
+                          <button class="icon-btn" type="button" data-move aria-haspopup="listbox" aria-label="Move this session to another task" title="Move to another task" onclick={(e) => move(e, s, t)}>{@html api.ICON.move}</button>
+                          <button class="icon-btn" class:danger={confirming === s.key} type="button" data-sdel aria-label={confirming === s.key ? null : "Delete this session"} title={confirming === s.key ? null : "Delete"} onclick={() => del(s.key)}>{#if confirming === s.key}Delete?{:else}{@html api.ICON.trash}{/if}</button>
+                        </span>
+                      </div>
+                    {/if}
                   {/each}
                 </div></div>
               </li>

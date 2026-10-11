@@ -1,7 +1,7 @@
 import { addDays, dayKey, keyTime, MIN, sod, type DayKey } from "./dates";
-import { runStart } from "./day";
+import { sessionStart } from "./day";
 import { weekStart } from "./insights";
-import { matchesLabel, sessionProject, type LabelFilter, type Session, type Tasks } from "./tasks";
+import { cyclesIn, matchesLabel, sessionProject, type LabelFilter, type Tasks } from "./tasks";
 
 export type RangeKind = "week" | "lastWeek" | "month" | "lastMonth" | "custom";
 export type Grouping = "task" | "day";
@@ -28,17 +28,6 @@ export function rangeOf(kind: RangeKind, now: number, custom?: Partial<Range>): 
 }
 
 const validDay = (k: unknown): DayKey | null => (typeof k === "string" && /^\d{4}-\d{2}-\d{2}$/.test(k) && dayKey(keyTime(k)) === k ? k : null);
-
-type Logged = Session & { hand?: boolean; cycles?: number };
-
-/** Whole cycles a session counts for. */
-export const cyclesIn = (s: Session): number => {
-  const n = (s as Logged).cycles;
-  return s.full ? (typeof n === "number" && n > 1 ? Math.floor(n) : 1) : 0;
-};
-
-/** When a session started; times added by hand are taken as typed. */
-export const sessionStart = (s: Session): number => ((s as Logged).hand ? s.at - (s.ms || 0) : runStart(s.run, s.at, s.ms || 0));
 
 export interface SheetRow { key: string; title: string; label: string; ms: number; cycles: number }
 export interface SheetGroup { key: string; label: string; day: DayKey; ms: number; cycles: number; rows: SheetRow[] }
