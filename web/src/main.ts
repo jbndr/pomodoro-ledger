@@ -21,7 +21,7 @@ import { normCode } from "./lib/room";
 import { scheduleOf } from "./lib/schedule";
 import { cyclesOf, labelHue, projectOf, timeOf } from "./lib/tasks";
 import { MODES } from "./lib/timer";
-import { initPages } from "./pages";
+import { initPages, phone, showPage } from "./pages";
 import "./palette/commands";
 import "./year/commands";
 import Palette from "./palette/Palette.svelte";
@@ -59,7 +59,8 @@ import TaskList from "./tasks/TaskList.svelte";
 import TaskViews from "./tasks/TaskViews.svelte";
 import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, freshRounds, keepGoing, nudgeDone, readyFlow, remNow, resetRounds, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
-import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, toggleRoom, openSettings, openShare, openWhen, openYear, renderSyncTab, ui, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type RoomUI, type SettingsUI, type ShareUI, type Sheet, type WhenUI, type YearUI } from "./ui";
+import Customize from "./customize/Customize.svelte";
+import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, toggleRoom, openSettings, openCustomize, openShare, openWhen, openYear, renderSyncTab, ui, type CustomizeUI, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type RoomUI, type SettingsUI, type ShareUI, type Sheet, type WhenUI, type YearUI } from "./ui";
 import Year from "./year/Year.svelte";
 import ShareSheet from "./year/ShareSheet.svelte";
 import { fsEl, setZen, toggleZen } from "./zen";
@@ -137,10 +138,13 @@ ui.settings = mount(Settings, { target: document.body, props: { api: {
   ensureAudio, playSound, scheduleEnd, cancelEnd, cancelTickPreview, syncTicking, previewTicking,
   previewSoundscape, cancelScapePreview, scapePlaying,
   autoFloatHandler, renderTimer, renderStats, renderEstPick,
-  reactionsChanged, bestLine, DEMO, backup: { exportLedger, planImport, importLedger },
+  reactionsChanged, bestLine, DEMO, backup: { exportLedger, planImport, importLedger }, customize: (tab?: string) => openCustomize(tab),
 } } }) as SettingsUI;
+ui.customize = mount(Customize, { target: $("main.top"), props: { api: {
+  S, renderTimer, sizeTimer, phone, showPage, setZen, zen: () => document.body.classList.contains("zen"), save: () => Store.saveSettings(),
+} } }) as CustomizeUI;
 mount(TimerCard, { target: $(".timer-card"), props: { api: {
-  T, S, ICON, floatBtn, fmtClock, fmtDur, plural, viewTasks, openOf,
+  T, S, ICON, floatBtn, fmtClock, fmtDur, plural, viewTasks, openOf, customize: () => openCustomize(),
   toggle, skip, adjust, setMode, flushPartial, buzz, toggleZen, setActive, keepGoing, canKeepGoing, nudgeDone, readyFlow, resetRounds,
 } } });
 ui.pop = mount(Pop, { target: document.body, anchor: $("#toast"), props: { api: { ICON } } }) as PopUI;

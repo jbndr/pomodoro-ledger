@@ -59,6 +59,7 @@ export function quickAdd() {
 
 /** The app-wide keyboard shortcuts. */
 export function onKey(e: KeyboardEvent) {
+  if (ui.customize?.isOpen()) return;
   if (paletteKey(e)) { e.preventDefault(); if (!e.repeat) togglePalette(); return; }
   if (document.querySelector("#palette:not([hidden])")) return;
   const tag = ((e.target as Element).tagName || "").toLowerCase();

@@ -1,0 +1,107 @@
+/* Customize: the real timer stays in view while its face, ring and background change; a tray holds the choices. */
+.cz {
+  --st-card: #FFFFFF; --st-sunk: color-mix(in oklab, var(--surface-2) 55%, var(--surface)); --st-spring: cubic-bezier(.32, .72, 0, 1);
+  grid-area: 1 / 2; align-self: start; position: sticky; top: calc(var(--bar-h, 0px) + 12px); z-index: 2; max-height: calc(100dvh - var(--bar-h, 0px) - 24px);
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 10px; padding: 14px 14px 10px; border-radius: 30px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); font-size: 14px;
+}
+.cz.wide { height: var(--cz-card, auto); max-height: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cz { --st-card: #1F2421; --st-sunk: #171B19; } }
+:root[data-theme="dark"] .cz { --st-card: #1F2421; --st-sunk: #171B19; }
+
+.cz-head { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
+.cz-btn { justify-self: start; height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: none; font: inherit; font-weight: 550; color: var(--muted); white-space: nowrap; transition: background .15s, color .15s, transform .1s; }
+@media (hover: hover) { .cz-btn:hover { background: var(--st-sunk); color: var(--fg); } }
+.cz-btn:active { transform: scale(.96); }
+.cz-done { justify-self: end; padding: 0 18px; background: var(--fg); color: var(--bg); }
+@media (hover: hover) { .cz-done:hover { background: color-mix(in oklab, var(--fg) 86%, var(--bg)); color: var(--bg); } }
+.cz-btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.cz-title { display: grid; justify-items: center; min-width: 0; text-align: center; }
+.cz-title b { font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
+.cz-title small { font-size: 12px; color: var(--faint); text-wrap: balance; }
+.cz-hint { margin: 0; padding: 0 16px 2px; min-height: 1lh; font-size: 12.5px; color: var(--faint); text-align: center; text-wrap: balance; }
+
+.cz-panel { min-width: 0; }
+.cz .st-faces { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 2px; }
+
+/* Wide: every group at once, each one lighting up its part of the timer while you're in it. */
+.cz-scroll { display: grid; align-content: start; gap: 4px; min-height: 0; margin: 0 -14px; padding: 6px 14px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+  -webkit-mask: linear-gradient(transparent, #000 12px, #000 calc(100% - 12px), transparent); mask: linear-gradient(transparent, #000 12px, #000 calc(100% - 12px), transparent); }
+.cz-scroll::-webkit-scrollbar { display: none; }
+.cz-sec { display: grid; gap: 4px; padding: 10px 0 6px; border-top: 1px solid var(--line); scroll-margin: 8px; }
+.cz-sec:first-child { border-top: 0; padding-top: 2px; }
+.cz-sec h3 { margin: 0; padding-left: 6px; font-size: 12.5px; font-weight: 600; color: var(--muted); transition: color .2s; }
+.cz-sec.on h3 { color: var(--fg); }
+
+/* The parts of the timer you can tap while customizing, outlined the way the Lock Screen's are when you edit it. */
+.cz-zone { position: absolute; z-index: 3; padding: 0; border: 0; border-radius: 50%; background: none; color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cz-zone::before { content: ""; position: absolute; inset: 0; border: 1.5px dashed color-mix(in oklab, var(--fg) 30%, transparent); border-radius: inherit; transition: border-color .3s, box-shadow .35s cubic-bezier(.32, .72, 0, 1); }
+@media (hover: hover) { .cz-zone:hover::before { border-color: color-mix(in oklab, var(--fg) 60%, transparent); } }
+.cz-zone.hot::before { border-color: color-mix(in oklab, var(--fg) 60%, transparent); }
+.cz-zone[aria-pressed="true"]::before { border-style: solid; border-color: color-mix(in oklab, var(--fg) 90%, transparent); box-shadow: 0 0 0 4px color-mix(in oklab, var(--fg) 8%, transparent); }
+.cz-zone:focus-visible { outline: none; }
+.cz-zone:focus-visible::before { border-style: solid; border-color: var(--fg); box-shadow: 0 0 0 4px color-mix(in oklab, var(--fg) 22%, transparent); }
+.cz-zone > span { position: absolute; left: 50%; top: 0; translate: -50% -50%; padding: 3px 9px; border-radius: 999px; background: var(--fg); color: var(--surface); font: 600 11.5px/1.25 var(--f-body); letter-spacing: 0; white-space: nowrap; pointer-events: none; opacity: 0; scale: .9; transition: opacity .2s, scale .35s cubic-bezier(.32, .72, 0, 1); }
+.cz-zone[aria-pressed="true"] > span, .cz-zone.hot > span, .cz-zone:focus-visible > span { opacity: 1; scale: 1; }
+@media (hover: hover) { .cz-zone:hover > span { opacity: 1; scale: 1; } }
+.cz-zone-ring { inset: -1.5%; }
+.cz-zone-face { inset: 20%; z-index: 4; }
+.cz-zone-backdrop { inset: 8px; z-index: 2; border-radius: 24px; }
+.cz-zone-backdrop > span { top: auto; bottom: 0; translate: -50% 50%; }
+body.customizing .timer-card :is(.head-icons, .adjust, #resetBtn, #skipBtn) { opacity: 0 !important; visibility: hidden !important; }
+
+/* Wide screens: the tray takes the task list's place beside the card. */
+@media (min-width: 901px) {
+  body.customizing .top > .panel { grid-area: 1 / 2; visibility: hidden; }
+}
+body.customizing :is(.bar, .room, .banner, .progress, .tabbar) { opacity: .22; }
+@media (max-width: 900px) { body.customizing .top > .panel { opacity: .22; } }
+
+/* Narrow screens: a floating tray at the bottom with one row of tiles to swipe through. */
+@media (max-width: 900px) {
+  .cz {
+    position: fixed; z-index: 45; top: auto; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); translate: -50% 0; width: min(calc(100% - 20px), 620px);
+    grid-area: auto; max-height: none; gap: 10px; padding: 12px 0 8px; border: 0; border-radius: 28px;
+    background: color-mix(in oklab, var(--surface) 84%, transparent); -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6);
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--fg) 9%, transparent), 0 24px 60px -18px rgba(0,0,0,.42);
+  }
+  .cz-head { padding: 0 12px; }
+  .cz .st-faces { display: flex; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scroll-padding: 0 12px; padding: 6px 12px; margin: -4px 0 -2px; gap: 2px; scrollbar-width: none;
+    -webkit-mask: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); mask: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); }
+  .cz .st-faces::-webkit-scrollbar { display: none; }
+  .cz .st-face { flex: 0 0 82px; scroll-snap-align: start; }
+}
+/* Phones: the full-screen timer becomes a framed preview above the tray, so the whole background stays in view. */
+@media (max-width: 640px) {
+  body.customizing[data-page="timer"] :is(.bar, .tabbar, .room, .banner) { display: none; }
+  body.customizing[data-page="timer"]::before { display: none; }
+  html body.customizing[data-page="timer"] .app { padding-bottom: 0; }
+  html body.customizing[data-page="timer"][data-backdrop]:not(.zen) .timer-card {
+    isolation: isolate; overflow: hidden; margin: calc(env(safe-area-inset-top, 0px) + 10px) 10px calc(var(--cz-h, 0px) + env(safe-area-inset-bottom, 0px) + 20px); padding: 18px 12px 16px;
+    border-radius: 34px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 18px 40px -24px rgba(0,0,0,.35);
+  }
+  html body.customizing[data-page="timer"][data-backdrop]:not(.zen) .timer-card > .glow { display: block; position: absolute; }
+  .cz-btn { padding: 0 12px; }
+}
+
+/* A long press on the dial opens Customize, so it shouldn't select the digits or bring up the callout. */
+.timer-card .dial-wrap { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+/* The timer's dial and the tray each move on their own; everything else crossfades. */
+.cz-morph .timer-card .dial-wrap { view-transition-name: cz-dial; }
+.cz-morph .cz { view-transition-name: cz-tray; }
+.cz-morph::view-transition-old(root) { animation: cz-fade-out .28s ease both; }
+.cz-morph::view-transition-new(root) { animation: cz-fade-in .28s ease both; }
+.cz-morph::view-transition-group(cz-dial) { animation-duration: .46s; animation-timing-function: cubic-bezier(.32, .72, 0, 1); }
+.cz-morph::view-transition-group(cz-tray) { animation-duration: .3s; }
+.cz-morph::view-transition-new(cz-tray):only-child { animation: cz-tray-in .36s cubic-bezier(.32, .72, 0, 1) both; }
+.cz-morph::view-transition-old(cz-tray):only-child { animation: cz-tray-out .2s ease-in both; }
+@media (max-width: 900px) {
+  .cz-morph::view-transition-new(cz-tray):only-child { animation: cz-tray-up .46s cubic-bezier(.32, .72, 0, 1) both; }
+  .cz-morph::view-transition-old(cz-tray):only-child { animation: cz-tray-down .26s cubic-bezier(.4, 0, 1, 1) both; }
+}
+@keyframes cz-fade-out { to { opacity: 0; } }
+@keyframes cz-fade-in { from { opacity: 0; } }
+@keyframes cz-tray-in { from { opacity: 0; transform: translateY(10px) scale(.985); } }
+@keyframes cz-tray-out { to { opacity: 0; transform: translateY(6px); } }
+@keyframes cz-tray-up { from { transform: translateY(calc(100% + 24px)); } }
+@keyframes cz-tray-down { to { transform: translateY(calc(100% + 24px)); } }

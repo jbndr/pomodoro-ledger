@@ -31,7 +31,7 @@ let lastState = "", lastNudge = "";
 
 const TOKENS = ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--accent", "--acc-l", "--acc-c", "--acc-h", "--glow-o", "--ember", "--paper", "--grain-o", "--go-l-max", "--f-display", "--f-body",
   "--fl-top-a", "--fl-top-b", "--fl-bot-a", "--fl-bot-b", "--fl-ink", "--fl-slit", "--fl-colon", "--fl-lift", "--fl-off", "--fl-edge", "--fl-gap", "--mx-off", "--face-glow", "--nx-dot", "--pp-a", "--pp-b", "--pp-edge",
-  "--lcd-a", "--lcd-b", "--mesh-l", "--mesh-c", "--wash-l", "--ht-ink", "--ht-mask", "--page-acc-l", "--page-acc-c", "--f-serif", "--f-mono"];
+  "--lcd-a", "--lcd-b", "--mesh-l", "--mesh-c", "--wash-l", "--ht-ink", "--ht-mask", "--page-acc-l", "--page-acc-c", "--f-serif", "--f-mono", "--f-round", "--wt-a", "--wt-b", "--wt-back", "--fill"];
 
 export function renderFloating(txt: string, frac: number) {
   if (!floatWindow || floatWindow.closed) return;
@@ -40,7 +40,7 @@ export function renderFloating(txt: string, frac: number) {
   const theme = getComputedStyle(document.querySelector(".timer-card") || document.body);
   for (const name of TOKENS) { const v = theme.getPropertyValue(name); if (root.style.getPropertyValue(name) !== v) root.style.setProperty(name, v); }
   root.style.colorScheme = theme.colorScheme;
-  for (const k of ["backdrop", "status"]) if (doc.body.dataset[k] !== document.body.dataset[k]) doc.body.dataset[k] = document.body.dataset[k] || "";
+  for (const k of ["backdrop", "status", "fillJump", "fillReady"]) { const v = document.body.dataset[k] || ""; if (doc.body.dataset[k] !== v) doc.body.dataset[k] = v; }
   if (root.dataset.sky !== document.documentElement.dataset.sky) root.dataset.sky = document.documentElement.dataset.sky || "";
   const flow = T.upKind === "flow" || !!T.flowReady, over = !!T.up && !flow;
   doc.title = txt + " · " + (flow ? "Flow" : MODE_NAME[T.mode]);
@@ -106,8 +106,7 @@ async function openFloating(quiet?: boolean) {
   try {
     opened = await window.documentPictureInPicture!.requestWindow({ width: 320, height: 110 });
     const doc = opened.document;
-    const fontLink = document.querySelector('link[rel="stylesheet"][href*="fonts.googleapis.com"]');
-    if (fontLink) doc.head.appendChild(fontLink.cloneNode());
+    for (const link of document.querySelectorAll('link[rel="stylesheet"][href*="fonts.googleapis.com"]')) doc.head.appendChild(link.cloneNode());
     const style = doc.createElement("style");
     style.textContent = facesCss + `
       * { box-sizing: border-box; }
@@ -165,6 +164,7 @@ async function openFloating(quiet?: boolean) {
       #miniTime .face-words { display: grid; justify-items: start; text-align: left; gap: 1rem; }
       #miniTime .face-words b { font-size: 25rem; line-height: 1; }
       #miniTime .face-words span { font-size: 11.5rem; line-height: 1.15; }
+      #miniTime .face-stack { font-size: 26rem; justify-items: start; }
       .bar[data-ring="tiles"], .bar[data-ring="dots"] { height: 9rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; overflow: visible; background: none; border-radius: 0; }
       .bar .t { position: relative; flex: 1; height: 9rem; border-radius: 1.5rem; background: var(--fl-off); box-shadow: inset 0 0 0 .5px var(--fl-edge); transition: background-color .3s; }
       .bar .t::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - .5px); height: 1px; background: var(--fl-gap); }

@@ -1,7 +1,8 @@
-export type TimerFace = "classic" | "flap" | "matrix" | "nixie" | "vfd" | "lcd" | "odo" | "serif" | "words";
+export type TimerFace = "classic" | "stack" | "flap" | "matrix" | "nixie" | "vfd" | "lcd" | "odo" | "serif" | "words";
 
 export const FACES: [TimerFace, string, string][] = [
   ["classic", "Classic", "The dial as it is: clean numbers on a ring"],
+  ["stack", "Stacked", "Minutes over seconds, big and round, like a watch"],
   ["flap", "Split-flap", "Flaps fall over digit by digit, like a station board"],
   ["matrix", "Dot matrix", "LED dots, with a ring of dots for the time left"],
   ["nixie", "Nixie", "Glowing digits in glass tubes"],
@@ -32,7 +33,7 @@ export function timerRing(v: unknown): TimerRing {
   return RINGS.some(([id]) => id === v) ? (v as TimerRing) : "arc";
 }
 
-export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "sky" | "mesh" | "halftone" | "wash" | "film" | "stars";
+export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "sky" | "water" | "mesh" | "halftone" | "wash" | "film" | "stars";
 
 export const BACKDROPS: [TimerBackdrop, string, string][] = [
   ["glow", "Glow", "A soft glow in the colour of the phase"],
@@ -40,6 +41,7 @@ export const BACKDROPS: [TimerBackdrop, string, string][] = [
   ["paper", "Paper", "Warm, grainy paper"],
   ["aurora", "Aurora", "Colour that drifts slowly while a session runs"],
   ["sky", "Sky", "The sky where you are, from dawn to night"],
+  ["water", "Water", "Fills up as you focus and drains on a break"],
   ["mesh", "Mesh", "Soft colour around the phase, slowly turning"],
   ["halftone", "Halftone", "Print dots in the phase colour, from one corner"],
   ["wash", "Wash", "The whole card in the phase colour"],
@@ -50,6 +52,13 @@ export const BACKDROPS: [TimerBackdrop, string, string][] = [
 /** A stored background, falling back to the glow. */
 export function timerBackdrop(v: unknown): TimerBackdrop {
   return BACKDROPS.some(([id]) => id === v) ? (v as TimerBackdrop) : "glow";
+}
+
+/** How full the Water background is, 0 to 1: it rises through a focus and drains through a break, so it never jumps between them. Flow fills it once an hour. */
+export function waterLevel(mode: string, kind: string, frac: number, upMs: number) {
+  if (kind === "over") return 1;
+  if (kind === "flow") return Math.min(1, upMs / 3_600_000);
+  return mode === "focus" ? 1 - frac : frac;
 }
 
 const GLYPHS: Record<string, string[]> = {

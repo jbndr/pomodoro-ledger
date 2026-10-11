@@ -52,7 +52,7 @@ export function sizeTimer() {
   // The shell gives the card a fixed height; whatever its other rows don't need goes to the dial.
   const fit = () => {
     const cs = getComputedStyle(card), gap = parseFloat(cs.rowGap) || 0;
-    const rows = ([...card.children] as HTMLElement[]).filter((el) => el !== dial && !el.classList.contains("glow") && el.offsetHeight);
+    const rows = ([...card.children] as HTMLElement[]).filter((el) => el !== dial && !el.matches(".glow, .cz-zone") && el.offsetHeight);
     const used = rows.reduce((sum, el) => sum + el.offsetHeight, 0) + gap * rows.length + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     return card.clientHeight - used - 12;
   };

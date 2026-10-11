@@ -46,6 +46,10 @@ export function tickSamples(face: TimerFace, rate: number): Float32Array {
     // A pencil set down on paper: soft, low and woody.
     burst(0, 0.62, 0.01, new Biquad(rate, "lp", 2200, 0.7));
     strike(0, 0.086, [[640, 1, 55], [1210, 0.35, 85]], 150);
+  } else if (face === "stack") {
+    // A watch's haptic tap: a soft, round knock with a hint of the case.
+    at(0, 0.1, (t) => 0.172 * Math.min(1, t / 0.003) * Math.exp(-t * 55) * (Math.sin(TAU * 240 * t) + 0.5 * Math.sin(TAU * 720 * t)));
+    burst(0, 0.26, 0.004, new Biquad(rate, "lp", 2600, 0.7));
   } else if (face === "words") {
     // A typewriter key pressed gently.
     burst(0, 0.64, 0.007, new Biquad(rate, "bp", 2400, 0.9));

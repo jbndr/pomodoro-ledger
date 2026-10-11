@@ -4,6 +4,7 @@
   import { timerView } from "./state.svelte";
   import DialRing from "./DialRing.svelte";
   import FaceDigits from "./FaceDigits.svelte";
+  import { cz } from "../customize/state.svelte";
 
   let { sub, flow = false, mode = "", face = "classic", ring = "arc" } = $props();
 
@@ -36,4 +37,7 @@
     <div class="time" class:counting={timerView.up === "over"} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + (timerView.up === "flow" ? " seconds of flow" : " seconds past the bell") : clockLabel(secs)}><FaceDigits {face} {chars} {mode} up={timerView.up} /></div>
     <div class="dial-sub" id="dialSub">{sub}</div>
   </div>
+  {#if cz.open}
+    {#each [["ring", "Ring"], ["face", "Face"]] as [k, label] (k)}<button class="cz-zone cz-zone-{k}" class:hot={cz.hover === k} type="button" aria-pressed={String(cz.zone === k)} aria-label={"Change the " + label.toLowerCase()} onclick={() => (cz.zone = k)}><span>{label}</span></button>{/each}
+  {/if}
 </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BACKDROPS, FACES, inWords, matrix, MATRIX_ROWS, RINGS, SEGMENTS, timerBackdrop, timerFace, timerRing } from "./faces";
+import { BACKDROPS, FACES, inWords, matrix, MATRIX_ROWS, RINGS, SEGMENTS, timerBackdrop, timerFace, timerRing, waterLevel } from "./faces";
 
 describe("timerFace", () => {
   it("defaults to the classic dial", () => {
@@ -28,6 +28,21 @@ describe("timerBackdrop", () => {
     expect(timerBackdrop(undefined)).toBe("glow");
     expect(timerBackdrop("lava")).toBe("glow");
     for (const [id] of BACKDROPS) expect(timerBackdrop(id)).toBe(id);
+  });
+});
+
+describe("waterLevel", () => {
+  it("rises through a focus and drains through a break, meeting at the bell", () => {
+    expect(waterLevel("focus", "", 1, 0)).toBe(0);
+    expect(waterLevel("focus", "", 0.25, 0)).toBe(0.75);
+    expect(waterLevel("short", "", 1, 0)).toBe(1);
+    expect(waterLevel("long", "", 0.4, 0)).toBe(0.4);
+  });
+
+  it("stays full past the bell and fills once an hour in flow", () => {
+    expect(waterLevel("focus", "over", 1, 90_000)).toBe(1);
+    expect(waterLevel("focus", "flow", 1, 1_800_000)).toBe(0.5);
+    expect(waterLevel("focus", "flow", 1, 7_200_000)).toBe(1);
   });
 });
 

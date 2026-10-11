@@ -12,6 +12,7 @@
   --f-body: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --f-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --f-serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --f-round: "M PLUS Rounded 1c", ui-rounded, "Geist", system-ui, sans-serif;
   --glow-o: .16; --go-l-max: 52%; --ember: 0; --paper: 1; --grain-o: .035; --disc-shade: 0; --tick-lit: 55%; --track-tint: 12%;
   --disc-bg: var(--surface); --disc-lift: 0 1px 2px rgba(20,24,22,.05), 0 14px 34px -14px rgba(20,24,22,.2), inset 0 1px 0 #fff; --disc-inset: 14%;
   --face-bg: .87; --face-fg: .34;

@@ -6,6 +6,7 @@
   --mx-off: color-mix(in oklab, var(--fg) 7%, transparent); --face-glow: 0; --nx-dot: #F0661F;
   --pp-a: oklch(97.6% .012 85); --pp-b: oklch(94.8% .018 75); --pp-edge: rgb(90 60 30 / .07);
   --lcd-a: #CDD5BC; --lcd-b: #B9C2A6; --mesh-l: 88%; --mesh-c: .6; --wash-l: 44%; --ht-ink: 34%;
+  --wt-a: oklch(91% .05 222); --wt-b: oklch(88% .062 232); --wt-back: oklch(93.5% .045 212);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -15,6 +16,7 @@
     --mx-off: color-mix(in oklab, var(--fg) 8%, transparent); --face-glow: 1; --nx-dot: #FFD2A6;
     --pp-a: oklch(24% .012 70); --pp-b: oklch(20.5% .01 60); --pp-edge: rgb(0 0 0 / .35);
     --lcd-a: #B4BDA2; --lcd-b: #A1AA8D; --mesh-l: 31%; --mesh-c: .65; --wash-l: 30%; --ht-ink: 38%;
+    --wt-a: oklch(34% .065 226); --wt-b: oklch(26% .06 238); --wt-back: oklch(29% .05 220);
   }
 }
 :root[data-theme="dark"], body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card, :root[data-sky-ink="dark"] body[data-backdrop="sky"] .timer-card {
@@ -25,7 +27,7 @@
   --pp-a: oklch(24% .012 70); --pp-b: oklch(20.5% .01 60); --pp-edge: rgb(0 0 0 / .35);
   --lcd-a: #B4BDA2; --lcd-b: #A1AA8D;
 }
-:root[data-theme="dark"] { --mesh-l: 31%; --mesh-c: .65; --wash-l: 30%; --ht-ink: 38%; }
+:root[data-theme="dark"] { --mesh-l: 31%; --mesh-c: .65; --wash-l: 30%; --ht-ink: 38%; --wt-a: oklch(34% .065 226); --wt-b: oklch(26% .06 238); --wt-back: oklch(29% .05 220); }
 
 /* Split-flap */
 .face-flap { display: inline-flex; align-items: center; gap: .05em; font: 650 min(19cqw, calc(95cqw / var(--n))) / 1 var(--f-display); font-variation-settings: "opsz" 96; font-variant-numeric: tabular-nums; letter-spacing: 0; }
@@ -106,6 +108,13 @@ body.morphing .dial .mx-ring circle, body.morphing .face-matrix circle { transit
 .face-words b { font: 700 9.5cqw/1.05 var(--f-display); letter-spacing: -.02em; white-space: nowrap; }
 .face-words span { font: 500 4.4cqw/1.2 var(--f-body); letter-spacing: 0; color: var(--muted); }
 
+/* Stacked: minutes over seconds in heavy rounded numerals, each digit in its own cell so nothing shifts */
+.face-stack { display: grid; justify-items: center; padding-bottom: .04em; font: 800 min(26cqw, calc(46cqw / (var(--n) * .64))) / .8 var(--f-round); letter-spacing: 0; font-variation-settings: normal; }
+.face-stack > span { position: relative; display: flex; }
+.face-stack > span > span { width: .64em; text-align: center; }
+.sk-s { color: var(--accent); }
+.sk-m i { position: absolute; right: 100%; top: .16em; font-size: .4em; font-style: normal; line-height: 1; color: var(--muted); }
+
 /* Rings: each face brings its own, and any ring goes with any face. */
 .dial .fl-ring rect { fill: var(--fl-off); stroke: var(--fl-edge); stroke-width: .6; transform-box: fill-box; transform-origin: center; transition: fill .3s; }
 .dial .fl-ring rect.lit, .dial-wrap.flow .dial .fl-ring rect.lead { fill: var(--accent); stroke: none; }
@@ -174,8 +183,31 @@ body[data-backdrop="halftone"] :is(.timer-card, main) > .glow::before, .st-swatc
 .st-swatch[data-backdrop="halftone"] .glow::before { -webkit-mask-size: 200px 200px; mask-size: 200px 200px; }
 [data-backdrop]:not([data-backdrop="glow"]) .glow { inset: var(--scene-inset); background: var(--scene); animation: var(--scene-anim); }
 [data-backdrop]:not([data-backdrop="glow"]) .glow::after { opacity: var(--scene-grain); }
+/* Water: the level follows the session (--fill, set each tick) and two waves drift across it at different speeds. */
+[data-backdrop="water"] { --scene: none; --scene-grain: 0; --wt-level: calc(.1 + var(--fill, 0) * .82); --wt-tile: 260px; --wt-h: 22px;
+  --wt-wave: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='22' preserveAspectRatio='none'%3E%3Cpath d='M0 11Q65 0 130 11T260 11V22H0z'/%3E%3C/svg%3E"); }
+.st-swatch[data-backdrop="water"] { --fill: .45; --wt-tile: 120px; --wt-h: 10px; }
+body[data-backdrop="water"] :is(.timer-card, main) > .glow, .st-swatch[data-backdrop="water"] > .glow { overflow: hidden; }
+body[data-backdrop="water"] :is(.timer-card, main) > .glow::before, .st-swatch[data-backdrop="water"] > .glow::before,
+body[data-backdrop="water"] :is(.timer-card, main) > .glow::after, .st-swatch[data-backdrop="water"] > .glow::after {
+  content: ""; position: absolute; inset: 0 calc(var(--wt-tile) * -1) 0 0; opacity: 1; mix-blend-mode: normal; background-image: none;
+  translate: 0 calc((1 - var(--wt-level)) * 100% - var(--wt-h) / 2);
+  -webkit-mask: var(--wt-wave) 0 0 / var(--wt-tile) var(--wt-h) repeat-x, linear-gradient(#000, #000) 0 calc(var(--wt-h) - 1px) / 100% 100% no-repeat;
+  mask: var(--wt-wave) 0 0 / var(--wt-tile) var(--wt-h) repeat-x, linear-gradient(#000, #000) 0 calc(var(--wt-h) - 1px) / 100% 100% no-repeat;
+}
+body[data-backdrop="water"] :is(.timer-card, main) > .glow::before, .st-swatch[data-backdrop="water"] > .glow::before {
+  translate: 0 calc((1 - var(--wt-level)) * 100% - var(--wt-h) * .9); background: var(--wt-back); animation: water-drift 19s linear infinite reverse;
+  -webkit-mask-position: calc(var(--wt-tile) * .4) 0, 0 calc(var(--wt-h) - 1px); mask-position: calc(var(--wt-tile) * .4) 0, 0 calc(var(--wt-h) - 1px);
+}
+body[data-backdrop="water"] :is(.timer-card, main) > .glow::after, .st-swatch[data-backdrop="water"] > .glow::after { background: linear-gradient(var(--wt-a), var(--wt-b) 75%); animation: water-drift 12s linear infinite; }
+body[data-fill-ready="1"] :is(.timer-card, main) > .glow::before, body[data-fill-ready="1"] :is(.timer-card, main) > .glow::after { transition: translate 1.2s linear; }
+/* A skip, a new phase or a reset moves the level a long way, so it eases there instead of sliding at the steady pace. */
+body[data-fill-ready="1"][data-fill-jump="1"] :is(.timer-card, main) > .glow::before, body[data-fill-ready="1"][data-fill-jump="1"] :is(.timer-card, main) > .glow::after { transition: translate 1.6s cubic-bezier(.45, 0, .2, 1); }
+@keyframes water-drift { to { transform: translateX(calc(var(--wt-tile) * -1)); } }
 /* On a background, the small buttons get a body of their own, and a nudge or Keep going stands out as the one thing to do. */
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card { --pop-fill: calc(4% + var(--face-glow) * 20%); --pop-shade: rgb(0 0 0 / calc(.2 + var(--face-glow) * .4)); }
+/* Dark water is close to the card's own surface, so the nudge takes more of the phase colour to stand clear of it. */
+:root body[data-backdrop="water"] .timer-card { --pop-fill: calc(4% + var(--face-glow) * 34%); }
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card .adjust button { background: color-mix(in oklab, var(--surface) 80%, transparent); }
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card .modes button[aria-selected="false"] { color: var(--muted); }
 @media (hover: hover) { body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card .modes button[aria-selected="false"]:hover { color: var(--fg); } }
@@ -184,10 +216,10 @@ body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .nudge:
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .keep-going { border-color: color-mix(in oklab, var(--tomato) 62%, transparent); background: color-mix(in oklab, var(--tomato) var(--pop-fill), var(--surface)); box-shadow: 0 10px 26px -12px var(--pop-shade); }
 @keyframes scene-call { from { box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 62%, transparent), 0 12px 30px -12px var(--pop-shade), 0 0 0 0 color-mix(in oklab, var(--accent) 45%, transparent); } to { box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 62%, transparent), 0 12px 30px -12px var(--pop-shade), 0 0 0 14px transparent; } }
 
-/* Scenes move only while a session runs, and a preview plays while it's pointed at. */
-body:not([data-status="running"]) :is(.timer-card, main:not(.bell), .st-stage) > .glow,
-body:not([data-status="running"]) :is(.timer-card, main:not(.bell), .st-stage) > .glow::before,
-body:not([data-status="running"]) :is(.timer-card, main:not(.bell), .st-stage) > .glow::after { animation-play-state: paused !important; }
+/* Scenes move only while a session runs or while you customize, and a preview plays while it's pointed at. */
+body:not([data-status="running"]) :is(main:not(.bell), .st-stage) > .glow, body:not([data-status="running"], .customizing) .timer-card > .glow,
+body:not([data-status="running"]) :is(main:not(.bell), .st-stage) > .glow::before, body:not([data-status="running"], .customizing) .timer-card > .glow::before,
+body:not([data-status="running"]) :is(main:not(.bell), .st-stage) > .glow::after, body:not([data-status="running"], .customizing) .timer-card > .glow::after { animation-play-state: paused !important; }
 body .st-face:hover > .st-stage > .glow, body .st-face:hover > .st-stage > .glow::before, body .st-face:hover > .st-stage > .glow::after { animation-play-state: running !important; }
 /* Aurora and Mesh drift in steps: this slowly, a dozen moves a second look the same as sixty and cost far less. */
 @keyframes aurora { 50% { transform: translate(7%, -5%) rotate(12deg) scale(1.1); } 100% { transform: translate(-6%, 6%) rotate(-9deg) scale(1.04); } }
@@ -225,6 +257,8 @@ html body[data-backdrop="wash"] .timer-card {
   /* Without its own layer the card's fixed background sinks below the header and banners instead of covering them. */
   body[data-backdrop]:not([data-backdrop="glow"])[data-page="timer"]:not(.zen) .timer-card { isolation: auto; }
   body.zen[data-page][data-backdrop]:not([data-backdrop="glow"]) .timer-card { background: var(--bg); }
+  /* The water starts above the tab bar, which would otherwise hide its first stretch. */
+  body[data-page="timer"][data-backdrop="water"]:not(.zen, .customizing) { --wt-level: calc(.17 + var(--fill, 0) * .75); }
   /* There the header and tab bar sit on the background too, so they take the card's ink. */
   html body[data-page="timer"]:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) :is(.bar, .tabbar), html[data-sky-ink="dark"] body[data-page="timer"][data-backdrop="sky"] :is(.bar, .tabbar) { --bg: #0E1110; --surface: #161A18; --surface-2: #1D2220; --line: #262C29; --line-2: #353D39; --fg: #E8ECE9; --muted: #A0A9A3; --faint: #6D7671; color: var(--fg); color-scheme: dark; }
   html[data-sky-ink="light"] body[data-page="timer"][data-backdrop="sky"] :is(.bar, .tabbar) { --bg: #EDEFEC; --surface: #FBFCFA; --surface-2: #F2F4F1; --line: #DADED9; --line-2: #C6CCC5; --fg: #141816; --muted: #56605A; --faint: #858F88; color: var(--fg); color-scheme: light; }
