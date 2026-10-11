@@ -75,7 +75,7 @@ function linkChip(t) {
 function taskCard(a, t, c, est, project, subs) {
   const bucket = a.bucketOf(t), ms = a.timeOf(t);
   return {
-    title: t.title, notes: t.notes || "", est, circles: Math.max(8, est + 1), estText: a.plural(est, "cycle"),
+    title: t.title, notes: t.notes || "", est, circles: Math.max(8, est + 1), estText: a.plural(est, "cycle"), pace: a.pacedEst(a.currentPace(), est, project),
     bucket, whenText: bucket === "today" ? "Today" : bucket === "later" ? "When" : a.dayName(t.plan),
     labelName: a.labelChipName(project),
     del: a.S.confirmDel === t.id,

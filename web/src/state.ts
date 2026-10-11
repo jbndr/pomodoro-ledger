@@ -50,6 +50,8 @@ export interface Settings {
   /** The day the best-time suggestion was waved off. */
   bestSeen?: string;
   bestShow?: boolean;
+  /** Planning with how long tasks really take you; unset means on. */
+  pace?: boolean;
   /** The year whose Year in focus was already offered in December. */
   yearSeen?: number;
   /** How the timer changes colour between phases; unset means the wipe. */

@@ -1,7 +1,8 @@
 <script>
+  import { learnPace, tookOf } from "../lib/pace";
   import { ratioWords } from "../lib/patterns";
-  import { estimateAccuracy, spanDays } from "../lib/stats";
-  import { cyclesOf, labelHue, projectOf, timeOf } from "../lib/tasks";
+  import { spanDays } from "../lib/stats";
+  import { labelHue, projectOf, timeOf } from "../lib/tasks";
   import EstDots from "./EstDots.svelte";
 
   let { api, tasks } = $props();
@@ -9,9 +10,11 @@
 
   const RECENT = 8;
   const fin = $derived([...tasks.values()].filter((t) => t.done && !t.system).sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0)));
-  const acc = $derived(estimateAccuracy(fin));
-  const over = $derived(fin.filter((t) => t.est && (t.sessions || []).length && cyclesOf(t) > t.est).length);
-  const rows = $derived((showAll ? fin : fin.slice(0, RECENT)).map((t) => ({ t, took: cyclesOf(t), est: t.est || 0, label: projectOf(t) })));
+  const took = (t) => Math.round(tookOf(t, api.dur("focus")));
+  const pace = $derived(learnPace(fin, api.dur("focus")).all);
+  const timed = $derived(fin.filter((t) => t.est && tookOf(t, api.dur("focus")) > 0));
+  const over = $derived(timed.filter((t) => took(t) > t.est).length);
+  const rows = $derived((showAll ? fin : fin.slice(0, RECENT)).map((t) => ({ t, took: took(t), est: t.est || 0, label: projectOf(t) })));
   const cap = $derived(width && width < 480 ? 10 : 16);
 
   const delta = (r) => (!r.est ? "–" : r.took > r.est ? "+" + (r.took - r.est) : r.took === r.est ? "on plan" : "−" + (r.est - r.took));
@@ -26,11 +29,11 @@
 
 <div class="chart-card finished" id="ledger" bind:clientWidth={width}>
   <h3>How long things take</h3>
-  {#if acc.ratio != null}
-    <p class="answer">Tasks take {ratioWords(acc.ratio)}.</p>
-    <p class="sub">{over} of {api.plural(acc.count, "finished task")} ran past the plan.</p>
+  {#if pace}
+    <p class="answer">Lately, tasks take {ratioWords(pace.ratio)}.</p>
+    <p class="sub">{over} of {api.plural(timed.length, "finished task")} ran past the plan.</p>
   {:else if fin.length}
-    <p class="sub">Finish a task that has an estimate to see plan against reality.</p>
+    <p class="sub">Finish a few tasks that have an estimate to see how long things really take you.</p>
   {/if}
   {#if fin.length}
     <div class="est-legend" aria-hidden="true"><span><i></i>Took, within plan</span><span><i class="u"></i>Plan not needed</span><span><i class="x"></i>Past the plan</span></div>

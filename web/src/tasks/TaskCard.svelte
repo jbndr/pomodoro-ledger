@@ -107,5 +107,5 @@
       <button class="btn small solid" type="button" data-act="focus" onclick={() => api.focus(row.id)}>{@html api.ICON.play}Focus</button>
     </span>
   </div>
-  <div class="card-stats">{card.stats}{#if row.today}<span class="task-start" class:late={!!start?.late} title={start ? start.hint : ""}>{start ? " · " + start.text.replace(/^Starts/, "starts") : ""}</span>{/if}{card.added}</div>
+  <div class="card-stats">{card.stats}{#if card.pace}<span class="est-pace" title={card.pace.text}>{" · ~" + card.pace.cycles + " at your pace"}</span>{/if}{#if row.today}<span class="task-start" class:late={!!start?.late} title={start ? start.hint : ""}>{start ? " · " + start.text.replace(/^Starts/, "starts") : ""}</span>{/if}{card.added}</div>
 </div>

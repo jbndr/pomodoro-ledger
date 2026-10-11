@@ -41,7 +41,7 @@
     return {
       focus: s.focus, short: s.short, long: s.long, longEvery: s.longEvery, goal: s.goal,
       autoBreak: !!s.autoBreak, autoFocus: !!s.autoFocus, sound: !!s.sound, notify: !!s.notify, ticking: !!s.ticking, autoFloat: !!s.autoFloat,
-      weeklyRecap: !!s.weeklyRecap, weeklyPlan: !!s.weeklyPlan, reactions: s.reactions !== false, bestTime: s.bestTime !== false, bestRemind: !!s.bestRemind,
+      weeklyRecap: !!s.weeklyRecap, weeklyPlan: !!s.weeklyPlan, reactions: s.reactions !== false, pace: s.pace !== false, bestTime: s.bestTime !== false, bestRemind: !!s.bestRemind,
       tickVolume: s.tickVolume, tickPace: String(s.tickPace), workdayEnd: s.workdayEnd || "",
       rollover: rolloverMode(s.rollover), phaseMorph: phaseMorph(s.phaseMorph), face: timerFace(s.face), ring: timerRing(s.ring), backdrop: timerBackdrop(s.backdrop),
     };
@@ -52,7 +52,7 @@
   let f = $state(read());
   let sec = $state(savedSection()), sub = $state(""), inside = $state(false);
   let flashOn = $state(false), syncVersion = $state(0), mixVersion = $state(0), extOn = $state(false), listening = $state(false);
-  let dayEnd = $state(read().workdayEnd || "18:00"), bestNote = $state("");
+  let dayEnd = $state(read().workdayEnd || "18:00"), bestNote = $state(""), paceNote = $state("");
   let bodyEl = $state(), nudgeUI = $state(), fadeTop = $state(false), fadeBottom = $state(false);
   let flashT = 0, listenT = 0;
 
@@ -64,6 +64,7 @@
     for (const [k, v] of Object.entries(read())) if (k !== held) f[k] = v;
     if (f.workdayEnd) dayEnd = f.workdayEnd;
     bestNote = api.bestLine();
+    paceNote = api.paceLine();
     mixVersion++;
     flushSync();
   }
@@ -287,6 +288,10 @@
               {@render row("Unfinished tasks", "From earlier days: move them to Today, ask each morning, or keep them where they are", rollover)}
               {@render row("Workday ends", "Today points out tasks that won't fit before then", dayEndCtl)}
             </div></section>
+            <section class="st-grp"><h4>Your pace</h4><div class="st-card">
+              {#snippet pacePlan()}{@render tog("pace", "Plan with your pace")}{/snippet}
+              {@render row("Plan with your pace", "Start times allow for how long your tasks really take", pacePlan)}
+            </div><p class="st-cap">{paceNote}</p></section>
             <section class="st-grp"><h4>Each week</h4><div class="st-card">
               {#snippet recap()}{@render tog("weeklyRecap", "Weekly recap")}{/snippet}
               {#snippet plan()}{@render tog("weeklyPlan", "Offer to plan the week")}{/snippet}

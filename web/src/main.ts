@@ -53,6 +53,7 @@ import { addLink, addSection, addSubtasks, addTask, commitPlacements, pauseRepea
 import { bestIn, bestLine, bestTrack, lineUp, notToday, remindBest, toggleBestShow } from "./tasks/best";
 import { bucketOf, dayName, enterDemo, filterLabel, groupName, guardPreview, inProject, isToday, labelChipName, labelHidden, listHead, markStarted, openOf, preview, sections, shortDay, subsOf, todayKey, viewTasks } from "./tasks/derived";
 import ListFoot from "./tasks/ListFoot.svelte";
+import { currentPace, pacedEst, paceLine } from "./tasks/plan";
 import ListHead from "./tasks/ListHead.svelte";
 import { leaveAsked, leftoverPrompt, moveAsked, newDay } from "./tasks/rollover";
 import BulkBar from "./tasks/BulkBar.svelte";
@@ -95,7 +96,7 @@ const invite = normCode(new URLSearchParams(location.search).get("room") || "");
 const view = ss.get("pl.taskView");
 if (view === "today" || view === "upcoming" || view === "later") S.taskView = view;
 mount(Progress, { target: $(".app"), props: { api: {
-  S, T, remNow, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
+  S, T, remNow, dur, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
   deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap, openPlan, openTimesheet, weekGoals, openYear,
 } } });
 const roomApi = { RM, S, ls, esc, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
@@ -143,7 +144,7 @@ ui.settings = mount(Settings, { target: document.body, props: { api: {
   ensureAudio, playSound, scheduleEnd, cancelEnd, cancelTickPreview, syncTicking, previewTicking,
   previewSoundscape, cancelScapePreview, scapePlaying,
   autoFloatHandler, renderTimer, renderStats, renderEstPick,
-  reactionsChanged, bestLine, DEMO, backup: { exportLedger, planImport, importLedger }, customize: (tab?: string, look?: string) => openCustomize(tab, look),
+  reactionsChanged, bestLine, paceLine, DEMO, backup: { exportLedger, planImport, importLedger }, customize: (tab?: string, look?: string) => openCustomize(tab, look),
 } } }) as SettingsUI;
 ui.customize = mount(Customize, { target: $("main.top"), props: { api: {
   S, renderTimer, sizeTimer, phone, showPage, setZen, zen: () => document.body.classList.contains("zen"), save: () => Store.saveSettings(),
@@ -160,11 +161,11 @@ mount(TaskViews, { target: $(".tasks-head"), props: { api: headApi } });
 mount(ListHead, { target: panel, props: { api: headApi } });
 mount(ListFoot, { target: panel, props: { api: headApi } });
 mount(Composer, { target: panel, anchor: $(".filter-fold"), props: { api: {
-  S, ICON, plural, dayName, todayKey, dur, fmtDur, labelChipName, filterLabel, addTask, calm,
+  S, ICON, plural, dayName, todayKey, dur, fmtDur, labelChipName, filterLabel, addTask, calm, currentPace, pacedEst,
   openWhen, openLabelPop, closeLabelPop, labelKey: (e: KeyboardEvent) => ui.label!.key(e), filterLabels: (q: string) => ui.label!.filter(q),
 } } });
 ui.list = mount(TaskList, { target: panel, anchor: $("#taskFoot"), props: { api: {
-  S, ICON, completing, calm, guardPreview, bestIn,
+  S, ICON, completing, calm, guardPreview, bestIn, currentPace, pacedEst,
   todayKey, bucketOf, isToday, sections, openOf, viewTasks, inProject, cyclesOf, timeOf, projectOf, labelHue, labelChipName, subsOf,
   plural, fmtDur, fmtDate, fmtClock, shortDay, dayName, keyTime, dayKey, addDays, sod, dur, groupName,
   renderTasks, commit: commitPlacements, focusRow, hover: setHover, goalLookup,
