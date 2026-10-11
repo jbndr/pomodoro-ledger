@@ -34,12 +34,13 @@
   }
   const whenNow = (parsed) => parsed.when || api.S.newWhen || (api.S.taskView === "upcoming" ? dayKey(addDays(Date.now(), 1)) : api.S.taskView);
 
+  const paces = $derived.by(() => { composer.version; return open ? api.currentPace() : null; });
   const v = $derived.by(() => {
     composer.version;
     const parsed = parseNew(title), est = parsed.est || api.S.newEst, breaks = breaksBetween(est, api.S.settings.longEvery, api.dur("short"), api.dur("long"));
     return {
       parsed, est, when: whenNow(parsed), label: api.S.newLabel, repeat: parsed.repeat || api.S.newRepeat,
-      circles: Math.max(8, est + 1),
+      circles: Math.max(8, est + 1), pace: api.pacedEst(paces, est, api.S.newLabel),
       estTitle: api.fmtDur(est * api.dur("focus")) + " focus" + (breaks ? " + " + api.fmtDur(breaks) + " breaks" : ""),
     };
   });
@@ -217,6 +218,7 @@
               {/each}
             </span><output id="estOut" title={v.estTitle}>{api.plural(v.est, "cycle")}</output>
           {/if}
+          {#if v.pace && !composer.quick}<span class="est-pace" title={v.pace.text}>~{v.pace.cycles} at your pace</span>{/if}
         </span>
         <span class="spacer"></span>
         <button class="btn small solid" type="submit">Add <kbd>↵</kbd></button>

@@ -334,7 +334,8 @@
   function dayTitle(it) {
     if (!plan) return "";
     const late = plan.end > plan.endAt && !plan.over;
-    return api.plural(it.tasks, "task") + " · " + api.plural(it.cycles, "cycle") + " to go. Focus is pure work time; with breaks adds " + api.fmtDur(plan.breaks) + " of short and long breaks from your settings. Done is when you'd finish if you start now" + (late ? ", after your workday ends at " + api.fmtClock(plan.endAt) : "") + ".";
+    const pace = plan.extra ? " Your pace " + (plan.extra > 0 ? "adds " : "takes off ") + api.plural(Math.abs(plan.extra), "cycle") + ", from how long finished tasks took against their estimates." : "";
+    return api.plural(it.tasks, "task") + " · " + api.plural(it.cycles + plan.extra, "cycle") + " to go." + pace + " Focus is pure work time; with breaks adds " + api.fmtDur(plan.breaks) + " of short and long breaks from your settings. Done is when you'd finish if you start now" + (late ? ", after your workday ends at " + api.fmtClock(plan.endAt) : "") + ".";
   }
 </script>
 
@@ -368,7 +369,7 @@
     {:else if it.kind === "slot"}
       <li class="task-drop" aria-hidden="true" style:height={drag.height + "px"}></li>
     {:else if it.kind === "today"}
-      <li class="group today-head" data-g="today"><span class="vh">Today</span>{#if it.cycles}<div class="day-plan" data-cycles={it.cycles} data-tasks={it.tasks} title={dayTitle(it)}><b {@attach roll}>{api.plural(it.tasks, "task")}</b> · about <strong class="net" {@attach roll}>{plan ? api.fmtDur(plan.focus) : ""}</strong> of focus · done around <strong class="eta" class:late={plan && plan.end > plan.endAt && !plan.over}>{plan ? api.fmtClock(plan.end) : ""}</strong></div>{:else}<span class="day-plan">{it.tasks ? api.plural(it.tasks, "task") + " · all planned cycles done" : "Nothing planned yet"}</span>{/if}<button class="add-sec" type="button" data-addsec title="Add a section, like Morning or Admin" onclick={() => api.addSection()}>+ Section</button></li>
+      <li class="group today-head" data-g="today"><span class="vh">Today</span>{#if it.cycles || plan?.extra > 0}<div class="day-plan" data-cycles={it.cycles} data-tasks={it.tasks} title={dayTitle(it)}><b {@attach roll}>{api.plural(it.tasks, "task")}</b> · about <strong class="net" {@attach roll}>{plan ? api.fmtDur(plan.focus) : ""}</strong> of focus{plan?.extra ? " at your pace" : ""} · done around <strong class="eta" class:late={plan && plan.end > plan.endAt && !plan.over}>{plan ? api.fmtClock(plan.end) : ""}</strong></div>{:else}<span class="day-plan">{it.tasks ? api.plural(it.tasks, "task") + " · all planned cycles done" : "Nothing planned yet"}</span>{/if}<button class="add-sec" type="button" data-addsec title="Add a section, like Morning or Admin" onclick={() => api.addSection()}>+ Section</button></li>
     {:else if it.kind === "section"}
       <li class="group section" class:sec-lifted={lifted.has(it.key)} data-g={it.g}><button class="grip sec-grip" type="button" aria-label={"Move " + secName(it) + ": drag, or press the up and down arrow keys"} title="Drag to reorder">{@html api.ICON.grip}</button><input class="sec-title" type="text" maxlength="60" value={it.title} placeholder="Add a name (optional)" aria-label="Section name, optional" data-sec={it.id} onchange={(e) => api.renameSection(e.currentTarget)} /><span class="sec-time">{secTime(it)}</span><span class="sec-sum">{it.ids.length ? "" : "Drag tasks here"}</span><button class="icon-btn sec-del" type="button" data-secdel={it.id} aria-label={"Remove " + secName(it)} title="Remove section (its tasks join the one above)" onclick={() => api.removeSection(it.id)}>{@html api.ICON.x}</button></li>
     {:else if it.kind === "day"}

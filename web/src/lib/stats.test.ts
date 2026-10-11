@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays, sod } from "./dates";
-import { dayLabels, dayTotals, estimateAccuracy, heatLevel, minuteScale, spanDays, streaks } from "./stats";
+import { dayLabels, dayTotals, heatLevel, minuteScale, spanDays, streaks } from "./stats";
 import type { Session, Task, Tasks } from "./tasks";
 
 // Saturday, 3 October 2026.
@@ -36,25 +36,6 @@ describe("streaks", () => {
   it("ignores days with only partial sessions", () => {
     const days = dayTotals(tasks({ id: "a", title: "A", sessions: [cycle(0), { at: at(1), ms: 5 * MIN }, cycle(2)] }));
     expect(streaks(days, TODAY)).toEqual({ current: 1, best: 1 });
-  });
-});
-
-describe("estimateAccuracy", () => {
-  it("compares cycles taken to cycles planned for finished tasks", () => {
-    const r = estimateAccuracy([
-      { id: "a", title: "A", done: true, est: 2, sessions: [cycle(1), cycle(1), cycle(1)] },
-      { id: "b", title: "B", done: true, est: 2, sessions: [cycle(1)] },
-      { id: "c", title: "C", done: false, est: 5, sessions: [] },
-      { id: "d", title: "D", done: true, sessions: [cycle(1)] },
-      { id: "e", title: "E", done: true, est: 3, sessions: [] },
-    ]);
-    expect(r).toEqual({ ratio: 1, diff: 0, count: 2 });
-  });
-  it("has no ratio before anything with an estimate is finished", () => {
-    expect(estimateAccuracy([])).toEqual({ ratio: null, diff: 0, count: 0 });
-  });
-  it("rounds the difference to whole percent", () => {
-    expect(estimateAccuracy([{ id: "a", title: "A", done: true, est: 3, sessions: [cycle(1), cycle(1), cycle(1), cycle(1)] }]).diff).toBe(33);
   });
 });
 

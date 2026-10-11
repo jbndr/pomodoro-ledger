@@ -31,7 +31,7 @@ export function makeSamples(year = false) {
     mk("x5", "Study for the cloud architect certification", 50, 110, null, spread(110, 1, 0.33, 2)),
     mk("x6", "Write the onboarding guide", 5, 3, null, [[1, 2], [0, 1]]),
     mk("x7", "Prepare the monthly investor update", 3, 0, null, []),
-    mk("x8", "Polish the pricing page", 8, 18, 3, spread(16, 3, 0.85, 3)),
+    mk("x8", "Polish the pricing page", 18, 18, 3, spread(16, 3, 0.85, 3)),
   ];
   list[5].today = list[6].today = true;
   ["Website", "App", "Planning", "App", "Learning", "Writing", "Admin", "Website"].forEach((name, i) => { list[i].project = name; });
@@ -72,16 +72,16 @@ export function sampleBreaks(tasks: Map<string, Task>): BreakEntry[] {
 function yearSamples(now: number, rnd: () => number): Task[] {
   const today = sod(now), from = Math.max(150, Math.round((today - new Date(new Date(now).getFullYear(), 0, 1).getTime()) / 864e5)), to = 15;
   const away = (ago: number) => ago >= 130 && ago <= 145;
-  const plans: [id: string, title: string, label: string, est: number, a: number, b: number][] = [
-    ["y1", "Ship the mobile app v2", "App", 60, 1, 0.55],
-    ["y2", "Hire a product designer", "Admin", 6, 0.86, 0.72],
-    ["y3", "Write the conference talk", "Writing", 24, 0.7, 0.5],
-    ["y4", "Plan the H2 roadmap", "Planning", 8, 0.55, 0.46],
-    ["y5", "Redesign the docs site", "Website", 40, 0.46, 0.2],
-    ["y6", "Migrate billing to Stripe", "App", 30, 0.3, 0],
-    ["y7", "Read Designing Data-Intensive Applications", "Learning", 20, 1, 0],
+  const plans: [id: string, title: string, label: string, pace: number, a: number, b: number][] = [
+    ["y1", "Ship the mobile app v2", "App", 1.2, 1, 0.55],
+    ["y2", "Hire a product designer", "Admin", 1, 0.86, 0.72],
+    ["y3", "Write the conference talk", "Writing", 1.6, 0.7, 0.5],
+    ["y4", "Plan the H2 roadmap", "Planning", 1.4, 0.55, 0.46],
+    ["y5", "Redesign the docs site", "Website", 1.3, 0.46, 0.2],
+    ["y6", "Migrate billing to Stripe", "App", 1.2, 0.3, 0],
+    ["y7", "Read Designing Data-Intensive Applications", "Learning", 1.1, 1, 0],
   ];
-  const tasks = plans.map(([id, title, project, est]) => ({ id, title, project, est, done: true, sessions: [] as Session[], sample: true } as Task));
+  const tasks = plans.map(([id, title, project]) => ({ id, title, project, done: true, sessions: [] as Session[], sample: true } as Task));
   const crunch = (ago: number) => { const f = (ago - to) / (from - to); return f > 0.56 && f < 0.6; };
   const peak = Math.round(to + (from - to) * 0.58);
   for (let ago = from; ago >= to; ago--) {
@@ -102,7 +102,7 @@ function yearSamples(now: number, rnd: () => number): Task[] {
   }
   return tasks.filter((t) => t.sessions!.length).map((t) => {
     t.sessions!.sort((a, b) => a.at - b.at);
-    const first = t.sessions![0].at, last = t.sessions!.at(-1)!.at;
-    return { ...t, createdAt: first - 864e5, doneAt: last + 3600000 };
+    const first = t.sessions![0].at, last = t.sessions!.at(-1)!.at, cycles = t.sessions!.filter((s) => s.full).length;
+    return { ...t, est: Math.max(2, Math.round(cycles / plans.find((p) => p[0] === t.id)![3])), createdAt: first - 864e5, doneAt: last + 3600000 };
   });
 }
