@@ -658,7 +658,6 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .subtask-add input::placeholder { color: var(--faint); }
 .subtask-add .btn { flex: none; }
 .meta-chip.all-done { color: var(--good); }
-.icon-btn.play { color: var(--accent); }
 .icon-btn.danger { color: var(--tomato); width: auto; padding: 0 10px; font-size: 13px; font-weight: 600; }
 .empty { padding: 28px 12px; text-align: center; color: var(--muted); display: grid; gap: 6px; justify-items: center; }
 .empty strong { color: var(--fg); font-family: var(--f-display); font-size: 17px; }
