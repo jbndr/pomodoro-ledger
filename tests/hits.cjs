@@ -12,7 +12,7 @@ const FakeDate = class extends Date {
   static now() { return clock.now ?? Date.now(); }
 };
 const mod = vm.runInNewContext(
-  `const { accessEmail, syncConfigured } = (() => { ${strip('src/sync.js')}; return { accessEmail, syncConfigured }; })();\n${strip('src/hits.js')}\n({ Counts, hit, stats })`,
+  `const { accessEmail, syncConfigured } = (() => { ${strip('src/sync.js')}; return { accessEmail, syncConfigured }; })();\n${strip('src/hits.js')}\n({ Counts, hit, stats, waitlist })`,
   {
     DurableObject: class { constructor(ctx, env) { this.ctx = ctx; this.env = env; } },
     WebSocketRequestResponsePair: class {}, crypto: webcrypto, Date: FakeDate, Response, URL, TextEncoder, TextDecoder, atob, JSON,
@@ -126,4 +126,67 @@ test('json has 30 zero-filled days, newest first, and full-day weekly totals', a
   assert.equal(home.last7['open-app:hero'], 1);
   assert.equal(home.prev7.view, 1);
   assert.deepEqual(Object.keys(data.pages['/features'].last7), ['view', 'open-app:header', 'open-app:end', 'open-app:footer', 'try-demo:end', 'try-demo:footer']);
+});
+
+function waitlistSetup(vars = {}) {
+  const base = setup(vars);
+  const env = { COUNTS: { idFromName: () => 'site', get: () => base.counts }, DEV_USER_EMAIL: 'me@example.test', STATS_EMAILS: 'me@example.test', ...vars };
+  const call = (method, body, headers = { Origin: ORIGIN, 'CF-Connecting-IP': '203.0.113.7' }) => {
+    const url = new URL(ORIGIN + '/api/waitlist');
+    return mod.waitlist(new Request(url, { method, headers, body: JSON.stringify(body) }), env, url);
+  };
+  return { ...base, call };
+}
+
+test('the waitlist keeps one row per address with the plan last looked at', async () => {
+  const { counts, call } = waitlistSetup();
+  at('2026-10-11T12:00:00Z');
+  assert.equal((await call('POST', { email: ' Sam@Example.org ', plan: 'monthly' })).status, 200);
+  assert.equal((await call('POST', { email: 'sam@example.org', plan: 'lifetime' })).status, 200);
+  assert.equal((await call('POST', { email: 'kim@example.org', plan: 'weekly' })).status, 200);
+  clock.now = null;
+  assert.deepEqual(counts.signups().map((s) => [s.email, s.plan]), [['sam@example.org', 'lifetime'], ['kim@example.org', '']]);
+});
+
+test('the waitlist turns away bad addresses, other origins and bots, and lets people leave', async () => {
+  const { counts, call } = waitlistSetup();
+  for (const email of ['', 'nope', 'a@b', '=cmd@example.org', '+1@example.org', 'a,b@example.org', 'x'.repeat(250) + '@example.org', 42]) {
+    assert.equal((await call('POST', { email, plan: 'yearly' })).status, 400, String(email));
+  }
+  assert.equal((await call('POST', { email: 'eve@example.org' }, { Origin: 'https://evil.example' })).status, 403);
+  assert.equal((await call('GET', undefined)).status, 403);
+  assert.equal((await call('POST', { email: 'bot@example.org', website: 'http://spam' })).status, 200);
+  assert.deepEqual(counts.signups(), []);
+  await call('POST', { email: 'sam@example.org', plan: 'yearly' });
+  assert.equal((await call('DELETE', { email: 'Sam@example.org' })).status, 200);
+  assert.deepEqual(counts.signups(), []);
+});
+
+test('the waitlist slows down repeated tries from one connection', async () => {
+  const { counts, call } = waitlistSetup();
+  at('2026-10-11T12:00:00Z');
+  for (let i = 0; i < 5; i++) assert.equal((await call('POST', { email: `p${i}@example.org` })).status, 200);
+  assert.equal((await call('POST', { email: 'p5@example.org' })).status, 429);
+  assert.equal((await call('POST', { email: 'p6@example.org' }, { Origin: ORIGIN, 'CF-Connecting-IP': '198.51.100.2' })).status, 200);
+  at('2026-10-11T12:11:00Z');
+  assert.equal((await call('POST', { email: 'p7@example.org' })).status, 200);
+  clock.now = null;
+  assert.equal(counts.signups().length, 7);
+});
+
+test('stats count the waitlist and export the addresses as CSV behind Access', async () => {
+  const { call, read } = waitlistSetup();
+  at('2026-10-01T09:00:00Z');
+  await call('POST', { email: 'early@example.org', plan: 'lifetime' });
+  at('2026-10-11T09:00:00Z');
+  await call('POST', { email: 'sam@example.org', plan: 'yearly' });
+  const data = await (await read('?format=json')).json();
+  assert.deepEqual(data.waitlist, { total: 2, last7: 1, plans: { monthly: 0, yearly: 1, lifetime: 1, '': 0 } });
+  assert.ok(!JSON.stringify(data).includes('@'));
+  const csv = await read('?format=csv');
+  clock.now = null;
+  assert.match(csv.headers.get('content-type'), /text\/csv/);
+  assert.equal(await csv.text(), 'email,plan,joined\nearly@example.org,lifetime,2026-10-01T09:00:00.000Z\nsam@example.org,yearly,2026-10-11T09:00:00.000Z\n');
+  assert.equal((await read('?format=csv', { STATS_EMAILS: 'someone@example.test' })).status, 403);
+  assert.match(await (await read()).text(), /Pro waitlist/);
 });

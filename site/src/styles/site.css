@@ -74,6 +74,7 @@ kbd { font: 500 .82em/1 var(--f-body); padding: .2em .45em; border-radius: 6px; 
 .btn svg { width: 15px; height: 15px; flex: none; }
 
 .label { display: inline-block; font: 600 14px/1 var(--f-body); color: var(--c, var(--tomato)); margin-bottom: 12px; }
+.pro-chip { display: inline-flex; align-items: center; height: 18px; padding: 0 6px; margin-left: 8px; border-radius: 5px; font: 650 11px/1 var(--f-body); letter-spacing: .02em; color: var(--violet); background: color-mix(in oklab, var(--violet) 13%, transparent); vertical-align: 1px; }
 .muted { color: var(--muted); }
 
 .page-head { padding: 64px 0 32px; }

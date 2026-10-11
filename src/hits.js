@@ -9,6 +9,11 @@ const CTA = { "open-app": "Open the app", "try-demo": "Try the demo", "try-here"
 const SHORT = { "open-app": "Open app", "try-demo": "Demo", "try-here": "Try here" };
 const SPOT = { header: "Header", hero: "Hero", live: "Live demo", end: "End of page", footer: "Footer" };
 const DAYS = 30;
+const PLANS = ["monthly", "yearly", "lifetime"];
+const PLAN_NAMES = { monthly: "Monthly", yearly: "Yearly", lifetime: "Lifetime", "": "No plan picked" };
+// Starts with a letter or digit and has no quotes or commas, so the CSV export can't carry a spreadsheet formula.
+const EMAIL = /^[a-z0-9][a-z0-9._%+-]{0,63}@[a-z0-9-]+(\.[a-z0-9-]+)+$/;
+const MAX_SIGNUPS = 20000;
 
 const events = (p) => ["view", ...Object.entries(PAGES[p]).flatMap(([c, spots]) => spots.map((s) => c + ":" + s))];
 const json = (body, status = 200) =>
@@ -25,13 +30,33 @@ export function hit(request, env, url, ctx) {
   return new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
 }
 
+// Same-origin only. A filled-in hidden field marks a bot: it gets the same answer and nothing is stored.
+export async function waitlist(request, env, url) {
+  if (request.headers.get("Origin") !== url.origin || (request.method !== "POST" && request.method !== "DELETE")) return json({ error: "forbidden" }, 403);
+  const body = await request.json().catch(() => null);
+  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  if (email.length > 254 || !EMAIL.test(email)) return json({ error: "That doesn't look like an email address." }, 400);
+  if (request.method === "DELETE") {
+    await counts(env).leave(email);
+    return json({ ok: true });
+  }
+  if (body.website) return json({ ok: true });
+  const ok = await counts(env).join(email, PLANS.includes(body.plan) ? body.plan : "", request.headers.get("CF-Connecting-IP") || "");
+  return ok ? json({ ok: true }) : json({ error: "Too many tries. Please try again in a few minutes." }, 429);
+}
+
 export async function stats(request, env, url) {
   if (!syncConfigured(env)) return json({ error: "not found" }, 404);
   const email = await accessEmail(request, env);
   if (!email) return json({ error: "signed out" }, 401);
   if (!String(env.STATS_EMAILS || "").toLowerCase().split(",").map((s) => s.trim()).includes(email)) return json({ error: "forbidden" }, 403);
   const now = Date.now(), days = [...Array(DAYS)].map((_, i) => utcDay(now - i * 864e5));
-  const data = summarize(await counts(env).since(days.at(-1)), days);
+  const signups = await counts(env).signups();
+  if (url.searchParams.get("format") === "csv") {
+    const rows = signups.map((s) => [s.email, s.plan, new Date(s.at).toISOString()].join(","));
+    return new Response(["email,plan,joined", ...rows].join("\n") + "\n", { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="pro-waitlist-${days[0]}.csv"`, "cache-control": "no-store" } });
+  }
+  const data = { ...summarize(await counts(env).since(days.at(-1)), days), waitlist: listSummary(signups, now) };
   if (url.searchParams.get("format") === "json") return json(data);
   return new Response(render(data), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" } });
 }
@@ -46,6 +71,12 @@ function summarize(rows, days) {
     pages[p] = { days: days.map((d) => ({ day: d, ...by.get(d) })), last7: sum(days.slice(1, 8)), prev7: sum(days.slice(8, 15)) };
   }
   return { tz: "UTC", today: days[0], pages };
+}
+
+function listSummary(signups, now) {
+  const plans = Object.fromEntries(Object.keys(PLAN_NAMES).map((p) => [p, 0]));
+  for (const s of signups) plans[s.plan in plans ? s.plan : ""]++;
+  return { total: signups.length, last7: signups.filter((s) => now - s.at < 7 * 864e5).length, plans };
 }
 
 const num = (n) => n.toLocaleString("en-US");
@@ -97,6 +128,12 @@ function daily(pg, ctas, today) {
   return `<div class="scroll"><table class="days"><thead><tr><th>Day</th><th>Views</th>${head}<th title="Open the app, per view">Open %</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
+function waitlistCard(w) {
+  const rows = Object.entries(w.plans).filter(([p, n]) => p || n).map(([p, n]) => `<tr><td>${PLAN_NAMES[p]}</td>${cell(n)}</tr>`).join("");
+  return `<div class="tiles two"><div class="tile"><span class="k">On the list</span><span class="v">${num(w.total)}</span><span class="f">${num(w.last7)} in the last 7 days</span></div><div class="tile"><span class="k">Addresses</span><span class="v"><a href="?format=csv">CSV</a></span><span class="f">Email, plan and when they joined</span></div></div>
+<div class="card"><table><thead><tr><th>Plan they were looking at</th><th>People</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
 function render(data) {
   const home = data.pages["/"], feat = data.pages["/features"];
   return `<!doctype html>
@@ -125,6 +162,7 @@ function render(data) {
 <section><h2>Where the clicks come from</h2><div class="card">${spots(home, PAGES["/"])}</div></section>
 <section><h2>Day by day</h2><div class="card">${daily(home, PAGES["/"], data.today)}</div></section>
 <section><h2>Features page</h2><div class="card">${spots(feat, PAGES["/features"])}</div></section>
+<section><h2>Pro waitlist</h2>${waitlistCard(data.waitlist)}</section>
 <footer>Counted by a beacon from the page itself: no cookies, no IP addresses, nothing per visitor, only a number per day. Crawlers that don't run scripts, automated browsers and visitors with Do Not Track or Global Privacy Control aren't counted, so treat the numbers as a floor and compare them with each other.</footer>
 </main>
 </body>
@@ -169,6 +207,8 @@ h2 { font-size: 13px; font-weight: 550; color: var(--muted); margin: 0 0 10px; }
 .card, .tile { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); }
 .card { padding: 16px 18px; }
 .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.tiles.two { grid-template-columns: 1fr 1fr; margin-bottom: 10px; }
+.v a { color: inherit; text-decoration-color: var(--line-2); }
 .tile { display: flex; flex-direction: column; padding: 14px 16px 15px; min-width: 0; }
 .k { font-size: 13px; color: var(--muted); }
 .v { display: flex; align-items: baseline; gap: 8px; margin: 6px 0 4px; font-size: 28px; font-weight: 600; letter-spacing: -.02em; line-height: 1.15; }
@@ -226,6 +266,8 @@ export class Counts extends DurableObject {
     super(ctx, env);
     this.sql = ctx.storage.sql;
     this.sql.exec("CREATE TABLE IF NOT EXISTS hits (day TEXT NOT NULL, page TEXT NOT NULL, event TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, page, event))");
+    this.sql.exec("CREATE TABLE IF NOT EXISTS waitlist (email TEXT PRIMARY KEY, plan TEXT NOT NULL, at INTEGER NOT NULL)");
+    this.tries = new Map();
   }
 
   add(page, event) {
@@ -234,5 +276,24 @@ export class Counts extends DurableObject {
 
   since(day) {
     return this.sql.exec("SELECT day, page, event, n FROM hits WHERE day >= ?", day).toArray();
+  }
+
+  // Tries per connection are kept in memory only, to slow down a script; nothing about the visitor is stored.
+  join(email, plan, ip) {
+    const now = Date.now(), recent = (this.tries.get(ip) || []).filter((t) => now - t < 10 * 60_000);
+    if (recent.length >= 5) return false;
+    if (this.tries.size > 5000) this.tries.clear();
+    this.tries.set(ip, [...recent, now]);
+    if (this.sql.exec("SELECT COUNT(*) AS n FROM waitlist").one().n >= MAX_SIGNUPS) return false;
+    this.sql.exec("INSERT INTO waitlist (email, plan, at) VALUES (?, ?, ?) ON CONFLICT (email) DO UPDATE SET plan = excluded.plan", email, plan, now);
+    return true;
+  }
+
+  leave(email) {
+    this.sql.exec("DELETE FROM waitlist WHERE email = ?", email);
+  }
+
+  signups() {
+    return this.sql.exec("SELECT email, plan, at FROM waitlist ORDER BY at").toArray();
   }
 }

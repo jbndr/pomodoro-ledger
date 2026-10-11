@@ -1,5 +1,5 @@
-export type Feature = { title: string; blurb: string };
-export type Area = { key: string; label: string; title: string; lede: string; color: string; items: Feature[] };
+export type Feature = { title: string; blurb: string; pro?: boolean };
+export type Area = { key: string; label: string; title: string; lede: string; color: string; items: Feature[]; pro?: boolean };
 
 export const AREAS: Area[] = [
   {
@@ -17,7 +17,7 @@ export const AREAS: Area[] = [
     ],
   },
   {
-    key: "looks", label: "Looks", title: "A clock you'll like looking at", color: "var(--violet)",
+    key: "looks", label: "Looks", title: "A clock you'll like looking at", color: "var(--violet)", pro: true,
     lede: "Faces, rings and backgrounds, chosen on the timer itself.",
     items: [
       { title: "Fifteen faces", blurb: "Classic, Stacked, Weight, Numerals, Thermostat, Sport, Bedside, Editorial, Split-flap, Odometer, Nixie, VFD, LCD, Dot matrix and In words. Each ticks in its own sound." },
@@ -33,7 +33,8 @@ export const AREAS: Area[] = [
     lede: "Sound, nudges and a gentle tick, all optional.",
     items: [
       { title: "Soundscapes", blurb: "Rain, ocean, fire and brown noise, generated in the browser so nothing ever loops." },
-      { title: "Mixes", blurb: "Layer up to three sounds, save your mixes, and give breaks a mix of their own." },
+      { title: "Mixes", blurb: "Layer up to three sounds at once, each at its own volume." },
+      { title: "Saved mixes", blurb: "Keep the mixes you like, and give breaks a mix of their own.", pro: true },
       { title: "Break nudges", blurb: "Each break brings one small nudge: rest your eyes, stand up and stretch, or drink some water. Tap it when done." },
       { title: "Your own nudges", blurb: "Write one in plain words, or pick an idea, and choose when it comes up: every few breaks, after a stretch of focus, or at a set time." },
       { title: "Gentle ticking", blurb: "An optional tick during focus, at the pace and volume you like." },
@@ -65,7 +66,7 @@ export const AREAS: Area[] = [
       { title: "Focus by label", blurb: "Hours, share of focus and rounds for each label, over a week, a month or all time." },
       { title: "Weekly recap", blurb: "Total focus, best day, top labels, tasks finished and your streak, against the week before." },
       { title: "Best time of day", blurb: "When your focus actually happens, by hour and weekday, with your strongest window named." },
-      { title: "Year in Focus", blurb: "In December, your year as a story made from your own numbers, with the badges you earned along the way." },
+      { title: "Year in Focus", blurb: "In December, your year as a story made from your own numbers, with the badges you earned along the way.", pro: true },
     ],
   },
   {
@@ -88,6 +89,7 @@ export const AREAS: Area[] = [
       { title: "Export and import", blurb: "Back up everything to one file and restore it, here or on another device." },
       { title: "Backup reminder", blurb: "A gentle reminder now and then to save a copy." },
       { title: "Works offline", blurb: "Install it from your browser and it opens like an app, with or without a connection." },
+      { title: "Sync across devices", blurb: "Sign in, and your tasks, ledger, settings and even a running timer follow you between devices.", pro: true },
     ],
   },
 ];

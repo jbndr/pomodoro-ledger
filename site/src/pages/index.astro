@@ -11,6 +11,7 @@ import Faq from "../components/Faq.astro";
 import Loop from "../components/Loop.astro";
 import Detail from "../components/Detail.astro";
 import YearTease from "../components/YearTease.astro";
+import Pro from "../components/Pro.astro";
 import { SITE } from "../lib";
 import flowL from "../assets/shots/timer-flow-light.webp";
 import flowD from "../assets/shots/timer-flow-dark.webp";
@@ -174,7 +175,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
   </section>
 
   <section class="col chapter" id="year" style="--c: var(--amber)">
-    <span class="label">Your year</span>
+    <span class="label">Your year<span class="pro-chip">Pro</span></span>
     <h2>Your year, wrapped</h2>
     <p>All year, the ledger quietly keeps score. In December it comes together in Year in Focus, a story of your year made entirely from your own numbers. We won't spoil it here.</p>
     <p>There are badges in it too, earned along the way while you weren't looking.</p>
@@ -247,7 +248,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
   </section>
 
   <section class="col chapter" id="looks" style="--c: var(--violet)">
-    <span class="label">Looks</span>
+    <span class="label">Looks<span class="pro-chip">Pro</span></span>
     <h2>A clock you'll like looking at</h2>
     <p>You'll look at this clock a lot, so it might as well be one you like. Pick a face, a ring and a background on the timer itself, the way you'd change a watch face: right-click the dial, or tap the palette.</p>
     <p>Fifteen faces, from split-flap and Nixie tubes to the time written out in words, each with its own tick. Eight rings and eighteen backgrounds, from warm paper and night red to the weather outside your window. Start from a ready-made look, or save a mix of your own and switch back to it in one tap.</p>
@@ -357,6 +358,14 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     </ul>
   </section>
 
+  <section class="col chapter" id="pro" style="--c: var(--violet)">
+    <span class="label">Pro</span>
+    <h2>Free to use. Pro for the extras.</h2>
+    <p>Planning, the timer, the ledger, Your day, best time, break nudges, rooms and soundscapes are free. No account needed, and no limit on how much you track.</p>
+    <p>Pro is for making the timer yours, and for the parts that cost money to run, like keeping your devices in sync. It opens soon. Until then, the timer looks and saved mixes are free for everyone.</p>
+    <div class="pro-piece"><Pro /></div>
+  </section>
+
   <section class="col chapter" id="faq">
     <h2 class="center">Questions</h2>
     <Faq />
@@ -401,6 +410,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
 
 
   .center { text-align: center; margin-bottom: 28px; }
+  .pro-piece { margin-top: 36px; }
 
   .details { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 18px; margin-top: 30px; }
   .pip-scene { position: relative; width: min(560px, 100%); height: 100%; }

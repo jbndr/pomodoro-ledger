@@ -1,0 +1,186 @@
+---
+import Paint from "./Paint.astro";
+const PLANS = [
+  { id: "monthly", tab: "Monthly", price: "2.99", per: "a month", note: "Billed every month." },
+  { id: "yearly", tab: "Yearly", save: "−44%", price: "19.99", per: "a year", note: "About €1.67 a month, billed once a year." },
+  { id: "lifetime", tab: "Lifetime", price: "49", per: "once", note: "Pay once. A founders' price while Pro is new." },
+];
+const START = 1;
+const icon = {
+  looks: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17" fill="currentColor" stroke="none" opacity=".35"/><path d="M12 7.5V12l3 2"/>',
+  sync: '<path d="M4.5 10a7.5 7.5 0 0 1 13.4-3.6L20 9"/><path d="M20 4.5V9h-4.5"/><path d="M19.5 14a7.5 7.5 0 0 1-13.4 3.6L4 15"/><path d="M4 19.5V15h4.5"/>',
+  mix: '<path d="M6 4v16M12 4v16M18 4v16"/><rect x="3.5" y="13" width="5" height="3" rx="1.5" fill="currentColor"/><rect x="9.5" y="7" width="5" height="3" rx="1.5" fill="currentColor"/><rect x="15.5" y="15" width="5" height="3" rx="1.5" fill="currentColor"/>',
+  year: '<path d="M12 3.5l2.4 5 5.4.6-4 3.7 1.1 5.3L12 15.4l-4.9 2.7 1.1-5.3-4-3.7 5.4-.6z"/>',
+};
+const PRO: [keyof typeof icon, string, string][] = [
+  ["looks", "Timer looks", "15 faces, 8 rings and 18 backgrounds, the ready-made looks and your own."],
+  ["sync", "Sync across devices", "Sign in, and your tasks, ledger, settings and even a running timer follow you from laptop to phone."],
+  ["mix", "Saved sound mixes", "Keep the mixes you layer, and give breaks a mix of their own."],
+  ["year", "Year in Focus", "Every December, your year as a story made from your own numbers, with the badges you earned."],
+];
+const plan = PLANS[START];
+---
+<div class="pro wp" data-pro data-plans={JSON.stringify(PLANS)}>
+  <Paint kind="ember" />
+  <div class="sheet">
+    <div class="seg" role="radiogroup" aria-label="Billing">
+      {PLANS.map((p, i) => (
+        <button type="button" role="radio" data-plan={p.id} aria-checked={i === START ? "true" : "false"} tabindex={i === START ? 0 : -1}>{p.tab}{p.save && <em>{p.save}</em>}</button>
+      ))}
+    </div>
+    <p class="price" aria-live="polite">
+      <span class="amount"><span class="cur">€</span><span class="digits" data-digits>{[...plan.price].map((c) => <span>{c}</span>)}</span></span>
+      <span class="per" data-per>{plan.per}</span>
+    </p>
+    <p class="note" data-note>{plan.note}</p>
+    <h3>Pro includes</h3>
+    <ul class="incl">
+      {PRO.map(([i, title, text]) => (
+        <li><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" set:html={icon[i]} /></span><span><b>{title}</b><span>{text}</span></span></li>
+      ))}
+    </ul>
+    <form class="join" data-join novalidate>
+      <div class="row">
+        <label class="sr" for="proEmail">Your email</label>
+        <input id="proEmail" type="email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required maxlength="254">
+        <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <button class="btn primary" type="submit">Tell me when Pro opens</button>
+      </div>
+      <p class="fine" data-msg aria-live="polite">One email when Pro opens, then we delete your address. Prices include VAT.</p>
+    </form>
+    <div class="joined" data-joined hidden>
+      <p><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 10.5l3 3 6-7"/></svg><span>You're on the list. We'll write once, when Pro opens.</span></p>
+      <button type="button" class="undo" data-undo>Remove my address</button>
+    </div>
+  </div>
+</div>
+<style>
+  .pro { padding: 56px 24px; display: grid; place-items: center; }
+  .sheet { width: min(460px, 100%); background: var(--surface); border-radius: 20px; padding: 22px 24px 20px; box-shadow: 0 0 0 1px rgb(20 24 22 / .06), 0 2px 4px rgb(20 24 22 / .06), 0 30px 60px -28px rgb(20 24 22 / .55); }
+
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; border-radius: 11px; background: var(--surface-2); border: 1px solid var(--line); }
+  .seg button { appearance: none; border: 0; background: transparent; height: 32px; border-radius: 8px; font: 550 13.5px/1 var(--f-body); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background-color .2s, color .2s, box-shadow .2s; -webkit-tap-highlight-color: transparent; }
+  .seg button:hover { color: var(--fg); }
+  .seg button[aria-checked="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgb(20 24 22 / .08), 0 0 0 1px rgb(20 24 22 / .06); }
+  .seg em { font-style: normal; font-size: 11.5px; font-weight: 650; color: var(--leaf); }
+
+  .price { display: flex; align-items: baseline; gap: 10px; margin: 26px 0 0; }
+  .amount { display: inline-flex; align-items: baseline; font: 650 56px/1 var(--f-display); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+  .cur { align-self: flex-start; font-size: 28px; margin: 5px 3px 0 0; color: var(--muted); letter-spacing: 0; }
+  .digits { display: inline-flex; overflow: hidden; padding: 2px 0; }
+  .digits span { display: inline-block; }
+  .digits .in { animation: roll .42s cubic-bezier(.2, .9, .25, 1) both; }
+  @keyframes roll { from { transform: translateY(.45em); opacity: 0; filter: blur(2px); } }
+  .per { font-size: 16px; color: var(--muted); }
+  .note { margin: 8px 0 0; font-size: 14px; color: var(--muted); min-height: 1.5em; }
+  .note.in, .per.in { animation: fade .3s ease both; }
+  @keyframes fade { from { opacity: 0; } }
+
+  h3 { font: 600 13px/1 var(--f-body); letter-spacing: 0; color: var(--fg); margin: 24px 0 4px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .incl { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .incl li { display: flex; gap: 12px; padding: 9px 0; }
+  .ic { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; color: var(--violet); background: color-mix(in oklab, var(--violet) 12%, transparent); }
+  .ic svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .incl b { display: block; font: 600 14.5px/1.3 var(--f-body); }
+  .incl li > span:last-child > span { display: block; margin-top: 2px; font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+
+  .join { margin: 18px 0 0; padding-top: 18px; border-top: 1px solid var(--line); }
+  .row { display: flex; gap: 8px; }
+  input { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--surface-2); color: var(--fg); font: 15px var(--f-body); transition: border-color .18s, background-color .18s; }
+  input::placeholder { color: var(--faint); }
+  input:focus { outline: none; border-color: var(--fg); background: var(--surface); }
+  input[aria-invalid="true"] { border-color: var(--tomato); }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+  .join .btn[disabled] { opacity: .6; cursor: progress; }
+  .fine { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--faint); }
+  .fine.err { color: var(--tomato); }
+
+  .joined { margin: 18px 0 0; padding-top: 18px; border-top: 1px solid var(--line); }
+  .joined p { display: flex; align-items: flex-start; gap: 10px; margin: 0; font-size: 14.5px; line-height: 1.5; }
+  .joined svg { flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: 50%; background: color-mix(in oklab, var(--leaf) 16%, transparent); fill: none; stroke: var(--leaf); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .undo { appearance: none; border: 0; background: none; padding: 0; margin: 8px 0 0 30px; font: 13px var(--f-body); color: var(--faint); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; cursor: pointer; }
+  .undo:hover { color: var(--fg); }
+
+  @media (max-width: 640px) {
+    .pro { padding: 28px 12px; }
+    .sheet { padding: 18px 16px 16px; }
+    .row { flex-direction: column; }
+    .row input { flex: none; height: 42px; }
+    .row .btn { height: 42px; }
+    .amount { font-size: 48px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .digits .in, .note.in, .per.in { animation: none; } }
+</style>
+<script>
+  type Plan = { id: string; price: string; per: string; note: string };
+  const KEY = "pl.waitlist";
+  const store = { get: () => { try { return localStorage.getItem(KEY); } catch { return null; } }, set: (v: string | null) => { try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch {} } };
+
+  for (const root of document.querySelectorAll<HTMLElement>("[data-pro]")) {
+    const plans: Plan[] = JSON.parse(root.dataset.plans || "[]");
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>("[data-plan]")];
+    const digits = root.querySelector<HTMLElement>("[data-digits]")!, per = root.querySelector<HTMLElement>("[data-per]")!, note = root.querySelector<HTMLElement>("[data-note]")!;
+    const form = root.querySelector<HTMLFormElement>("[data-join]")!, input = form.querySelector<HTMLInputElement>("input[type=email]")!, hp = form.querySelector<HTMLInputElement>(".hp")!;
+    const send = form.querySelector<HTMLButtonElement>("button[type=submit]")!, msg = form.querySelector<HTMLElement>("[data-msg]")!, fine = msg.textContent || "";
+    const joined = root.querySelector<HTMLElement>("[data-joined]")!, undo = root.querySelector<HTMLButtonElement>("[data-undo]")!;
+    let plan = plans[tabs.findIndex((t) => t.getAttribute("aria-checked") === "true")];
+
+    const replay = (el: HTMLElement) => { el.classList.remove("in"); void el.offsetWidth; el.classList.add("in"); };
+    // Only the digits that change roll in, lined up from the right like the timer's.
+    function show(next: Plan) {
+      const n = Math.max(plan.price.length, next.price.length), was = plan.price.padStart(n), now = next.price.padStart(n);
+      digits.replaceChildren(...[...now].flatMap((c, i) => {
+        if (c === " ") return [];
+        const s = document.createElement("span");
+        s.textContent = c;
+        if (c !== was[i]) s.className = "in";
+        return [s];
+      }));
+      per.textContent = next.per; note.textContent = next.note;
+      if (next.per !== plan.per) replay(per);
+      replay(note);
+      plan = next;
+    }
+    const pick = (i: number, focus = false) => {
+      tabs.forEach((t, j) => { t.setAttribute("aria-checked", String(i === j)); t.tabIndex = i === j ? 0 : -1; });
+      if (focus) tabs[i].focus();
+      if (plans[i].id !== plan.id) show(plans[i]);
+    };
+    tabs.forEach((t, i) => {
+      t.addEventListener("click", () => pick(i));
+      t.addEventListener("keydown", (e) => {
+        const d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+        if (d) { e.preventDefault(); pick((i + d + tabs.length) % tabs.length, true); }
+      });
+    });
+
+    const state = (email: string | null) => { form.hidden = !!email; joined.hidden = !email; };
+    state(store.get());
+    const say = (text: string, err = false) => { msg.textContent = text; msg.classList.toggle("err", err); };
+    const call = (method: string, body: object) => fetch("/api/waitlist", { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) })
+      .then(async (r) => ({ ok: r.ok, error: r.ok ? "" : (await r.json().catch(() => ({}))).error as string | undefined }))
+      .catch(() => ({ ok: false, error: undefined }));
+
+    input.addEventListener("input", () => { input.removeAttribute("aria-invalid"); if (msg.classList.contains("err")) say(fine); });
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = input.value.trim();
+      if (!email || !input.checkValidity()) { input.setAttribute("aria-invalid", "true"); say("That doesn't look like an email address.", true); input.focus(); return; }
+      send.disabled = true;
+      const res = await call("POST", { email, plan: plan.id, website: hp.value });
+      send.disabled = false;
+      if (!res.ok) { say(res.error || "That didn't go through. Please try again.", true); return; }
+      store.set(email); input.value = ""; say(fine); state(email);
+    });
+    undo.addEventListener("click", async () => {
+      const email = store.get();
+      if (!email) { state(null); return; }
+      undo.disabled = true;
+      const res = await call("DELETE", { email });
+      undo.disabled = false;
+      if (!res.ok) return;
+      store.set(null); state(null); say("Removed. Your address is gone from the list.");
+      input.focus();
+    });
+  }
+</script>
