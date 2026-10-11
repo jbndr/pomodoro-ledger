@@ -1,10 +1,10 @@
 /* Timer faces: the same dial in another material. Sizes are in container units of .dial-wrap, so they scale with the dial. */
-:root {
+:root, :root[data-sky-ink="light"] body[data-backdrop="sky"] .timer-card {
   --fl-top-a: #FFFFFF; --fl-top-b: #F6F7F5; --fl-bot-a: #F1F2F0; --fl-bot-b: #E8EAE7; --fl-ink: #161918; --fl-slit: #C3C8C2; --fl-colon: color-mix(in oklab, var(--fg) 62%, transparent);
   --fl-lift: 0 .012em 0 rgba(20,24,22,.06), 0 .05em .1em -.03em rgba(20,24,22,.22);
   --fl-off: #E7EAE6; --fl-edge: rgba(20,24,22,.07); --fl-gap: rgba(20,24,22,.2);
   --mx-off: color-mix(in oklab, var(--fg) 7%, transparent); --face-glow: 0; --nx-dot: #F0661F;
-  --pp-a: oklch(97.6% .012 85); --pp-b: oklch(94.8% .018 75); --pp-edge: rgb(90 60 30 / .07); --sky-l: 92%;
+  --pp-a: oklch(97.6% .012 85); --pp-b: oklch(94.8% .018 75); --pp-edge: rgb(90 60 30 / .07);
   --lcd-a: #CDD5BC; --lcd-b: #B9C2A6; --mesh-l: 88%; --mesh-c: .6; --wash-l: 44%; --ht-ink: 34%;
 }
 @media (prefers-color-scheme: dark) {
@@ -13,16 +13,16 @@
     --fl-lift: 0 .012em 0 rgba(255,255,255,.04), 0 .06em .14em -.02em rgba(0,0,0,.6);
     --fl-off: #262B28; --fl-edge: rgba(255,255,255,.04); --fl-gap: rgba(0,0,0,.6);
     --mx-off: color-mix(in oklab, var(--fg) 8%, transparent); --face-glow: 1; --nx-dot: #FFD2A6;
-    --pp-a: oklch(24% .012 70); --pp-b: oklch(20.5% .01 60); --pp-edge: rgb(0 0 0 / .35); --sky-l: 25%;
+    --pp-a: oklch(24% .012 70); --pp-b: oklch(20.5% .01 60); --pp-edge: rgb(0 0 0 / .35);
     --lcd-a: #B4BDA2; --lcd-b: #A1AA8D; --mesh-l: 31%; --mesh-c: .65; --wash-l: 30%; --ht-ink: 38%;
   }
 }
-:root[data-theme="dark"], body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card {
+:root[data-theme="dark"], body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card, :root[data-sky-ink="dark"] body[data-backdrop="sky"] .timer-card {
   --fl-top-a: #2B302D; --fl-top-b: #232825; --fl-bot-a: #1E2220; --fl-bot-b: #191C1B; --fl-ink: #EDF0EE; --fl-slit: #070808;
   --fl-lift: 0 .012em 0 rgba(255,255,255,.04), 0 .06em .14em -.02em rgba(0,0,0,.6);
   --fl-off: #262B28; --fl-edge: rgba(255,255,255,.04); --fl-gap: rgba(0,0,0,.6);
   --mx-off: color-mix(in oklab, var(--fg) 8%, transparent); --face-glow: 1; --nx-dot: #FFD2A6;
-  --pp-a: oklch(24% .012 70); --pp-b: oklch(20.5% .01 60); --pp-edge: rgb(0 0 0 / .35); --sky-l: 25%;
+  --pp-a: oklch(24% .012 70); --pp-b: oklch(20.5% .01 60); --pp-edge: rgb(0 0 0 / .35);
   --lcd-a: #B4BDA2; --lcd-b: #A1AA8D;
 }
 :root[data-theme="dark"] { --mesh-l: 31%; --mesh-c: .65; --wash-l: 30%; --ht-ink: 38%; }
@@ -136,14 +136,15 @@ body.morphing .dial .fl-ring rect { transition: none; }
   radial-gradient(32% 36% at 70% 40%, oklch(calc(var(--acc-l) + 8%) calc(var(--acc-c) * .85) calc(var(--acc-h) + 55) / calc(var(--glow-o) * 1.6)), transparent 70%),
   radial-gradient(38% 30% at 48% 70%, oklch(calc(var(--acc-l) - 4%) var(--acc-c) calc(var(--acc-h) - 45) / calc(var(--glow-o) * 1.5)), transparent 72%); }
 [data-backdrop="sky"] { --scene: var(--stars, linear-gradient(transparent, transparent)), linear-gradient(180deg, var(--sky-a), var(--sky-b) 62%, var(--sky-c)); --scene-grain: calc(var(--grain-o) * .6); }
-[data-sky="dawn"] { --sky-a: oklch(calc(var(--sky-l) - 4%) .05 285); --sky-b: oklch(var(--sky-l) .06 30); --sky-c: oklch(calc(var(--sky-l) + 3%) .07 75); }
-[data-sky="day"] { --sky-a: oklch(calc(var(--sky-l) - 5%) .07 245); --sky-b: oklch(var(--sky-l) .05 230); --sky-c: oklch(calc(var(--sky-l) + 3%) .025 210); }
-[data-sky="dusk"] { --sky-a: oklch(calc(var(--sky-l) - 5%) .07 295); --sky-b: oklch(var(--sky-l) .09 20); --sky-c: oklch(calc(var(--sky-l) + 2%) .11 55); }
-[data-sky="night"] { --sky-a: oklch(calc(var(--sky-l) - 8%) .05 268); --sky-b: oklch(calc(var(--sky-l) - 4%) .045 262); --sky-c: oklch(var(--sky-l) .04 250); --stars:
-  radial-gradient(1.3px 1.3px at 12% 14%, rgb(255 255 255 / calc(var(--face-glow) * .85)), transparent), radial-gradient(1px 1px at 27% 31%, rgb(255 255 255 / calc(var(--face-glow) * .6)), transparent),
-  radial-gradient(1.1px 1.1px at 44% 9%, rgb(255 255 255 / calc(var(--face-glow) * .7)), transparent), radial-gradient(1px 1px at 63% 22%, rgb(255 255 255 / calc(var(--face-glow) * .55)), transparent),
-  radial-gradient(1.4px 1.4px at 81% 12%, rgb(255 255 255 / calc(var(--face-glow) * .8)), transparent), radial-gradient(1px 1px at 90% 37%, rgb(255 255 255 / calc(var(--face-glow) * .5)), transparent),
-  radial-gradient(1px 1px at 8% 46%, rgb(255 255 255 / calc(var(--face-glow) * .45)), transparent), radial-gradient(1.2px 1.2px at 72% 52%, rgb(255 255 255 / calc(var(--face-glow) * .4)), transparent); }
+/* The sky shows the time where you are in either theme: a bright morning and day, a deep dusk and a starry night. */
+[data-sky="dawn"] { --sky-a: oklch(84% .05 290); --sky-b: oklch(89% .055 35); --sky-c: oklch(92% .065 75); }
+[data-sky="day"] { --sky-a: oklch(83% .075 240); --sky-b: oklch(89% .05 225); --sky-c: oklch(93% .025 205); }
+[data-sky="dusk"] { --sky-a: oklch(23% .06 290); --sky-b: oklch(29% .08 15); --sky-c: oklch(34% .1 48); }
+[data-sky="night"] { --sky-a: oklch(15% .04 268); --sky-b: oklch(19% .045 262); --sky-c: oklch(24% .04 250); --stars:
+  radial-gradient(1.3px 1.3px at 12% 14%, rgb(255 255 255 / .85), transparent), radial-gradient(1px 1px at 27% 31%, rgb(255 255 255 / .6), transparent),
+  radial-gradient(1.1px 1.1px at 44% 9%, rgb(255 255 255 / .7), transparent), radial-gradient(1px 1px at 63% 22%, rgb(255 255 255 / .55), transparent),
+  radial-gradient(1.4px 1.4px at 81% 12%, rgb(255 255 255 / .8), transparent), radial-gradient(1px 1px at 90% 37%, rgb(255 255 255 / .5), transparent),
+  radial-gradient(1px 1px at 8% 46%, rgb(255 255 255 / .45), transparent), radial-gradient(1.2px 1.2px at 72% 52%, rgb(255 255 255 / .4), transparent); }
 [data-backdrop="mesh"] { --scene-inset: -20%; --scene-anim: aurora 34s steps(200) infinite alternate; --scene-grain: calc(var(--grain-o) * 1.5); --scene:
   radial-gradient(42% 42% at 22% 22%, oklch(var(--mesh-l) calc(var(--acc-c) * var(--mesh-c)) var(--acc-h) / .9), transparent 72%),
   radial-gradient(46% 46% at 80% 30%, oklch(calc(var(--mesh-l) + 2%) calc(var(--acc-c) * var(--mesh-c) * .85) calc(var(--acc-h) + 28) / .85), transparent 72%),
@@ -176,6 +177,8 @@ body[data-backdrop="halftone"] :is(.timer-card, main) > .glow::before, .st-swatc
 /* On a background, the small buttons get a body of their own, and a nudge or Keep going stands out as the one thing to do. */
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card { --pop-fill: calc(4% + var(--face-glow) * 20%); --pop-shade: rgb(0 0 0 / calc(.2 + var(--face-glow) * .4)); }
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card .adjust button { background: color-mix(in oklab, var(--surface) 80%, transparent); }
+body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card .modes button[aria-selected="false"] { color: var(--muted); }
+@media (hover: hover) { body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card .modes button[aria-selected="false"]:hover { color: var(--fg); } }
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .nudge:not(.done) { background: color-mix(in oklab, var(--accent) var(--pop-fill), var(--surface)); box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 62%, transparent), 0 12px 30px -12px var(--pop-shade); animation: nudge-in .5s cubic-bezier(.32, .72, 0, 1) both, scene-call 1.6s .4s ease-out 2; }
 @media (hover: hover) { body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .nudge:not(.done):hover { background: color-mix(in oklab, var(--accent) calc(var(--pop-fill) + 7%), var(--surface)); } }
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .keep-going { border-color: color-mix(in oklab, var(--tomato) 62%, transparent); background: color-mix(in oklab, var(--tomato) var(--pop-fill), var(--surface)); box-shadow: 0 10px 26px -12px var(--pop-shade); }
@@ -189,16 +192,20 @@ body .st-face:hover > .st-stage > .glow, body .st-face:hover > .st-stage > .glow
 /* Aurora and Mesh drift in steps: this slowly, a dozen moves a second look the same as sixty and cost far less. */
 @keyframes aurora { 50% { transform: translate(7%, -5%) rotate(12deg) scale(1.1); } 100% { transform: translate(-6%, 6%) rotate(-9deg) scale(1.04); } }
 
-/* Film, Starfield and Wash are dark in either theme, so the card on them takes the dark theme's ink. */
+/* Film, Starfield and Wash are dark in either theme, and the Sky is light by day and dark by night, so the card on them takes that theme's ink. */
 body { --page-acc-l: var(--acc-l); --page-acc-c: var(--acc-c); }
-body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card {
+body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card, body[data-backdrop="sky"] .timer-card {
   --tomato: oklch(var(--t-l) var(--t-c) var(--t-h)); --leaf: oklch(var(--lf-l) var(--lf-c) var(--lf-h)); --sky: oklch(var(--sk-l) var(--sk-c) var(--sk-h)); --good: var(--leaf);
   --accent: oklch(var(--acc-l) var(--acc-c) var(--acc-h)); --accent-soft: color-mix(in oklab, var(--accent) 13%, transparent);
-  color: var(--fg); color-scheme: dark;
+  color: var(--fg);
 }
-/* The light theme's phase colours are too deep for a dark card; lifting them follows the page's colour as it sweeps between phases. */
-:root[data-theme="light"] body:is([data-backdrop="film"], [data-backdrop="stars"]) .timer-card { --acc-l: calc(var(--page-acc-l) * .3 + 55%); }
-@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) body:is([data-backdrop="film"], [data-backdrop="stars"]) .timer-card { --acc-l: calc(var(--page-acc-l) * .3 + 55%); } }
+body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card, :root[data-sky-ink="dark"] body[data-backdrop="sky"] .timer-card { color-scheme: dark; }
+:root[data-sky-ink="light"] body[data-backdrop="sky"] .timer-card { color-scheme: light; }
+/* Each theme's phase colours are made for its own card, so a card in the other theme's ink shifts them, following the page's colour as it sweeps between phases. */
+:root[data-theme="light"] body:is([data-backdrop="film"], [data-backdrop="stars"]) .timer-card, :root[data-theme="light"][data-sky-ink="dark"] body[data-backdrop="sky"] .timer-card { --acc-l: calc(var(--page-acc-l) * .3 + 55%); }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) body:is([data-backdrop="film"], [data-backdrop="stars"]) .timer-card, :root:not([data-theme="dark"])[data-sky-ink="dark"] body[data-backdrop="sky"] .timer-card { --acc-l: calc(var(--page-acc-l) * .3 + 55%); } }
+:root[data-theme="dark"][data-sky-ink="light"] body[data-backdrop="sky"] .timer-card { --acc-l: calc(var(--page-acc-l) - 15%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-sky-ink="light"] body[data-backdrop="sky"] .timer-card { --acc-l: calc(var(--page-acc-l) - 15%); } }
 /* On Wash the card is the phase colour, so whatever is usually in that colour turns to a pale tint of it. */
 html body[data-backdrop="wash"] .timer-card {
   --acc-l: 93%; --acc-c: calc(var(--page-acc-c) * .28);
@@ -219,7 +226,8 @@ html body[data-backdrop="wash"] .timer-card {
   body[data-backdrop]:not([data-backdrop="glow"])[data-page="timer"]:not(.zen) .timer-card { isolation: auto; }
   body.zen[data-page][data-backdrop]:not([data-backdrop="glow"]) .timer-card { background: var(--bg); }
   /* There the header and tab bar sit on the background too, so they take the card's ink. */
-  html body[data-page="timer"]:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) :is(.bar, .tabbar) { --bg: #0E1110; --surface: #161A18; --surface-2: #1D2220; --line: #262C29; --line-2: #353D39; --fg: #E8ECE9; --muted: #A0A9A3; --faint: #6D7671; color: var(--fg); color-scheme: dark; }
+  html body[data-page="timer"]:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) :is(.bar, .tabbar), html[data-sky-ink="dark"] body[data-page="timer"][data-backdrop="sky"] :is(.bar, .tabbar) { --bg: #0E1110; --surface: #161A18; --surface-2: #1D2220; --line: #262C29; --line-2: #353D39; --fg: #E8ECE9; --muted: #A0A9A3; --faint: #6D7671; color: var(--fg); color-scheme: dark; }
+  html[data-sky-ink="light"] body[data-page="timer"][data-backdrop="sky"] :is(.bar, .tabbar) { --bg: #EDEFEC; --surface: #FBFCFA; --surface-2: #F2F4F1; --line: #DADED9; --line-2: #C6CCC5; --fg: #141816; --muted: #56605A; --faint: #858F88; color: var(--fg); color-scheme: light; }
   html body[data-page="timer"][data-backdrop="wash"] :is(.bar, .tabbar) {
     --bg: oklch(calc(var(--wash-l) - 8%) calc(var(--page-acc-c) * .8) var(--acc-h)); --surface: oklch(calc(var(--wash-l) - 4%) calc(var(--page-acc-c) * .85) var(--acc-h)); --surface-2: oklch(calc(var(--wash-l) + 5%) calc(var(--page-acc-c) * .8) var(--acc-h));
     --line: oklch(calc(var(--wash-l) + 13%) calc(var(--page-acc-c) * .7) var(--acc-h)); --line-2: oklch(calc(var(--wash-l) + 22%) calc(var(--page-acc-c) * .6) var(--acc-h));

@@ -30,7 +30,7 @@ export function initFloat() {
 let lastState = "", lastNudge = "";
 
 const TOKENS = ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--accent", "--acc-l", "--acc-c", "--acc-h", "--glow-o", "--ember", "--paper", "--grain-o", "--go-l-max", "--f-display", "--f-body",
-  "--fl-top-a", "--fl-top-b", "--fl-bot-a", "--fl-bot-b", "--fl-ink", "--fl-slit", "--fl-colon", "--fl-lift", "--fl-off", "--fl-edge", "--fl-gap", "--mx-off", "--face-glow", "--nx-dot", "--pp-a", "--pp-b", "--pp-edge", "--sky-l",
+  "--fl-top-a", "--fl-top-b", "--fl-bot-a", "--fl-bot-b", "--fl-ink", "--fl-slit", "--fl-colon", "--fl-lift", "--fl-off", "--fl-edge", "--fl-gap", "--mx-off", "--face-glow", "--nx-dot", "--pp-a", "--pp-b", "--pp-edge",
   "--lcd-a", "--lcd-b", "--mesh-l", "--mesh-c", "--wash-l", "--ht-ink", "--ht-mask", "--page-acc-l", "--page-acc-c", "--f-serif", "--f-mono"];
 
 export function renderFloating(txt: string, frac: number) {

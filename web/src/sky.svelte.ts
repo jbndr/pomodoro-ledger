@@ -9,7 +9,7 @@ const cached = ls.get<Place | null>("pl.here", null);
 /** Roughly where you are, for the Sky background; the next sunrise or sunset for its hint. */
 export const sky = $state<{ here: Place | null; turn: { at: number; rise: boolean } | null }>({ here: cached && Date.now() - cached.at < KEEP ? cached : null, turn: null });
 
-let asking = false, failedAt = 0, target: HTMLElement | null = null, live = false, minutely = 0, fading = 0, last = "";
+let asking = false, failedAt = 0, target: HTMLElement | null = null, live = false, minutely = 0, fading = 0, inking = 0, last = "";
 
 /** Asks the server once where you roughly are; only the Sky background needs it. */
 export function wantPlace() {
@@ -34,7 +34,12 @@ export function applySky(el: HTMLElement, isLive: boolean) {
   const p = sky.here || guessPlace(now), sun = sunPosition(now, p.lat, p.lon), phase = skyPhaseAt(sun.elevation, sun.azimuth);
   sky.turn = nextSunTurn(now, p.lat, p.lon);
   if (el.dataset.sky === phase) return;
-  // A new phase fades in over a minute and a half; the first one, and theme switches, change at once.
-  if (el.dataset.sky) { el.classList.add("sky-fade"); clearTimeout(fading); fading = window.setTimeout(() => el.classList.remove("sky-fade"), 95_000); }
+  const ink = phase === "dawn" || phase === "day" ? "light" : "dark";
+  // A new phase fades in over a minute and a half, and the card's ink flips halfway; the first one changes at once.
+  clearTimeout(inking);
+  if (el.dataset.sky) {
+    el.classList.add("sky-fade"); clearTimeout(fading); fading = window.setTimeout(() => el.classList.remove("sky-fade"), 95_000);
+    inking = window.setTimeout(() => { el.dataset.skyInk = ink; }, 45_000);
+  } else el.dataset.skyInk = ink;
   el.dataset.sky = phase;
 }
