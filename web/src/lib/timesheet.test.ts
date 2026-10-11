@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays } from "./dates";
-import { decimalComma, rangeOf, sessionCycles, sessionStart, sheetFileName, sheetRows, timesheet, toCSV, toTSV } from "./timesheet";
+import { cyclesIn, decimalComma, rangeOf, sessionStart, sheetFileName, sheetRows, timesheet, toCSV, toTSV } from "./timesheet";
 import type { Session, Task, Tasks } from "./tasks";
 
 // Saturday, 3 October 2026; the week started on Monday 28 September.
@@ -29,12 +29,12 @@ describe("rangeOf", () => {
   });
 });
 
-describe("sessionCycles and sessionStart", () => {
+describe("cyclesIn and sessionStart", () => {
   it("counts full cycles, and several for a long one added by hand", () => {
-    expect(sessionCycles({ at: 0, ms: 25 * MIN, full: true })).toBe(1);
-    expect(sessionCycles({ at: 0, ms: 12 * MIN })).toBe(0);
-    expect(sessionCycles({ at: 0, ms: 90 * MIN, full: true, cycles: 3.6 } as Session)).toBe(3);
-    expect(sessionCycles({ at: 0, ms: 90 * MIN, cycles: 3 } as Session)).toBe(0);
+    expect(cyclesIn({ at: 0, ms: 25 * MIN, full: true })).toBe(1);
+    expect(cyclesIn({ at: 0, ms: 12 * MIN })).toBe(0);
+    expect(cyclesIn({ at: 0, ms: 90 * MIN, full: true, cycles: 3.6 } as Session)).toBe(3);
+    expect(cyclesIn({ at: 0, ms: 90 * MIN, cycles: 3 } as Session)).toBe(0);
   });
   it("takes a hand-added start as typed and a timer start from its run", () => {
     const at = addDays(MON, 1) + 10 * HOUR, run = (at - 40 * MIN).toString(36);

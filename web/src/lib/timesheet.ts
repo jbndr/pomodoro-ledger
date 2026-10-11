@@ -32,7 +32,7 @@ const validDay = (k: unknown): DayKey | null => (typeof k === "string" && /^\d{4
 type Logged = Session & { hand?: boolean; cycles?: number };
 
 /** Whole cycles a session counts for. */
-export const sessionCycles = (s: Session): number => {
+export const cyclesIn = (s: Session): number => {
   const n = (s as Logged).cycles;
   return s.full ? (typeof n === "number" && n > 1 ? Math.floor(n) : 1) : 0;
 };
@@ -54,7 +54,7 @@ export function timesheet(tasks: Tasks, range: Range, filter: LabelFilter, by: G
     if (ms <= 0 || !matchesLabel(label, filter)) continue;
     const day = dayKey(sessionStart(s));
     if (day < range.from || day > range.to) continue;
-    const gk = by === "task" ? label : day, cycles = sessionCycles(s);
+    const gk = by === "task" ? label : day, cycles = cyclesIn(s);
     let g = groups.get(gk);
     if (!g) groups.set(gk, (g = { key: gk, label: by === "task" ? label : "", day: by === "day" ? day : "", ms: 0, cycles: 0, rows: [] }));
     const rk = (t.system ? "" : t.id) + (by === "day" ? "|" + label : "");
