@@ -22,6 +22,7 @@
 
 .cz-panel { min-width: 0; }
 .cz .st-faces { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 2px; }
+.cz .st-face.group { grid-column-start: 1; }
 
 /* Wide: every group at once, each one lighting up its part of the timer while you're in it. */
 .cz-scroll { display: grid; align-content: start; gap: 4px; min-height: 0; margin: 0 -14px; padding: 6px 14px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
@@ -44,9 +45,11 @@
 .cz-zone[aria-pressed="true"] > span, .cz-zone.hot > span, .cz-zone:focus-visible > span { opacity: 1; scale: 1; }
 @media (hover: hover) { .cz-zone:hover > span { opacity: 1; scale: 1; } }
 .cz-zone-ring { inset: -1.5%; }
-.cz-zone-face { inset: 20%; z-index: 4; }
-.cz-zone-backdrop { inset: 8px; z-index: 2; border-radius: 24px; }
-.cz-zone-backdrop > span { top: auto; bottom: 0; translate: -50% 50%; }
+/* Just inside the ring, the face's circle holds the widest face, split-flap included. */
+.cz-zone-face { inset: 16.5%; z-index: 4; }
+.cz-zone-face > span { top: auto; bottom: 0; translate: -50% 50%; }
+.cz-zone-backdrop { inset: 12px; z-index: 2; border-radius: 22px; }
+.cz-zone-backdrop > span { left: auto; right: 26px; translate: 0 -50%; }
 body.customizing .timer-card :is(.head-icons, .adjust, #resetBtn, #skipBtn) { opacity: 0 !important; visibility: hidden !important; }
 
 /* Wide screens: the tray takes the task list's place beside the card. */
@@ -69,6 +72,7 @@ body.customizing :is(.bar, .room, .banner, .progress, .tabbar) { opacity: .22; }
     -webkit-mask: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); mask: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); }
   .cz .st-faces::-webkit-scrollbar { display: none; }
   .cz .st-face { flex: 0 0 82px; scroll-snap-align: start; }
+  .cz .st-face.group { margin-left: 14px; }
 }
 /* Phones: the full-screen timer becomes a framed preview above the tray, so the whole background stays in view. */
 @media (max-width: 640px) {

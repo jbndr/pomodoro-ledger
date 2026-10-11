@@ -1,6 +1,6 @@
 <script>
   import { onDestroy, onMount } from "svelte";
-  import { BACKDROPS, FACES, RINGS } from "../lib/faces";
+  import { BACKDROP_GROUPS, BACKDROPS, FACES, RINGS } from "../lib/faces";
   import { clock, knobAt, litTicks } from "../lib/timer";
   import DialRing from "../timer/DialRing.svelte";
   import FaceDigits from "../timer/FaceDigits.svelte";
@@ -66,7 +66,7 @@
 <div class="st-faces" role="radiogroup" tabindex="-1" aria-label={NAME[kind]} bind:this={grid} onkeydown={key}>
   {#each items as [id, label] (id)}
     {@const on = value === id}
-    <button class="st-face" type="button" role="radio" data-id={id} aria-checked={String(on)} tabindex={on ? 0 : -1} onclick={() => { onpick(id); play(id, step); }} {...hover(id)}>
+    <button class="st-face" class:group={kind === "backdrop" && BACKDROP_GROUPS.has(id)} type="button" role="radio" data-id={id} aria-checked={String(on)} tabindex={on ? 0 : -1} onclick={() => { onpick(id); play(id, step); }} {...hover(id)}>
       {#if kind === "face"}
         <span class="st-stage" aria-hidden="true"><span class="time"><FaceDigits face={id} chars={[...clock(secs[id])]} /></span></span>
       {:else if kind === "ring"}

@@ -35,19 +35,23 @@ export function timerRing(v: unknown): TimerRing {
 
 export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "sky" | "water" | "mesh" | "halftone" | "wash" | "film" | "stars";
 
+/** Grouped by kind: flat and printed, then soft colour, then scenes. */
 export const BACKDROPS: [TimerBackdrop, string, string][] = [
-  ["glow", "Glow", "A soft glow in the colour of the phase"],
   ["plain", "Plain", "Nothing behind the dial"],
   ["paper", "Paper", "Warm, grainy paper"],
-  ["aurora", "Aurora", "Colour that drifts slowly while a session runs"],
-  ["sky", "Sky", "The sky where you are, from dawn to night"],
-  ["water", "Water", "Fills up as you focus and drains on a break"],
-  ["mesh", "Mesh", "Soft colour around the phase, slowly turning"],
-  ["halftone", "Halftone", "Print dots in the phase colour, from one corner"],
   ["wash", "Wash", "The whole card in the phase colour"],
   ["film", "Film", "Near-black with moving grain, for the dark"],
+  ["halftone", "Halftone", "Print dots in the phase colour, from one corner"],
+  ["glow", "Glow", "A soft glow in the colour of the phase"],
+  ["aurora", "Aurora", "Colour that drifts slowly while a session runs"],
+  ["mesh", "Mesh", "Soft colour around the phase, slowly turning"],
+  ["sky", "Sky", "The sky where you are, from dawn to night"],
   ["stars", "Starfield", "Stars drifting past at three depths"],
+  ["water", "Water", "Fills up as you focus and drains on a break"],
 ];
+
+/** Where a new group of backgrounds starts. */
+export const BACKDROP_GROUPS = new Set<TimerBackdrop>(["glow", "sky"]);
 
 /** A stored background, falling back to the glow. */
 export function timerBackdrop(v: unknown): TimerBackdrop {
