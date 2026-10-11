@@ -132,27 +132,33 @@ for (const scheme of ["light", "dark"]) {
     },
     async room() {
       page = await open(640, 900);
-      await page.getByRole("button", { name: "Work together" }).click();
-      await page.getByRole("tab", { name: /Private/ }).click();
-      await page.locator("#rName").fill("Sam");
-      await page.locator("#rCreate").click();
+      const name = (p) => p.locator("#room input[placeholder='Shown to people in the room']");
+      await page.getByRole("button", { name: /Work together/ }).click();
+      await page.getByRole("button", { name: "Start a room" }).click();
+      await page.getByRole("radio", { name: "With the link" }).click();
+      await name(page).fill("Sam");
+      await page.getByRole("button", { name: "Start room" }).click();
       await page.waitForTimeout(1200);
-      const code = await page.locator("#stripCode").innerText().then((t) => t.match(/[A-Z2-9]{6}/)[0]);
+      await page.keyboard.press("Escape");
+      const code = await page.locator("#roomStrip").innerText().then((t) => t.match(/[A-Z2-9]{6}/)[0]);
       const mates = [];
-      for (const name of ["Maya", "Jonas"]) {
+      for (const who of ["Maya", "Jonas"]) {
         const ctx = await browser.newContext({ viewport: { width: 1000, height: 740 }, colorScheme: scheme });
         const mate = await ctx.newPage();
         await mate.goto(`${base}/app/?demo=1&embed=1&room=${code}`);
         await mate.waitForTimeout(1200);
-        await mate.locator("#rName").fill(name);
-        await mate.getByRole("button", { name: /^Join/ }).first().click();
+        await name(mate).fill(who);
+        await mate.locator("#room").getByRole("button", { name: "Join", exact: true }).click();
         await mate.waitForTimeout(900);
         mates.push(mate);
       }
+      const later = page.getByRole("button", { name: "Not this week" });
+      if (await later.isVisible()) await later.click();
+      await page.mouse.move(5, 5);
       await page.waitForTimeout(1200);
       const strip = await page.locator("#roomStrip").boundingBox();
       const rbox = { x: Math.round(strip.x - 12), y: Math.round(strip.y - 12), width: Math.round(strip.width + 24), height: Math.round(Math.min(900 - strip.y + 12, 640)) };
-      const react = async (mate, emoji) => { await mate.locator("#reactBtn").click(); await mate.waitForTimeout(250); await mate.getByRole("button", { name: `Send ${emoji}` }).click(); };
+      const react = (mate, emoji) => mate.getByRole("button", { name: `Send ${emoji}` }).click();
       await encode(await record(page, async () => {
         await page.waitForTimeout(900);
         await mates[0].getByRole("button", { name: /^Start/ }).first().click();
