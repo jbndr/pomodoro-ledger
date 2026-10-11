@@ -532,6 +532,9 @@ td.barcell { width: 38%; min-width: 120px; }
 .sec-title { flex: 1; min-width: 0; border: 0; border-radius: 6px; background: transparent; padding: 2px 4px; margin-left: -4px; font: 650 15px var(--f-body); color: var(--fg); text-overflow: ellipsis; }
 @media (hover: hover) { .sec-title:hover { background: var(--surface-2); } }
 .sec-title:focus { outline: none; background: var(--surface-2); }
+.sec-title::placeholder { color: transparent; font-weight: 500; transition: color .15s; }
+.sec-title:focus::placeholder { color: var(--faint); }
+@media (hover: hover) { .group.section:hover .sec-title::placeholder { color: var(--faint); } }
 .tasks .group.section span { font: 12px var(--f-body); color: var(--faint); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tasks .group.section span:empty { display: none; }
 /* The glyph, not the button box, lines up with the right edge of the time column. */

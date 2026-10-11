@@ -62,7 +62,7 @@ export function placed(t: Task, g: string, order: number) {
   return n;
 }
 export const inGroup = (t: Task, g: string) => (g === "today" ? isToday(t) : g.startsWith("sec:") ? isToday(t) && t.section === g.slice(4) : g === "later" ? bucketOf(t) === "later" : bucketOf(t) === "upcoming" && t.plan === g);
-export const groupName = (g: string) => (g === "today" ? "Today" : g === "later" ? "Later" : g.startsWith("sec:") ? sections().find((x) => x.id === g.slice(4))?.title || "section" : dayName(g));
+export const groupName = (g: string) => (g === "today" ? "Today" : g === "later" ? "Later" : g.startsWith("sec:") ? sections().find((x) => x.id === g.slice(4))?.title || "an untitled section" : dayName(g));
 export const viewOf = (g: string) => (g === "later" ? g : g === "today" || g.startsWith("sec:") ? "today" : "upcoming");
 export const quickDays = () => { const now = Date.now(); return { today: "today", tomorrow: dayKey(addDays(now, 1)), week: nextMonday(now), later: "later" }; };
 

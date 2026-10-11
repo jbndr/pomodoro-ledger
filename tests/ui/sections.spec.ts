@@ -33,6 +33,7 @@ test("A section can start at any row and take the rows below it", async ({ page 
   await expect(row.locator(".sec-cut")).toHaveCSS("opacity", "1");
   await row.locator(".sec-cut").click();
   await expect(page.locator(".sec-title:focus")).toHaveCount(0);
+  await expect(page.locator(".sec-title").first()).toHaveValue("");
   await page.locator(".sec-title").first().fill("Admin");
   await page.keyboard.press("Enter");
   await expect.poll(() => rows(page)).toEqual(["Reply to emails", "#Admin", "Standup notes", "Review pull requests", "#Deep work", "Write the report", "Sketch the outline"]);
@@ -40,4 +41,25 @@ test("A section can start at any row and take the rows below it", async ({ page 
   await page.locator(".group.section", { hasText: "" }).nth(1).hover();
   await page.locator('[data-secdel="deep"]').click();
   await expect.poll(() => rows(page)).toEqual(["Reply to emails", "#Admin", "Standup notes", "Review pull requests", "Write the report", "Sketch the outline"]);
+});
+
+test("A section needs no name", async ({ page, isMobile }) => {
+  await open(page);
+  if (isMobile) await page.locator('.tabbar [data-page="tasks"]').click();
+  const head = ["Reply to emails", "Standup notes", "Review pull requests"];
+  await page.locator("[data-addsec]").click();
+  await expect(page.locator(".sec-title:focus")).toHaveValue("");
+  await page.keyboard.press("Enter");
+  await expect.poll(() => rows(page)).toEqual([...head, "#Deep work", "Write the report", "Sketch the outline", "#"]);
+
+  await page.locator('[data-sec="deep"]').fill("");
+  await page.keyboard.press("Enter");
+  await expect.poll(() => rows(page)).toEqual([...head, "#", "Write the report", "Sketch the outline", "#"]);
+  await page.reload();
+  await expect.poll(() => rows(page)).toEqual([...head, "#", "Write the report", "Sketch the outline", "#"]);
+  if (isMobile) await page.locator('.tabbar [data-page="tasks"]').click();
+
+  await page.locator('[data-secdel="deep"]').evaluate((b: HTMLButtonElement) => b.click());
+  await expect(page.locator("#toast")).toContainText("Removed the section. Its tasks joined Today.");
+  await expect.poll(() => rows(page)).toEqual([...head, "Write the report", "Sketch the outline", "#"]);
 });
