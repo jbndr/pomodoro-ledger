@@ -31,7 +31,7 @@
   const lifted = $derived(new Set(sec ? sec.blocks[sec.from].keys : []));
   // Tasks that land in today's best time get a tag. While dragging, it shows where they'd land with the task dropped at the slot.
   const inBest = $derived.by(() => {
-    if (!plan?.best || api.S.taskView !== "today") return new Set();
+    if (!plan?.best || !api.S.settings.bestShow || api.S.taskView !== "today") return new Set();
     if (!drag) return new Set(items.filter((it) => it.kind === "task" && plan.get(it.id)?.best).map((it) => it.id));
     return api.bestIn(shown.flatMap((it) => (it.kind === "slot" ? [drag.id] : it.kind === "task" && it.id !== drag.id ? [it.id] : [])));
   });
