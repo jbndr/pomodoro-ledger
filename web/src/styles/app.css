@@ -693,6 +693,10 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .chart .goal-l { fill: var(--fg); opacity: .75; }
 .chart .val { fill: var(--fg); font-weight: 600; }
 .heat { --stagger: 12ms; }
+/* Beside Focus per day the calendar fills the card's height; the grid sits out of flow so it can't push the row taller. */
+.calendar { grid-template-rows: auto auto minmax(130px, 1fr) auto; }
+.chart.heat { position: relative; }
+.chart.heat svg { position: absolute; inset: 0 auto auto 0; }
 .heat .cell { stroke: var(--surface); stroke-width: 0; rx: 3; transition: fill .5s var(--ease) calc(var(--i, 0) * var(--stagger)); }
 .heat .l0 { fill: var(--heat0); } .heat .l1 { fill: var(--heat1); } .heat .l2 { fill: var(--heat2); } .heat .l3 { fill: var(--heat3); } .heat .l4 { fill: var(--heat4); }
 @starting-style { .heat .cell { fill: var(--heat0); } }
@@ -966,6 +970,13 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .delta.over { color: var(--warn); background: color-mix(in oklab, var(--warn) 14%, transparent); }
 .pick-menu.pop { position: fixed; z-index: 45; right: auto; bottom: auto; width: min(300px, calc(100vw - 24px)); }
 .pick-menu.pop:focus { outline: none; }
+.pick-menu { scrollbar-width: none; }
+.pick-menu::-webkit-scrollbar { display: none; }
+/* Instead of a scrollbar, the list fades out at an edge it runs on past. */
+.pick-menu.pop::before, .pick-menu.pop::after { content: ""; position: sticky; z-index: 1; display: block; height: 28px; margin-inline: -5px; pointer-events: none; opacity: 0; transition: opacity .2s; }
+.pick-menu.pop::before { top: 0; margin-block: -5px -23px; background: linear-gradient(var(--surface) 20%, transparent); }
+.pick-menu.pop::after { bottom: 0; margin-block: -23px -5px; background: linear-gradient(transparent, var(--surface) 80%); }
+.pick-menu.pop.more-up::before, .pick-menu.pop.more-down::after { opacity: 1; }
 .pick-menu.pop kbd { flex: none; }
 .keys-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 28px; align-items: start; }
 .keys-grid h3 { margin: 0 0 4px; font: 650 11px var(--f-body); letter-spacing: .09em; text-transform: uppercase; color: var(--faint); }

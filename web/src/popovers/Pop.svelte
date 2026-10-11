@@ -3,13 +3,20 @@
   import { pop } from "./state.svelte";
 
   let { api } = $props();
-  let ul, items = $state.raw([]), cur = $state(""), idx = $state(0), left = $state(0), top = $state(0);
+  let ul, items = $state.raw([]), cur = $state(""), idx = $state(0), left = $state(0), top = $state(0), more = $state({ up: false, down: false });
   let cb = null, anchor = null;
 
   function move(i) {
     idx = i;
     flushSync();
     ul.children[i]?.scrollIntoView({ block: "nearest" });
+    edges();
+  }
+
+  /** Whether the list runs on past its top or bottom edge, which the fades show instead of a scrollbar. */
+  function edges() {
+    const up = ul.scrollTop > 1, down = ul.scrollTop + ul.clientHeight < ul.scrollHeight - 1;
+    if (up !== more.up || down !== more.down) more = { up, down };
   }
 
   /** A menu of `items` ({ id, title, key?, hue?, none?, meta? }) under `anchor`; `pick` gets the chosen id. */
@@ -59,6 +66,8 @@
 
 <ul
   class="pick-menu pop"
+  class:more-up={more.up}
+  class:more-down={more.down}
   id="pop"
   role="listbox"
   tabindex="-1"
@@ -69,6 +78,7 @@
   onclick={(e) => { const li = at(e); if (li) choose(+li.dataset.i); }}
   onpointermove={(e) => { const li = at(e); if (li && +li.dataset.i !== idx) move(+li.dataset.i); }}
   onkeydown={keydown}
+  onscroll={edges}
 >
   {#each items as o, i (i)}
     <li role="option" data-i={i} aria-selected={String(o.id === cur)} aria-keyshortcuts={o.key || null} class:act={i === idx}>{#if o.hue != null}<i class="label-dot" style:--h={o.hue}></i>{:else if o.none}<i class="label-dot none"></i>{/if}<span>{o.title}</span>{#if o.meta}<em>{o.meta}</em>{/if}{#if o.key}<kbd>{o.key}</kbd>{/if}{@html api.ICON.check}</li>
