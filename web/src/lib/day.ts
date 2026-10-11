@@ -1,10 +1,10 @@
 import { addDays, MIN, sod } from "./dates";
-import { sessionProject, type Task } from "./tasks";
+import { cyclesIn, sessionProject, type Session, type Task } from "./tasks";
 
 export interface BreakEntry { from: number; to: number; long?: boolean; nudge?: string }
 
 export type DayItem =
-  | { kind: "focus"; from: number; to: number; ms: number; title: string; label: string; full: boolean; over?: boolean; flow?: boolean; live?: boolean }
+  | { kind: "focus"; from: number; to: number; ms: number; title: string; label: string; full: boolean; cycles?: number; over?: boolean; flow?: boolean; hand?: boolean; live?: boolean }
   | { kind: "break"; from: number; to: number; long: boolean; nudge?: string; live?: boolean };
 
 const KEEP_DAYS = 30;
@@ -18,6 +18,9 @@ export function runStart(run: string | undefined, at: number, ms: number) {
   return Number.isFinite(t) && t <= at - ms + MIN && t > at - 12 * 60 * MIN ? Math.min(t, at - ms) : at - ms;
 }
 
+/** When a session began; one entered by hand starts its length before its end. */
+export const sessionStart = (s: Session) => (s.hand ? s.at - (s.ms || 0) : runStart(s.run, s.at, s.ms || 0));
+
 /** Adds a finished break, once, keeping a month of them. */
 export function logBreak(log: BreakEntry[] | undefined, b: BreakEntry, now = Date.now()): BreakEntry[] {
   const cut = addDays(sod(now), -KEEP_DAYS), list = (log || []).filter((x) => x.from >= cut && x.from !== b.from);
@@ -29,11 +32,11 @@ export function dayItems(tasks: Iterable<Task>, breaks: BreakEntry[] | undefined
   const from = sod(day), to = addDays(from, 1), out: DayItem[] = [];
   for (const t of tasks) for (const s of t.sessions || []) {
     if (s.at < from || s.at >= to + 12 * 60 * MIN) continue;
-    const start = runStart(s.run, s.at, s.ms || 0);
+    const start = sessionStart(s);
     if (start < from || start >= to) continue;
     out.push({
       kind: "focus", from: start, to: s.at, ms: s.ms || 0, title: t.system ? "Unplanned focus" : t.title, label: sessionProject(t, s), full: !!s.full,
-      ...(s.run?.startsWith("ot-") ? { over: true } : s.run?.startsWith("fl-") ? { flow: true } : {}),
+      ...(s.hand ? { hand: true, cycles: cyclesIn(s) } : s.run?.startsWith("ot-") ? { over: true } : s.run?.startsWith("fl-") ? { flow: true } : {}),
     });
   }
   for (const b of breaks || []) if (b.from >= from && b.from < to) out.push({ kind: "break", from: b.from, to: b.to, long: !!b.long, ...(b.nudge ? { nudge: b.nudge } : {}) });
@@ -57,13 +60,13 @@ export function dayGaps(items: DayItem[]) {
 
 /**
  * Finished cycles and flows that something followed, and how many of them a break followed.
- * Time past the bell continues the cycle before it, so its break counts for both.
+ * Time past the bell continues the cycle before it, so its break counts for both. Time entered by hand had no timer, so no break was due.
  */
 export function breaksTaken(items: DayItem[]) {
   let due = 0, taken = 0;
   const seq: boolean[] = [];
   items.forEach((x, i) => {
-    if (x.kind !== "focus" || x.live || !(x.full || x.flow)) return;
+    if (x.kind !== "focus" || x.live || x.hand || !(x.full || x.flow)) return;
     let j = i + 1;
     while (items[j]?.kind === "focus" && (items[j] as { over?: boolean }).over) j++;
     const next = items[j];
@@ -81,7 +84,7 @@ export function daySummary(items: DayItem[]) {
   let focus = 0, cycles = 0, breaks = 0, rest = 0, long = 0, nudges = 0;
   for (const it of items) {
     if (it.live) continue;
-    if (it.kind === "focus") { focus += it.ms; if (it.full) cycles++; }
+    if (it.kind === "focus") { focus += it.ms; cycles += it.cycles ?? (it.full ? 1 : 0); }
     else { breaks++; if (it.long) long += it.to - it.from; else rest += it.to - it.from; if (it.nudge) nudges++; }
   }
   const idle = dayGaps(items).reduce((n, g) => n + g.to - g.from, 0);

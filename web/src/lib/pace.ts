@@ -1,8 +1,8 @@
-import { projectOf, type Session, type Task } from "./tasks";
+import { cyclesIn, projectOf, type Session, type Task } from "./tasks";
 
 /** Cycles a session is worth: logged cycles as logged, anything else (flow, past the bell, stopped early) by its length. */
 export function sessionCycles(s: Session, focusMs: number): number {
-  if (s.full) { const n = (s as { cycles?: number }).cycles; return n && n > 1 ? Math.floor(n) : 1; }
+  if (s.full) return cyclesIn(s);
   return focusMs > 0 ? (s.ms || 0) / focusMs : 0;
 }
 

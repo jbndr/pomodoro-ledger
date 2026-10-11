@@ -35,7 +35,7 @@
     </div>
   </div>
   <p class="best-line" class:quiet={!best}>
-    {#if best}{best.text.replace("–", "\u2060–\u2060")}{:else if g.sessions}Needs a few more sessions to find your best time.{:else}No focus logged in this period.{/if}
+    {#if best}{best.text.replace("–", "\u2060–\u2060")}{:else if g.sessions}Needs a few more sessions to find your best time.{:else if g.hand}Sessions added by hand don't count toward your best time.{:else}No focus logged in this period.{/if}
   </p>
   {#if g.sessions}
     <div class="chart heat" bind:clientWidth={width}>

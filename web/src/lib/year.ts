@@ -1,7 +1,7 @@
 import { addDays, dayKey, keyTime, type DayKey } from "./dates";
 import { bestWindow, ENOUGH, hourGrid, weekday, type FocusWindow } from "./insights";
 import type { DayTotal } from "./stats";
-import { sessionProject, type Tasks } from "./tasks";
+import { cyclesIn, sessionProject, type Tasks } from "./tasks";
 
 export interface YearLabel { name: string; ms: number; cycles: number }
 export interface Run { days: number; from: number; to: number }
@@ -69,8 +69,10 @@ export function yearStats(tasks: Tasks, year: number, now = Date.now()): YearSta
       if (!s.ms || s.at < start || s.at >= next) continue;
       const k = dayKey(s.at), d = days.get(k) || { ms: 0, cycles: 0 }, name = sessionProject(t, s);
       sessions++; ms += s.ms; d.ms += s.ms; months[new Date(s.at).getMonth()] += s.ms;
-      if (s.full) {
-        cycles++; d.cycles++;
+      const n = cyclesIn(s);
+      cycles += n; d.cycles += n;
+      // Early bird and night owl count the timer's start times, not guessed ones.
+      if (n && !s.hand) {
         const h = startHour(s);
         if (h >= 4 && h < 8) early++;
         else if (h >= 21 || h < 4) late++;
@@ -79,7 +81,7 @@ export function yearStats(tasks: Tasks, year: number, now = Date.now()): YearSta
       (blocks.get(k) || blocks.set(k, []).get(k)!).push({ from: s.at - s.ms, to: s.at });
       if (name) {
         const l = byLabel.get(name) || { name, ms: 0, cycles: 0 };
-        l.ms += s.ms; if (s.full) l.cycles++;
+        l.ms += s.ms; l.cycles += n;
         byLabel.set(name, l);
       }
     }

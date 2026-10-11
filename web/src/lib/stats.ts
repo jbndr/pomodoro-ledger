@@ -1,5 +1,5 @@
 import { addDays, dayKey, keyTime, sod, type DayKey } from "./dates";
-import { sessionProject, type Task, type Tasks } from "./tasks";
+import { cyclesIn, sessionProject, type Task, type Tasks } from "./tasks";
 
 export interface DayTotal {
   ms: number;
@@ -11,7 +11,7 @@ export function dayTotals(tasks: Tasks): Map<DayKey, DayTotal> {
   for (const t of tasks.values()) for (const s of t.sessions || []) {
     const k = dayKey(s.at), o = m.get(k) || { ms: 0, cycles: 0 };
     o.ms += s.ms || 0;
-    if (s.full) o.cycles++;
+    o.cycles += cyclesIn(s);
     m.set(k, o);
   }
   return m;

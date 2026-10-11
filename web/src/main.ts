@@ -34,7 +34,7 @@ import LabelPop from "./popovers/LabelPop.svelte";
 import Pop from "./popovers/Pop.svelte";
 import { pop } from "./popovers/state.svelte";
 import WhenPop from "./popovers/WhenPop.svelte";
-import { deleteSession, labelSession, moveItems, moveSession } from "./progress/actions";
+import { addSession, busyNow, deleteSession, editSession, labelSession, moveItems, moveSession } from "./progress/actions";
 import Progress from "./progress/Progress.svelte";
 import Recap from "./progress/Recap.svelte";
 import Timesheet from "./progress/Timesheet.svelte";
@@ -95,9 +95,10 @@ setZen(false);
 const invite = normCode(new URLSearchParams(location.search).get("room") || "");
 const view = ss.get("pl.taskView");
 if (view === "today" || view === "upcoming" || view === "later") S.taskView = view;
+const sessionApi = { busyNow, addSession, editSession, moveItems, openPop, closePop, popHidden: () => pop.hidden };
 mount(Progress, { target: $(".app"), props: { api: {
-  S, T, remNow, dur, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
-  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap, openPlan, openTimesheet, weekGoals, openYear,
+  ...sessionApi, S, T, remNow, dur, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
+  deleteSession, labelSession, moveSession, openLabelPop, reopen: reopenTask, openRecap, openPlan, openTimesheet, weekGoals, openYear,
 } } });
 const roomApi = { RM, S, ls, esc, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
   roomReact, reactWait, reactionsOn, roomSignal, roomGoal, openPop, closePop, popHidden: () => pop.hidden };
@@ -165,7 +166,7 @@ mount(Composer, { target: panel, anchor: $(".filter-fold"), props: { api: {
   openWhen, openLabelPop, closeLabelPop, labelKey: (e: KeyboardEvent) => ui.label!.key(e), filterLabels: (q: string) => ui.label!.filter(q),
 } } });
 ui.list = mount(TaskList, { target: panel, anchor: $("#taskFoot"), props: { api: {
-  S, ICON, completing, calm, guardPreview, bestIn, currentPace, pacedEst,
+  ...sessionApi, S, ICON, completing, calm, guardPreview, bestIn, currentPace, pacedEst,
   todayKey, bucketOf, isToday, sections, openOf, viewTasks, inProject, cyclesOf, timeOf, projectOf, labelHue, labelChipName, subsOf,
   plural, fmtDur, fmtDate, fmtClock, shortDay, dayName, keyTime, dayKey, addDays, sod, dur, groupName,
   renderTasks, commit: commitPlacements, focusRow, hover: setHover, goalLookup,

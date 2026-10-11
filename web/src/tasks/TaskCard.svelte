@@ -1,9 +1,13 @@
 <script>
   import { tick } from "svelte";
+  import { cubicOut } from "svelte/easing";
+  import { slide } from "svelte/transition";
+  import { calm } from "../dom";
   import { DOTS, MAX_EST } from "../lib/estimate";
+  import SessionForm from "../progress/SessionForm.svelte";
   let { api, row, card, start } = $props();
   const MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg>', PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 6v12M6 12h12"/></svg>';
-  let notesTimer = 0, linking = $state(false), linkEl = $state();
+  let notesTimer = 0, linking = $state(false), linkEl = $state(), logging = $state(false), logBtn = $state();
 
   function notesInput(e) {
     clearTimeout(notesTimer);
@@ -42,6 +46,15 @@
   }
   function linkKey(e) {
     if (e.key === "Escape") { e.stopPropagation(); linking = false; }
+  }
+
+  function log() {
+    if (!api.guardPreview()) logging = true;
+  }
+  async function logged() {
+    logging = false;
+    await tick();
+    logBtn?.focus({ preventScroll: true });
   }
 
   function pasteSubs(e) {
@@ -107,5 +120,9 @@
       <button class="btn small solid" type="button" data-act="focus" onclick={() => api.focus(row.id)}>{@html api.ICON.play}Focus</button>
     </span>
   </div>
-  <div class="card-stats">{card.stats}{#if card.pace}<span class="est-pace" title={card.pace.text}>{" · ~" + card.pace.cycles + " at your pace"}</span>{/if}{#if row.today}<span class="task-start" class:late={!!start?.late} title={start ? start.hint : ""}>{start ? " · " + start.text.replace(/^Starts/, "starts") : ""}</span>{/if}{card.added}</div>
+  <div class="card-stats">
+    <span>{card.stats}{#if card.pace}<span class="est-pace" title={card.pace.text}>{" · ~" + card.pace.cycles + " at your pace"}</span>{/if}{#if row.today}<span class="task-start" class:late={!!start?.late} title={start ? start.hint : ""}>{start ? " · " + start.text.replace(/^Starts/, "starts") : ""}</span>{/if}{card.added}</span>
+    {#if !logging}<button class="card-link-new card-log" type="button" bind:this={logBtn} onclick={log}>{@html api.ICON.clock}Add a session</button>{/if}
+  </div>
+  {#if logging}<div class="card-log-form" transition:slide={{ duration: calm() ? 0 : 240, easing: cubicOut }}><SessionForm {api} taskId={row.id} onclose={logged} /></div>{/if}
 </div>

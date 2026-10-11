@@ -31,6 +31,10 @@
     ["Timesheet row dot", ".ts-item .ts-name", ".label-dot", "span"],
     ["Timesheet menu dot", ".ts-menu", ".label-dot", "span"],
     ["Timesheet button icon", ".ts-foot .st-btn", "svg", ":scope"],
+    ["Session form picker", ".sf-pick", "svg", "span"],
+    ["Session form time", ".sf-span", ".sf-time", ".sf-len", "block"],
+    ["Session form for", ".sf-span", ".sf-for", ".sf-len", "block"],
+    ["Add a session icon", ".card-log", "svg", ":scope"],
   ];
   const firstLine = (el) => {
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {

@@ -40,6 +40,12 @@ describe("yearStats", () => {
     expect(y.early).toBe(1);
     expect(y.late).toBe(1);
   });
+  it("counts cycles entered by hand, but not toward early bird or night owl", () => {
+    const h = yearStats(tasks({ id: "a", title: "A", project: "App", sessions: [cycle(5, 7, 30, { hand: true, ms: 50 * MIN, cycles: 2 }), cycle(6, 23, 0, { hand: true })] }), 2026, NOW);
+    expect(h).toMatchObject({ cycles: 3, early: 0, late: 0 });
+    expect(h.labels[0].cycles).toBe(3);
+    expect(h.days.get(dayKey(addDays(JAN, 5)))!.cycles).toBe(2);
+  });
   it("is not partial for a past year", () => {
     expect(yearStats(new Map(), 2025, NOW)).toMatchObject({ partial: false, end: JAN, active: 0, bestMonth: null, busiest: null, streak: null, gap: null, persona: null });
   });

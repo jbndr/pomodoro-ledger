@@ -20,6 +20,11 @@ describe("dayTotals", () => {
     expect(days.get("2026-10-03")).toEqual({ ms: 50 * MIN, cycles: 2 });
     expect(days.get("2026-10-02")).toEqual({ ms: 10 * MIN, cycles: 0 });
   });
+  it("counts each cycle a session entered by hand stands for", () => {
+    const m = dayTotals(tasks({ id: "a", title: "A", sessions: [cycle(0, { ms: 60 * MIN, hand: true, cycles: 2 }), { at: at(1), ms: 20 * MIN, hand: true }] }));
+    expect(m.get("2026-10-03")).toEqual({ ms: 60 * MIN, cycles: 2 });
+    expect(m.get("2026-10-02")).toEqual({ ms: 20 * MIN, cycles: 0 });
+  });
 });
 
 describe("streaks", () => {

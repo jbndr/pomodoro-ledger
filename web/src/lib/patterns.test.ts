@@ -18,6 +18,7 @@ describe("sessionKind", () => {
     expect(sessionKind({ at: 0, ms: 50 * MIN, run: "fl-abc" })).toBe("flow");
     expect(sessionKind({ at: 0, ms: 8 * MIN, run: "ot-abc" })).toBe("over");
     expect(sessionKind({ at: 0, ms: 12 * MIN, run: "abc" })).toBe("early");
+    expect(sessionKind({ at: 0, ms: 50 * MIN, run: "fl-abc", hand: true, full: true })).toBe("hand");
   });
 });
 
@@ -41,6 +42,10 @@ describe("labelTotals", () => {
     expect(m.get("")).toEqual({ ms: 40 * MIN, cycles: 0 });
     expect(labelTotals(all, addDays(MON, -7), MON).get("App")).toEqual({ ms: 25 * MIN, cycles: 1 });
   });
+  it("counts every cycle a session entered by hand stands for", () => {
+    const all = tasks(t("a", "App", [ses(MON, 1, 10, 0, 75, { hand: true, full: true, cycles: 3 })]));
+    expect(labelTotals(all, MON, addDays(MON, 7)).get("App")).toEqual({ ms: 75 * MIN, cycles: 3 });
+  });
 });
 
 describe("timerHabits", () => {
@@ -52,6 +57,10 @@ describe("timerHabits", () => {
     expect(h.over).toEqual([10 * MIN, 0]);
     expect(h.stopped).toEqual([{ ms: 12 * MIN, title: "A", label: "Admin" }]);
     expect(h.flows).toEqual([{ ms: 50 * MIN, title: "A", label: "Admin" }]);
+  });
+  it("leaves out time entered by hand, even a corrected flow", () => {
+    const sessions = [ses(MON, 0, 9, 0, 12, { full: false, hand: true }), ses(MON, 0, 11, 0, 60, { run: "fl-1", hand: true, full: true, cycles: 2 }), ses(MON, 0, 12, 0, 8, { run: "ot-1", hand: true })];
+    expect(timerHabits(tasks({ id: "a", title: "A", sessions }), [], [MON])).toMatchObject({ breaks: [], over: [0], overN: 0, stopped: [], flows: [] });
   });
 });
 
@@ -69,5 +78,9 @@ describe("journal", () => {
     const a: Task = { id: "a", title: "Write", project: "Writing", sessions: [ses(MON, 1, 9), ses(MON, 1, 10, 0, 25, { project: "" })] };
     expect(journal(tasks(a), "project:Writing")[0].tasks[0].sessions.map((s) => s.key)).toEqual(["a:0"]);
     expect(journal(tasks(a), "none")[0].tasks[0].label).toBe("");
+  });
+  it("marks time entered by hand and starts it where the user said", () => {
+    const a: Task = { id: "a", title: "Write", sessions: [ses(MON, 1, 10, 0, 40, { hand: true, run: "fl-" + (addDays(MON, 1) + 8 * HOUR).toString(36) })] };
+    expect(journal(tasks(a))[0].tasks[0].sessions[0]).toMatchObject({ kind: "hand", from: addDays(MON, 1) + 9 * HOUR + 20 * MIN, ms: 40 * MIN });
   });
 });

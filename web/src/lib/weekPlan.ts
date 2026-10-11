@@ -2,7 +2,7 @@ import { addDays, dayKey, keyTime, type DayKey } from "./dates";
 import { weekday, weekStart } from "./insights";
 import { sameLabel, type Label } from "./labels";
 import { carriedOver } from "./rollover";
-import { projectOf, sessionProject, type Task, type Tasks } from "./tasks";
+import { cyclesIn, projectOf, sessionProject, type Task, type Tasks } from "./tasks";
 
 export interface Objective { label: string; target: number; name?: string }
 
@@ -60,7 +60,7 @@ export function objectiveProgress(tasks: Tasks, plan: WeekPlan): ObjectiveProgre
     const o = out.find((x) => sameLabel(x.label, sessionProject(t, s)));
     if (!o) continue;
     o.ms += s.ms || 0;
-    if (s.full) o.cycles++;
+    o.cycles += cyclesIn(s);
   }
   for (const o of out) o.hit = o.cycles >= o.target;
   return out;
@@ -120,7 +120,7 @@ export function labelChoices(tasks: Tasks, labels: Label[], week: DayKey): Label
     if (!name || s.at < from || s.at >= to || labels.some((l) => l.archived && sameLabel(l.name, name))) continue;
     const c = add(name);
     c.ms += s.ms || 0;
-    if (s.full) c.cycles++;
+    c.cycles += cyclesIn(s);
   }
   const used = (name: string) => labels.find((l) => sameLabel(l.name, name))?.lastUsed || 0;
   return [...by.values()].sort((a, b) => b.ms - a.ms || used(b.name) - used(a.name) || a.name.localeCompare(b.name));

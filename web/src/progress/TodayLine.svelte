@@ -28,7 +28,7 @@
 <div class="today-line" id="todayLine">
   <div class="tl-row">
     <span class="tl-v" {@attach roll}>{#each parts(t.ms) as [n, unit], i (i)}{i ? " " : ""}{n}<small>{unit}</small>{/each}</span>
-    <div class="tl-cycles" data-tip="Every finished focus block counts as one cycle. Stopped sessions over a minute still count toward focus time.">
+    <div class="tl-cycles" data-tip="Every finished focus block counts as one cycle, and a session added by hand one for each full focus length in it. Stopped sessions over a minute still count toward focus time.">
       {#if goal <= SEGMENTS}
         <span class="tl-segs" role="img" aria-label="{t.cycles} of {goal} cycles">{#each { length: goal } as _, i (i)}<i class:on={i < t.cycles} style:--i={i}></i>{/each}</span>
       {:else}

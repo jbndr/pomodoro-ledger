@@ -25,6 +25,11 @@ describe("hourGrid", () => {
     expect(g.sessions).toBe(1);
     expect(g.ms[2][9]).toBe(25 * MIN);
   });
+  it("leaves out times entered by hand", () => {
+    const g = hourGrid(tasks({ id: "a", title: "A", sessions: [cycle(MON, 1, 9), cycle(MON, 1, 22, 0, { hand: true })] }));
+    expect(g).toMatchObject({ total: 25 * MIN, sessions: 1, hand: 1 });
+    expect(g.hours[21]).toBe(0);
+  });
   it("numbers weekdays from Monday", () => {
     expect(weekday(MON)).toBe(0);
     expect(weekday(NOW)).toBe(5);

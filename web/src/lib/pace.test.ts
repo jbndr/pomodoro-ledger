@@ -14,7 +14,8 @@ describe("sessionCycles", () => {
     expect(sessionCycles(cycle({ ms: 50 * MIN }), FOCUS)).toBe(1);
   });
   it("counts a cycle entered by hand as the cycles it says", () => {
-    expect(sessionCycles({ ...cycle({ ms: 75 * MIN }), cycles: 3 } as Session, FOCUS)).toBe(3);
+    expect(sessionCycles(cycle({ ms: 75 * MIN, hand: true, cycles: 3 }), FOCUS)).toBe(3);
+    expect(sessionCycles({ at: NOW, ms: 20 * MIN, hand: true }, FOCUS)).toBeCloseTo(0.8);
   });
   it("counts flow, time past the bell and stopped cycles by their length", () => {
     expect(sessionCycles({ at: NOW, ms: 50 * MIN, run: "fl-abc" }, FOCUS)).toBe(2);

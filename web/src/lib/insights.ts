@@ -14,14 +14,17 @@ export interface HourGrid {
   total: number;
   sessions: number;
   days: number;
+  /** Sessions entered by hand, which stay out of the grid. */
+  hand: number;
 }
 
-/** Focus by weekday and hour for sessions that ended in [since, until), split across the hours they ran in. */
+/** Focus by weekday and hour for sessions that ended in [since, until), split across the hours they ran in. Times entered by hand are guesses, so they stay out. */
 export function hourGrid(tasks: Tasks, since = 0, until = Infinity): HourGrid {
   const ms = [...Array(7)].map(() => Array<number>(24).fill(0)), hours = Array<number>(24).fill(0), days = new Set<DayKey>();
-  let total = 0, sessions = 0;
+  let total = 0, sessions = 0, hand = 0;
   for (const t of tasks.values()) for (const s of t.sessions || []) {
     if (!s.ms || s.at < since || s.at >= until) continue;
+    if (s.hand) { hand++; continue; }
     sessions++; total += s.ms; days.add(dayKey(s.at));
     for (let end = s.at, left = s.ms; left > 0;) {
       const d = new Date(end - 1), from = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()).getTime(), part = Math.min(left, end - from);
@@ -30,7 +33,7 @@ export function hourGrid(tasks: Tasks, since = 0, until = Infinity): HourGrid {
       left -= part; end = from;
     }
   }
-  return { ms, hours, total, sessions, days: days.size };
+  return { ms, hours, total, sessions, days: days.size, hand };
 }
 
 /** Below this, a best time would be a guess. */

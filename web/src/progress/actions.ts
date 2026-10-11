@@ -1,7 +1,12 @@
 import { toast } from "../chrome/notice.svelte";
-import { clone, S } from "../state";
+import { fmtClock, fmtDur } from "../format";
+import { MIN } from "../lib/dates";
+import { runStart, sessionStart } from "../lib/day";
+import { busySpans, handSession, type Busy } from "../lib/manual";
+import { clone, S, T } from "../state";
 import { Labels, Store } from "../store";
 import { openOf, unplanned } from "../tasks/derived";
+import { remNow } from "../timer/engine";
 
 /** A session by its "<task id>:<index>" key. */
 function sesAt(key: string) {
@@ -32,6 +37,37 @@ export function labelSession(key: string, name: string) {
   s.project = name ? Labels.use(name) : "";
   Store.saveTask(task);
   toast(name ? "Session labeled “" + s.project + "”." : "Label removed from this session.");
+}
+
+/** Logged sessions to keep a new one clear of, with the focus running now; `skip` is the session being changed. */
+export function busyNow(skip = ""): Busy[] {
+  const out = busySpans(S.tasks, skip), now = Date.now();
+  if (T.mode === "focus" && T.status !== "idle") {
+    const done = T.up ? now - T.up : Math.max(0, (T.total || 0) - remNow()), t = S.activeId && S.tasks.get(S.activeId);
+    out.push({ key: "", from: T.up || runStart(T.run, now, done), to: now, title: t ? t.title : "Unplanned focus" });
+  }
+  return out;
+}
+
+/** Adds a session entered by hand to a task, or to unplanned focus; returns its key. */
+export function addSession(taskId: string, start: number, ms: number) {
+  const s = handSession(start, ms, S.settings.focus * MIN), t = clone((taskId && S.tasks.get(taskId)) || unplanned(s.at));
+  t.sessions = [...(t.sessions || []), s].sort((a, b) => a.at - b.at);
+  Store.saveTask(t);
+  toast("Added " + fmtDur(ms) + " to “" + t.title + "”.");
+  return t.id + ":" + t.sessions.indexOf(s);
+}
+
+/** Sets a session's start and length by hand, which marks it as entered by hand. */
+export function editSession(key: string, start: number, ms: number) {
+  const r = sesAt(key); if (!r) return;
+  const old = r.t.sessions![r.i];
+  if (start === sessionStart(old) && ms === old.ms) return;
+  const task = clone(r.t), s = handSession(start, ms, S.settings.focus * MIN, old);
+  task.sessions![r.i] = s;
+  task.sessions!.sort((a, b) => a.at - b.at);
+  Store.saveTask(task);
+  toast("Changed to " + fmtClock(start) + "–" + fmtClock(s.at) + ", " + fmtDur(ms) + ".");
 }
 
 /** Where a session can move: no task, any open task, or a finished one. */

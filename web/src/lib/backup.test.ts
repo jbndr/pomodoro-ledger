@@ -38,7 +38,7 @@ describe("buildFile", () => {
 describe("round trip", () => {
   const source = ledger(
     [
-      task("t1", 100, { project: "Work", sessions: [{ at: 50, ms: 1500000, full: true, run: "r1" }], subtasks: [{ id: "s1", title: "Draft", done: true }], notes: "hi", plan: "2026-10-05" }),
+      task("t1", 100, { project: "Work", sessions: [{ at: 50, ms: 1500000, full: true, run: "r1" }, { at: 9000000, ms: 3300000, hand: true, full: true, cycles: 2 }], subtasks: [{ id: "s1", title: "Draft", done: true }], notes: "hi", plan: "2026-10-05" }),
       task("t2", 200, { done: true, doneAt: 190, repeat: { every: "day" }, series: "t2" }),
       task("u1", 300, { system: true, sessions: [{ at: 60, ms: 30000 }] }),
     ],
@@ -65,7 +65,7 @@ describe("round trip", () => {
     expect(r.profileChanged).toBe(false);
   });
   it("summarises what the file holds", () => {
-    expect(summary(roundTrip(source))).toBe("2 tasks, 2 sessions, 1 label, settings");
+    expect(summary(roundTrip(source))).toBe("2 tasks, 3 sessions, 1 label, settings");
   });
 });
 
@@ -167,6 +167,12 @@ describe("merge", () => {
     const r = applyImport(ledger([mine]), imported([task("a", 100, { sessions: [{ at: 10 }, { at: 5 }] })]), "merge", DEF);
     expect(r.tasks.get("a")!.sessions).toEqual([{ at: 5 }, { at: 10 }]);
     expect(r.changed).toHaveLength(1);
+  });
+  it("keeps a session fixed by hand here over the file's timer copy of it", () => {
+    const mine = task("a", 300, { sessions: [{ at: 40, ms: 20, run: "fl-1", hand: true }] });
+    const r = applyImport(ledger([mine]), imported([task("a", 100, { sessions: [{ at: 90, ms: 70, run: "fl-1" }] })]), "merge", DEF);
+    expect(r.tasks.get("a")!.sessions).toEqual([{ at: 40, ms: 20, run: "fl-1", hand: true }]);
+    expect(r.changed).toEqual([]);
   });
   it("doesn't copy a session that was moved to another task here", () => {
     const here = ledger([task("a", 300, { sessions: [] }), task("b", 300, { sessions: [{ at: 10, run: "r1" }] })]);
