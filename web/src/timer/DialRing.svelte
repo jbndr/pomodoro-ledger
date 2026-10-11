@@ -1,4 +1,5 @@
 <script>
+  import { fade } from "svelte/transition";
   import { calm } from "../dom";
   import { arcOffset, CIRCUMFERENCE, TICKS } from "../lib/timer";
 
@@ -13,7 +14,8 @@
   const arc = (a0, a1, r) => { if (a1 - a0 < .3) return ""; const [x0, y0] = at(a0, r), [x1, y1] = at(Math.min(a1, a0 + 359.98), r); return `M${x0} ${y0}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1} ${y1}`; };
   const p = $derived(Math.max(0, prog ?? 1 - frac));
 
-  // Closing: past 1 the ring laps itself, so its head turns from the top again.
+  // Closing: the gradient spans the whole circle, so a short arc is one colour and starts as a single round dot.
+  // Past 1 the ring laps itself, so its head turns from the top again.
   const lap = $derived(p > 1);
   const head = $derived(lap ? (p * 360) % 360 : p * 360);
   const tip = $derived.by(() => { const a = (head * Math.PI) / 180; return { x: 50 + 40 * Math.sin(a), y: 50 - 40 * Math.cos(a), sx: Math.cos(a) * 1.6, sy: Math.sin(a) * 1.6 }; });
@@ -44,12 +46,12 @@
 </script>
 
 {#if ring === "close"}
-  <div class="dial cl-ring" aria-hidden="true">
+  <div class="dial cl-ring" style:--mix="{(Math.min(1, p) * 100).toFixed(2)}%" aria-hidden="true">
     <i class="cl-band cl-track"></i>
     <i class="cl-band cl-fill" class:lap style:--deg="{head.toFixed(2)}deg"></i>
-    {#if p > .004}
-      {#if !lap}<i class="cl-cap cl-start"></i>{/if}
-      <i class="cl-cap cl-end" class:over={lap || p > .965} style:left="{tip.x.toFixed(3)}%" style:top="{tip.y.toFixed(3)}%" style:--sx="{tip.sx.toFixed(2)}cqw" style:--sy="{tip.sy.toFixed(2)}cqw"></i>
+    {#if p > 0}
+      {#if !lap}<i class="cl-cap cl-start" in:fade={{ duration: calm() ? 0 : 240 }}></i>{/if}
+      <i class="cl-cap cl-end" in:fade={{ duration: calm() ? 0 : 240 }} class:over={lap || p > .965} style:left="{tip.x.toFixed(3)}%" style:top="{tip.y.toFixed(3)}%" style:--sx="{tip.sx.toFixed(2)}cqw" style:--sy="{tip.sy.toFixed(2)}cqw"></i>
     {/if}
   </div>
 {:else}

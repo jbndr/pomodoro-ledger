@@ -1,5 +1,6 @@
 export type TimerFace = "classic" | "stack" | "weight" | "numerals" | "thermo" | "sport" | "bedside" | "flap" | "matrix" | "nixie" | "vfd" | "lcd" | "odo" | "serif" | "words";
 
+/** Grouped by kind: plain numbers, then numbers made of something (flaps, wheels, tubes, segments, dots), then words. */
 export const FACES: [TimerFace, string, string][] = [
   ["classic", "Classic", "The dial as it is: clean numbers on a ring"],
   ["stack", "Stacked", "Minutes over seconds, big and round, like a watch"],
@@ -8,15 +9,18 @@ export const FACES: [TimerFace, string, string][] = [
   ["thermo", "Thermostat", "Thin numbers with the seconds raised small"],
   ["sport", "Sport", "Bold italic figures, like a sports watch"],
   ["bedside", "Bedside", "Big soft numbers with a faint glow, for a dark room"],
+  ["serif", "Editorial", "Big italic minutes, seconds set small"],
   ["flap", "Split-flap", "Flaps fall over digit by digit, like a station board"],
-  ["matrix", "Dot matrix", "LED dots, with a ring of dots for the time left"],
+  ["odo", "Odometer", "Number wheels that roll over and settle"],
   ["nixie", "Nixie", "Glowing digits in glass tubes"],
   ["vfd", "VFD", "Cyan segments behind fine glass, like an old hi-fi"],
   ["lcd", "LCD", "A reflective watch display, each segment with its shadow"],
-  ["odo", "Odometer", "Number wheels that roll over and settle"],
-  ["serif", "Editorial", "Big italic minutes, seconds set small"],
+  ["matrix", "Dot matrix", "LED dots, with a ring of dots for the time left"],
   ["words", "In words", "The time left, written out"],
 ];
+
+/** Where a new group of faces starts. */
+export const FACE_GROUPS = new Set<TimerFace>(["flap", "words"]);
 
 /** A stored timer face, falling back to the classic dial. */
 export function timerFace(v: unknown): TimerFace {

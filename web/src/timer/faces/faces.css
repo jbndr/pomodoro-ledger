@@ -164,11 +164,11 @@ body.morphing .dial .fl-ring rect { transition: none; }
 .cl-ring i { position: absolute; display: block; }
 .cl-band { inset: 5.5%; border-radius: 50%; -webkit-mask: radial-gradient(closest-side, transparent 79.3%, #000 79.9%, #000 99.4%, transparent 100%); mask: radial-gradient(closest-side, transparent 79.3%, #000 79.9%, #000 99.4%, transparent 100%); }
 .cl-track { background: color-mix(in oklab, var(--accent) calc(15% + var(--face-glow) * 8%), transparent); }
-.cl-fill { background: conic-gradient(var(--cl-a), var(--cl-b) var(--deg), transparent var(--deg)); }
+.cl-fill { background: conic-gradient(var(--cl-a), color-mix(in oklab, var(--cl-a), var(--cl-b) var(--mix)) var(--deg), transparent var(--deg)); }
 .cl-fill.lap { background: conic-gradient(from var(--deg), var(--cl-a), var(--cl-b)); }
 .cl-cap { width: 9%; aspect-ratio: 1; border-radius: 50%; translate: -50% -50%; }
 .cl-start { left: 50%; top: 10%; background: var(--cl-a); }
-.cl-end { background: var(--cl-b); }
+.cl-end { background: color-mix(in oklab, var(--cl-a), var(--cl-b) var(--mix)); }
 .cl-end.over { box-shadow: var(--sx) var(--sy) 1.6cqw rgb(0 0 0 / .55); }
 .dial-wrap.flow .cl-ring { opacity: .4; }
 /* Ticks: fine ticks round three quarters of the dial, lit from now to the bell */
