@@ -20,7 +20,7 @@ export const AREAS: Area[] = [
     key: "looks", label: "Looks", title: "A clock you'll like looking at", color: "var(--violet)",
     lede: "Faces, rings and backgrounds, chosen on the timer itself.",
     items: [
-      { title: "Ten faces", blurb: "Classic, Stacked, Split-flap, Dot matrix, Nixie, VFD, LCD, Odometer, Editorial and In words. Each ticks in its own sound." },
+      { title: "Fifteen faces", blurb: "Classic, Stacked, Weight, Numerals, Thermostat, Sport, Bedside, Editorial, Split-flap, Odometer, Nixie, VFD, LCD, Dot matrix and In words. Each ticks in its own sound." },
       { title: "Rings", blurb: "An arc, tiles that turn over, LED dots or a glowing filament, or no ring at all, with any face." },
       { title: "Backgrounds", blurb: "Twelve of them, from plain and warm paper to Aurora, Starfield, and Water that fills up as you focus." },
       { title: "Sky and Weather", blurb: "The sky where you are, from dawn to night, or the clouds, rain and snow outside." },

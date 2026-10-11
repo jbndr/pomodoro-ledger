@@ -1,28 +1,41 @@
-export type TimerFace = "classic" | "stack" | "flap" | "matrix" | "nixie" | "vfd" | "lcd" | "odo" | "serif" | "words";
+export type TimerFace = "classic" | "stack" | "weight" | "numerals" | "thermo" | "sport" | "bedside" | "flap" | "matrix" | "nixie" | "vfd" | "lcd" | "odo" | "serif" | "words";
 
+/** Grouped by kind: plain numbers, then numbers made of something (flaps, wheels, tubes, segments, dots), then words. */
 export const FACES: [TimerFace, string, string][] = [
   ["classic", "Classic", "The dial as it is: clean numbers on a ring"],
   ["stack", "Stacked", "Minutes over seconds, big and round, like a watch"],
+  ["weight", "Weight", "Rounded numbers that thin out as the time runs down"],
+  ["numerals", "Numerals", "The minutes as one big number, the seconds beside it"],
+  ["thermo", "Thermostat", "Thin numbers with the seconds raised small"],
+  ["sport", "Sport", "Bold italic figures, like a sports watch"],
+  ["bedside", "Bedside", "Big soft numbers with a faint glow, for a dark room"],
+  ["serif", "Editorial", "Big italic minutes, seconds set small"],
   ["flap", "Split-flap", "Flaps fall over digit by digit, like a station board"],
-  ["matrix", "Dot matrix", "LED dots, with a ring of dots for the time left"],
+  ["odo", "Odometer", "Number wheels that roll over and settle"],
   ["nixie", "Nixie", "Glowing digits in glass tubes"],
   ["vfd", "VFD", "Cyan segments behind fine glass, like an old hi-fi"],
   ["lcd", "LCD", "A reflective watch display, each segment with its shadow"],
-  ["odo", "Odometer", "Number wheels that roll over and settle"],
-  ["serif", "Editorial", "Big italic minutes, seconds set small"],
+  ["matrix", "Dot matrix", "LED dots, with a ring of dots for the time left"],
   ["words", "In words", "The time left, written out"],
 ];
+
+/** Where a new group of faces starts. */
+export const FACE_GROUPS = new Set<TimerFace>(["flap", "words"]);
 
 /** A stored timer face, falling back to the classic dial. */
 export function timerFace(v: unknown): TimerFace {
   return FACES.some(([id]) => id === v) ? (v as TimerFace) : "classic";
 }
 
-export type TimerRing = "none" | "arc" | "tiles" | "dots" | "glow";
+export type TimerRing = "none" | "arc" | "close" | "ticks" | "gauge" | "hair" | "tiles" | "dots" | "glow";
 
 export const RINGS: [TimerRing, string, string][] = [
   ["none", "None", "Just the numbers"],
   ["arc", "Arc", "A solid arc with a knob at the time left"],
+  ["close", "Closing", "A thick ring that fills up and closes on the bell"],
+  ["ticks", "Ticks", "Fine ticks, lit from now to the bell"],
+  ["gauge", "Gauge", "A three-quarter gauge with a pointer for how far in you are"],
+  ["hair", "Hairline", "A hairline with one glowing point at the time left"],
   ["tiles", "Tiles", "Small flaps that turn over as the time runs down"],
   ["dots", "Dots", "LED dots that go out one by one"],
   ["glow", "Glow", "A lit filament in a glass tube"],
@@ -33,18 +46,24 @@ export function timerRing(v: unknown): TimerRing {
   return RINGS.some(([id]) => id === v) ? (v as TimerRing) : "arc";
 }
 
-export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "sky" | "weather" | "water" | "mesh" | "halftone" | "wash" | "film" | "stars";
+export type TimerBackdrop = "glow" | "plain" | "paper" | "plastic" | "black" | "night" | "oled" | "mip" | "aurora" | "sweep" | "sky" | "weather" | "water" | "mesh" | "halftone" | "wash" | "film" | "stars";
 
 /** Grouped by kind: flat and printed, then soft colour, then scenes. */
 export const BACKDROPS: [TimerBackdrop, string, string][] = [
   ["plain", "Plain", "Nothing behind the dial"],
   ["paper", "Paper", "Warm, grainy paper"],
+  ["plastic", "Plastic", "Flat warm grey, like a handheld game"],
+  ["mip", "Transflective", "A screen that reflects daylight, with a fine pixel grid"],
   ["wash", "Wash", "The whole card in the phase colour"],
+  ["black", "True black", "Pure black with a soft sheen of glass"],
+  ["oled", "Dot grid", "Black with a faint grid of pixels"],
+  ["night", "Night red", "Everything in dim red on black, for a dark room"],
   ["film", "Film", "Near-black with moving grain, for the dark"],
   ["halftone", "Halftone", "Print dots in the phase colour, from one corner"],
   ["glow", "Glow", "A soft glow in the colour of the phase"],
   ["aurora", "Aurora", "Colour that drifts slowly while a session runs"],
   ["mesh", "Mesh", "Soft colour around the phase, slowly turning"],
+  ["sweep", "Sweep", "Colour that turns once around the card each round"],
   ["sky", "Sky", "The sky where you are, from dawn to night"],
   ["weather", "Weather", "The weather where you are: soft clouds, rain, snow or fog"],
   ["stars", "Starfield", "Stars drifting past at three depths"],
@@ -68,10 +87,31 @@ export const LOOKS: Look[] = [
   { id: "notebook", name: "Notebook", note: "Italic minutes on warm paper, nothing else", face: "serif", ring: "none", backdrop: "paper" },
   { id: "forecast", name: "Forecast", note: "The time in words, over the weather outside", face: "words", ring: "none", backdrop: "weather" },
   { id: "midnight", name: "Midnight", note: "LED dots among drifting stars, and nothing else", face: "matrix", ring: "none", backdrop: "stars" },
+  { id: "wrist", name: "Wrist", note: "Numbers that thin out in a ring that closes, on pure black", face: "weight", ring: "close", backdrop: "black" },
+  { id: "sports", name: "Sports", note: "Bold italic figures and a gauge, on a screen that reflects daylight", face: "sport", ring: "gauge", backdrop: "mip" },
+  { id: "nightstand", name: "Nightstand", note: "Big soft numbers and a hairline ring, all in dim red", face: "bedside", ring: "hair", backdrop: "night" },
 ];
 
 /** The look that matches a face, ring and background exactly, if one does. */
 export const lookOf = (face: string, ring: string, backdrop: string) => LOOKS.find((l) => l.face === face && l.ring === ring && l.backdrop === backdrop);
+
+/** Backgrounds that are dark in either theme, so the card on them takes the dark theme's ink. */
+export const DARK_BACKDROPS = new Set<TimerBackdrop>(["film", "stars", "wash", "black", "oled", "night", "sweep"]);
+
+/** The Weight face's weight: heavy at the start of a session, hairline at the bell. */
+export const faceWeight = (frac: number) => Math.round(200 + 800 * Math.max(0, Math.min(1, frac)));
+
+/** Minutes and seconds for faces that set them apart; the last minute shows its seconds alone. */
+export function splitClock(chars: string[]): { plus: boolean; big: string; small: string } {
+  const t = chars.join(""), plus = t[0] === "+", [m, s] = t.replace("+", "").split(":");
+  return !plus && +m === 0 ? { plus, big: String(+s), small: "" } : { plus, big: String(+m), small: s };
+}
+
+/** How far through a session the closing rings are: past 1 they lap themselves in overtime. */
+export function sessionProgress(up: string, frac: number, upMs: number, span: number) {
+  if (up === "over") return 1 + upMs / Math.max(1, span);
+  return up === "flow" ? 1 : 1 - frac;
+}
 
 /** How full the Water background is, 0 to 1: it rises through a focus and drains through a break, so it never jumps between them. Flow fills it once an hour. */
 export function waterLevel(mode: string, kind: string, frac: number, upMs: number) {

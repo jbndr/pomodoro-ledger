@@ -1,6 +1,6 @@
 <script>
   import { onDestroy, onMount } from "svelte";
-  import { BACKDROP_GROUPS, BACKDROPS, FACES, LOOKS, RINGS } from "../lib/faces";
+  import { BACKDROP_GROUPS, BACKDROPS, FACE_GROUPS, FACES, LOOKS, RINGS } from "../lib/faces";
   import LookCard from "./LookCard.svelte";
   import { clock, knobAt, litTicks } from "../lib/timer";
   import DialRing from "../timer/DialRing.svelte";
@@ -73,11 +73,11 @@
 <div class="st-faces" role="radiogroup" tabindex="-1" aria-label={NAME[kind]} bind:this={grid} onkeydown={key}>
   {#each items as [id, label] (id)}
     {@const on = value === id}
-    <button class="st-face" class:group={kind === "backdrop" && BACKDROP_GROUPS.has(id)} type="button" role="radio" data-id={id} aria-checked={String(on)} tabindex={id === tabStop ? 0 : -1} onclick={() => { onpick(id); play(id, step); }} {...hover(id)}>
+    <button class="st-face" class:group={(kind === "backdrop" && BACKDROP_GROUPS.has(id)) || (kind === "face" && FACE_GROUPS.has(id))} type="button" role="radio" data-id={id} aria-checked={String(on)} tabindex={id === tabStop ? 0 : -1} onclick={() => { onpick(id); play(id, step); }} {...hover(id)}>
       {#if kind === "looks"}
         <span class="st-stage" aria-hidden="true"><LookCard look={LOOKS.find((l) => l.id === id)} /></span>
       {:else if kind === "face"}
-        <span class="st-stage" aria-hidden="true"><span class="time"><FaceDigits face={id} chars={[...clock(secs[id])]} /></span></span>
+        <span class="st-stage" aria-hidden="true"><span class="time"><FaceDigits face={id} chars={[...clock(secs[id])]} frac={secs[id] / TOTAL} /></span></span>
       {:else if kind === "ring"}
         {@const frac = secs[id] / TOTAL}
         <span class="st-stage" data-ring={id} aria-hidden="true"><DialRing ring={id} {frac} lit={litTicks(frac)} knob={knobAt(frac)} /></span>

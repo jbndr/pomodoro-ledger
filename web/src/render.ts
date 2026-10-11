@@ -3,7 +3,7 @@ import { composer } from "./composer/state.svelte";
 import { $ } from "./dom";
 import { renderFloating } from "./float";
 import { MIN } from "./lib/dates";
-import { timerBackdrop, waterLevel } from "./lib/faces";
+import { sessionProgress, timerBackdrop, waterLevel } from "./lib/faces";
 import { list, pill, progress } from "./lib/redraw.svelte";
 import { projectNames } from "./lib/tasks";
 import { clock, MODE_NAME } from "./lib/timer";
@@ -45,8 +45,9 @@ export function renderTimer(force?: boolean) {
     lastTxt = txt;
     document.title = T.status === "idle" ? "Pomodoro Ledger" : txt + " · " + (kind === "flow" ? "Flow" : MODE_NAME[T.mode]) + (T.status === "paused" ? " (paused)" : "");
   }
-  timerView.set(rem, total, kind);
+  timerView.set(rem, total, kind, totalNow());
   if (backdrop === "water") fillWater(waterLevel(T.mode, kind, frac, rem));
+  if (backdrop === "sweep") document.body.style.setProperty("--sweep", (sessionProgress(kind, frac, rem, totalNow()) * 360).toFixed(1) + "deg");
   else if (lastFill >= 0) { lastFill = -1; delete document.body.dataset.fillReady; }
   lastFrac = frac;
   renderFloating(txt, frac);

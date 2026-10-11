@@ -1,13 +1,36 @@
 <script>
+  import { fade } from "svelte/transition";
   import { calm } from "../dom";
   import { arcOffset, CIRCUMFERENCE, TICKS } from "../lib/timer";
 
-  let { ring = "arc", frac, lit, lead = lit - 1, knob } = $props();
+  let { ring = "arc", frac, lit, lead = lit - 1, knob, prog = undefined, spin = -1 } = $props();
 
   const around = (r) => Array.from({ length: 60 }, (_, i) => { const a = (i / 60) * 2 * Math.PI; return { cx: +(150 + Math.sin(a) * r).toFixed(2), cy: +(150 - Math.cos(a) * r).toFixed(2), deg: i * 6 }; });
   const DOTS = around(112), TILES = around(125), MARKS = around(137).filter((_, i) => i % 5 === 0);
   // The slit is one dashed circle whose dashes line up with the tiles.
   const TILE_W = 7.4, SLIT_DASH = `${TILE_W} ${(2 * Math.PI * 125) / 60 - TILE_W}`;
+
+  const at = (deg, r) => [+(150 + r * Math.sin((deg * Math.PI) / 180)).toFixed(2), +(150 - r * Math.cos((deg * Math.PI) / 180)).toFixed(2)];
+  const arc = (a0, a1, r) => { if (a1 - a0 < .3) return ""; const [x0, y0] = at(a0, r), [x1, y1] = at(Math.min(a1, a0 + 359.98), r); return `M${x0} ${y0}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1} ${y1}`; };
+  const p = $derived(Math.max(0, prog ?? 1 - frac));
+
+  // Closing: the gradient spans the whole circle, so a short arc is one colour and starts as a single round dot.
+  // Past 1 the ring laps itself, so its head turns from the top again.
+  const lap = $derived(p > 1);
+  const head = $derived(lap ? (p * 360) % 360 : p * 360);
+  const tip = $derived.by(() => { const a = (head * Math.PI) / 180; return { x: 50 + 40 * Math.sin(a), y: 50 - 40 * Math.cos(a), sx: Math.cos(a) * 1.6, sy: Math.sin(a) * 1.6 }; });
+
+  // Ticks and the gauge leave a gap at the bottom; in flow their marker circles once a minute.
+  const TH = Array.from({ length: 151 }, (_, i) => { const a = -150 + i * 2, [x1, y1] = at(a, 121), [x2, y2] = at(a, 136); return { x1, y1, x2, y2 }; });
+  const thLit = $derived(spin >= 0 || p >= 1 ? TH.length : Math.round(p * 150));
+  const thNow = $derived.by(() => { const a = -150 + 300 * (spin >= 0 ? spin : Math.min(1, p)), [x1, y1] = at(a, 110), [x2, y2] = at(a, 141); return { x1, y1, x2, y2 }; });
+  const TH_END = (() => { const [x1, y1] = at(150, 114), [x2, y2] = at(150, 140); return { x1, y1, x2, y2 }; })();
+
+  const GA_W = (270 - 4 * 4) / 5, GA_ZONES = [.38, .54, .7, .85, 1].map((o, i) => ({ o, a0: -135 + i * (GA_W + 4), a1: -135 + i * (GA_W + 4) + GA_W }));
+  const gaAt = $derived(-135 + 270 * (spin >= 0 ? spin : Math.min(1, p)));
+  const gaPtr = $derived.by(() => { const [x1, y1] = at(gaAt, 119), [x2, y2] = at(gaAt, 137), [tx, ty] = at(gaAt, 141), [ax, ay] = at(gaAt - 3.4, 151), [bx, by] = at(gaAt + 3.4, 151); return { x1, y1, x2, y2, d: `M${tx} ${ty}L${ax} ${ay}L${bx} ${by}Z` }; });
+
+  const hlDot = $derived(at(spin >= 0 ? spin * 360 : frac * 360, 141));
 
   // A tile that runs out turns over: it folds flat in the lit colour and opens in the dim one.
   let tilesEl, lastLit = lit;
@@ -22,8 +45,34 @@
   });
 </script>
 
+{#if ring === "close"}
+  <div class="dial cl-ring" style:--mix="{(Math.min(1, p) * 100).toFixed(2)}%" aria-hidden="true">
+    <i class="cl-band cl-track"></i>
+    <i class="cl-band cl-fill" class:lap style:--deg="{head.toFixed(2)}deg"></i>
+    {#if p > 0}
+      {#if !lap}<i class="cl-cap cl-start" in:fade={{ duration: calm() ? 0 : 240 }}></i>{/if}
+      <i class="cl-cap cl-end" in:fade={{ duration: calm() ? 0 : 240 }} class:over={lap || p > .965} style:left="{tip.x.toFixed(3)}%" style:top="{tip.y.toFixed(3)}%" style:--sx="{tip.sx.toFixed(2)}cqw" style:--sy="{tip.sy.toFixed(2)}cqw"></i>
+    {/if}
+  </div>
+{:else}
 <svg class="dial" viewBox="0 0 300 300" aria-hidden="true">
   {#if ring === "none"}
+  {:else if ring === "ticks"}
+    <g class="th-ticks">{#each TH as t, i}<line x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} class:lit={i >= thLit} />{/each}</g>
+    <line class="th-end" x1={TH_END.x1} y1={TH_END.y1} x2={TH_END.x2} y2={TH_END.y2} />
+    <line class="th-now" x1={thNow.x1} y1={thNow.y1} x2={thNow.x2} y2={thNow.y2} />
+  {:else if ring === "gauge"}
+    {#each GA_ZONES as z}
+      {@const cut = Math.max(z.a0, Math.min(z.a1, gaAt))}
+      <g style:--zo={z.o}><path class="ga-z ga-past" d={arc(z.a0, cut, 128)} /><path class="ga-z ga-ahead" d={arc(cut, z.a1, 128)} /></g>
+    {/each}
+    <line class="ga-tick" x1={gaPtr.x1} y1={gaPtr.y1} x2={gaPtr.x2} y2={gaPtr.y2} />
+    <path class="ga-ptr" d={gaPtr.d} />
+  {:else if ring === "hair"}
+    <circle class="hl-track" cx="150" cy="150" r="141" />
+    <path class="hl-arc" d={arc(0, frac * 360, 141)} />
+    <circle class="hl-halo" cx={hlDot[0]} cy={hlDot[1]} r="8" />
+    <circle class="hl-dot" cx={hlDot[0]} cy={hlDot[1]} r="3.2" />
   {:else if ring === "dots"}
     <g class="mx-ring">{#each DOTS as d, i}<circle cx={d.cx} cy={d.cy} r="3.6" class:lit={i < lit} class:lead={i === lead} />{/each}</g>
   {:else if ring === "tiles"}
@@ -42,3 +91,4 @@
     <circle class="knob" cx={knob.cx} cy={knob.cy} r="9" />
   {/if}
 </svg>
+{/if}

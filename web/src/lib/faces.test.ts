@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BACKDROPS, FACES, inWords, lookOf, LOOKS, matrix, MATRIX_ROWS, RINGS, SEGMENTS, timerBackdrop, timerFace, timerRing, waterLevel } from "./faces";
+import { BACKDROPS, DARK_BACKDROPS, faceWeight, FACES, inWords, lookOf, LOOKS, matrix, MATRIX_ROWS, RINGS, SEGMENTS, sessionProgress, splitClock, timerBackdrop, timerFace, timerRing, waterLevel } from "./faces";
 
 describe("timerFace", () => {
   it("defaults to the classic dial", () => {
@@ -45,6 +45,45 @@ describe("LOOKS", () => {
   it("finds the look a combination makes, and none for a mix of your own", () => {
     expect(lookOf("serif", "none", "paper")?.id).toBe("notebook");
     expect(lookOf("serif", "arc", "paper")).toBeUndefined();
+    expect(lookOf("weight", "close", "black")?.id).toBe("wrist");
+    expect(lookOf("bedside", "hair", "night")?.id).toBe("nightstand");
+  });
+});
+
+describe("DARK_BACKDROPS", () => {
+  it("only names backgrounds that exist", () => {
+    for (const id of DARK_BACKDROPS) expect(timerBackdrop(id)).toBe(id);
+  });
+});
+
+describe("faceWeight", () => {
+  it("is heavy with the session ahead and hairline at the bell", () => {
+    expect(faceWeight(1)).toBe(1000);
+    expect(faceWeight(0.5)).toBe(600);
+    expect(faceWeight(0)).toBe(200);
+    expect(faceWeight(-1)).toBe(200);
+  });
+});
+
+describe("splitClock", () => {
+  it("sets the minutes apart from the seconds", () => {
+    expect(splitClock([..."17:05"])).toEqual({ plus: false, big: "17", small: "05" });
+    expect(splitClock([..."+02:40"])).toEqual({ plus: true, big: "2", small: "40" });
+  });
+
+  it("shows the last minute's seconds alone, without a unit", () => {
+    expect(splitClock([..."00:42"])).toEqual({ plus: false, big: "42", small: "" });
+    expect(splitClock([..."00:07"])).toEqual({ plus: false, big: "7", small: "" });
+    expect(splitClock([..."+00:30"])).toEqual({ plus: true, big: "0", small: "30" });
+  });
+});
+
+describe("sessionProgress", () => {
+  it("fills to 1 at the bell, laps past it in overtime and stays full in flow", () => {
+    expect(sessionProgress("", 1, 0, 1500_000)).toBe(0);
+    expect(sessionProgress("", 0.25, 0, 1500_000)).toBe(0.75);
+    expect(sessionProgress("over", 1, 750_000, 1500_000)).toBe(1.5);
+    expect(sessionProgress("flow", 1, 600_000, 1500_000)).toBe(1);
   });
 });
 
