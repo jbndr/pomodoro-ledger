@@ -695,12 +695,13 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .heat { --stagger: 12ms; }
 /* Beside Focus per day the calendar fills the card's height; the grid sits out of flow so it can't push the row taller. */
 .calendar { grid-template-rows: auto auto minmax(130px, 1fr) auto; }
-.chart.heat { position: relative; }
-.chart.heat svg { position: absolute; inset: 0 auto auto 0; }
+#heat { position: relative; }
+#heat svg { position: absolute; inset: 0 auto auto 0; }
 .heat .cell { stroke: var(--surface); stroke-width: 0; rx: 3; transition: fill .5s var(--ease) calc(var(--i, 0) * var(--stagger)); }
 .heat .l0 { fill: var(--heat0); } .heat .l1 { fill: var(--heat1); } .heat .l2 { fill: var(--heat2); } .heat .l3 { fill: var(--heat3); } .heat .l4 { fill: var(--heat4); }
 @starting-style { .heat .cell { fill: var(--heat0); } }
-.heat .cell.today { stroke: var(--fg); stroke-width: 1.5; }
+.heat .sel { fill: none; stroke: var(--fg); stroke-width: 1.5; pointer-events: none; transition: x .45s cubic-bezier(.32, .72, 0, 1), y .45s cubic-bezier(.32, .72, 0, 1); }
+.chart.heat.pickable .cell:not(.future) { cursor: pointer; }
 .heat .cell.future { fill: none; stroke: var(--line); stroke-width: 1; }
 @media (hover: hover) { .heat .cell:hover { stroke: var(--fg); stroke-width: 1.5; } }
 .legend { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); justify-content: flex-end; }
@@ -777,6 +778,10 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .label-menu .icon-btn { width: 30px; height: 30px; }
 .label-menu .icon-btn svg { width: 14px; height: 14px; }
 
+/* The label menu sits at the bottom right of the totals, just above the cards it filters. */
+.ins-head { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 8px 16px; }
+.ins-head > .today-line { flex: 1 1 auto; min-width: 0; }
+.ins-head > .label-menu { align-self: flex-end; margin-left: auto; }
 .today-line { display: grid; gap: 8px; padding: 2px 2px 4px; }
 .tl-row { display: flex; align-items: center; gap: 8px 20px; flex-wrap: wrap; }
 .tl-v { font-family: var(--f-display); font-size: 40px; font-weight: 650; letter-spacing: -.03em; line-height: 1; }

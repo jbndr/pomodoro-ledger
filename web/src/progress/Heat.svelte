@@ -3,7 +3,7 @@
   import { heatLevel } from "../lib/stats";
   import { labelTip } from "./tips";
 
-  let { api, days, today, split } = $props();
+  let { api, days, today, split, selected = today, onpick } = $props();
   let width = $state(0), height = $state(0);
 
   const gap = 3, ml = 30, mt = 18;
@@ -31,23 +31,26 @@
         if (t > today) { cells.push({ key: col * 7 + row, col, x: ml + col * step, y: mt + row * rh, future: true }); continue; }
         const o = days.get(dayKey(t)) || { ms: 0, cycles: 0 }, min = o.ms / 60000;
         const tip = "<b>" + api.fmtDate(t, { weekday: "short", day: "numeric", month: "short" }) + "</b><br>" + (min ? api.fmtDur(o.ms) + " · " + api.plural(o.cycles, "cycle") + labelTip(api, split.get(dayKey(t))) : "No focus");
-        cells.push({ key: col * 7 + row, col, x: ml + col * step, y: mt + row * rh, level: heatLevel(min), today: t === today, tip });
+        cells.push({ key: col * 7 + row, col, t, x: ml + col * step, y: mt + row * rh, level: heatLevel(min), tip });
       }
     }
-    return { months, cells };
+    return { months, cells, sel: cells.find((x) => !x.future && x.t === selected) };
   });
 </script>
 
 <figure class="chart-card calendar" id="calendar">
   <h3>Focus calendar</h3>
   <p class="sub" id="heatSub">Last {weeks} weeks</p>
-  <div class="chart heat" id="heat" bind:clientWidth={width} bind:clientHeight={height}>
+  <div class="chart heat" class:pickable={onpick} id="heat" bind:clientWidth={width} bind:clientHeight={height}>
   <svg viewBox="0 0 {W} {H}" role="img" aria-label="Focus calendar for the last {weeks} weeks">
     {#each c.months as mo (mo.x)}<text x={mo.x} y="11">{mo.name}</text>{/each}
     {#each c.cells as cell (cell.key)}
       {#if cell.future}<rect class="cell future" x={cell.x + .5} y={cell.y + .5} width={cs - 1} height={cs - 1} rx="3" />
-      {:else}<rect class="cell l{cell.level}" class:today={cell.today} data-tip={cell.tip} x={cell.x} y={cell.y} width={cs} height={cs} rx="3" style:--i={cell.col} />{/if}
+      {:else}<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+        <rect class="cell l{cell.level}" data-tip={cell.tip} x={cell.x} y={cell.y} width={cs} height={cs} rx="3" style:--i={cell.col} onclick={() => onpick?.(cell.t)} />{/if}
     {/each}
+    <!-- The ring marks the day open in Your day, and slides when another is picked. -->
+    {#if c.sel}<rect class="sel" style:x="{c.sel.x - 1.5}px" style:y="{c.sel.y - 1.5}px" width={cs + 3} height={cs + 3} rx="4.5" />{/if}
     {#each DAYS as label, r (r)}{#if label}<text x="0" y={mt + r * (cs + gap) + cs / 2 + 4}>{label}</text>{/if}{/each}
   </svg>
   </div>

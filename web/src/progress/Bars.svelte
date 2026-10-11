@@ -20,7 +20,7 @@
     for (let v = 0; v <= top; v += step) grid.push(v);
     return { W, band, bw, data, step, top, y, grid, base: y(0) };
   });
-  const pickAt = $derived(Math.max(0, c.data.findIndex((d) => d.t === selected)));
+  const pickAt = $derived(c.data.findIndex((d) => d.t === selected));
 
   const tipFor = (d) => "<b>" + api.fmtDate(d.t, { weekday: "short", day: "numeric", month: "short" }) + "</b><br>" + (d.min ? api.fmtDur(d.min * MIN) + " · " + api.plural(d.cycles, "cycle") + labelTip(api, split.get(dayKey(d.t))) : "No focus");
 </script>
@@ -34,7 +34,7 @@
         <text x={ml - 8} y="4" text-anchor="end">{v >= 60 && v % 60 === 0 ? v / 60 + "h" : v}</text>
       </g>
     {/each}
-    {#if pickAt !== n - 1}<rect class="pick" x={ml + pickAt * c.band + c.band / 2 - 12} y={H - 21} width="24" height="17" rx="6" />{/if}
+    {#if pickAt >= 0 && pickAt !== n - 1}<rect class="pick" x={ml + pickAt * c.band + c.band / 2 - 12} y={H - 21} width="24" height="17" rx="6" />{/if}
     {#each c.data as d, i (i)}
       {@const x = ml + i * c.band + (c.band - c.bw) / 2}
       {@const isPick = i === pickAt}
