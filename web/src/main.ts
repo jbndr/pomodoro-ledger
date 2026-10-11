@@ -37,6 +37,7 @@ import WhenPop from "./popovers/WhenPop.svelte";
 import { deleteSession, labelSession, moveItems, moveSession } from "./progress/actions";
 import Progress from "./progress/Progress.svelte";
 import Recap from "./progress/Recap.svelte";
+import Timesheet from "./progress/Timesheet.svelte";
 import { renderAll, renderEstPick, renderPill, renderStats, renderTasks, renderTimer, rethemeFloat } from "./render";
 import Together from "./room/Together.svelte";
 import RoomStrip from "./room/RoomStrip.svelte";
@@ -60,7 +61,7 @@ import TaskViews from "./tasks/TaskViews.svelte";
 import { adjust, arm, buzz, canKeepGoing, complete, dur, flushPartial, freshRounds, keepGoing, nudgeDone, readyFlow, remNow, resetRounds, setMode, skip, tick, toggle, wakeOn } from "./timer/engine";
 import TimerCard from "./timer/TimerCard.svelte";
 import Customize from "./customize/Customize.svelte";
-import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, toggleRoom, openSettings, openCustomize, openShare, openWhen, openYear, renderSyncTab, ui, type CustomizeUI, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type RoomUI, type SettingsUI, type ShareUI, type Sheet, type WhenUI, type YearUI } from "./ui";
+import { closeKeys, closeLabelPop, closePop, closeRecap, closeRoom, closeSettings, closeWhen, openKeys, openLabelPop, openPalette, openPlan, openPop, openRecap, openRoom, toggleRoom, openSettings, openCustomize, openShare, openTimesheet, openWhen, openYear, renderSyncTab, ui, type CustomizeUI, type LabelUI, type ListUI, type PaletteUI, type PopUI, type RecapUI, type RoomUI, type SettingsUI, type ShareUI, type Sheet, type TimesheetUI, type WhenUI, type YearUI } from "./ui";
 import Year from "./year/Year.svelte";
 import ShareSheet from "./year/ShareSheet.svelte";
 import { fsEl, setZen, toggleZen } from "./zen";
@@ -95,7 +96,7 @@ const view = ss.get("pl.taskView");
 if (view === "today" || view === "upcoming" || view === "later") S.taskView = view;
 mount(Progress, { target: $(".app"), props: { api: {
   S, T, remNow, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
-  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap, openPlan, weekGoals, openYear,
+  deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap, openPlan, openTimesheet, weekGoals, openYear,
 } } });
 const roomApi = { RM, S, ls, esc, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
   roomReact, reactWait, reactionsOn, roomSignal, roomGoal, openPop, closePop, popHidden: () => pop.hidden };
@@ -116,6 +117,10 @@ ui.recap = mount(Recap, { target: document.body, props: { api: {
   S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, plural, toast, openShare,
   overlayHidden: () => !document.querySelector(".overlay:not([hidden])"), syncing: () => Cloud.state === "connecting",
 } } }) as RecapUI;
+ui.timesheet = mount(Timesheet, { target: document.body, props: { api: {
+  ls, ICON, viewTasks, labelHidden, setOverlay, fmtDur, fmtDate, plural, toast, openPop, closePop, popHidden: () => pop.hidden,
+  overlayHidden: () => !document.querySelector(".overlay:not([hidden])"),
+} } }) as TimesheetUI;
 ui.plan = mount(PlanSheet, { target: document.body, props: { api: {
   S, viewTasks, setOverlay, fmtDur, fmtDate, plural, plans, savePlan, addLabel: (name: string) => Labels.add(name),
   overlayHidden: () => !document.querySelector(".overlay:not([hidden])"),

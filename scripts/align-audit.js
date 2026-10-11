@@ -27,6 +27,10 @@
     ["Menu emoji", ".pick-menu li", ".pick-emoji", "span"],
     ["Stages lane swatch", ".sg-lane", ".sg-sw", ":scope > span"],
     ["Stages readout dot", ".sg-k", "i", ":scope"],
+    ["Timesheet group dot", ".ts-gh .ts-name", ".label-dot", "span"],
+    ["Timesheet row dot", ".ts-item .ts-name", ".label-dot", "span"],
+    ["Timesheet menu dot", ".ts-menu", ".label-dot", "span"],
+    ["Timesheet button icon", ".ts-foot .st-btn", "svg", ":scope"],
   ];
   const firstLine = (el) => {
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {

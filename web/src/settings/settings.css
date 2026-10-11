@@ -1,14 +1,16 @@
 /* Settings: a quiet list of sections beside one section at a time; rows sit in soft cards and save as you go. */
-.st-sheet {
+.st-sheet, .ts-sheet {
   --st-card: #FFFFFF; --st-sunk: color-mix(in oklab, var(--surface-2) 55%, var(--surface)); --st-ring: 0 0 0 1px var(--line), 0 1px 2px rgba(20,24,22,.04);
   --st-spring: cubic-bezier(.32, .72, 0, 1);
+}
+.st-sheet {
   position: relative; width: min(100%, 880px); height: min(640px, calc(100dvh - var(--dlg-top) - 16px));
   display: grid; grid-template-columns: 236px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
   border-radius: 22px; background: var(--surface); border: 1px solid var(--line); overflow: hidden;
   box-shadow: 0 30px 80px -30px rgba(0,0,0,.45), var(--shadow); font-size: 14px;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .st-sheet { --st-card: #1B201D; --st-sunk: #171B19; --st-ring: 0 0 0 1px var(--line); } }
-:root[data-theme="dark"] .st-sheet { --st-card: #1B201D; --st-sunk: #171B19; --st-ring: 0 0 0 1px var(--line); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) :is(.st-sheet, .ts-sheet) { --st-card: #1B201D; --st-sunk: #171B19; --st-ring: 0 0 0 1px var(--line); } }
+:root[data-theme="dark"] :is(.st-sheet, .ts-sheet) { --st-card: #1B201D; --st-sunk: #171B19; --st-ring: 0 0 0 1px var(--line); }
 .overlay:not([hidden]) > .st-sheet { animation: when-in .22s cubic-bezier(.2, .8, .2, 1); }
 /* The timer face previews move, and anything moving over a blurred backdrop makes the browser redo the whole blur every frame. */
 #settings.overlay { backdrop-filter: none; -webkit-backdrop-filter: none; }
