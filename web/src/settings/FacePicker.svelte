@@ -6,8 +6,11 @@
   import FaceDigits from "../timer/FaceDigits.svelte";
   import { fmtClock } from "../format";
   import { sky, wantPlace } from "../sky.svelte";
+  import { wantHalftone } from "../halftone";
 
   let { face, ring, backdrop, onface, onring, onbackdrop } = $props();
+
+  wantHalftone();
 
   const START = 17 * 60 + 30, TOTAL = 25 * 60;
   let secs = $state(Object.fromEntries([...FACES, ...RINGS].map(([id]) => [id, START]))), playing = $state(""), timer = 0, root;

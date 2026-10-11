@@ -30,14 +30,16 @@ export function initFloat() {
 let lastState = "", lastNudge = "";
 
 const TOKENS = ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--accent", "--acc-l", "--acc-c", "--acc-h", "--glow-o", "--ember", "--paper", "--grain-o", "--go-l-max", "--f-display", "--f-body",
-  "--fl-top-a", "--fl-top-b", "--fl-bot-a", "--fl-bot-b", "--fl-ink", "--fl-slit", "--fl-colon", "--fl-lift", "--fl-off", "--fl-edge", "--fl-gap", "--mx-off", "--face-glow", "--nx-dot", "--pp-a", "--pp-b", "--pp-edge", "--sky-l"];
+  "--fl-top-a", "--fl-top-b", "--fl-bot-a", "--fl-bot-b", "--fl-ink", "--fl-slit", "--fl-colon", "--fl-lift", "--fl-off", "--fl-edge", "--fl-gap", "--mx-off", "--face-glow", "--nx-dot", "--pp-a", "--pp-b", "--pp-edge", "--sky-l",
+  "--lcd-a", "--lcd-b", "--mesh-l", "--mesh-c", "--wash-l", "--ht-ink", "--ht-mask", "--page-acc-l", "--page-acc-c", "--f-serif", "--f-mono"];
 
 export function renderFloating(txt: string, frac: number) {
   if (!floatWindow || floatWindow.closed) return;
   const doc = floatWindow.document, root = doc.documentElement, main = $("main", doc);
-  const theme = getComputedStyle(document.body);
-  for (const name of TOKENS) root.style.setProperty(name, theme.getPropertyValue(name));
-  root.style.colorScheme = getComputedStyle(document.documentElement).colorScheme;
+  // Read from the card: a dark background gives it dark tokens even in light mode.
+  const theme = getComputedStyle(document.querySelector(".timer-card") || document.body);
+  for (const name of TOKENS) { const v = theme.getPropertyValue(name); if (root.style.getPropertyValue(name) !== v) root.style.setProperty(name, v); }
+  root.style.colorScheme = theme.colorScheme;
   for (const k of ["backdrop", "status"]) if (doc.body.dataset[k] !== document.body.dataset[k]) doc.body.dataset[k] = document.body.dataset[k] || "";
   if (root.dataset.sky !== document.documentElement.dataset.sky) root.dataset.sky = document.documentElement.dataset.sky || "";
   const flow = T.upKind === "flow" || !!T.flowReady, over = !!T.up && !flow;
@@ -56,6 +58,7 @@ export function renderFloating(txt: string, frac: number) {
 
   const time = $("#miniTime", doc), face = timerFace(S.settings.face);
   floatView.face = face; floatView.ring = timerRing(S.settings.ring); floatView.chars = [...txt]; floatView.frac = flow ? 1 : frac;
+  floatView.mode = T.mode; floatView.up = flow ? "flow" : over ? "over" : "";
   const secs = T.up ? Math.floor(upNow() / 1000) : Math.ceil(remNow() / 1000);
   time.setAttribute("aria-label", Math.floor(secs / 60) + " minutes " + (secs % 60) + (T.up ? (flow ? " seconds of flow" : " seconds past the bell") : " seconds remaining"));
 
@@ -151,6 +154,17 @@ async function openFloating(quiet?: boolean) {
       #miniBar { display: block; height: 100%; border-radius: inherit; background: var(--accent); transform-origin: left; transition: scale .25s linear; }
       #miniTime .face-flap, #miniTime .face-nixie { font-size: 38rem; vertical-align: middle; }
       #miniTime .face-matrix { display: inline-block; width: auto; height: 32rem; vertical-align: middle; }
+      /* The page's own phase colour is copied onto the root; re-deriving it here would pick up the card's tint. */
+      body { --page-acc-l: inherit; --page-acc-c: inherit; }
+      /* Mirrored, the dots gather behind the button rather than under the task. */
+      [data-backdrop="halftone"] main > .glow::before { transform: scaleX(-1); -webkit-mask-size: 300rem 300rem; mask-size: 300rem 300rem; }
+      #miniTime :is(.face-seg, .face-odo) { font-size: 30rem; }
+      #miniTime .face-lcd { padding-top: .2em; }
+      #miniTime .face-lcd small { display: none; }
+      #miniTime .face-serif { font-size: 50rem; vertical-align: middle; }
+      #miniTime .face-words { display: grid; justify-items: start; text-align: left; gap: 1rem; }
+      #miniTime .face-words b { font-size: 25rem; line-height: 1; }
+      #miniTime .face-words span { font-size: 11.5rem; line-height: 1.15; }
       .bar[data-ring="tiles"], .bar[data-ring="dots"] { height: 9rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; overflow: visible; background: none; border-radius: 0; }
       .bar .t { position: relative; flex: 1; height: 9rem; border-radius: 1.5rem; background: var(--fl-off); box-shadow: inset 0 0 0 .5px var(--fl-edge); transition: background-color .3s; }
       .bar .t::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - .5px); height: 1px; background: var(--fl-gap); }

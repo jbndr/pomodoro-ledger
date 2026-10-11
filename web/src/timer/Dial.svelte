@@ -33,7 +33,7 @@
 <div class="dial-wrap" class:flow data-face={face} data-ring={ring}>
   <DialRing {ring} {frac} {lit} {lead} {knob} />
   <div class="dial-center" aria-live="off">
-    <div class="time" class:counting={timerView.up === "over"} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + (timerView.up === "flow" ? " seconds of flow" : " seconds past the bell") : clockLabel(secs)}><FaceDigits {face} {chars} /></div>
+    <div class="time" class:counting={timerView.up === "over"} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + (timerView.up === "flow" ? " seconds of flow" : " seconds past the bell") : clockLabel(secs)}><FaceDigits {face} {chars} {mode} up={timerView.up} /></div>
     <div class="dial-sub" id="dialSub">{sub}</div>
   </div>
 </div>

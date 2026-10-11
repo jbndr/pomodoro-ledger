@@ -1,10 +1,15 @@
-export type TimerFace = "classic" | "flap" | "matrix" | "nixie";
+export type TimerFace = "classic" | "flap" | "matrix" | "nixie" | "vfd" | "lcd" | "odo" | "serif" | "words";
 
 export const FACES: [TimerFace, string, string][] = [
   ["classic", "Classic", "The dial as it is: clean numbers on a ring"],
   ["flap", "Split-flap", "Flaps fall over digit by digit, like a station board"],
   ["matrix", "Dot matrix", "LED dots, with a ring of dots for the time left"],
   ["nixie", "Nixie", "Glowing digits in glass tubes"],
+  ["vfd", "VFD", "Cyan segments behind fine glass, like an old hi-fi"],
+  ["lcd", "LCD", "A reflective watch display, each segment with its shadow"],
+  ["odo", "Odometer", "Number wheels that roll over and settle"],
+  ["serif", "Editorial", "Big italic minutes, seconds set small"],
+  ["words", "In words", "The time left, written out"],
 ];
 
 /** A stored timer face, falling back to the classic dial. */
@@ -27,7 +32,7 @@ export function timerRing(v: unknown): TimerRing {
   return RINGS.some(([id]) => id === v) ? (v as TimerRing) : "arc";
 }
 
-export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "sky";
+export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "sky" | "mesh" | "halftone" | "wash" | "film" | "stars";
 
 export const BACKDROPS: [TimerBackdrop, string, string][] = [
   ["glow", "Glow", "A soft glow in the colour of the phase"],
@@ -35,6 +40,11 @@ export const BACKDROPS: [TimerBackdrop, string, string][] = [
   ["paper", "Paper", "Warm, grainy paper"],
   ["aurora", "Aurora", "Colour that drifts slowly while a session runs"],
   ["sky", "Sky", "The sky where you are, from dawn to night"],
+  ["mesh", "Mesh", "Soft colour around the phase, slowly turning"],
+  ["halftone", "Halftone", "Print dots in the phase colour, from one corner"],
+  ["wash", "Wash", "The whole card in the phase colour"],
+  ["film", "Film", "Near-black with moving grain, for the dark"],
+  ["stars", "Starfield", "Stars drifting past at three depths"],
 ];
 
 /** A stored background, falling back to the glow. */
@@ -71,4 +81,21 @@ export function matrix(text: string): { cols: number; lit: Set<string> } {
     x += g[0].length;
   }
   return { cols: x, lit };
+}
+
+/** Lit segments a–g of a seven-segment digit. */
+export const SEGMENTS: Record<string, string> = { "0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "afgcd", "6": "afgedc", "7": "abc", "8": "abcdefg", "9": "abcdfg" };
+
+const ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+const TENS = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+const say = (n: number) => (n < 20 ? ONES[n] : n < 100 ? TENS[Math.floor(n / 10)] + (n % 10 ? "-" + ONES[n % 10] : "") : String(n));
+
+/** The clock text written out: whole minutes, then seconds in the last minute. Counting down rounds up, so 24:30 is still twenty-five minutes. */
+export function inWords(text: string, up: "" | "over" | "flow" = ""): { n: string; unit: string } {
+  const [m, s] = text.replace("+", "").split(":").map(Number);
+  const secs = m * 60 + s, mins = up ? Math.floor(secs / 60) : Math.ceil(secs / 60);
+  const tail = up === "over" ? " over" : up === "flow" ? " in" : " left";
+  const [n, unit] = (up ? secs >= 60 : secs > 60) ? [mins, mins === 1 ? "minute" : "minutes"] : [secs === 60 ? 1 : secs, secs === 60 ? "minute" : secs === 1 ? "second" : "seconds"];
+  const w = say(n);
+  return { n: w[0].toUpperCase() + w.slice(1), unit: unit + tail };
 }

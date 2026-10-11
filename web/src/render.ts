@@ -21,6 +21,7 @@ import { closeLabelPop, ui } from "./ui";
 import { syncActive } from "./tasks/actions";
 import { showMode } from "./timer/morph";
 import { applySky } from "./sky.svelte";
+import { wantHalftone } from "./halftone";
 
 let lastPhase = "", lastTxt = "", lastFrac = 1, startEstimateMinute = -1, renderedDay = "";
 
@@ -32,6 +33,7 @@ export function renderTimer(force?: boolean) {
   const backdrop = timerBackdrop(S.settings.backdrop);
   if (document.body.dataset.backdrop !== backdrop) document.body.dataset.backdrop = backdrop;
   applySky(document.documentElement, backdrop === "sky");
+  if (backdrop === "halftone") wantHalftone();
   // Past the bell shows "+12:40" on a full ring; flow counts from zero and fills the ring once an hour.
   const kind = T.up ? T.upKind || "over" : T.flowReady ? "flow" : "", total = kind ? 1 : totalNow(), rem = kind ? upNow() : remNow();
   const frac = kind ? 1 : Math.max(0, Math.min(1, rem / total));

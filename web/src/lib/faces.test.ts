@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BACKDROPS, FACES, matrix, MATRIX_ROWS, RINGS, timerBackdrop, timerFace, timerRing } from "./faces";
+import { BACKDROPS, FACES, inWords, matrix, MATRIX_ROWS, RINGS, SEGMENTS, timerBackdrop, timerFace, timerRing } from "./faces";
 
 describe("timerFace", () => {
   it("defaults to the classic dial", () => {
@@ -54,5 +54,38 @@ describe("matrix", () => {
 
   it("skips characters it has no glyph for", () => {
     expect(matrix("ab").cols).toBe(0);
+  });
+});
+
+describe("SEGMENTS", () => {
+  it("lights every bar for an eight and the two right bars for a one", () => {
+    expect(SEGMENTS["8"]).toBe("abcdefg");
+    expect(SEGMENTS["1"]).toBe("bc");
+    for (const d of "0123456789") expect(SEGMENTS[d]).toMatch(/^[a-g]+$/);
+  });
+});
+
+describe("inWords", () => {
+  it("writes whole minutes, rounding up while counting down", () => {
+    expect(inWords("25:00")).toEqual({ n: "Twenty-five", unit: "minutes left" });
+    expect(inWords("24:30")).toEqual({ n: "Twenty-five", unit: "minutes left" });
+    expect(inWords("01:01")).toEqual({ n: "Two", unit: "minutes left" });
+    expect(inWords("01:00")).toEqual({ n: "One", unit: "minute left" });
+  });
+
+  it("switches to seconds for the last minute", () => {
+    expect(inWords("00:59")).toEqual({ n: "Fifty-nine", unit: "seconds left" });
+    expect(inWords("00:01")).toEqual({ n: "One", unit: "second left" });
+  });
+
+  it("counts flow and time past the bell up, rounding down", () => {
+    expect(inWords("12:34", "flow")).toEqual({ n: "Twelve", unit: "minutes in" });
+    expect(inWords("00:42", "flow")).toEqual({ n: "Forty-two", unit: "seconds in" });
+    expect(inWords("+02:05", "over")).toEqual({ n: "Two", unit: "minutes over" });
+    expect(inWords("+01:00", "over")).toEqual({ n: "One", unit: "minute over" });
+  });
+
+  it("falls back to digits past ninety-nine", () => {
+    expect(inWords("105:00", "flow")).toEqual({ n: "105", unit: "minutes in" });
   });
 });

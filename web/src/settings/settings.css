@@ -202,6 +202,11 @@ button.st-row { width: 100%; border: 0; background: none; text-align: left; colo
 .st-stage > .time { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 26cqw; }
 .st-stage :is(.face-flap, .face-nixie) { font-size: 21cqw; }
 .st-stage .face-matrix { width: 80cqw; }
+.st-stage .face-seg { font-size: 20cqw; }
+.st-stage .face-odo { font-size: 19cqw; }
+.st-stage .face-serif { font-size: 40cqw; }
+.st-stage .face-words b { font-size: 15cqw; }
+.st-stage .face-words span { font-size: 7.5cqw; }
 .st-stage[data-ring="none"]::after { content: ""; position: absolute; inset: 16%; border-radius: 50%; border: 1.5px dashed var(--line-2); }
 .st-face-hint { margin: 0; padding: 0 4px; min-height: 1lh; font-size: 12.5px; color: var(--faint); text-align: center; text-wrap: balance; }
 .st-styles { display: grid; gap: 2px; }
