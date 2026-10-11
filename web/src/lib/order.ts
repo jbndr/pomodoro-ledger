@@ -62,6 +62,12 @@ export function place(list: Entry[], id: string, before: number | null): Entry[]
   return i < 0 ? list : moveTo(list, i, before ?? list.length);
 }
 
+/** Starts group `g` at a task, so it and the rest of its group move under the new heading. */
+export function cut(list: Entry[], id: string, g: string): Entry[] {
+  const i = indexOf(list, id);
+  return i < 0 ? list : [...list.slice(0, i), { kind: "group", g }, ...list.slice(i)];
+}
+
 /** Where every task lands when the list is saved in this order. */
 export function placements(list: Entry[], fallback: string): Placement[] {
   const out: Placement[] = [];

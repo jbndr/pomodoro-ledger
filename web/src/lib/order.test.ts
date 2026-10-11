@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { groupAt, jump, place, placements, step, toTop, type Entry } from "./order";
+import { cut, groupAt, jump, place, placements, step, toTop, type Entry } from "./order";
 
 const g = (key: string, end?: string): Entry => ({ kind: "group", g: key, ...(end ? { end } : {}) });
 const t = (id: string): Entry => ({ kind: "task", id });
@@ -84,5 +84,18 @@ describe("toTop", () => {
     expect(toTop(today, ["a"])).toBeNull();
     expect(toTop(today, ["b", "d"])).toBeNull();
     expect(toTop(today, ["missing"])).toBeNull();
+  });
+});
+
+describe("cut", () => {
+  it("moves the task and the rest of its group under the new heading", () => {
+    expect(names(cut(today, "c", "sec:new"))).toEqual(["#today", "a", "#sec:deep", "b", "#sec:new", "c", "#sec:admin", "d"]);
+    expect(placements(cut(today, "c", "sec:new"), "today").map((p) => p.g)).toEqual(["today", "sec:deep", "sec:new", "sec:admin"]);
+  });
+  it("can put loose tasks under a heading", () => {
+    expect(names(cut(today, "a", "sec:new"))).toEqual(["#today", "#sec:new", "a", "#sec:deep", "b", "c", "#sec:admin", "d"]);
+  });
+  it("leaves the list alone for an unknown task", () => {
+    expect(cut(today, "missing", "sec:new")).toBe(today);
   });
 });

@@ -542,6 +542,17 @@ td.barcell { width: 38%; min-width: 120px; }
 .sec-drop { position: fixed; z-index: 59; height: 3px; margin-top: -1px; border-radius: 3px; background: var(--accent); pointer-events: none; transition: top .12s ease-out; }
 body.sec-sorting, body.sec-sorting * { user-select: none; -webkit-user-select: none; cursor: grabbing !important; }
 .sec-del svg { width: 14px; height: 14px; }
+/* Pointing between two Today rows shows a line where a section would start. */
+.sec-cut { display: none; }
+@media (hover: hover) {
+  .sec-cut { position: absolute; z-index: 2; top: -8px; left: 34px; right: 10px; display: block; height: 14px; padding: 0; border: 0; background: none; opacity: 0; transition: opacity .12s; cursor: pointer; }
+  .sec-cut::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; border-radius: 2px; background: var(--accent); }
+  .sec-cut:hover { opacity: 1; transition-delay: .1s; }
+  .sorting .sec-cut, .task.dragging .sec-cut, .task.open > .sec-cut { display: none; }
+  .task:not(.open):has(> .sec-cut:hover) { background: transparent; }
+  .task.is-active:not(.open):has(> .sec-cut:hover) { background: color-mix(in oklab, var(--accent) 8%, transparent); }
+}
+
 /* Like task rows: the time sits flush right in the rows' side column, and hovering swaps it for the remove button. */
 @media (hover: hover) {
   .sec-del { display: none; }

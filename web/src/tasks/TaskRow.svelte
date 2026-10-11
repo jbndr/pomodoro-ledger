@@ -2,7 +2,7 @@
   import { picked } from "./selection.svelte";
   import TaskCard from "./TaskCard.svelte";
 
-  let { api, row, plan, best = false, lifted = false, drag = null } = $props();
+  let { api, row, plan, best = false, lifted = false, drag = null, cut = null } = $props();
   const start = $derived(plan && plan.get(row.id));
   const selected = $derived(picked.ids.includes(row.id));
 </script>
@@ -25,6 +25,7 @@
   aria-expanded={String(row.open)}
   aria-label={row.title}
 >
+  {#if cut}<button class="sec-cut" type="button" tabindex="-1" aria-label={"Start a section at “" + row.title + "”"} title="Start a section here" onclick={cut}></button>{/if}
   <button class="grip" type="button" tabindex="-1" disabled={row.locked} aria-label={"Reorder “" + row.title + "”: drag, or press the up and down arrow keys"} title={row.locked ? "Show all tasks to reorder" : "Drag to reorder"}>{@html api.ICON.grip}</button>
   <button class="check" type="button" data-act="done" aria-label={"Mark “" + row.title + "” as finished"} title="Mark finished" onclick={() => api.complete(row.id)}>{@html api.ICON.check}</button>
   <div class="task-main" data-act="open" onclick={() => api.open(row.id)} role="presentation">
