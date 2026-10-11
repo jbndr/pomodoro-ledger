@@ -46,6 +46,10 @@
         <dt><kbd>⌥</kbd> <kbd>1</kbd>–<kbd>9</kbd></dt><dd><span>Set cycles (or type 2c)</span></dd>
         <dt><kbd>↵</kbd></dt><dd><span>Add it and start the next one</span></dd>
       </dl></section>
+      <section><h3>In a room</h3><dl>
+        <dt><kbd>1</kbd>–<kbd>4</kbd></dt><dd><span>Set a status: deep in it, stuck, back in 2, wrapping up</span></dd>
+        <dt><kbd>0</kbd></dt><dd><span>Clear it</span></dd>
+      </dl></section>
       <section><h3>When</h3><dl>
         <dt><kbd>T</kbd></dt><dd><span>Today</span></dd>
         <dt><kbd>M</kbd></dt><dd><span>Tomorrow</span></dd>

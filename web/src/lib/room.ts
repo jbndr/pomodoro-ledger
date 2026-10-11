@@ -3,7 +3,10 @@ import { pad } from "./dates";
 export type Mode = "focus" | "short" | "long";
 /** A member's timer as the room reports it; `end` is already shifted to this clock. */
 export type MateTimer = { mode: Mode; status: "idle" | "running" | "paused"; rem: number; total: number; end?: number };
-export type Member = { id: string; name: string; owner: boolean; s: MateTimer | null };
+export type Signal = "deep" | "stuck" | "back" | "wrap";
+/** A status a member set; `at` is already shifted to this clock. */
+export type MateSignal = { k: Signal; at: number };
+export type Member = { id: string; name: string; owner: boolean; s: MateTimer | null; sig?: MateSignal | null };
 export type Proposal = { by: string; yes: string[] };
 
 export const MODE_NAME: Record<Mode, string> = { focus: "Focus", short: "Short break", long: "Long break" };
@@ -33,6 +36,25 @@ export function askOf(prop: Proposal | null, members: Member[], you: string | nu
   const count = prop.yes.length + " of " + members.length + " accepted";
   const kind = prop.by === you ? "mine" : prop.yes.includes(you as string) ? "accepted" : "asked";
   return { kind, by, count };
+}
+
+const MIN = 60000;
+export const SIGNALS: { id: Signal; e: string; name: string; ttl: number }[] = [
+  { id: "deep", e: "🎧", name: "Deep in it", ttl: 60 * MIN },
+  { id: "stuck", e: "🧩", name: "Stuck", ttl: 20 * MIN },
+  { id: "back", e: "☕", name: "Back in 2", ttl: 5 * MIN },
+  { id: "wrap", e: "🏁", name: "Wrapping up", ttl: 15 * MIN },
+];
+
+/** The status a member shows now; each one fades on its own after a while. */
+export function signalOf(sig: MateSignal | null | undefined, now: number) {
+  const s = sig && SIGNALS.find((x) => x.id === sig.k);
+  return s && now - sig!.at < s.ttl ? s : null;
+}
+
+/** A status that no longer fits what your timer is doing: you're back once you focus, and out of it on a break. */
+export function staleSignal(k: Signal | undefined, mode: Mode, status: "idle" | "running" | "paused") {
+  return (k === "back" && mode === "focus" && status === "running") || (k === "deep" && mode !== "focus");
 }
 
 export const REACTIONS = ["👋", "🎉", "🔥", "👍", "☕"];

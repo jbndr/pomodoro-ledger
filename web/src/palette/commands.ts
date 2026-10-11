@@ -9,9 +9,11 @@ import { LOOKS, timerBackdrop, timerFace, timerRing } from "../lib/faces";
 import { describeLook, findLook, savedLooks, type Parts } from "../lib/looks";
 import { choose, describeMix, mixCode, parseMix, phaseMix, PRESETS, savedMixes, type SavedMix } from "../lib/mix";
 import { labelHue, projectOf } from "../lib/tasks";
+import { SIGNALS } from "../lib/room";
 import { MODE_NAME, MODES } from "../lib/timer";
 import { phone, showPage } from "../pages";
 import { renderTasks, renderTimer } from "../render";
+import { mySignal, RM, roomSignal } from "../room/net";
 import { exportLedger } from "../settings/backup";
 import { cancelEnd, cancelTickPreview, previewSoundscape, scheduleEnd, syncTicking } from "../sound";
 import { cancelScapePreview, scapePlaying } from "../soundscape";
@@ -174,6 +176,13 @@ addCommands(() => {
     run: () => { S.settings.ticking = !S.settings.ticking; cancelTickPreview(); saveSound(S.settings.ticking ? "Ticking on. It plays while you focus." : "Ticking off."); } });
   out.push({ id: "sound.bell", group: "Sound", title: S.settings.sound ? "Mute the end sounds" : "Turn the end sounds on", words: "bell chime alert sound mute", icon: S.settings.sound ? G.mute : G.bell,
     run: () => { S.settings.sound = !S.settings.sound; if (S.settings.sound) scheduleEnd(); else cancelEnd(); saveSound(S.settings.sound ? "Sounds on." : "Sounds muted."); } });
+
+  if (RM.live) {
+    const cur = mySignal();
+    SIGNALS.forEach((g, i) => out.push({ id: "room.sig." + g.id, group: "Room", title: "Status: " + g.name, words: "status signal room busy away presence", keys: [String(i + 1)], on: cur === g,
+      icon: `<i class="pick-emoji" aria-hidden="true">${g.e}</i>`, run: () => roomSignal(g.id) }));
+    if (cur) out.push({ id: "room.sig.off", group: "Room", title: "Clear your status", words: "status signal room remove", keys: ["0"], icon: G.room, run: () => roomSignal(null) });
+  }
 
   const theme = normTheme(document.documentElement.dataset.theme);
   out.push(

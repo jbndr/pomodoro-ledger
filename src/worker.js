@@ -24,6 +24,9 @@ const RHYTHMS = ["25/5", "50/10"];
 const REACTIONS = ["👋", "🎉", "🔥", "👍", "☕"];
 const REACT_BURST = 5;
 const REACT_EVERY_MS = 4000;
+const SIGNALS = ["deep", "stuck", "back", "wrap"];
+const SIG_BURST = 4;
+const SIG_EVERY_MS = 3000;
 const SCHEDULES = 50;
 const SCHED_IDLE_MS = 21 * 24 * 3600000;
 const SCHED_BURST = 3;
@@ -174,7 +177,7 @@ export class Room extends DurableObject {
   async broadcast(except) {
     const all = this.members(except), prop = (await this.ctx.storage.get("prop")) || null, now = Date.now();
     const cfg = await this.ctx.storage.get("cfg"), pub = cfg ? { title: cfg.title, rhythm: cfg.rhythm, house: cfg.house, max: cfg.max || MAX_MEMBERS } : null;
-    const members = all.map(({ a }) => ({ id: a.pub, name: a.name, s: a.s, owner: !!a.owner }));
+    const members = all.map(({ a }) => ({ id: a.pub, name: a.name, s: a.s, owner: !!a.owner, sig: a.sig || null }));
     for (const { ws, a } of all) this.send(ws, { t: "room", now, you: a.pub, owner: !!a.owner, members, prop, pub });
   }
 
@@ -213,17 +216,17 @@ export class Room extends DurableObject {
       const id = String(m.id || "").slice(0, 40), name = clean(m.name, 20);
       if (!id || !name) return ws.close(4000, "Bad hello");
       const others = [];
-      let rb = null;
+      let rb = null, sig = null;
       for (const x of this.members(ws)) {
         if (x.a.id !== id) { others.push(x); continue; }
-        rb = x.a.rb || null;
+        rb = x.a.rb || null; sig = x.a.sig || null;
         x.ws.serializeAttachment(null);
         x.ws.close(4001, "Replaced");
       }
       const ownerToken = await store.get("ownerToken"), cfg = await store.get("cfg");
       if (others.length >= ((cfg && cfg.max) || MAX_MEMBERS)) return ws.close(4003, "Room is full");
       const owner = !cfg && !!ownerToken && m.ownerToken === ownerToken;
-      ws.serializeAttachment({ id, pub: pick(8), name, s: null, asked: 0, owner, rb });
+      ws.serializeAttachment({ id, pub: pick(8), name, s: null, asked: 0, owner, rb, sig });
       await this.broadcast();
       if (!cfg) return;
       await store.setAlarm(now + HEARTBEAT_MS);
@@ -244,6 +247,16 @@ export class Room extends DurableObject {
       ws.serializeAttachment(me);
       for (const x of this.members(ws)) this.send(x.ws, { t: "react", by: me.pub, name: me.name, e: m.e });
       return;
+    }
+
+    if (m.t === "sig") {
+      if (m.k !== null && !SIGNALS.includes(m.k)) return;
+      const n = tokens(me.sb, now, SIG_BURST, SIG_EVERY_MS);
+      if (n < 1) return;
+      me.sb = { n: n - 1, at: now };
+      me.sig = m.k && { k: m.k, at: now };
+      ws.serializeAttachment(me);
+      return this.broadcast();
     }
 
     // Public rooms follow the room clock: nobody owns them and there's nothing to vote on.

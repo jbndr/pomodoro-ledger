@@ -15,7 +15,8 @@
   function show(e) {
     const t = e.target.closest && e.target.closest("[data-tip]");
     hide();
-    if (!t) return;
+    // A menu that's open, or about to open from this tap, already says what the tip would.
+    if (!t || !document.getElementById("pop")?.hidden || (e.type === "click" && e.target.closest("[aria-haspopup]"))) return;
     if (t.classList.contains("hit") && t.nextElementSibling) { bar = t.nextElementSibling; bar.classList.add("hover"); }
     html = t.dataset.tip; shown = true;
     flushSync();
@@ -24,7 +25,7 @@
 </script>
 
 <svelte:document
-  onpointerdowncapture={(e) => { pointer = e.pointerType; }}
+  onpointerdowncapture={(e) => { pointer = e.pointerType; hide(); }}
   onpointermove={(e) => { if (e.pointerType === "mouse") show(e); }}
   onclick={(e) => { if (pointer !== "mouse") show(e); }}
   onpointerleave={hide}

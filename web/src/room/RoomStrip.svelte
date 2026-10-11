@@ -2,7 +2,7 @@
   import { backOut, cubicOut } from "svelte/easing";
   import { flip } from "svelte/animate";
   import { calm } from "../dom";
-  import { bubbleNames, mateClock, mateProgress, MODE_NAME, REACTIONS } from "../lib/room";
+  import { bubbleNames, mateClock, mateProgress, MODE_NAME, REACTIONS, signalOf, SIGNALS } from "../lib/room";
   import { room, roomClock } from "../lib/redraw.svelte";
   import { hueOf, initials } from "../lib/rhythm";
   import { copyInvite } from "./invite";
@@ -27,9 +27,22 @@
   const pop = () => calm() ? { duration: 160, css: (t) => `opacity: ${t}` } : { duration: 420, easing: backOut, css: (t) => `opacity: ${Math.min(1, t * 2)}; scale: ${0.4 + 0.6 * t}` };
   const fade = () => ({ duration: calm() ? 120 : 200, easing: cubicOut, css: (t) => `opacity: ${t}; scale: ${0.8 + 0.2 * t}` });
   const move = () => ({ duration: calm() ? 0 : 320, easing: cubicOut });
+  const badge = () => ({ duration: calm() ? 120 : 180, easing: cubicOut, css: (t) => `opacity: ${t}; scale: ${0.6 + 0.4 * t}` });
 
   const statusOf = (m) => !m.s || m.s.status === "idle" ? "Ready to focus" : MODE_NAME[m.s.mode] + " · " + mateClock(m.s, now) + (m.s.status === "paused" ? " · paused" : "");
-  const tip = (m) => "<b>" + (m.id === api.RM.you ? "You" : api.esc(m.name)) + "</b><br>" + statusOf(m);
+  const sigOf = (m) => signalOf(m.sig, now);
+  const sigText = (m) => { const g = sigOf(m); return g ? g.e + " " + g.name : ""; };
+  const tip = (m) => "<b>" + (m.id === api.RM.you ? "You" : api.esc(m.name)) + "</b><br>" + statusOf(m) + (sigOf(m) ? "<br>" + sigText(m) : "") + (m.id === api.RM.you ? '<br><span class="tip-k">Click to set a status</span>' : "");
+  const label = (m) => (m.id === api.RM.you ? "You" : m.name) + ": " + statusOf(m) + (sigOf(m) ? ", " + sigOf(m).name : "");
+
+  function pickSignal(e) {
+    e.stopPropagation();
+    if (!api.popHidden()) { api.closePop(); return; }
+    const cur = sigOf(api.RM.members.find((m) => m.id === api.RM.you) || {});
+    const items = SIGNALS.map((g, i) => ({ id: g.id, title: g.name, emoji: g.e, key: String(i + 1) }));
+    if (cur) items.push({ id: "", title: "Clear status", key: "0" });
+    api.openPop(e.currentTarget, items, cur ? cur.id : null, (id) => api.roomSignal(id || null));
+  }
 
   function send(e) {
     if (!api.roomReact(e)) return;
@@ -60,7 +73,12 @@
         {@const done = parseFloat(ring.deg) / 3.6}
         <li class="mate" data-mode={m.s ? m.s.mode : ""} data-status={m.s ? m.s.status : "idle"} class:you={m.id === api.RM.you} data-tip={tip(m)} animate:flip={move()} in:pop out:fade>
           <svg class="mate-ring" viewBox="0 0 40 40" aria-hidden="true"><circle class="track" cx="20" cy="20" r="18.6"/>{#if done > 0}<circle class="arc" cx="20" cy="20" r="18.6" pathLength="100" stroke-dasharray="{done} 100" transform="rotate(-90 20 20)"/>{/if}</svg>
-          <span class="face" style:--h={hueOf(m.name)} role="img" aria-label={(m.id === api.RM.you ? "You" : m.name) + ": " + statusOf(m)}>{initials(m.name)}</span>
+          {#if m.id === api.RM.you}
+            <button class="face" type="button" style:--h={hueOf(m.name)} data-move aria-haspopup="listbox" aria-label={label(m) + ". Set your status"} onclick={pickSignal}>{initials(m.name)}</button>
+          {:else}
+            <span class="face" style:--h={hueOf(m.name)} role="img" aria-label={label(m)}>{initials(m.name)}</span>
+          {/if}
+          {#if sigOf(m)}<span class="sig" aria-hidden="true" in:badge out:badge>{sigOf(m).e}</span>{/if}
           {#each v.floats.filter((f) => f.by === m.id) as f (f.key)}<span class="float" aria-hidden="true">{f.e}</span>{/each}
           {#if v.owner && !m.owner && m.id !== api.RM.you}<button class="kick" type="button" aria-label="Remove {m.name} from room" title="Remove from room" onclick={() => { if (api.RM.owner) api.roomSend({ t: "kick", id: m.id }); }}>×</button>{/if}
         </li>

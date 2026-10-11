@@ -190,6 +190,33 @@ test('opening a public room keeps its size between 2 and 12', async () => {
   assert.equal((await open({ pub: true, title: 'Focus', rhythm: '30/30', max: 4 })).status, 400);
 });
 
+const sigOf = (ws, name) => ws.messages.at(-1).members.find((m) => m.name === name).sig;
+
+test('a status from the fixed set reaches everyone, in public rooms too, and nothing else gets through', async () => {
+  const { hello, send } = setup(pub);
+  const ana = await hello('ana');
+  const ben = await hello('ben');
+  await send(ana, { t: 'sig', k: 'deep' });
+  assert.equal(sigOf(ben, 'ana').k, 'deep');
+  assert.equal(typeof sigOf(ben, 'ana').at, 'number');
+  await send(ana, { t: 'sig', k: 'Writing chapter 3' });
+  await send(ana, { t: 'sig', k: { k: 'deep' } });
+  assert.equal(sigOf(ben, 'ana').k, 'deep');
+  await send(ana, { t: 'sig', k: null });
+  assert.equal(sigOf(ben, 'ana'), null);
+});
+
+test('status changes are rate limited and survive a reconnect', async () => {
+  const { hello, send } = setup();
+  const ana = await hello('ana');
+  const ben = await hello('ben');
+  for (const k of ['deep', 'stuck', 'back', 'wrap', 'deep', 'stuck']) await send(ana, { t: 'sig', k });
+  assert.equal(sigOf(ben, 'ana').k, 'wrap');
+  const again = await hello('ana');
+  assert.equal(again.attachment.sig.k, 'wrap');
+  assert.equal(sigOf(ben, 'ana').k, 'wrap');
+});
+
 const reactsOf = (ws) => ws.messages.filter((m) => m.t === 'react');
 const notesOf = (ws) => ws.messages.filter((m) => m.t === 'note');
 

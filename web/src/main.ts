@@ -40,7 +40,7 @@ import Recap from "./progress/Recap.svelte";
 import { renderAll, renderEstPick, renderPill, renderStats, renderTasks, renderTimer, rethemeFloat } from "./render";
 import Together from "./room/Together.svelte";
 import RoomStrip from "./room/RoomStrip.svelte";
-import { followRoom, reactionsChanged, reactionsOn, reactWait, renderRoom, RM, roomConnect, roomCreate, roomEnter, roomInStep, roomList, roomReact, roomReset, roomSend } from "./room/net";
+import { followRoom, reactionsChanged, reactionsOn, reactWait, renderRoom, RM, roomConnect, roomCreate, roomEnter, roomInStep, roomList, roomReact, roomReset, roomSend, roomSignal } from "./room/net";
 import { Sched, watchReminders } from "./room/sched";
 import { exportLedger, importLedger, planImport } from "./settings/backup";
 import Settings from "./settings/Settings.svelte";
@@ -98,7 +98,7 @@ mount(Progress, { target: $(".app"), props: { api: {
   deleteSession, labelSession, moveSession, moveItems, openLabelPop, openPop, closePop, popHidden: () => pop.hidden, reopen: reopenTask, openRecap, openPlan, weekGoals, openYear,
 } } });
 const roomApi = { RM, S, ls, esc, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
-  roomReact, reactWait, reactionsOn };
+  roomReact, reactWait, reactionsOn, roomSignal, openPop, closePop, popHidden: () => pop.hidden };
 mount(BarTools, { target: $(".bar-right"), props: { api: {
   RM, ls, S, Cloud, DEMO, preview, openRoom: toggleRoom, openKeys, openPalette, openSettings: () => openSettings(),
   openSync: () => { if (!DEMO) openSettings("sync"); },

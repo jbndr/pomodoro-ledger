@@ -19,6 +19,7 @@ Worker in `src/` powers shared rooms and account sync.
 - Temporary shared rooms that sync timer status while keeping tasks and history private
 - Public rooms to drop into, where everyone's timer follows the room's clock
 - Quick reactions in rooms (👋 🎉 🔥 👍 ☕), with a one-tap 🎉 after each round
+- A status on your face in rooms (deep in it, stuck, back in 2, wrapping up), set from your own face or keys 1–4
 
 ## Project layout
 
