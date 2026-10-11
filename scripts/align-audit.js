@@ -13,6 +13,7 @@
     ["Bulk bar icon", ".bulk-bar.open button:not(.bulk-x)", "svg", ":scope"],
     ["Work together", ".together", ".faces, svg", ".together-label"],
     ["Best time icon", ".bd-name", "svg", ":scope"],
+    ["Best time button", "#bestBtn", "svg", ":scope"],
     ["Filter chip dot", ".label-filter button", ".label-dot", "span"],
     ["Row label dot", ".task-meta .meta-chip", ".label-dot", "span"],
     ["Best time tag icon", ".task-meta .best-tag", "svg", ":scope"],

@@ -37,8 +37,28 @@ async function open(page: Page) {
   if (await tab.isVisible()) await tab.click();
 }
 
+test("Best time stays out of the way until you turn it on", async ({ page }) => {
+  await open(page);
+  const btn = page.locator("#bestBtn");
+  await expect(btn).toHaveAttribute("aria-pressed", "false");
+  await expect(page.locator("#bestDay")).toBeHidden();
+  await expect(page.locator(".best-tag")).toHaveCount(0);
+  await expect(page.locator("#bestFit")).toHaveText(/^You focus best 9–11\. Line up “Write the quarterly report” for then\?/);
+  await btn.click();
+  await expect(btn).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#bestDay")).toBeVisible();
+  await expect(page.locator(".best-tag")).toHaveCount(2);
+  await page.reload();
+  await page.locator(".task").first().waitFor({ state: "attached" });
+  await expect(page.locator("#bestDay")).toBeVisible();
+  await page.locator("#bestBtn").click();
+  await expect(page.locator("#bestDay")).toBeHidden();
+  await expect(page.locator(".best-tag")).toHaveCount(0);
+});
+
 test("Today offers to line up the biggest task for your best time", async ({ page }) => {
   await open(page);
+  await page.locator("#bestBtn").click();
   const offer = page.locator("#bestFit");
   await expect(page.locator("#bestDay .bd-cap")).toHaveText(/Best time 9–11\s*in 50m/);
   await expect(page.locator("#bestDay .bd-hours .edge")).toHaveText(["9", "11"]);
@@ -64,6 +84,7 @@ test("Not today hides the offer until tomorrow", async ({ page }) => {
 test("While you drag a task, the tags show which tasks would land in your best time", async ({ page, isMobile }) => {
   test.skip(isMobile, "Dragging by mouse");
   await open(page);
+  await page.locator("#bestBtn").click();
   await page.locator('.task[data-id="d"]').hover();
   const g = (await page.locator('.task[data-id="d"] .grip').boundingBox())!;
   await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);

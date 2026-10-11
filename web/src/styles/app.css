@@ -609,6 +609,10 @@ body.sec-sorting, body.sec-sorting * { user-select: none; -webkit-user-select: n
 .filter-fold > div { min-height: 0; overflow: hidden; }
 .filter-fold:not(.open) .label-filter { visibility: hidden; transition: visibility 0s linear .4s; }
 .filter-fold .label-filter { margin-top: 10px; }
+.best-fold:not(.open) .best-day { visibility: hidden; transition: visibility 0s linear .4s; }
+.head-tools { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.filter-btn#bestBtn svg { width: 13px; height: 13px; }
+.filter-btn#bestBtn.on svg { color: var(--tomato); }
 /* The task the clock is on: a soft tint and a ring in the mode colour, no label. */
 .task.is-active .check { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent); }
 

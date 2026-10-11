@@ -86,6 +86,12 @@ export function lineUp(o: Offer) {
   toast(o.now ? "“" + o.title + "” is up next." : "Lined up “" + o.title + "” for your best time, from about " + fmtClock(o.start) + ".");
 }
 
+export function toggleBestShow() {
+  S.settings.bestShow = !S.settings.bestShow;
+  Store.saveSettings();
+  renderTasks();
+}
+
 export function notToday() {
   S.settings.bestSeen = todayKey();
   Store.saveSettings();
