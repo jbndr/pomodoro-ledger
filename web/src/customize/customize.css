@@ -9,38 +9,50 @@
 :root[data-theme="dark"] .cz { --st-card: #1F2421; --st-sunk: #171B19; }
 
 .cz-head { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
-.cz-btn { justify-self: start; height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: none; font: inherit; font-weight: 550; color: var(--muted); white-space: nowrap; transition: background .15s, color .15s, transform .1s; }
-@media (hover: hover) { .cz-btn:hover { background: var(--st-sunk); color: var(--fg); } }
-.cz-btn:active { transform: scale(.96); }
-.cz-done { justify-self: end; padding: 0 18px; background: var(--fg); color: var(--bg); }
+.cz-btn { justify-self: start; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%; background: var(--st-sunk); color: var(--muted); transition: background .15s, color .15s, scale .15s var(--st-spring); }
+.cz-btn svg { width: 16px; height: 16px; }
+@media (hover: hover) { .cz-btn:hover { background: color-mix(in oklab, var(--fg) 10%, var(--st-sunk)); color: var(--fg); } }
+.cz-btn:active { scale: .94; }
+.cz-done { justify-self: end; background: var(--fg); color: var(--bg); }
 @media (hover: hover) { .cz-done:hover { background: color-mix(in oklab, var(--fg) 86%, var(--bg)); color: var(--bg); } }
 .cz-btn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
-.cz-title { display: grid; justify-items: center; min-width: 0; text-align: center; }
-.cz-title b { font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
-.cz-title small { font-size: 12px; color: var(--faint); text-wrap: balance; }
-.cz-crumb { display: inline-flex; align-items: baseline; gap: 6px; font-size: 15px; }
-.cz-crumb button { padding: 0; border: 0; background: none; font: inherit; font-weight: 550; color: var(--muted); cursor: pointer; }
-@media (hover: hover) { .cz-crumb button:hover { color: var(--fg); } }
-.cz-crumb i { font-style: normal; color: var(--faint); }
+
+/* One group at a time, picked in a segmented control whose thumb slides to the tab that's on. */
+.cz-tabs { position: relative; isolation: isolate; display: inline-flex; padding: 3px; border-radius: 999px; background: var(--st-sunk); box-shadow: inset 0 0 0 1px var(--line); }
+.cz-tabs::before { content: ""; position: absolute; z-index: -1; top: 3px; bottom: 3px; left: 0; width: var(--tw, 0); translate: var(--tx, 0) 0; border-radius: 999px; background: var(--st-card); box-shadow: 0 1px 2px rgba(0,0,0,.1), 0 0 0 .5px var(--line-2); }
+.cz-tabs.ready::before { transition: translate .38s var(--st-spring), width .38s var(--st-spring); }
+.cz-tabs button { height: 28px; padding: 0 13px; border: 0; border-radius: 999px; background: none; font: inherit; font-size: 13px; font-weight: 600; letter-spacing: -.005em; color: var(--muted); white-space: nowrap; cursor: pointer; transition: color .2s; -webkit-tap-highlight-color: transparent; }
+@media (hover: hover) { .cz-tabs button:hover { color: var(--fg); } }
+.cz-tabs button[aria-selected="true"] { color: var(--fg); }
+.cz-tabs button:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
 .cz-hint { margin: 0; padding: 0 16px 2px; min-height: 1lh; font-size: 12.5px; line-height: 1.5; color: var(--faint); text-align: center; text-wrap: balance; }
 
-.cz-panel { min-width: 0; }
+.cz-panel { position: relative; display: grid; min-width: 0; }
+.cz-pane { grid-area: 1 / 1; min-width: 0; }
+.cz-pane:not(:last-child) { pointer-events: none; }
 .cz .st-faces { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 2px; }
+.cz .st-face { gap: 5px; padding: 5px 4px; }
 .cz .st-face b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cz .st-face.group { grid-column-start: 1; }
 
-/* Wide: every group at once, each one lighting up its part of the timer while you're in it. */
-.cz-scroll { display: grid; align-content: start; gap: 4px; min-height: 0; margin: 0 -14px; padding: 6px 14px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
-  -webkit-mask: linear-gradient(transparent, #000 12px, #000 calc(100% - 12px), transparent); mask: linear-gradient(transparent, #000 12px, #000 calc(100% - 12px), transparent); }
-.cz-scroll::-webkit-scrollbar { display: none; }
-.cz-sec { display: grid; gap: 4px; padding: 10px 0 6px; border-top: 1px solid var(--line); scroll-margin: 8px; }
-.cz-sec:first-child { border-top: 0; padding-top: 2px; }
-.cz-sec h3 { margin: 0; padding-left: 6px; font-size: 12.5px; font-weight: 600; color: var(--muted); transition: color .2s; }
-.cz-sec.on h3 { color: var(--fg); }
+/* Wide: the group fills the panel beside the card and scrolls inside it when it's longer. */
+.cz.wide .cz-panel { min-height: 0; margin: 0 -14px; padding: 0 14px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.cz.wide .cz-panel[data-fade="t"] { -webkit-mask: linear-gradient(transparent, #000 16px); mask: linear-gradient(transparent, #000 16px); }
+.cz.wide .cz-panel[data-fade="b"] { -webkit-mask: linear-gradient(#000 calc(100% - 16px), transparent); mask: linear-gradient(#000 calc(100% - 16px), transparent); }
+.cz.wide .cz-panel[data-fade="tb"] { -webkit-mask: linear-gradient(transparent, #000 16px, #000 calc(100% - 16px), transparent); mask: linear-gradient(transparent, #000 16px, #000 calc(100% - 16px), transparent); }
+.cz.wide .cz-panel::-webkit-scrollbar { display: none; }
 
-/* The parts of the timer you can tap while customizing, outlined the way the Lock Screen's are when you edit it. */
+/* Tiles hold still until you point at one, so scrolling past a dozen moving backgrounds stays smooth; the dimmed page behind holds still too. */
+.cz .st-stage::before, .cz .st-stage::after, .cz .st-stage *, .cz .st-stage *::before, .cz .st-stage *::after,
+body.customizing :is(.bar, .room, .banner, .progress, .tabbar, .top > .panel) *,
+body.customizing :is(.bar, .room, .banner, .progress, .tabbar, .top > .panel) *::before,
+body.customizing :is(.bar, .room, .banner, .progress, .tabbar, .top > .panel) *::after { animation-play-state: paused !important; }
+@media (hover: hover) { .cz .st-face:hover .st-stage *, .cz .st-face:hover .st-stage *::before, .cz .st-face:hover .st-stage *::after { animation-play-state: running !important; } }
+.cz .st-face:focus-visible .st-stage *, .cz .st-face:focus-visible .st-stage *::before, .cz .st-face:focus-visible .st-stage *::after { animation-play-state: running !important; }
+
+/* The parts of the timer you can tap while customizing: the one being changed is outlined, the way the Lock Screen's are when you edit it, and the others when you point at them. */
 .cz-zone { position: absolute; z-index: 3; padding: 0; border: 0; border-radius: 50%; background: none; color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-.cz-zone::before { content: ""; position: absolute; inset: 0; border: 1.5px dashed color-mix(in oklab, var(--fg) 30%, transparent); border-radius: inherit; transition: border-color .3s, box-shadow .35s cubic-bezier(.32, .72, 0, 1); }
+.cz-zone::before { content: ""; position: absolute; inset: 0; border: 1.5px dashed transparent; border-radius: inherit; transition: border-color .3s, box-shadow .35s cubic-bezier(.32, .72, 0, 1); }
 @media (hover: hover) { .cz-zone:hover::before { border-color: color-mix(in oklab, var(--fg) 60%, transparent); } }
 .cz-zone.hot::before { border-color: color-mix(in oklab, var(--fg) 60%, transparent); }
 .cz-zone[aria-pressed="true"]::before { border-style: solid; border-color: color-mix(in oklab, var(--fg) 90%, transparent); box-shadow: 0 0 0 4px color-mix(in oklab, var(--fg) 8%, transparent); }
@@ -77,7 +89,16 @@ body.customizing :is(.bar, .room, .banner, .progress, .tabbar) { opacity: .22; }
     -webkit-mask: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); mask: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); }
   .cz .st-faces::-webkit-scrollbar { display: none; }
   .cz .st-face { flex: 0 0 82px; scroll-snap-align: start; }
-  .cz .st-face:is(.group, .yours) { margin-left: 14px; }
+  .cz :is(.st-face.group, .yours) { margin-left: 14px; }
+  .cz .cz-mine { flex: 0 0 82px; }
+  .cz .cz-badge { width: 24px; height: 24px; }
+}
+@media (max-width: 640px) {
+  .cz-hint { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+@media (max-width: 400px) {
+  .cz-head { gap: 6px; padding: 0 10px; }
+  .cz-tabs button { padding: 0 8px; font-size: 12.5px; }
 }
 /* Phones: the full-screen timer becomes a framed preview above the tray, so the whole background stays in view. */
 @media (max-width: 640px) {
@@ -89,7 +110,6 @@ body.customizing :is(.bar, .room, .banner, .progress, .tabbar) { opacity: .22; }
     border-radius: 34px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 18px 40px -24px rgba(0,0,0,.35);
   }
   html body.customizing[data-page="timer"][data-backdrop]:not(.zen) .timer-card > .glow { display: block; position: absolute; }
-  .cz-btn { padding: 0 12px; }
 }
 
 /* Your looks: Save look holds the mix on the timer until it's kept, and an empty slot when there's nothing new to keep. */
@@ -106,6 +126,22 @@ body.customizing :is(.bar, .room, .banner, .progress, .tabbar) { opacity: .22; }
 .cz-naming .st-stage { outline-color: var(--fg); outline-offset: 2px; }
 .cz-name { box-sizing: border-box; width: 100%; height: calc(12.5px * 1.2); margin: 0; padding: 0 2px; border: 0; border-radius: 3px; background: var(--st-sunk); color: var(--fg); font: inherit; font-size: 12.5px; font-weight: 550; line-height: 1.2; text-align: center; outline: none;
   box-shadow: 0 0 0 3px var(--st-sunk), 0 0 0 4.5px color-mix(in oklab, var(--fg) 50%, transparent); }
+/* Your own looks carry their rename and delete on the preview: on the one that's on, and on any you point at. */
+.cz-mine { position: relative; display: grid; min-width: 0; }
+.cz-badge { position: absolute; z-index: 3; top: 9px; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: var(--st-card); color: var(--fg); cursor: pointer;
+  box-shadow: 0 0 0 1px var(--line-2), 0 2px 6px -1px rgba(0,0,0,.3); opacity: 0; scale: .8; pointer-events: none; transition: opacity .16s, scale .26s var(--st-spring), background .15s, color .15s; -webkit-tap-highlight-color: transparent; }
+.cz-badge::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; }
+.cz-badge svg { width: 12px; height: 12px; }
+.cz-badge-edit { left: 8px; }
+.cz-badge-del { right: 8px; }
+.cz-mine.on .cz-badge, .cz-mine:focus-within .cz-badge { opacity: 1; scale: 1; pointer-events: auto; }
+@media (hover: hover) {
+  .cz-mine:hover .cz-badge { opacity: 1; scale: 1; pointer-events: auto; }
+  .cz-badge-edit:hover { background: var(--fg); color: var(--bg); }
+  .cz-badge-del:hover { background: oklch(57% .2 27); color: #fff; }
+}
+.cz-badge:active { scale: .9; }
+.cz-badge:focus-visible { outline: 2px solid var(--fg); outline-offset: 1px; }
 .cz-own { display: inline-flex; align-items: baseline; gap: 12px; max-width: 100%; }
 .cz-own > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cz-own button { flex: none; padding: 0; border: 0; border-radius: 4px; background: none; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; transition: color .15s; }
@@ -124,11 +160,23 @@ body.customizing :is(.bar, .room, .banner, .progress, .tabbar) { opacity: .22; }
 /* The timer's dial and the tray each move on their own; everything else crossfades. */
 .cz-morph .timer-card .dial-wrap { view-transition-name: cz-dial; }
 .cz-morph .cz { view-transition-name: cz-tray; }
+/* A pick crossfades only the card; the rest of the page, the tray included, stays live and takes scrolls and clicks right through. */
+.cz-pick .timer-card { view-transition-name: cz-card; }
+.cz-pick::view-transition { pointer-events: none; }
+.cz-pick::view-transition-old(root) { display: none; }
+.cz-pick::view-transition-new(root) { animation: none; }
+.cz-pick::view-transition-group(cz-card) { animation-duration: .24s; }
+.cz-pick::view-transition-old(cz-card), .cz-pick::view-transition-new(cz-card) { animation-duration: .24s; animation-timing-function: ease; }
 .cz-morph::view-transition-old(root) { animation: cz-fade-out .28s ease both; }
 .cz-morph::view-transition-new(root) { animation: cz-fade-in .28s ease both; }
 .cz-morph::view-transition-group(cz-dial) { animation-duration: .46s; animation-timing-function: cubic-bezier(.32, .72, 0, 1); }
 .cz-morph::view-transition-group(cz-tray) { animation-duration: .3s; }
-.cz-morph::view-transition-new(cz-tray):only-child { animation: cz-tray-in .36s cubic-bezier(.32, .72, 0, 1) both; }
+.cz-morph::view-transition-new(cz-tray):only-child { animation: cz-tray-in .36s .06s cubic-bezier(.32, .72, 0, 1) both; }
+/* The task list clears before the tray comes in, and comes back only once it has gone, so the two never show through each other. */
+@media (min-width: 901px) { .cz-morph .top > .panel { view-transition-name: cz-list; } }
+.cz-morph::view-transition-group(cz-list) { animation: none; }
+.cz-morph::view-transition-old(cz-list) { animation: cz-fade-out .12s ease both; }
+.cz-morph::view-transition-new(cz-list) { animation: cz-fade-in .24s .18s ease both; }
 .cz-morph::view-transition-old(cz-tray):only-child { animation: cz-tray-out .2s ease-in both; }
 @media (max-width: 900px) {
   .cz-morph::view-transition-new(cz-tray):only-child { animation: cz-tray-up .46s cubic-bezier(.32, .72, 0, 1) both; }
