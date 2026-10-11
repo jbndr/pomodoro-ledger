@@ -122,11 +122,11 @@ for (const scheme of process.env.SCHEMES?.split(",") ?? ["light", "dark"]) {
     },
     async estimates() {
       page = await open(940, 1100, { dpr: 4 });
-      // The numbers are one card now; keep only its Estimates cell so the card's own frame stays whole.
-      await page.addStyleTag({ content: "#tiles{grid-template-columns:auto!important;width:max-content} #tiles .tile:not(:nth-child(4)){display:none} #tiles .tile:nth-child(4){border-left:0;padding:18px 24px 20px}" });
-      await page.locator("#tiles").scrollIntoViewIfNeeded();
+      // Only the answer at the top of How long things take, in a card of its own width.
+      await page.addStyleTag({ content: "#ledger{width:max-content;max-width:420px;padding:18px 24px 20px} #ledger .est-legend,#ledger .est-list,#ledger #toggleAll{display:none!important}" });
+      await page.locator("#ledger").scrollIntoViewIfNeeded();
       await page.waitForTimeout(500);
-      await shot(page, "#tiles", "estimates");
+      await shot(page, "#ledger", "estimates");
       await page.close();
     },
     async insights() {

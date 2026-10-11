@@ -7,7 +7,7 @@
   import { MIN } from "../lib/dates";
   import { matchesLabel } from "../lib/tasks";
 
-  let { api, day, items, gaps, sum, isToday, now, filter = "", name, dir = 1, canPrev, canNext, onstep } = $props();
+  let { api, day, items, gaps, sum, isToday, now, filter = "", line, name, dir = 1, canPrev, canNext, onstep } = $props();
   const uid = $props.id();
   let w = $state(0), at = $state(null), sel = $state(null), zoom = $state(null);
 
@@ -70,13 +70,6 @@
   };
   // With a label picked, the whole day stays, so breaks and idle keep their meaning; other labels' focus steps back.
   const off = (it) => !!filter && it.kind === "focus" && !matchesLabel(it.label, filter);
-  const picked = $derived(filter ? items.reduce((n, it) => n + (it.kind === "focus" && !it.live && !off(it) ? it.ms : 0), 0) : 0);
-  const rest = $derived([
-    api.fmtDur(sum.focus) + " focus" + (filter ? " (" + api.fmtDur(picked) + " " + (filter === "none" ? "no label" : filter.slice(8)) + ")" : ""),
-    ...(sum.due ? [sum.taken + " of " + sum.due + " breaks taken"] : []),
-    ...(sum.idle >= MIN ? [api.fmtDur(sum.idle) + " idle"] : []),
-    clock(sum.start) + " – " + (isToday ? "now" : clock(sum.end)),
-  ].join(" · "));
 
   const tAt = (X) => c.from + (X / c.W) * c.span;
   const rel = (e) => { const r = e.currentTarget.getBoundingClientRect(); return Math.max(0, Math.min(c.W, ((e.clientX - r.left) / r.width) * c.W)); };
@@ -161,7 +154,7 @@
         {#if range}<b>{clock(range[0])} – {clock(range[1])}</b> · {api.fmtDur(Math.max(MIN, range[1] - range[0]))}
         {:else if at}<i style:--c="var(--c-{at.b.k})"></i><b>{clock(at.t)}</b> {KIND[at.b.k]} · {detail(at.b.it, at.b.k)}
         {:else if zoom}<button class="sg-reset" type="button" onclick={reset}>Whole day</button>{clock(zoom.from)} – {clock(zoom.to)} · {api.fmtDur(zoom.to - zoom.from)}
-        {:else if items.length}{rest}
+        {:else if items.length}{line}
         {:else}{isToday ? "Nothing logged yet. Your day draws itself here as you focus and take breaks." : "No focus logged on this day."}{/if}
       </p>
     </div>
