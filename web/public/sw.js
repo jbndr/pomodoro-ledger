@@ -1,5 +1,5 @@
 // Offline shell for the app under /app/; the marketing pages are network-only.
-const CACHE = "pomodoro-ledger-v4";
+const CACHE = "pomodoro-ledger-v5";
 const SHELL = ["/app/", "/manifest.webmanifest", "/favicon.svg", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -27,11 +27,10 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  const fonts = url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com";
-  if (url.origin !== location.origin && !fonts) return;
+  if (url.origin !== location.origin) return;
   e.respondWith(caches.match(req).then((hit) => {
     const fresh = fetch(req).then((res) => {
-      if (res.ok || res.type === "opaque") { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
       return res;
     });
     return hit || fresh;
