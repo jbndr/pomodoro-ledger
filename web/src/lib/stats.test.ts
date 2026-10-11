@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays, sod } from "./dates";
-import { dayLabels, dayTotals, estimateAccuracy, heatLevel, spanDays, streaks } from "./stats";
+import { dayLabels, dayTotals, estimateAccuracy, heatLevel, minuteScale, spanDays, streaks } from "./stats";
 import type { Session, Task, Tasks } from "./tasks";
 
 // Saturday, 3 October 2026.
@@ -66,6 +66,11 @@ describe("dayLabels", () => {
 });
 
 describe("chart helpers", () => {
+  it("picks a minutes scale with at most four steps", () => {
+    expect(minuteScale(60)).toEqual({ step: 15, top: 60 });
+    expect(minuteScale(200)).toEqual({ step: 60, top: 240 });
+    expect(minuteScale(2000)).toEqual({ step: 480, top: 2400 });
+  });
   it.each([[0, 0], [10, 1], [30, 2], [100, 3], [200, 4]])("shades %i minutes as level %i", (min, lv) => {
     expect(heatLevel(min)).toBe(lv);
   });

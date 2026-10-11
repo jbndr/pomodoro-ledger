@@ -52,6 +52,14 @@ export function dayLabels(tasks: Tasks): Map<DayKey, Map<string, number>> {
   return m;
 }
 
+const STEPS = [15, 30, 60, 90, 120, 180, 240, 360];
+
+/** Gridline step and top of a minutes axis, with at most four steps. */
+export function minuteScale(max: number): { step: number; top: number } {
+  const step = STEPS.find((s) => max / s <= 4) || 480;
+  return { step, top: Math.ceil(max / step) * step };
+}
+
 /** Calendar shade for a day's focus minutes, 0 to 4. */
 export const heatLevel = (min: number) => (min === 0 ? 0 : min < 30 ? 1 : min < 75 ? 2 : min < 150 ? 3 : 4);
 

@@ -3,16 +3,14 @@
   import { progress } from "../lib/redraw.svelte";
   import { dayLabels, dayTotals } from "../lib/stats";
   import { focusTasks, matchLabel, progressLabelNames } from "../lib/tasks";
+  import Bars from "./Bars.svelte";
   import BestTime from "./BestTime.svelte";
   import DayCard from "./DayCard.svelte";
   import Finished from "./Finished.svelte";
   import Habits from "./Habits.svelte";
   import Heat from "./Heat.svelte";
-  import InProgress from "./InProgress.svelte";
   import Journal from "./Journal.svelte";
   import LabelMenu from "./LabelMenu.svelte";
-  import Lengths from "./Lengths.svelte";
-  import SevenDays from "./SevenDays.svelte";
   import TodayLine from "./TodayLine.svelte";
   import WeekGoals from "./WeekGoals.svelte";
   import WhereTime from "./WhereTime.svelte";
@@ -53,18 +51,18 @@
   <TodayLine {api} tasks={m.vt} days={m.days} today={m.today} now={m.now} />
   <DayCard {api} tasks={m.all} {day} {dir} {first} today={m.today} filter={m.f} onpick={pick} />
   {#if m.goals}<WeekGoals {api} week={m.goals} today={m.today} />{/if}
-  <SevenDays {api} tasks={m.all} today={m.today} filter={m.f} selected={day} onpick={pick} />
-  <div class="pair">
-    <Finished {api} tasks={m.ledger} />
-    <InProgress {api} tasks={m.ledger} all={m.all} />
-  </div>
-  <WhereTime {api} tasks={m.all} today={m.today} filter={m.f} />
-  <div class="pair">
-    <Habits {api} tasks={m.all} today={m.today} />
-    <Lengths {api} tasks={m.vt} />
+  <div class="charts">
+    <figure class="chart-card" id="perDay">
+      <h3>Focus per day</h3>
+      <div class="sub">Last 14 days, in minutes. Dashed line is your daily goal.</div>
+      <Bars {api} days={m.days} today={m.today} split={m.split} goalMin={api.S.settings.goal * api.S.settings.focus} selected={day} onpick={pick} />
+    </figure>
+    <Heat {api} days={m.days} today={m.today} split={m.split} />
   </div>
   <BestTime {api} tasks={m.vt} today={m.today} />
-  <Heat {api} days={m.days} today={m.today} split={m.split} />
+  <Finished {api} tasks={m.ledger} />
+  <WhereTime {api} tasks={m.all} today={m.today} filter={m.f} />
+  <Habits {api} tasks={m.all} today={m.today} />
   <!-- A new filter starts the journal from its first days again. -->
   {#key m.f}<Journal {api} tasks={m.all} filter={m.f} />{/key}
 </section>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { addDays } from "./dates";
 import type { BreakEntry } from "./day";
-import { journal, labelPace, lengthBins, ratioWords, sessionKind, shareShift, timerHabits, usualHours, weekLabels } from "./patterns";
+import { journal, ratioWords, sessionKind, shareShift, timerHabits, weekLabels } from "./patterns";
 import type { Session, Task, Tasks } from "./tasks";
 
 // Saturday, 3 October 2026; the week started on Monday 28 September.
@@ -29,29 +29,6 @@ describe("ratioWords", () => {
     expect(ratioWords(1.5)).toBe("about half again as long as you plan");
     expect(ratioWords(2)).toBe("about twice as long as you plan");
     expect(ratioWords(3.4)).toBe("3 times as long as you plan");
-  });
-});
-
-describe("labelPace", () => {
-  const done = (id: string, project: string, est: number, took: number): Task => ({ id, title: id, project, est, done: true, sessions: [...Array(took)].map((_, i) => ses(MON, 0, 9 + i)) });
-  it("takes the median per label and needs two tasks", () => {
-    const p = labelPace([done("a", "Writing", 4, 8), done("b", "Writing", 2, 3), done("c", "Writing", 5, 10), done("d", "App", 3, 3)]);
-    expect(p.get("Writing")).toBe(2);
-    expect(p.has("App")).toBe(false);
-  });
-  it("skips open tasks and tasks without an estimate", () => {
-    const p = labelPace([done("a", "App", 0, 4), { ...done("b", "App", 2, 2), done: false }, done("c", "App", 2, 2)]);
-    expect(p.size).toBe(0);
-  });
-});
-
-describe("usualHours", () => {
-  const day = (d: number, from: number, to: number, done = true) => ({ from: addDays(MON, d) + from * HOUR, to: addDays(MON, d) + to * HOUR, done });
-  it("finds the median start and end", () => {
-    expect(usualHours([day(0, 9, 17), day(1, 10, 18), day(2, 8.5, 16), day(3, 9.25, 20, false)])).toEqual({ start: 9.125 * HOUR, end: 17 * HOUR });
-  });
-  it("needs three days", () => {
-    expect(usualHours([day(0, 9, 17), day(1, 10, 18)])).toBeNull();
   });
 });
 
@@ -83,18 +60,6 @@ describe("timerHabits", () => {
     expect(h.over).toEqual([10 * MIN, 0]);
     expect(h.early).toEqual([0, 1]);
     expect(h.flow).toEqual([0, 50 * MIN]);
-  });
-});
-
-describe("lengthBins", () => {
-  it("bins stopped cycles and flow, and counts full cycles apart", () => {
-    const b = lengthBins(tasks({ id: "a", title: "A", sessions: [ses(MON, 0, 9), ses(MON, 0, 10, 0, 12, { full: false }), ses(MON, 0, 11, 0, 48, { full: false, run: "fl-1" }), ses(MON, 0, 12, 0, 120, { full: false, run: "fl-2" }), ses(MON, 0, 13, 0, 9, { full: false, run: "ot-1" })] }));
-    expect(b.cycles).toBe(1);
-    expect(b.bins[2]).toBe(1);
-    expect(b.bins[9]).toBe(1);
-    expect(b.bins[15]).toBe(1);
-    expect(b.early).toEqual([12 * MIN]);
-    expect(b.flow).toHaveLength(2);
   });
 });
 

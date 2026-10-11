@@ -1,17 +1,12 @@
-import { addDays, MIN, sod } from "./dates";
+import { addDays, sod } from "./dates";
 import { breaksTaken, dayItems, runStart, type BreakEntry } from "./day";
 import { weekStart } from "./insights";
-import { cyclesOf, matchesLabel, sessionProject, type LabelFilter, type Session, type Task, type Tasks } from "./tasks";
+import { matchesLabel, sessionProject, type LabelFilter, type Session, type Task, type Tasks } from "./tasks";
 
 export type SessionKind = "cycle" | "flow" | "over" | "early";
 
 /** What a logged session was: a full cycle, flow, time past the bell, or a cycle stopped early. */
 export const sessionKind = (s: Session): SessionKind => (s.full ? "cycle" : s.run?.startsWith("fl-") ? "flow" : s.run?.startsWith("ot-") ? "over" : "early");
-
-const median = (a: number[]) => {
-  const s = [...a].sort((x, y) => x - y), m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-};
 
 /** Took ÷ planned in words, to finish "Tasks take …". */
 export function ratioWords(r: number): string {
@@ -22,24 +17,6 @@ export function ratioWords(r: number): string {
   if (r < 1.7) return "about half again as long as you plan";
   if (r < 2.3) return "about twice as long as you plan";
   return Math.round(r) + " times as long as you plan";
-}
-
-/** Each label's median took ÷ planned over its finished tasks with an estimate and focus, for labels with at least two. "" is no label. */
-export function labelPace(tasks: Iterable<Task>): Map<string, number> {
-  const by = new Map<string, number[]>();
-  for (const t of tasks) {
-    if (!t.done || t.system || !t.est || !(t.sessions || []).length) continue;
-    const name = typeof t.project === "string" ? t.project.trim() : "";
-    by.set(name, [...(by.get(name) || []), cyclesOf(t) / t.est]);
-  }
-  return new Map([...by].filter(([, r]) => r.length >= 2).map(([name, r]) => [name, median(r)]));
-}
-
-/** The usual time of day, in ms after midnight, that days with focus start, and that finished days end. Needs three days to say. */
-export function usualHours(days: { from: number; to: number; done: boolean }[]): { start: number; end: number | null } | null {
-  if (days.length < 3) return null;
-  const ends = days.filter((d) => d.done).map((d) => d.to - sod(d.from));
-  return { start: median(days.map((d) => d.from - sod(d.from))), end: ends.length >= 2 ? median(ends) : null };
 }
 
 export interface WeekLabels {
@@ -113,20 +90,6 @@ export function timerHabits(tasks: Tasks, breaks: BreakEntry[] | undefined, days
   }
   h.earlyTop = [...stopped].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   return h;
-}
-
-/** Lengths of sessions that weren't full cycles or time past the bell, counted in `step`-minute bins; the last bin holds everything from `last` up. */
-export function lengthBins(tasks: Tasks, step = 5, last = 75): { bins: number[]; flow: number[]; early: number[]; cycles: number } {
-  const bins = Array<number>(last / step + 1).fill(0), flow: number[] = [], early: number[] = [];
-  let cycles = 0;
-  for (const t of tasks.values()) for (const s of t.sessions || []) {
-    const kind = sessionKind(s);
-    if (kind === "cycle") { cycles++; continue; }
-    if (kind === "over" || !s.ms) continue;
-    (kind === "flow" ? flow : early).push(s.ms);
-    bins[Math.min(bins.length - 1, Math.floor(s.ms / MIN / step))]++;
-  }
-  return { bins, flow, early, cycles };
 }
 
 export interface JournalSession { key: string; from: number; to: number; ms: number; label: string; kind: SessionKind }
