@@ -4,7 +4,8 @@
   import { applyTheme, theme } from "../chrome/theme.svelte";
   import { extensionVersion } from "../extension";
   import { mixLabel } from "../lib/mix";
-  import { BACKDROPS, FACES, lookOf, LOOKS, RINGS, timerBackdrop, timerFace, timerRing } from "../lib/faces";
+  import { BACKDROPS, FACES, LOOKS, RINGS, timerBackdrop, timerFace, timerRing } from "../lib/faces";
+  import { describeLook, findLook, savedLooks } from "../lib/looks";
   import LookCard from "../customize/LookCard.svelte";
   import { phaseMorph } from "../lib/phaseMorph";
   import { rolloverMode } from "../lib/rollover";
@@ -138,8 +139,7 @@
     });
   }
 
-  const name = (list, id) => list.find(([k]) => k === id)?.[1];
-  const current = $derived(lookOf(f.face, f.ring, f.backdrop)?.name || [name(FACES, f.face), f.ring === "none" ? "No ring" : name(RINGS, f.ring) + " ring", name(BACKDROPS, f.backdrop)].join(" · "));
+  const current = $derived.by(() => { mixVersion; return findLook(f, savedLooks(api.S.settings.looks))?.name || describeLook(f); });
   // Three looks fanned out like cards to show how far the timer can go; each one tries itself on.
   const SHOWCASE = [["bold", "17:30", 0.7], ["forecast", "24:12", 0.97], ["notebook", "18:45", 0.35]].map(([id, time, frac]) => ({ look: LOOKS.find((l) => l.id === id), time, frac }));
   const touch = matchMedia("(hover: none)").matches;
@@ -320,7 +320,7 @@
                 <div class="st-look-stage">
                   {#each SHOWCASE as s (s.look.id)}<button class="st-look-card" type="button" aria-label={"Try the " + s.look.name + " look"} title={s.look.name} onclick={() => customize("looks", s.look.id)}><LookCard look={s.look} time={s.time} frac={s.frac} /></button>{/each}
                 </div>
-                <div class="st-look-copy"><b>Make the timer yours</b><span>Start from one of {LOOKS.length} looks, or mix your own from {FACES.length} faces, {RINGS.length - 1} rings and {BACKDROPS.length} backgrounds, right on the timer.</span></div>
+                <div class="st-look-copy"><b>Make the timer yours</b><span>Start from one of {LOOKS.length} looks, or mix and save your own from {FACES.length} faces, {RINGS.length - 1} rings and {BACKDROPS.length} backgrounds, right on the timer.</span></div>
                 <div class="st-look-foot"><small>Current: {current}</small><button class="st-btn ink" type="button" onclick={() => customize()}>Customize</button></div>
               </div>
             </div><p class="st-cap">You can also {touch ? "long-press" : "right-click"} the dial to get there from the timer.</p></section>

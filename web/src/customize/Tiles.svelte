@@ -1,6 +1,9 @@
 <script>
   import { onDestroy, onMount } from "svelte";
+  import { fade } from "svelte/transition";
+  import { calm } from "../dom";
   import { BACKDROP_GROUPS, BACKDROPS, FACE_GROUPS, FACES, LOOKS, RINGS } from "../lib/faces";
+  import { describeLook, LOOK_NAME_MAX } from "../lib/looks";
   import LookCard from "./LookCard.svelte";
   import { clock, knobAt, litTicks } from "../lib/timer";
   import DialRing from "../timer/DialRing.svelte";
@@ -11,20 +14,22 @@
   import { applyWeather, weatherHint } from "../weather.svelte";
   import { wantWeatherArt } from "../weatherArt";
 
-  let { kind, value, onpick, onhint } = $props();
+  let { kind, value, onpick, onhint, mine = [], save = null, editing = "", onrename } = $props();
 
   wantHalftone();
   $effect(() => { if (kind === "backdrop") { wantWeatherArt(); applyWeather(document.documentElement); } });
 
-  const LIST = { looks: LOOKS.map((l) => [l.id, l.name, l.note]), face: FACES, ring: RINGS, backdrop: BACKDROPS }, NAME = { looks: "Looks", face: "Face", ring: "Ring", backdrop: "Background" };
-  const START = 17 * 60 + 30, TOTAL = 25 * 60;
-  const items = $derived(LIST[kind]);
+  const LIST = { face: FACES, ring: RINGS, backdrop: BACKDROPS }, NAME = { looks: "Looks", face: "Face", ring: "Ring", backdrop: "Background" };
+  const START = 17 * 60 + 30, TOTAL = 25 * 60, SAVE = "+save";
+  const looks = $derived([...LOOKS, ...mine]);
+  const items = $derived(kind === "looks" ? looks.map((l) => [l.id, l.name, l.note || describeLook(l)]) : LIST[kind]);
   // With nothing chosen (a mix that isn't one of the looks), the first tile takes the group's turn in the tab order.
   const tabStop = $derived(items.some(([id]) => id === value) ? value : items[0][0]);
   let secs = $state(Object.fromEntries([...FACES, ...RINGS].map(([id]) => [id, START]))), playing = $state(""), timer = 0, grid;
   const skyHint = $derived(sky.turn ? [sky.here?.place, (sky.turn.rise ? "Sunrise at " : "Sunset at ") + fmtClock(sky.turn.at)].filter(Boolean).join(" · ") : "");
-  const shown = $derived(playing || value);
-  const hint = $derived((shown === "sky" && skyHint) || (shown === "weather" && weatherHint()) || items.find(([id]) => id === shown)?.[2] || "");
+  // A mix that isn't a look yet is Save look's to describe.
+  const shown = $derived(playing || value || (save?.look ? SAVE : ""));
+  const hint = $derived((shown === SAVE && save?.hint) || (shown === "sky" && skyHint) || (shown === "weather" && weatherHint()) || items.find(([id]) => id === shown)?.[2] || "");
 
   // Pointing at a face ticks its preview in real seconds; a ring runs down 25 seconds a step, so a tile turns or a dot goes out each time.
   function play(id, step = 1) {
@@ -45,7 +50,7 @@
 
   // Arrow keys move through the tiles and try each one on, as radio buttons do; up and down skip a row in a grid.
   function key(e) {
-    const tiles = [...grid.querySelectorAll(".st-face")], at = tiles.indexOf(document.activeElement);
+    const tiles = [...grid.querySelectorAll('.st-face[role="radio"]')], at = tiles.indexOf(document.activeElement);
     if (at < 0) return;
     const cols = tiles.filter((t) => t.offsetTop === tiles[0].offsetTop).length;
     const by = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: cols < tiles.length ? cols : 1, ArrowUp: cols < tiles.length ? -cols : -1, Home: -at, End: tiles.length - 1 - at }[e.key];
@@ -57,34 +62,59 @@
     onpick(next.dataset.id);
   }
 
-  $effect(() => { onhint?.(hint); });
+  $effect(() => { onhint?.(hint, shown); });
 
   // In a row of tiles to swipe through, the current one starts in view.
   onMount(() => {
-    const sel = grid.querySelector('[aria-checked="true"]');
+    const sel = grid.querySelector('[aria-checked="true"], .cz-save:not([aria-disabled="true"])');
     if (!sel || grid.scrollWidth <= grid.clientWidth) return;
     const g = grid.getBoundingClientRect(), r = sel.getBoundingClientRect();
     grid.scrollLeft += r.left - g.left - (g.width - r.width) / 2;
   });
 
   onDestroy(() => clearInterval(timer));
+
+  function naming(node) {
+    node.focus({ preventScroll: true });
+    node.select();
+  }
+
+  function nameKey(e) {
+    if (e.key === "Enter") { e.preventDefault(); onrename(e.currentTarget.value, true); }
+    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); onrename(null, true); }
+  }
 </script>
 
 <div class="st-faces" role="radiogroup" tabindex="-1" aria-label={NAME[kind]} bind:this={grid} onkeydown={key}>
   {#each items as [id, label] (id)}
     {@const on = value === id}
-    <button class="st-face" class:group={(kind === "backdrop" && BACKDROP_GROUPS.has(id)) || (kind === "face" && FACE_GROUPS.has(id))} type="button" role="radio" data-id={id} aria-checked={String(on)} tabindex={id === tabStop ? 0 : -1} onclick={() => { onpick(id); play(id, step); }} {...hover(id)}>
-      {#if kind === "looks"}
-        <span class="st-stage" aria-hidden="true"><LookCard look={LOOKS.find((l) => l.id === id)} /></span>
-      {:else if kind === "face"}
-        <span class="st-stage" aria-hidden="true"><span class="time"><FaceDigits face={id} chars={[...clock(secs[id])]} frac={secs[id] / TOTAL} /></span></span>
-      {:else if kind === "ring"}
-        {@const frac = secs[id] / TOTAL}
-        <span class="st-stage" data-ring={id} aria-hidden="true"><DialRing ring={id} {frac} lit={litTicks(frac)} knob={knobAt(frac)} /></span>
-      {:else}
-        <span class="st-stage st-swatch" data-backdrop={id} aria-hidden="true"><span class="glow"></span></span>
-      {/if}
-      <b>{label}</b>
-    </button>
+    {#if id === editing}
+      <div class="st-face cz-naming" class:yours={mine[0]?.id === id}>
+        <span class="st-stage" aria-hidden="true"><LookCard look={looks.find((l) => l.id === id)} /></span>
+        <input class="cz-name" type="text" value={label} maxlength={LOOK_NAME_MAX} autocomplete="off" spellcheck="false" data-1p-ignore="true" data-lpignore="true" data-form-type="other" aria-label="Name this look" use:naming onkeydown={nameKey} onblur={(e) => onrename(e.currentTarget.value, false)}>
+      </div>
+    {:else}
+      <button class="st-face" class:group={(kind === "backdrop" && BACKDROP_GROUPS.has(id)) || (kind === "face" && FACE_GROUPS.has(id))} class:yours={mine[0]?.id === id} type="button" role="radio" data-id={id} aria-checked={String(on)} tabindex={id === tabStop ? 0 : -1} onclick={() => { onpick(id); play(id, step); }} {...hover(id)}>
+        {#if kind === "looks"}
+          <span class="st-stage" aria-hidden="true"><LookCard look={looks.find((l) => l.id === id)} /></span>
+        {:else if kind === "face"}
+          <span class="st-stage" aria-hidden="true"><span class="time"><FaceDigits face={id} chars={[...clock(secs[id])]} frac={secs[id] / TOTAL} /></span></span>
+        {:else if kind === "ring"}
+          {@const frac = secs[id] / TOTAL}
+          <span class="st-stage" data-ring={id} aria-hidden="true"><DialRing ring={id} {frac} lit={litTicks(frac)} knob={knobAt(frac)} /></span>
+        {:else}
+          <span class="st-stage st-swatch" data-backdrop={id} aria-hidden="true"><span class="glow"></span></span>
+        {/if}
+        <b>{label}</b>
+      </button>
+    {/if}
   {/each}
+  {#if kind === "looks" && save}
+    {#key mine.length}
+      <button class="st-face cz-save" type="button" data-id={SAVE} aria-disabled={String(!save.look)} in:fade={{ duration: calm() ? 0 : 220 }} onclick={() => { if (save.look) save.onsave(); }} {...hover(SAVE)}>
+        <span class="st-stage" aria-hidden="true">{#if save.look}<LookCard look={save.look} />{/if}<i class="cz-plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg></i></span>
+        <b>Save look</b>
+      </button>
+    {/key}
+  {/if}
 </div>
