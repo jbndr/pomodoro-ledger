@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  addBubble, askOf, bubbleNames, clock, liveBubbles, mateClock, mateProgress, normCode, othersOf, REACT_BURST, REACT_EVERY_MS, REACT_LIFE_MS, REACT_MAX, REACTIONS, signalOf, SIGNALS, staleSignal, takeToken, tokenIn,
+  addBubble, askOf, bubbleNames, clock, liveBubbles, mateClock, mateProgress, normCode, othersOf, REACT_BURST, REACT_EVERY_MS, REACT_LIFE_MS, REACT_MAX, REACTIONS, signalOf, SIGNALS, staleSignal, goalStep, goalText, justMet, GOAL_STEPS, takeToken, tokenIn,
   type Bubble, type Bucket, type Member, type MateTimer,
 } from "./room";
 
@@ -183,5 +183,43 @@ describe("staleSignal", () => {
     expect(staleSignal("stuck", "short", "running")).toBe(false);
     expect(staleSignal("wrap", "long", "running")).toBe(false);
     expect(staleSignal(undefined, "focus", "running")).toBe(false);
+  });
+});
+
+describe("goalStep", () => {
+  it("moves one step along the list", () => {
+    expect(goalStep(0, 1)).toBe(4);
+    expect(goalStep(12, 1)).toBe(16);
+    expect(goalStep(12, -1)).toBe(10);
+    expect(goalStep(4, -1)).toBe(0);
+  });
+  it("stops at the ends", () => {
+    expect(goalStep(0, -1)).toBe(0);
+    expect(goalStep(GOAL_STEPS.at(-1)!, 1)).toBe(GOAL_STEPS.at(-1));
+  });
+  it("snaps a goal between steps to the nearest one in that direction", () => {
+    expect(goalStep(13, 1)).toBe(16);
+    expect(goalStep(13, -1)).toBe(12);
+    expect(goalStep(99, -1)).toBe(80);
+  });
+});
+
+describe("justMet", () => {
+  it("fires when a round takes the room to its goal", () => {
+    expect(justMet({ n: 12, done: 11 }, { n: 12, done: 12 })).toBe(true);
+    expect(justMet({ n: 2, done: 1 }, { n: 2, done: 3 })).toBe(true);
+  });
+  it("stays quiet past the goal, without a goal, and when the goal itself moved", () => {
+    expect(justMet({ n: 12, done: 12 }, { n: 12, done: 13 })).toBe(false);
+    expect(justMet({ n: null, done: 3 }, { n: null, done: 4 })).toBe(false);
+    expect(justMet({ n: 20, done: 12 }, { n: 12, done: 12 })).toBe(false);
+    expect(justMet(null, { n: 12, done: 12 })).toBe(false);
+  });
+});
+
+describe("goalText", () => {
+  it("says how far the room is", () => {
+    expect(goalText({ n: 12, done: 7 })).toBe("7 of 12 rounds");
+    expect(goalText({ n: 1, done: 0 })).toBe("0 of 1 round");
   });
 });

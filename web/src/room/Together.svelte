@@ -6,7 +6,7 @@
   import { flushSync, tick } from "svelte";
   import { calm, hold } from "../dom";
   import { pad } from "../lib/dates";
-  import { normCode } from "../lib/room";
+  import { GOAL_STEPS, goalStep, normCode } from "../lib/room";
   import { room, roomClock } from "../lib/redraw.svelte";
   import { hhmm, hueOf, initials, phaseAt, RHYTHMS, SIZE, sortRooms } from "../lib/rhythm";
   import { clockIn, dayTag, LONGEST, spanText, STEP, startStep, typedTime } from "../lib/schedule";
@@ -32,10 +32,11 @@
   let name = $state(""), naming = $state(false), nameEl = $state(), note = $state(""), busy = $state(false);
   let coding = $state(false), code = $state(""), codeEl = $state();
   let title = $state(""), rhythm = $state("25/5"), who = $state("public"), when = $state("now"), titleEl = $state();
+  let goal = $state(0);
   let days = $state([1, 2, 3, 4, 5]), from = $state(Math.min(23, new Date().getHours() + 1) * 60), want = $state(120), typed = "", typedAt = 0, err = $state("");
   let place = $state({ top: 0, left: 0 });
 
-  const v = $derived.by(() => { room.version; return { on: !!api.RM.code, code: api.RM.code || "", pub: api.RM.pub, names: api.RM.members.map((m) => m.name) }; });
+  const v = $derived.by(() => { room.version; return { on: !!api.RM.code, code: api.RM.code || "", pub: api.RM.pub, names: api.RM.members.map((m) => m.name), owner: api.RM.owner, goal: api.RM.goal }; });
   const clock = $derived.by(() => { roomClock.version; room.version; return Date.now() - api.RM.skew; });
   const step = $derived.by(() => { roomClock.version; room.version; return api.inStep(); });
   const invited = $derived(api.invite.length === 6 && !v.on);
@@ -158,8 +159,8 @@
         await load();
         await go("main", true);
       } else {
-        await api.roomCreate(who === "public" ? { title: title.trim(), rhythm, max: SIZE.max } : undefined);
-        title = "";
+        await api.roomCreate(who === "public" ? { title: title.trim(), rhythm, max: SIZE.max } : undefined, goal);
+        title = ""; goal = 0;
         close(false);
       }
     } catch (x) {
@@ -202,6 +203,16 @@
     if (x == null) return;
     e.preventDefault(); setLen(x);
   }
+  const TOP_GOAL = GOAL_STEPS.at(-1);
+  const goalLabel = (n) => (n ? n + " rounds" : "Off");
+  function goalKey(e, n, set) {
+    const x = e.key === "ArrowUp" || e.key === "ArrowRight" ? goalStep(n, 1) : e.key === "ArrowDown" || e.key === "ArrowLeft" ? goalStep(n, -1) : e.key === "Home" ? 0 : e.key === "End" ? TOP_GOAL : null;
+    if (x == null) return;
+    e.preventDefault(); set(x);
+  }
+  const setGoal = (n) => { if (n === goal) return false; goal = n; return true; };
+  const roomGoalN = () => (api.RM.goal && api.RM.goal.n) || 0;
+  const setRoomGoal = (n) => { if (n === roomGoalN()) return false; api.roomGoal(n); return true; };
   const toggleDay = (d) => (days = days.includes(d) ? days.filter((x) => x !== d) : [...days, d]);
 
   const here = (r) => {
@@ -216,6 +227,10 @@
 
 {#snippet faces(names, max = 3)}
   <span class="tg-faces" aria-hidden="true">{#each names.slice(0, max) as n, k (k)}<i style:--h={hueOf(n)}>{initials(n)}</i>{/each}{#if names.length > max}<i class="more">+{names.length - max}</i>{/if}</span>
+{/snippet}
+
+{#snippet goalSpin(n, set, label)}
+  <div class="tg-spin"><button type="button" tabindex="-1" aria-label="Lower goal" disabled={n <= 0} {@attach hold(() => set(goalStep(n, -1)))}>{@html MINUS}</button><span role="spinbutton" tabindex="0" aria-label={label} aria-valuemin={0} aria-valuemax={TOP_GOAL} aria-valuenow={n} aria-valuetext={n ? n + " rounds" : "No goal"} onkeydown={(e) => goalKey(e, n, set)}>{goalLabel(n)}</span><button type="button" tabindex="-1" aria-label="Higher goal" disabled={n >= TOP_GOAL} {@attach hold(() => set(goalStep(n, 1)))}>{@html PLUS}</button></div>
 {/snippet}
 
 {#snippet roomRow(r)}
@@ -238,6 +253,10 @@
         <p class="tg-note">{step ? "Your timer follows the room clock. Pause or skip to go your own way." : "Your timer is off the room clock. Rejoin and it jumps to the room's current round."}</p>
       {:else}
         <div class="tg-here private"><div><b>Your room</b><span>Share the code or the link. Only people with it can join.</span></div><span class="tg-code">{v.code}</span></div>
+        {#if v.owner}
+          {@const n = (v.goal && v.goal.n) || 0}
+          <div class="tg-opt tg-goal"><span>Room goal<small>{v.goal && v.goal.done ? v.goal.done + (v.goal.done === 1 ? " round" : " rounds") + " finished so far" : "Every finished focus round counts"}</small></span>{@render goalSpin(n, setRoomGoal, "Room goal in rounds")}</div>
+        {/if}
       {/if}
       <div class="tg-foot">
         <button class="tg-btn" type="button" onclick={() => { api.roomReset(); close(); }}>Leave</button>
@@ -269,6 +288,9 @@
             <div class="tg-days" role="group" aria-label="Days">{#each WEEK as [d, letter, dayName] (d)}<button type="button" aria-pressed={String(days.includes(d))} aria-label={dayName} onclick={() => toggleDay(d)}>{letter}</button>{/each}</div>
             <div class="tg-opt"><span>Starts</span><div class="tg-spin"><button type="button" tabindex="-1" aria-label="Earlier" disabled={from <= 0} {@attach hold(() => setFrom(from - startStep(rhythm)))}>{@html MINUS}</button><span role="spinbutton" tabindex="0" aria-label="Starts at" aria-valuemin={0} aria-valuemax={lastStart} aria-valuenow={from} aria-valuetext={slot(from)} onkeydown={fromKey}>{slot(from)}</span><button type="button" tabindex="-1" aria-label="Later" disabled={from >= lastStart} {@attach hold(() => setFrom(from + startStep(rhythm)))}>{@html PLUS}</button></div></div>
             <div class="tg-opt"><span>Lasts</span><div class="tg-spin"><button type="button" tabindex="-1" aria-label="Shorter" disabled={len <= STEP} {@attach hold(() => setLen(len - STEP))}>{@html MINUS}</button><span role="spinbutton" tabindex="0" aria-label="Lasts" aria-valuemin={STEP} aria-valuemax={longest} aria-valuenow={len} aria-valuetext={spanText(len) + ", until " + slot(from + len)} onkeydown={lenKey}>{spanText(len)}</span><button type="button" tabindex="-1" aria-label="Longer" disabled={len >= longest} {@attach hold(() => setLen(len + STEP))}>{@html PLUS}</button></div></div>
+          </div></div>
+          <div class="tg-fold" class:open={!(who === "public" && when === "later")}><div>
+            <div class="tg-opt"><span>Goal</span>{@render goalSpin(goal, setGoal, "Room goal in rounds")}</div>
           </div></div>
           <div class="tg-fold" class:open={who === "public" && when === "now" && !!busyRoom}><div>
             {#if busyRoom}<p class="tg-hint">{busyRoom.title} already has {busyRoom.names.length} people on {rhythm}. <button type="button" class="tg-inline" onclick={() => enter(busyRoom.code)}>Join them instead</button></p>{/if}

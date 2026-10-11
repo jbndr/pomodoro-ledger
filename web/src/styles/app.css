@@ -161,6 +161,16 @@ button.face { padding: 0; border: 0; cursor: pointer; transition: opacity .3s, b
   .mate .kick { opacity: 0; pointer-events: none; }
   .mate:hover .kick, .mate:focus-within .kick { opacity: 1; pointer-events: auto; }
 }
+/* The room goal fills like the faces' rings do, in the focus colour, and turns to the done colour once it's reached. */
+.goal { --c: var(--tomato); position: relative; height: 30px; display: flex; align-items: center; padding: 0 11px; overflow: hidden; border-radius: 999px; background: color-mix(in oklab, var(--fg) 4%, var(--surface)); box-shadow: inset 0 0 0 1px var(--line); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.goal.met { --c: var(--good); }
+.goal-fill { position: absolute; inset: 0 auto 0 0; width: calc(var(--p) * 100%); background: color-mix(in oklab, var(--c) 17%, var(--surface)); transition: width .9s cubic-bezier(.32, .72, 0, 1), background .5s; }
+.goal-n { position: relative; }
+.goal-n b { color: var(--fg); font-weight: 650; }
+.goal-n small { margin-left: 4px; font-size: inherit; }
+.goal-shine { position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, color-mix(in oklab, var(--surface) 75%, transparent) 50%, transparent 70%); translate: -100% 0; animation: goal-shine 1.1s .35s cubic-bezier(.4, 0, .2, 1) forwards; pointer-events: none; }
+@keyframes goal-shine { to { translate: 100% 0; } }
+@media (prefers-reduced-motion: reduce) { .goal-shine { display: none; } .goal-fill { transition: background .5s; } }
 .float { position: absolute; left: 50%; top: -4px; z-index: 2; font-size: 18px; line-height: 1; pointer-events: none; animation: float-up 1.4s cubic-bezier(.65, 0, .35, 1) forwards; }
 @keyframes float-up { 0% { translate: -50% 0; opacity: 0; scale: .6; } 15% { opacity: 1; scale: 1.1; } 100% { translate: -50% -46px; opacity: 0; scale: 1; } }
 .reacts { display: flex; gap: 2px; }
@@ -1602,6 +1612,9 @@ body:not(.zen) .timer-card.timer-card #adjust.off { visibility: hidden; }
 .tg-here.private { grid-template-columns: minmax(0, 1fr) auto; }
 .tg-code { font: 650 20px var(--f-display); letter-spacing: .12em; color: var(--fg) !important; }
 .tg-here + .tg-note { padding: 0 8px 4px; }
+.tg-goal { padding: 2px 8px 8px; }
+.tg-goal > span { display: grid; gap: 1px; }
+.tg-goal small { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .tg { left: 12px !important; right: 12px; }
   .tg-pop { width: auto; }

@@ -217,6 +217,81 @@ test('status changes are rate limited and survive a reconnect', async () => {
   assert.equal(sigOf(ben, 'ana').k, 'wrap');
 });
 
+const goalOf = (ws) => ws.messages.filter((m) => m.t === 'room').at(-1).goal;
+const focus = (remaining, total = 25 * 60000) => ({ t: 'state', s: { mode: 'focus', status: 'running', remaining, total } });
+const rest = { t: 'state', s: { mode: 'short', status: 'running', remaining: 300000, total: 300000 } };
+
+test('a focus round that runs to its end counts once for the room', async () => {
+  clock.now = 1_000_000_000;
+  try {
+    const { hello, send } = setup();
+    const ana = await hello('ana');
+    const ben = await hello('ben');
+    assert.deepEqual(goalOf(ben), { n: null, done: 0 });
+    await send(ana, focus(25 * 60000));
+    clock.now += 25 * 60000;
+    await send(ana, rest);
+    assert.equal(goalOf(ben).done, 1);
+    await send(ana, focus(0));
+    await send(ana, rest);
+    assert.equal(goalOf(ben).done, 1, 'a second round right away is ignored');
+    clock.now += 5 * 60000;
+    await send(ben, focus(10 * 60000));
+    await send(ben, rest);
+    assert.equal(goalOf(ana).done, 1, 'a skipped round does not count');
+    await send(ben, focus(60000, 4 * 60000));
+    clock.now += 60000;
+    await send(ben, rest);
+    assert.equal(goalOf(ana).done, 1, 'a round under five minutes does not count');
+    await send(ana, focus(20000));
+    clock.now += 20000;
+    await send(ana, { t: 'state', s: { mode: 'focus', status: 'paused', remaining: 1000, total: 25 * 60000 } });
+    assert.equal(goalOf(ana).done, 1, 'pausing near the end does not count');
+    await send(ana, focus(1000));
+    clock.now += 1000;
+    await send(ana, rest);
+    assert.equal(goalOf(ben).done, 2);
+  } finally { clock.now = null; }
+});
+
+test('only the creator of a private room sets its goal, within 1 to 99 rounds', async () => {
+  clock.now = 1_000_000_000;
+  try {
+    const { hello, send } = setup();
+    const host = await hello('host', 'private-creator-token');
+    const guest = await hello('guest');
+    await send(guest, { t: 'goal', n: 12 });
+    assert.equal(goalOf(host).n, null);
+    await send(host, { t: 'goal', n: 12 });
+    assert.equal(goalOf(guest).n, 12);
+    await send(host, { t: 'goal', n: 150 });
+    assert.equal(goalOf(guest).n, 99);
+    await send(host, { t: 'goal', n: 'lots' });
+    assert.equal(goalOf(guest).n, null);
+    await send(host, { t: 'goal', n: 8.4 });
+    assert.equal(goalOf(guest).n, 8);
+    await send(host, { t: 'goal', n: null });
+    assert.equal(goalOf(guest).n, 8, 'too many changes at once are dropped');
+    clock.now += 3000;
+    await send(host, { t: 'goal', n: null });
+    assert.equal(goalOf(guest).n, null);
+  } finally { clock.now = null; }
+});
+
+test('a public room keeps the goal it was started with', async () => {
+  const opened = [];
+  const env = { ROOM: { idFromName: (c) => c, get: () => ({ fetch: async (_, init) => { opened.push(JSON.parse(init.body)); return new Response(null, { status: 204 }); } }) } };
+  const open = (body) => worker.fetch(new Request('https://x/api/room', { method: 'POST', body: JSON.stringify(body) }), env);
+  await open({ pub: true, title: 'Focus', rhythm: '25/5', max: 6, goal: 20 });
+  await open({ pub: true, title: 'Focus', rhythm: '25/5', max: 6, goal: 0 });
+  await open({ goal: 12 });
+  assert.deepEqual(opened.map((o) => [o.cfg && o.cfg.goal, o.goal]), [[20, null], [null, null], [null, 12]]);
+  const { hello, send } = setup({ ...pub, goal: 20 });
+  const ana = await hello('ana', 'private-creator-token');
+  await send(ana, { t: 'goal', n: 3 });
+  assert.deepEqual(goalOf(ana), { n: 20, done: 0 });
+});
+
 const reactsOf = (ws) => ws.messages.filter((m) => m.t === 'react');
 const notesOf = (ws) => ws.messages.filter((m) => m.t === 'note');
 

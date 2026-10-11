@@ -57,6 +57,22 @@ export function staleSignal(k: Signal | undefined, mode: Mode, status: "idle" | 
   return (k === "back" && mode === "focus" && status === "running") || (k === "deep" && mode !== "focus");
 }
 
+/** The room's target in focus rounds (none when `n` is null) and how many its members have finished. */
+export type Goal = { n: number | null; done: number };
+export const GOAL_STEPS = [0, 4, 6, 8, 10, 12, 16, 20, 24, 30, 40, 50, 60, 80];
+
+/** The next step up or down from `n`, which may sit between steps. */
+export function goalStep(n: number, dir: 1 | -1) {
+  const next = dir > 0 ? GOAL_STEPS.find((x) => x > n) : [...GOAL_STEPS].reverse().find((x) => x < n);
+  return next ?? n;
+}
+
+/** Whether a room's goal was reached by the round that took it from `before` to `after`, not by moving the goal. */
+export const justMet = (before: Goal | null, after: Goal | null) =>
+  !!before && !!after && !!after.n && before.n === after.n && before.done < after.n && after.done >= after.n;
+
+export const goalText = (g: Goal) => g.done + " of " + g.n + (g.n === 1 ? " round" : " rounds");
+
 export const REACTIONS = ["👋", "🎉", "🔥", "👍", "☕"];
 /** Gentler than the room's own limit, so a normal user never hits it. */
 export const REACT_BURST = 3;

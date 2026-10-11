@@ -27,6 +27,10 @@ const REACT_EVERY_MS = 4000;
 const SIGNALS = ["deep", "stuck", "back", "wrap"];
 const SIG_BURST = 4;
 const SIG_EVERY_MS = 3000;
+const GOAL_MAX = 99;
+const MIN_ROUND_MS = 5 * 60000;
+const ROUND_SLACK_MS = 30000;
+const ROUND_GAP_MS = 4 * 60000;
 const SCHEDULES = 50;
 const SCHED_IDLE_MS = 21 * 24 * 3600000;
 const SCHED_BURST = 3;
@@ -53,6 +57,9 @@ const clean = (v, n) => String(v || "").replace(/[\x00-\x1f\x7f]/g, "").replace(
 const tokens = (b, now, burst = REACT_BURST, every = REACT_EVERY_MS) => (b ? Math.min(burst, b.n + (now - b.at) / every) : burst);
 const size = (v) => { const n = Math.round(Number(v ?? MAX_MEMBERS)); return Number.isFinite(n) ? Math.max(MIN_MEMBERS, Math.min(MAX_MEMBERS, n)) : MAX_MEMBERS; };
 const lobby = (env) => env.LOBBY.get(env.LOBBY.idFromName("lobby"));
+const goalOf = (v) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n >= 1 ? Math.min(GOAL_MAX, n) : null; };
+// A focus round that ran to its end (not skipped or paused) and was long enough to be one.
+const roundDone = (was, s, now) => !!was && was.mode === "focus" && was.status === "running" && was.total >= MIN_ROUND_MS && was.end - now <= ROUND_SLACK_MS && s.mode !== "focus";
 // When subscribers are next owed a push: the next start, or now if a session just began unannounced.
 function pushAt(s, now) {
   const o = nextSession(s, now);
@@ -86,13 +93,13 @@ export default {
       const body = await request.json().catch(() => null);
       let cfg = null;
       if (body && body.pub) {
-        cfg = { pub: true, house: false, title: clean(body.title, 32), rhythm: body.rhythm, max: size(body.max) };
+        cfg = { pub: true, house: false, title: clean(body.title, 32), rhythm: body.rhythm, max: size(body.max), goal: goalOf(body.goal) };
         if (!cfg.title || !RHYTHMS.includes(cfg.rhythm)) return json({ error: "bad room" }, 400);
       }
       for (let i = 0; i < 5; i++) {
         const code = pick(6);
         const ownerToken = crypto.randomUUID();
-        const res = await room(env, code).fetch("https://room/open", { method: "POST", body: JSON.stringify({ ownerToken, cfg: cfg && { ...cfg, code } }) });
+        const res = await room(env, code).fetch("https://room/open", { method: "POST", body: JSON.stringify({ ownerToken, cfg: cfg && { ...cfg, code }, goal: cfg ? null : goalOf(body && body.goal) }) });
         if (res.ok) return json({ code, ownerToken });
       }
       return json({ error: "busy" }, 503);
@@ -126,10 +133,11 @@ export class Room extends DurableObject {
     const store = this.ctx.storage, path = new URL(request.url).pathname;
     if (path === "/open") {
       if (await store.get("open")) return new Response(null, { status: 409 });
-      const { ownerToken, cfg } = await request.json();
+      const { ownerToken, cfg, goal } = await request.json();
       await store.put("open", Date.now());
       await store.put("ownerToken", ownerToken);
       if (cfg) await store.put("cfg", cfg);
+      if (goal) await store.put("goal", goal);
       await store.setAlarm(Date.now() + EMPTY_MS);
       return new Response(null, { status: 204 });
     }
@@ -175,10 +183,11 @@ export class Room extends DurableObject {
   }
 
   async broadcast(except) {
-    const all = this.members(except), prop = (await this.ctx.storage.get("prop")) || null, now = Date.now();
-    const cfg = await this.ctx.storage.get("cfg"), pub = cfg ? { title: cfg.title, rhythm: cfg.rhythm, house: cfg.house, max: cfg.max || MAX_MEMBERS } : null;
+    const store = this.ctx.storage, all = this.members(except), prop = (await store.get("prop")) || null, now = Date.now();
+    const cfg = await store.get("cfg"), pub = cfg ? { title: cfg.title, rhythm: cfg.rhythm, house: cfg.house, max: cfg.max || MAX_MEMBERS } : null;
+    const target = cfg ? cfg.goal || null : (await store.get("goal")) || null, goal = { n: target, done: (await store.get("done")) || 0 };
     const members = all.map(({ a }) => ({ id: a.pub, name: a.name, s: a.s, owner: !!a.owner, sig: a.sig || null }));
-    for (const { ws, a } of all) this.send(ws, { t: "room", now, you: a.pub, owner: !!a.owner, members, prop, pub });
+    for (const { ws, a } of all) this.send(ws, { t: "room", now, you: a.pub, owner: !!a.owner, members, prop, pub, goal });
   }
 
   // Tells the lobby who's in a public room; an empty room drops off the list.
@@ -216,17 +225,17 @@ export class Room extends DurableObject {
       const id = String(m.id || "").slice(0, 40), name = clean(m.name, 20);
       if (!id || !name) return ws.close(4000, "Bad hello");
       const others = [];
-      let rb = null, sig = null;
+      let rb = null, sig = null, lr = 0;
       for (const x of this.members(ws)) {
         if (x.a.id !== id) { others.push(x); continue; }
-        rb = x.a.rb || null; sig = x.a.sig || null;
+        rb = x.a.rb || null; sig = x.a.sig || null; lr = x.a.lr || 0;
         x.ws.serializeAttachment(null);
         x.ws.close(4001, "Replaced");
       }
       const ownerToken = await store.get("ownerToken"), cfg = await store.get("cfg");
       if (others.length >= ((cfg && cfg.max) || MAX_MEMBERS)) return ws.close(4003, "Room is full");
       const owner = !cfg && !!ownerToken && m.ownerToken === ownerToken;
-      ws.serializeAttachment({ id, pub: pick(8), name, s: null, asked: 0, owner, rb, sig });
+      ws.serializeAttachment({ id, pub: pick(8), name, s: null, asked: 0, owner, rb, sig, lr });
       await this.broadcast();
       if (!cfg) return;
       await store.setAlarm(now + HEARTBEAT_MS);
@@ -262,6 +271,17 @@ export class Room extends DurableObject {
     // Public rooms follow the room clock: nobody owns them and there's nothing to vote on.
     if (m.t !== "state" && (await store.get("cfg"))) return;
 
+    if (m.t === "goal") {
+      if (!me.owner) return;
+      const n = tokens(me.gb, now, SIG_BURST, SIG_EVERY_MS);
+      if (n < 1) return;
+      me.gb = { n: n - 1, at: now };
+      ws.serializeAttachment(me);
+      const goal = goalOf(m.n);
+      if (goal) await store.put("goal", goal); else await store.delete("goal");
+      return this.broadcast();
+    }
+
     if (m.t === "kick") {
       if (!me.owner) return;
       const target = this.members(ws).find((x) => x.a.pub === m.id && !x.a.owner);
@@ -275,8 +295,12 @@ export class Room extends DurableObject {
     if (m.t === "state") {
       const s = m.s || {};
       if (!MODES.includes(s.mode) || !STATUSES.includes(s.status)) return;
-      const rem = ms(s.remaining);
+      const rem = ms(s.remaining), was = me.s;
       me.s = { mode: s.mode, status: s.status, total: ms(s.total), rem, end: s.status === "running" ? now + rem : 0 };
+      if (roundDone(was, me.s, now) && now - (me.lr || 0) >= ROUND_GAP_MS) {
+        me.lr = now;
+        await store.put("done", ((await store.get("done")) || 0) + 1);
+      }
       ws.serializeAttachment(me);
       return this.broadcast();
     }

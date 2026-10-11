@@ -3,7 +3,7 @@ import { toast } from "../chrome/notice.svelte";
 import { setOverlay } from "../layout";
 import { room, roomClock } from "../lib/redraw.svelte";
 import { endedInStep, hhmm, inStep, phaseAt, type Listed, type Rhythm } from "../lib/rhythm";
-import { addBubble, liveBubbles, othersOf, REACT_LIFE_MS, REACTIONS, signalOf, SIGNALS, staleSignal, takeToken, tokenIn, type Bubble, type Bucket, type Member, type Mode, type Proposal, type Signal } from "../lib/room";
+import { addBubble, justMet, liveBubbles, othersOf, REACT_LIFE_MS, REACTIONS, signalOf, SIGNALS, staleSignal, takeToken, tokenIn, type Bubble, type Bucket, type Goal, type Member, type Mode, type Proposal, type Signal } from "../lib/room";
 import type { Upcoming } from "../lib/schedule";
 import type { Status } from "../lib/timer";
 import { renderTimer } from "../render";
@@ -17,13 +17,14 @@ type RoomMsg =
   | { t: "note"; msg: string }
   | { t: "sync"; s: Shared; by: string; name: string }
   | { t: "react"; by: string; name: string; e: string }
-  | { t: "room"; now: number; you: string; owner?: boolean; members: (Omit<Member, "owner"> & { owner?: boolean })[]; prop: Proposal | null; pub?: PublicRoom | null };
+  | { t: "room"; now: number; you: string; owner?: boolean; members: (Omit<Member, "owner"> & { owner?: boolean })[]; prop: Proposal | null; pub?: PublicRoom | null; goal?: Goal };
 
 export const RM = {
   owner: false, ws: null as WebSocket | null, code: ss.get("pl.room"), id: ss.get("pl.rid"), name: ls.get("pl.name", ""),
   you: null as string | null, members: [] as Member[], prop: null as Proposal | null, live: false, tries: 0,
   pub: readPub(), fresh: false,
   bubbles: [] as Bubble[], bucket: null as Bucket | null, cheerUntil: 0,
+  goal: null as Goal | null, metAt: 0,
   /** Reactions rising from the face of whoever sent them. */
   floats: [] as { key: number; e: string; by: string }[],
   /** How far this device's clock is ahead of the server's. */
@@ -63,7 +64,8 @@ export function roomReset() {
   clearTimeout(RM.timer); clearInterval(RM.ping);
   const ws = RM.ws;
   RM.owner = false; RM.ws = null; RM.code = null; RM.live = false; RM.members = []; RM.prop = null; RM.tries = 0; RM.pub = null; RM.fresh = false;
-  RM.bubbles = []; RM.floats = []; RM.cheerUntil = 0; clearTimeout(RM.fade);
+  RM.bubbles = []; RM.floats = []; RM.cheerUntil = 0; RM.goal = null; RM.metAt = 0; clearTimeout(RM.fade);
+  clearTimeout(goalSend); goalWant = undefined;
   ss.set("pl.room", null); ss.set("pl.roomPub", null);
   if (ws) try { ws.close(1000); } catch {}
   renderRoom();
@@ -103,6 +105,9 @@ function roomMsg(m: RoomMsg) {
     RM.members = m.members.map((x) => ({ id: x.id, name: x.name, owner: !!x.owner, s: x.s && { ...x.s, end: x.s.end ? x.s.end + skew : 0 }, sig: x.sig && { k: x.sig.k, at: x.sig.at + skew } }));
     RM.prop = m.prop;
     RM.pub = m.pub || null;
+    const goal = m.goal ? { ...m.goal, n: goalWant === undefined ? m.goal.n : goalWant } : null;
+    if (RM.live && justMet(RM.goal, goal)) goalMet(goal!);
+    RM.goal = goal;
     ss.set("pl.roomPub", RM.pub && JSON.stringify(RM.pub));
     if (!RM.live) {
       RM.live = true; RM.tries = 0;
@@ -153,8 +158,8 @@ export function roomEnter(code: string) {
   renderRoom(); roomConnect();
 }
 
-export async function roomCreate(pub?: { title: string; rhythm: Rhythm; max: number }) {
-  const res = await fetch("/api/room", { method: "POST", body: pub ? JSON.stringify({ pub: true, ...pub }) : undefined }), body = res.ok ? await res.json() : null;
+export async function roomCreate(pub?: { title: string; rhythm: Rhythm; max: number }, goal = 0) {
+  const res = await fetch("/api/room", { method: "POST", body: JSON.stringify(pub ? { pub: true, ...pub, goal } : { goal }) }), body = res.ok ? await res.json() : null;
   if (!body || !body.code) throw 0;
   ss.set("pl.owner." + body.code, body.ownerToken);
   roomEnter(body.code);
@@ -167,6 +172,24 @@ export async function roomList(): Promise<{ now: number; rooms: Listed[]; upcomi
 }
 
 export const reactionsOn = () => S.settings.reactions !== false;
+
+function goalMet(g: Goal) {
+  RM.metAt = Date.now();
+  toast("Goal reached: " + g.n + " rounds together.");
+  roomRoundEnded();
+}
+
+let goalSend: ReturnType<typeof setTimeout> | undefined, goalWant: number | null | undefined;
+
+/** Sets the private room's goal in rounds, or clears it with 0; only its creator can. Sent once the stepper rests, so holding it doesn't hit the room's limit. */
+export function roomGoal(n: number) {
+  if (!RM.live || !RM.owner) return;
+  goalWant = n || null;
+  RM.goal = { n: goalWant, done: RM.goal ? RM.goal.done : 0 };
+  clearTimeout(goalSend);
+  goalSend = setTimeout(() => { roomSend({ t: "goal", n: goalWant }); goalWant = undefined; }, 500);
+  renderRoom();
+}
 
 let floatKey = 0;
 const FLOAT_MS = 1400;
