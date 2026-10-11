@@ -25,6 +25,7 @@
   const thLit = $derived(spin >= 0 || p >= 1 ? TH.length : Math.round(p * 150));
   const thNow = $derived.by(() => { const a = -150 + 300 * (spin >= 0 ? spin : Math.min(1, p)), [x1, y1] = at(a, 110), [x2, y2] = at(a, 141); return { x1, y1, x2, y2 }; });
   const TH_END = (() => { const [x1, y1] = at(150, 114), [x2, y2] = at(150, 140); return { x1, y1, x2, y2 }; })();
+  const SIXTY = Array.from({ length: 60 }, (_, i) => { const major = i % 5 === 0, [x1, y1] = at(i * 6, major ? 112 : 118), [x2, y2] = at(i * 6, 132); return { major, x1, y1, x2, y2 }; });
 
   const GA_W = (270 - 4 * 4) / 5, GA_ZONES = [.38, .54, .7, .85, 1].map((o, i) => ({ o, a0: -135 + i * (GA_W + 4), a1: -135 + i * (GA_W + 4) + GA_W }));
   const gaAt = $derived(-135 + 270 * (spin >= 0 ? spin : Math.min(1, p)));
@@ -61,6 +62,8 @@
     <g class="th-ticks">{#each TH as t, i}<line x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} class:lit={i >= thLit} />{/each}</g>
     <line class="th-end" x1={TH_END.x1} y1={TH_END.y1} x2={TH_END.x2} y2={TH_END.y2} />
     <line class="th-now" x1={thNow.x1} y1={thNow.y1} x2={thNow.x2} y2={thNow.y2} />
+  {:else if ring === "sixty"}
+    <g class="sx-ring">{#each SIXTY as t, i}<line x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} class:major={t.major} class:lit={i < lit} class:lead={i === lead} />{/each}</g>
   {:else if ring === "gauge"}
     {#each GA_ZONES as z}
       {@const cut = Math.max(z.a0, Math.min(z.a1, gaAt))}
