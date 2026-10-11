@@ -43,6 +43,8 @@ import Together from "./room/Together.svelte";
 import RoomStrip from "./room/RoomStrip.svelte";
 import { followRoom, reactionsChanged, reactionsOn, reactWait, renderRoom, RM, roomConnect, roomCreate, roomEnter, roomInStep, roomList, roomReact, roomReport, roomReset, roomSend, roomSignal, roomGoal } from "./room/net";
 import { Sched, watchReminders } from "./room/sched";
+import { copyCrewInvite, CR, crewConnect, crewCreate, crewInfo, crewJoin, crewLeave, crewRehello, crewRemind, crewRename, crewRoom, crewSlot, crewsOn, watchCrew } from "./room/crew";
+import { isCrewCode } from "./lib/crew";
 import { exportLedger, importLedger, planImport } from "./settings/backup";
 import Settings from "./settings/Settings.svelte";
 import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, previewSoundscape, previewTicking, scheduleEnd, syncTicking } from "./sound";
@@ -75,7 +77,7 @@ document.addEventListener("keydown", onKey);
 initPages();
 setInterval(tick, 250);
 setInterval(() => { newDay(); freshRounds(); remindBest(); }, 60000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) { sizeTimer(); tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); Cloud.wake(); newDay(); freshRounds(); } });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) { sizeTimer(); tick(); if (T.status === "running") wakeOn(); if (RM.code && !RM.ws) roomConnect(); if (CR.code && !CR.ws) crewConnect(); Cloud.wake(); newDay(); freshRounds(); } });
 mount(PreviewBanner, { target: $(".app"), anchor: $("main.top"), props: { api: { DEMO, EMBED, preview, markStarted } } });
 mount(BackupPrompt, { target: $(".app"), anchor: $("main.top"), props: { api: { exportLedger, toast } } });
 mount(PlanPrompt, { target: $(".app"), anchor: $("main.top"), props: { api: { planDue, waveOff, stopOffering, openPlan } } });
@@ -93,6 +95,7 @@ if (T.status === "running" && Date.now() >= T.endsAt) complete(T.endsAt);
 if (T.status === "running") addEventListener("pointerdown", () => { if (T.status === "running" && !bellPending()) scheduleEnd(); }, { once: true });
 setZen(false);
 const invite = normCode(new URLSearchParams(location.search).get("room") || "");
+const crewInvite = String(new URLSearchParams(location.search).get("crew") || "").toUpperCase();
 const view = ss.get("pl.taskView");
 if (view === "today" || view === "upcoming" || view === "later") S.taskView = view;
 const sessionApi = { busyNow, addSession, editSession, moveItems, openPop, closePop, popHidden: () => pop.hidden };
@@ -100,10 +103,11 @@ mount(Progress, { target: $(".app"), props: { api: {
   ...sessionApi, S, T, remNow, dur, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
   deleteSession, labelSession, moveSession, openLabelPop, reopen: reopenTask, openRecap, openPlan, openTimesheet, weekGoals, openYear,
 } } });
-const roomApi = { RM, S, ls, esc, invite, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
+const crew = { CR, crewsOn, crewCreate, crewJoin, crewLeave, crewInfo, crewRename, crewSlot, crewRoom, crewRemind, crewRehello, copyCrewInvite };
+const roomApi = { RM, S, ls, esc, invite, crewInvite: isCrewCode(crewInvite) ? crewInvite : "", crew, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
   roomReact, reactWait, reactionsOn, roomSignal, roomGoal, report: roomReport, openPop, closePop, popHidden: () => pop.hidden };
 mount(BarTools, { target: $(".bar-right"), props: { api: {
-  RM, ls, S, Cloud, DEMO, preview, openRoom: toggleRoom, openKeys, openPalette, openSettings: () => openSettings(),
+  RM, CR, ls, S, Cloud, DEMO, preview, openRoom: toggleRoom, openKeys, openPalette, openSettings: () => openSettings(),
   openSync: () => { if (!DEMO) openSettings("sync"); },
   themed: rethemeFloat,
 } } });
@@ -114,6 +118,13 @@ mount(Tip, { target: document.body });
 mount(Toast, { target: document.body });
 ui.room = mount(Together, { target: document.body, props: { api: roomApi } }) as RoomUI;
 watchReminders(openRoom);
+crewConnect();
+watchCrew();
+if (roomApi.crewInvite) {
+  try { history.replaceState(null, "", location.pathname); } catch {}
+  if (roomApi.crewInvite === CR.code) roomApi.crewInvite = "";
+  else openRoom();
+}
 ui.keys = mount(Keys, { target: document.body, props: { api: { setOverlay, MOD, openPalette } } }) as Sheet;
 ui.recap = mount(Recap, { target: document.body, props: { api: {
   S, T, Store, DEMO, preview, viewTasks, setOverlay, fmtDur, fmtDate, plural, toast, openShare,

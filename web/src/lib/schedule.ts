@@ -81,6 +81,12 @@ export function nextSession(s: Times, now: number): Session | null {
   return null;
 }
 
+/** When the week holding `t` began in `tz`: Monday at midnight there. */
+export function weekStart(t: number, tz: string) {
+  const w = wall(t, tz), back = (new Date(Date.UTC(w.y, w.m - 1, w.d)).getUTCDay() + 6) % 7, mon = new Date(Date.UTC(w.y, w.m - 1, w.d - back));
+  return zoned(mon.getUTCFullYear(), mon.getUTCMonth() + 1, mon.getUTCDate(), 0, tz);
+}
+
 export const isLive = (o: Session | null, now: number) => !!o && o.start <= now && now < o.end;
 
 /** The room code for one session: L, the schedule id, and two letters for its day. Random codes never contain an L. */

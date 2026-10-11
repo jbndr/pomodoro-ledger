@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clockIn, dayIn, dayTag, daysIn, daysText, isLive, nextSession, offsetAt, readTimes, scheduleOf, sessionCode, spanText, startStep, typedTime, zoned } from "./schedule";
+import { clockIn, dayIn, dayTag, daysIn, daysText, isLive, nextSession, offsetAt, readTimes, scheduleOf, sessionCode, spanText, startStep, typedTime, weekStart, zoned } from "./schedule";
 
 const MIN = 60000, HOUR = 60 * MIN;
 const berlin = { tz: "Europe/Berlin", days: [1, 2, 3, 4, 5], from: 9 * 60, to: 12 * 60 };
@@ -129,5 +129,21 @@ describe("spanText", () => {
     expect(spanText(30)).toBe("30 min");
     expect(spanText(120)).toBe("2 h");
     expect(spanText(150)).toBe("2 h 30");
+  });
+});
+
+describe("weekStart", () => {
+  it("is Monday at midnight in the zone, whatever the day", () => {
+    const mon = Date.parse("2026-10-11T22:00:00Z");
+    expect(weekStart(Date.parse("2026-10-14T08:00:00Z"), "Europe/Berlin")).toBe(mon);
+    expect(weekStart(mon, "Europe/Berlin")).toBe(mon);
+    expect(weekStart(mon - 1, "Europe/Berlin")).toBe(Date.parse("2026-10-04T22:00:00Z"));
+    expect(weekStart(Date.parse("2026-10-18T21:59:59Z"), "Europe/Berlin")).toBe(mon);
+  });
+  it("follows the zone, so New York's week starts later than Berlin's", () => {
+    expect(weekStart(Date.parse("2026-10-12T03:00:00Z"), "America/New_York")).toBe(Date.parse("2026-10-05T04:00:00Z"));
+  });
+  it("lands on the right instant across a DST change", () => {
+    expect(weekStart(Date.parse("2026-10-27T12:00:00Z"), "Europe/Berlin")).toBe(Date.parse("2026-10-25T23:00:00Z"));
   });
 });

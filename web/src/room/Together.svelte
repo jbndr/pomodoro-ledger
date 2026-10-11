@@ -7,10 +7,11 @@
   import { slide } from "svelte/transition";
   import { calm, hold } from "../dom";
   import { pad } from "../lib/dates";
-  import { GOAL_STEPS, goalStep, normCode } from "../lib/room";
+  import { focusing, weekText } from "../lib/crew";
+  import { GOAL_STEPS, goalStep, mateClock, normCode } from "../lib/room";
   import { room, roomClock } from "../lib/redraw.svelte";
   import { hhmm, hueOf, initials, phaseAt, RHYTHMS, SIZE, sortRooms } from "../lib/rhythm";
-  import { clockIn, dayTag, LONGEST, spanText, STEP, startStep, typedTime } from "../lib/schedule";
+  import { clockIn, dayTag, localZone, LONGEST, nextSession, spanText, STEP, startStep, typedTime } from "../lib/schedule";
   import { spinValue } from "../lib/settings";
   import Ask from "./Ask.svelte";
   import { copyInvite } from "./invite";
@@ -35,6 +36,8 @@
   let coding = $state(false), code = $state(""), codeEl = $state();
   let title = $state(""), rhythm = $state("25/5"), who = $state("public"), when = $state("now"), titleEl = $state();
   let goal = $state(0);
+  let crewName = $state(""), renaming = $state(false), crewInv = $state(null), leaving = $state(false), leaveT = 0, slotT = 0, crewNameEl = $state();
+  let cdays = $state([1, 2, 3, 4, 5]), cfrom = $state(19 * 60), clen = $state(120);
   let days = $state([1, 2, 3, 4, 5]), from = $state(Math.min(23, new Date().getHours() + 1) * 60), want = $state(120), typed = "", typedAt = 0, err = $state("");
   let place = $state({ top: 0, left: 0 });
 
@@ -66,12 +69,31 @@
   const reminded = (id) => marks >= 0 && api.sched.reminded(id);
   const owns = (id) => marks >= 0 && api.sched.owns(id);
 
+  const C = api.crew;
+  const cv = $derived.by(() => {
+    room.version;
+    const c = C.CR;
+    return { on: C.crewsOn(), code: c.code, live: c.live, crew: c.crew, members: c.members, you: c.you, week: c.week, remind: c.remind, here: !!c.crew && api.RM.code === c.crew.room };
+  });
+  const crewInvited = () => !!api.crewInvite && api.crewInvite !== C.CR.code;
+  const others = $derived(cv.members.filter((m) => m.id !== cv.you));
+  const crewSub = $derived.by(() => {
+    if (!cv.live) return "Connecting…";
+    const busy = others.filter(focusing).length, here = others.filter((m) => m.on).length;
+    const one = others.find(focusing);
+    return busy === 1 ? one.name + " is focusing" : busy ? busy + " focusing now" : here ? here + " around" : others.length ? "Nobody else around" : "Just you so far";
+  });
+  const nextCrew = $derived(cv.crew && cv.crew.slot ? nextSession(cv.crew.slot, now) : null);
+  const mateState = (m) => !m.on ? "Away" : focusing(m) ? "Focusing · " + mateClock(m.s, now) + " left" : m.s && m.s.status === "running" ? "On a break" : m.s && m.s.status === "paused" ? "Paused" : "Around";
+
   export const isOpen = () => shown;
 
   export function open() {
     if (shown) return;
-    view = invited ? "invite" : "main"; dir = "r";
+    view = invited ? "invite" : crewInvited() ? "crew-invite" : "main"; dir = "r";
     if (invited) code = api.invite;
+    if (view === "crew-invite") { crewInv = null; C.crewInfo(api.crewInvite).then((i) => { crewInv = i || false; }); }
+    renaming = false; leaving = false;
     name = api.RM.name; naming = !api.RM.name; note = ""; coding = false; allOpen = false; allSched = false;
     measure();
     shown = true;
@@ -130,7 +152,9 @@
   function saveName() {
     const n = name.trim().slice(0, 20);
     if (!n) { naming = true; note = "Add a name so the others know who you are."; tick().then(() => nameEl?.focus()); return false; }
+    const changed = n !== api.RM.name;
     api.RM.name = n; api.ls.set("pl.name", n); naming = false;
+    if (changed || !C.CR.ws) C.crewRehello();
     return true;
   }
 
@@ -229,6 +253,63 @@
   const quickSub = (r) => r.names.length ? "Joins " + r.title + ", " + r.names.length + " focusing on " + r.rhythm : "Opens " + r.title + " on " + r.rhythm + ". Others can drop in";
   const pane = () => calm() ? "" : "in-" + dir;
 
+  function openCrew() {
+    const sl = cv.crew && cv.crew.slot;
+    if (sl) { cdays = [...sl.days]; cfrom = sl.from; clen = sl.to - sl.from; }
+    renaming = false; leaving = false;
+    go("crew");
+  }
+
+  async function startCrew(e) {
+    e.preventDefault();
+    if (!saveName()) return;
+    const n = crewName.trim();
+    if (!n) { crewNameEl?.focus(); return; }
+    busy = true; err = "";
+    try { await C.crewCreate(n); crewName = ""; openCrew(); }
+    catch (x) { err = x === 429 ? "You've started a few crews already. Try again in a while." : "Couldn't start it. Check your connection and try again."; }
+    busy = false;
+  }
+
+  function joinCrew(e) {
+    e.preventDefault();
+    if (!saveName() || !crewInv) return;
+    C.crewJoin(api.crewInvite);
+    api.crewInvite = "";
+    openCrew();
+  }
+
+  function rename() {
+    const n = crewName.trim();
+    renaming = false;
+    if (n && cv.crew && n !== cv.crew.name) C.crewRename(n);
+  }
+
+  // Crew time is shared, so changes go out once the controls rest, and someone else's change shows unless you're mid-edit.
+  let slotPending = false;
+  function sendSlot(on) {
+    clearTimeout(slotT);
+    slotPending = true;
+    const tz = (cv.crew && cv.crew.slot && cv.crew.slot.tz) || localZone();
+    slotT = setTimeout(() => { slotPending = false; C.crewSlot(on && cdays.length ? { tz, days: [...cdays].sort(), from: cfrom, to: cfrom + clen } : null); }, on ? 500 : 0);
+  }
+  $effect(() => {
+    const sl = cv.crew && cv.crew.slot;
+    if (sl && !slotPending) { cdays = [...sl.days]; cfrom = sl.from; clen = sl.to - sl.from; }
+  });
+  const setCrewFrom = (m) => { const x = Math.max(0, Math.min(1440 - STEP, m)); if (x === cfrom) return false; cfrom = x; clen = Math.min(clen, Math.min(LONGEST, 1440 - x)); sendSlot(true); return true; };
+  const setCrewLen = (m) => { const x = Math.max(STEP, Math.min(Math.min(LONGEST, 1440 - cfrom), m)); if (x === clen) return false; clen = x; sendSlot(true); return true; };
+  const toggleCrewDay = (d) => { cdays = cdays.includes(d) ? cdays.filter((x) => x !== d) : [...cdays, d]; sendSlot(cdays.length > 0); };
+  function crewFromKey(e) { const x = spinValue(e.key, cfrom, STEP, 120, 0, 1440 - STEP); if (x == null) return; e.preventDefault(); setCrewFrom(x); }
+  function crewLenKey(e) { const x = /^[1-8]$/.test(e.key) ? +e.key * 60 : spinValue(e.key, clen, STEP, 60, STEP, Math.min(LONGEST, 1440 - cfrom)); if (x == null) return; e.preventDefault(); setCrewLen(x); }
+
+  function leaveCrew() {
+    if (!leaving) { leaving = true; clearTimeout(leaveT); leaveT = setTimeout(() => (leaving = false), 4000); return; }
+    clearTimeout(leaveT); leaving = false;
+    C.crewLeave();
+    go("main", true);
+  }
+
   function report(k, on, e) {
     const [kind, id] = k.split(":"), { [k]: _, ...rest } = hidden, h = e?.currentTarget.closest(".tg-row")?.offsetHeight || 0;
     hidden = on ? { ...Object.fromEntries(Object.entries(hidden).slice(-99)), [k]: Date.now() } : rest;
@@ -248,6 +329,10 @@
 
 {#snippet goalSpin(n, set, label)}
   <div class="tg-spin"><button type="button" tabindex="-1" aria-label="Lower goal" disabled={n <= 0} {@attach hold(() => set(goalStep(n, -1)))}>{@html MINUS}</button><span role="spinbutton" tabindex="0" aria-label={label} aria-valuemin={0} aria-valuemax={TOP_GOAL} aria-valuenow={n} aria-valuetext={n ? n + " rounds" : "No goal"} onkeydown={(e) => goalKey(e, n, set)}>{goalLabel(n)}</span><button type="button" tabindex="-1" aria-label="Higher goal" disabled={n >= TOP_GOAL} {@attach hold(() => set(goalStep(n, 1)))}>{@html PLUS}</button></div>
+{/snippet}
+
+{#snippet crewFaces(ms)}
+  <span class="tg-faces tg-crew-faces" aria-hidden="true">{#each ms as m (m.id)}<i style:--h={hueOf(m.name)} class:off={!m.on} class:busy={focusing(m)}>{initials(m.name)}</i>{/each}</span>
 {/snippet}
 
 {#snippet flag(k, title)}
@@ -282,7 +367,11 @@
         </div>
         <p class="tg-note">{step ? "Your timer follows the room clock. Pause or skip to go your own way." : "Your timer is off the room clock. Rejoin and it jumps to the room's current round."}</p>
       {:else}
-        <div class="tg-here private"><div><b>Your room</b><span>Share the code or the link. Only people with it can join.</span></div><span class="tg-code">{v.code}</span></div>
+        {#if cv.here}
+          <div class="tg-here private"><div><b>{cv.crew.name}</b><span>Your crew's room. It's always here, whenever one of you comes in.</span></div></div>
+        {:else}
+          <div class="tg-here private"><div><b>Your room</b><span>Share the code or the link. Only people with it can join.</span></div><span class="tg-code">{v.code}</span></div>
+        {/if}
         {#if v.owner}
           {@const n = (v.goal && v.goal.n) || 0}
           <div class="tg-opt tg-goal"><span>Room goal<small>{v.goal && v.goal.done ? v.goal.done + (v.goal.done === 1 ? " round" : " rounds") + " finished so far" : "Every finished focus round counts"}</small></span>{@render goalSpin(n, setRoomGoal, "Room goal in rounds")}</div>
@@ -290,8 +379,67 @@
       {/if}
       <div class="tg-foot">
         <button class="tg-btn" type="button" onclick={() => { api.roomReset(); close(); }}>Leave</button>
-        {#if !v.pub || step}<button class="tg-btn strong" type="button" onclick={() => copyInvite(api.RM.code)}>Copy invite link</button>
+        {#if !v.pub || step}<button class="tg-btn strong" type="button" onclick={() => (cv.here ? C.copyCrewInvite() : copyInvite(api.RM.code))}>Copy invite link</button>
         {:else}<button class="tg-btn strong" type="button" onclick={() => { api.followRoom(true); close(); }}>Rejoin round</button>{/if}
+      </div>
+    {:else if view === "crew" && cv.code}
+      <div class="tg-view {pane()}">
+        <button class="tg-back" type="button" onclick={() => go("main", true)}>{@html BACK}Work together</button>
+        <div class="tg-crew-top">
+          {#if renaming}
+            <input class="tg-crew-name" type="text" maxlength="32" aria-label="Crew name" autocomplete="off" data-1p-ignore="true" data-lpignore="true" data-bwignore="true" data-form-type="other" bind:value={crewName} bind:this={crewNameEl}
+              onkeydown={(e) => { if (e.key === "Enter") { e.preventDefault(); rename(); } else if (e.key === "Escape") { e.stopPropagation(); renaming = false; } }} onblur={rename}>
+          {:else}
+            <div class="tg-crew-titled"><b>{cv.crew ? cv.crew.name : "Your crew"}</b>{#if cv.crew}<button class="tg-inline" type="button" onclick={async () => { crewName = cv.crew.name; renaming = true; await tick(); crewNameEl?.select(); }}>Rename</button>{/if}</div>
+          {/if}
+          <span>{cv.week ? weekText(cv.week) : "Connecting…"}</span>
+        </div>
+        <ul class="tg-crew-list" aria-label="In the crew">
+          {#each cv.members as m (m.id)}
+            <li class:off={!m.on}><span class="tg-faces" aria-hidden="true"><i style:--h={hueOf(m.name)} class:busy={focusing(m)}>{initials(m.name)}</i></span><span class="tg-crew-who"><b>{m.name}{#if m.id === cv.you}<small>{" · you"}</small>{/if}</b><span>{mateState(m)}</span></span></li>
+          {/each}
+          {#if cv.members.length < 8}<li class="tg-crew-seat"><button class="tg-inline" type="button" onclick={() => C.copyCrewInvite()}>Copy invite link</button><span>Room for {8 - cv.members.length} more</span></li>{/if}
+        </ul>
+        <div class="tg-crew-time">
+        <div class="tg-opt"><span>Crew time</span><div class="tg-seg" role="radiogroup" aria-label="Crew time"><button type="button" role="radio" aria-checked={String(!cv.crew?.slot)} onclick={() => sendSlot(false)}>Any time</button><button type="button" role="radio" aria-checked={String(!!cv.crew?.slot)} onclick={() => sendSlot(true)}>Set times</button></div></div>
+        <div class="tg-fold" class:open={!!cv.crew?.slot}><div>
+          <div class="tg-days" role="group" aria-label="Days">{#each WEEK as [d, letter, dayName] (d)}<button type="button" aria-pressed={String(cdays.includes(d))} aria-label={dayName} onclick={() => toggleCrewDay(d)}>{letter}</button>{/each}</div>
+          <div class="tg-opt"><span>Starts</span><div class="tg-spin"><button type="button" tabindex="-1" aria-label="Earlier" disabled={cfrom <= 0} {@attach hold(() => setCrewFrom(cfrom - STEP))}>{@html MINUS}</button><span role="spinbutton" tabindex="0" aria-label="Crew time starts at" aria-valuemin={0} aria-valuemax={1440 - STEP} aria-valuenow={cfrom} aria-valuetext={slot(cfrom)} onkeydown={crewFromKey}>{slot(cfrom)}</span><button type="button" tabindex="-1" aria-label="Later" disabled={cfrom >= 1440 - STEP} {@attach hold(() => setCrewFrom(cfrom + STEP))}>{@html PLUS}</button></div></div>
+          <div class="tg-opt"><span>Lasts</span><div class="tg-spin"><button type="button" tabindex="-1" aria-label="Shorter" disabled={clen <= STEP} {@attach hold(() => setCrewLen(clen - STEP))}>{@html MINUS}</button><span role="spinbutton" tabindex="0" aria-label="Crew time lasts" aria-valuemin={STEP} aria-valuemax={LONGEST} aria-valuenow={clen} aria-valuetext={spanText(clen) + ", until " + slot(cfrom + clen)} onkeydown={crewLenKey}>{spanText(clen)}</span><button type="button" tabindex="-1" aria-label="Longer" disabled={clen >= Math.min(LONGEST, 1440 - cfrom)} {@attach hold(() => setCrewLen(clen + STEP))}>{@html PLUS}</button></div></div>
+          <div class="tg-opt tg-crew-next"><span>{nextCrew ? "Next " + (nextCrew.start <= now ? "now" : dayTag(nextCrew.start, now) + " " + clockIn(nextCrew.start)) : ""}</span><button class="tg-remind" type="button" aria-pressed={String(cv.remind)} aria-label={cv.remind ? "Reminding you when crew time starts" : "Remind me when crew time starts"} onclick={() => C.crewRemind(!cv.remind)}>{@html BELL}<span>{cv.remind ? "Reminding" : "Remind me"}</span></button></div>
+        </div></div>
+        </div>
+        <div class="tg-foot">
+          <button class="tg-btn" class:danger={leaving} type="button" onclick={leaveCrew}>{leaving ? "Leave for good?" : "Leave crew"}</button>
+          {#if cv.crew}<button class="tg-btn strong" type="button" disabled={cv.here} onclick={() => { close(false); C.crewRoom(); }}>{cv.here ? "You're in its room" : "Join crew room"}</button>{/if}
+        </div>
+      </div>
+    {:else if view === "crew-new"}
+      <div class="tg-view {pane()}">
+        <button class="tg-back" type="button" onclick={() => go("main", true)}>{@html BACK}Work together</button>
+        <form class="tg-form" autocomplete="off" onsubmit={startCrew}>
+          <div class="tg-title"><b>Start a crew</b><span>A standing room for up to eight people. You see who's around and focusing, and the rounds you finish add up each week. Never anyone's tasks.</span></div>
+          <label class="tg-field">Crew name<input type="text" maxlength="32" autocomplete="off" data-1p-ignore="true" data-lpignore="true" data-bwignore="true" data-form-type="other" placeholder="Thesis group" bind:value={crewName} bind:this={crewNameEl}></label>
+          {#if naming}<label class="tg-field">Your name<input type="text" maxlength="20" autocomplete="off" data-1p-ignore="true" data-lpignore="true" data-bwignore="true" data-form-type="other" placeholder="Shown to your crew" bind:value={name} bind:this={nameEl}></label>{/if}
+          <p class="tg-note" class:tg-err={!!(err || note)} role="status">{err || note || "Next, you get a link to invite the others."}</p>
+          <button class="tg-btn strong wide" type="submit" disabled={busy}>Start crew</button>
+        </form>
+      </div>
+    {:else if view === "crew-invite"}
+      <div class="tg-view {pane()}">
+        <form class="tg-form" autocomplete="off" onsubmit={joinCrew}>
+          {#if crewInv === false}
+            <div class="tg-title"><b>That crew is gone</b><span>Nobody opened it for a long while, or everyone left. Start your own, or ask for a new link.</span></div>
+            <button class="tg-btn strong wide" type="button" onclick={() => { api.crewInvite = ""; go("crew-new"); }}>Start a crew</button>
+          {:else}
+            <div class="tg-title"><b>Join {crewInv ? crewInv.name : "a crew"}</b><span>{crewInv ? (crewInv.size === 1 ? "1 person is" : crewInv.size + " people are") + " in it, with room for " + (crewInv.max - crewInv.size) + " more. " : ""}A standing room where you see who's around and focusing, and the rounds you finish add up each week. Others see your name and timer, never your tasks.</span></div>
+            {#if cv.code && cv.crew}<p class="tg-hint">You're in {cv.crew.name}. Joining this crew leaves it.</p>{/if}
+            <label class="tg-field">Your name<input type="text" maxlength="20" autocomplete="off" data-1p-ignore="true" data-lpignore="true" data-bwignore="true" data-form-type="other" placeholder="Shown to your crew" bind:value={name} bind:this={nameEl}></label>
+            {#if note}<p class="tg-err" role="status">{note}</p>{/if}
+            <button class="tg-btn strong wide" type="submit" disabled={!crewInv || crewInv.size >= crewInv.max}>{crewInv && crewInv.size >= crewInv.max ? "This crew is full" : "Join crew"}</button>
+          {/if}
+          <button class="tg-link" type="button" onclick={() => { api.crewInvite = ""; go("main", true); }}>Not now</button>
+        </form>
       </div>
     {:else if view === "invite"}
       <div class="tg-view {pane()}">
@@ -338,6 +486,22 @@
             onblur={() => { if (name.trim() && api.RM.name) saveName(); }}></label>
         {:else}
           <div class="tg-me"><span class="tg-faces" aria-hidden="true"><i style:--h={hueOf(api.RM.name)}>{initials(api.RM.name)}</i></span><span>Joining as <b>{api.RM.name}</b></span><button class="tg-inline" type="button" onclick={async () => { name = api.RM.name; naming = true; await tick(); nameEl?.select(); }}>Change</button></div>
+        {/if}
+        {#if cv.code}
+          <section class="tg-crew" aria-label="Your crew">
+            <button class="tg-crew-head" type="button" onclick={openCrew}>
+              {@render crewFaces(cv.members.length ? cv.members : [{ id: "me", name: api.RM.name || "?", on: true, s: null }])}
+              <span><b>{cv.crew ? cv.crew.name : "Your crew"}</b><small>{crewSub}</small></span>
+              {@html CHEVRON}
+            </button>
+            {#if cv.crew}<button class="tg-join" type="button" disabled={cv.here} onclick={() => { close(false); C.crewRoom(); }}>{cv.here ? "You're in" : "Join room"}</button>{/if}
+          </section>
+        {:else if cv.on}
+          <button class="tg-crew-start" type="button" onclick={() => go("crew-new")}>
+            <span class="tg-quick-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3"/><circle cx="5.5" cy="10.5" r="2.2"/><circle cx="18.5" cy="10.5" r="2.2"/><path d="M7 19a5 5 0 0 1 10 0M2.5 18a3.5 3.5 0 0 1 4.6-3.3M21.5 18a3.5 3.5 0 0 0-4.6-3.3"/></svg></span>
+            <span><b>Start a crew</b><small>A standing room for up to eight, with your rounds counted together each week</small></span>
+            {@html CHEVRON}
+          </button>
         {/if}
         {#if failed}
           <div class="tg-empty"><span>Couldn't load rooms.</span><button class="tg-link" type="button" onclick={load}>Try again</button></div>

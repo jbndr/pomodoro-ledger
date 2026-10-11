@@ -5,7 +5,8 @@ import { pushBody, pushReady, readSub, sendPush } from "./push.js";
 import { handleSync } from "./sync.js";
 import { handleHere } from "./here.js";
 import { handleWeather } from "./weather.js";
-import { nextSession, readTimes, scheduleOf, sessionCode, startStep } from "../web/src/lib/schedule.ts";
+import { isZone, nextSession, readTimes, scheduleOf, sessionCode, startStep, weekStart } from "../web/src/lib/schedule.ts";
+import { CREW_MAX, isCrewRoom } from "../web/src/lib/crew.ts";
 
 export { Ledger } from "./sync.js";
 export { Counts } from "./hits.js";
@@ -50,12 +51,18 @@ const REPORTS_TO_HIDE = 3;
 const REPORT_BURST = 5;
 const REPORT_EVERY_MS = 10 * 60000;
 const REPORT_KEEP_MS = 7 * 24 * 3600000;
+const CREW_NAME = 32;
+const CREW_IDLE_MS = 90 * 24 * 3600000;
+const CREW_FRESH_MS = 24 * 3600000;
+const CREW_BURST = 3;
+const CREW_EVERY_MS = 20 * 60000;
 const HOUSE = [{ key: "P", rhythm: "25/5", title: "Pomodoro" }, { key: "D", rhythm: "50/10", title: "Deep work" }];
 
 const json = (body, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 const pick = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((x) => ALPHABET[x % ALPHABET.length]).join("");
 const room = (env, code) => env.ROOM.get(env.ROOM.idFromName(code));
+const crew = (env, code) => env.CREW.get(env.CREW.idFromName(code));
 const ms = (v) => Math.max(0, Math.min(MAX_RUN_MS, Math.round(Number(v) || 0)));
 const clean = (v, n) => String(v || "").replace(/[\x00-\x1f\x7f]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
 // A token bucket per member: a short burst, then one reaction every few seconds.
@@ -90,20 +97,34 @@ function inviteMeta(cfg) {
   };
 }
 
-async function invitePage(request, env, url, code) {
+async function roomMeta(env, code) {
   let cfg = houseRoom(code);
   try {
     if (!cfg) cfg = await (await room(env, code).fetch("https://room/info")).json();
     const id = !cfg && scheduleOf(code);
     if (id) { const res = await lobby(env).fetch("https://lobby/schedule/" + id); cfg = res.ok ? await res.json() : null; }
   } catch {}
+  return inviteMeta(cfg);
+}
+
+async function crewMeta(env, code) {
+  let name = "";
+  try { const res = await crew(env, code).fetch("https://crew/info"); if (res.ok) name = (await res.json()).name; } catch {}
+  return {
+    title: name ? "Join " + name + ", a focus crew" : "Join my focus crew",
+    description: "A standing room for up to " + CREW_MAX + " people, with the rounds you finish counted together each week. You see each other's timers, never each other's tasks.",
+    image: "/og-room.png",
+  };
+}
+
+async function invitePage(request, env, url, meta, link) {
   // The rewriter escapes quotes but leaves ampersands as they are.
-  const meta = inviteMeta(cfg), set = (v) => ({ element: (e) => e.setAttribute("content", v.replace(/&/g, "&amp;")) });
+  const set = (v) => ({ element: (e) => e.setAttribute("content", v.replace(/&/g, "&amp;")) });
   const page = await env.ASSETS.fetch(request);
   const res = new HTMLRewriter()
     .on('meta[property="og:title"]', set(meta.title))
     .on('meta[property="og:description"]', set(meta.description))
-    .on('meta[property="og:url"]', set(url.origin + "/app/?room=" + code))
+    .on('meta[property="og:url"]', set(url.origin + link))
     .on('meta[property="og:image"], meta[name="twitter:image"]', set(url.origin + meta.image))
     .on('meta[property="og:image:alt"], meta[name="twitter:image:alt"]', set(CARD_ALT))
     .transform(page);
@@ -129,8 +150,12 @@ export default {
     const url = new URL(request.url);
     // Links shared before the app moved to /app/ (invites, sync return, demo) keep working.
     if (url.pathname === "/" && /[?&](room|synced|demo)(=|&|$)/.test(url.search)) return Response.redirect(url.origin + "/app/" + url.search, 302);
-    const invite = url.pathname === "/app/" && request.method === "GET" && String(url.searchParams.get("room") || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-    if (invite && invite.length === 6) return invitePage(request, env, url, invite);
+    const code = (k) => String(url.searchParams.get(k) || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (url.pathname === "/app/" && request.method === "GET") {
+      const r = code("room"), c = code("crew");
+      if (r.length === 6) return invitePage(request, env, url, await roomMeta(env, r), "/app/?room=" + r);
+      if (/^[A-HJKMNP-Z2-9]{8}$/.test(c)) return invitePage(request, env, url, await crewMeta(env, c), "/app/?crew=" + c);
+    }
     if (url.pathname === "/api/rooms" && request.method === "GET") return lobby(env).fetch("https://lobby/rooms");
     if (url.pathname === "/api/here" && request.method === "GET") return handleHere(request);
     if (url.pathname === "/api/weather" && request.method === "GET") return handleWeather(request);
@@ -149,6 +174,28 @@ export default {
         if (res.ok) return json({ code, ownerToken });
       }
       return json({ error: "busy" }, 503);
+    }
+    if (url.pathname === "/api/crew" && request.method === "POST") {
+      const ip = request.headers.get("CF-Connecting-IP") || "local", body = await request.json().catch(() => null);
+      const name = clean(body && body.name, CREW_NAME), tz = body && body.tz;
+      if (!name || !isZone(tz)) return json({ error: "bad crew" }, 400);
+      if ((await lobby(env).fetch("https://lobby/spend", { method: "POST", headers: { "x-ip": ip } })).status !== 204) return json({ error: "slow down" }, 429);
+      for (let i = 0; i < 5; i++) {
+        const code = pick(8), res = await crew(env, code).fetch("https://crew/open", { method: "POST", body: JSON.stringify({ name, tz, room: "I" + pick(5) }) });
+        if (res.ok) return json({ code });
+      }
+      return json({ error: "busy" }, 503);
+    }
+    const cm = url.pathname.match(/^\/api\/crew\/([A-HJKMNP-Z2-9]{8})(\/ws|\/push)?$/);
+    if (cm) {
+      if (cm[2] === "/ws") {
+        if (request.headers.get("Upgrade") !== "websocket") return json({ error: "expected websocket" }, 426);
+        const origin = request.headers.get("Origin");
+        if (origin && new URL(origin).host !== url.host) return json({ error: "forbidden" }, 403);
+        return crew(env, cm[1]).fetch(request);
+      }
+      if (cm[2] === "/push" && (request.method === "POST" || request.method === "DELETE")) return crew(env, cm[1]).fetch("https://crew/push", { method: request.method, body: await request.text() });
+      if (!cm[2] && request.method === "GET") return crew(env, cm[1]).fetch("https://crew/info");
     }
     if (url.pathname === "/api/report" && request.method === "POST") {
       return lobby(env).fetch("https://lobby/report", { method: "POST", headers: { "x-ip": request.headers.get("CF-Connecting-IP") || "local" }, body: await request.text() });
@@ -198,9 +245,10 @@ export class Room extends DurableObject {
     const code = path.split("/")[3] || "";
     if (!(await store.get("open"))) {
       const cfg = houseRoom(code) || (scheduleOf(code) && (await this.session(code)));
-      if (cfg) {
+      // A crew's room is a private room without an owner that opens whenever a member comes in.
+      if (cfg || isCrewRoom(code)) {
         await store.put("open", Date.now());
-        await store.put("cfg", cfg);
+        if (cfg) await store.put("cfg", cfg);
         await store.setAlarm(Date.now() + EMPTY_MS);
       }
     }
@@ -433,6 +481,7 @@ export class Lobby extends DurableObject {
     const store = this.ctx.storage, now = Date.now(), path = new URL(request.url).pathname;
     if (path.startsWith("/session/")) return this.session(path.slice(9), now);
     if (path === "/report") return this.report(request, now);
+    if (path === "/spend") return new Response(null, { status: (await this.spend("ip:c:" + (request.headers.get("x-ip") || "local"), CREW_BURST, CREW_EVERY_MS, now)) ? 204 : 429 });
     if (path === "/admin") return this.admin(request, now);
     if (path === "/schedule" || path.startsWith("/schedule/")) return this.schedule(request, path, now);
     if (request.method === "POST") {
@@ -626,6 +675,191 @@ export class Lobby extends DurableObject {
       }));
       if (dead.length) await store.delete(dead);
       break;
+    }
+    await this.arm(now);
+  }
+}
+
+// A standing group of up to eight: who's in it, who's around and focusing, the rounds they finish each week, and an optional crew time with reminders.
+export class Crew extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
+  }
+
+  async fetch(request) {
+    const store = this.ctx.storage, path = new URL(request.url).pathname, now = Date.now(), c = await store.get("crew");
+    if (path === "/open") {
+      if (c) return new Response(null, { status: 409 });
+      const { name, tz, room } = await request.json();
+      await store.put("crew", { name, tz, room, made: now, used: now, slot: null, pushed: 0, members: [] });
+      await store.setAlarm(now + CREW_FRESH_MS);
+      return new Response(null, { status: 204 });
+    }
+    if (path === "/info") return c ? json({ name: c.name, size: c.members.length, max: CREW_MAX, slot: c.slot }) : json({ error: "not found" }, 404);
+    if (path === "/push") return c ? this.push(request, c, now) : json({ error: "not found" }, 404);
+    const [client, server] = Object.values(new WebSocketPair());
+    if (c) this.ctx.acceptWebSocket(server);
+    else {
+      server.accept();
+      server.close(4004, "No such crew");
+    }
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  sockets(except) {
+    return this.ctx.getWebSockets().filter((ws) => ws !== except).map((ws) => ({ ws, a: ws.deserializeAttachment() })).filter((x) => x.a && x.a.cid);
+  }
+
+  send(ws, body) {
+    try { ws.send(JSON.stringify(body)); } catch {}
+  }
+
+  // Each member may be here from several tabs or devices; the most recent timer state speaks for them.
+  async broadcast(except) {
+    const store = this.ctx.storage, c = await store.get("crew"), socks = this.sockets(except), now = Date.now();
+    if (!c) return;
+    const live = new Map();
+    for (const { a } of socks) { const cur = live.get(a.cid); if (!cur || (a.at || 0) > (cur.at || 0)) live.set(a.cid, a); }
+    const weeks = (await store.get("weeks")) || {}, start = weekStart(now, c.tz), last = weekStart(start - 1, c.tz);
+    const sum = (w) => Object.values(weeks[w] || {}).reduce((n, x) => n + x, 0);
+    const members = c.members.map((m) => ({ id: m.pid, name: m.name, on: live.has(m.cid), s: (live.get(m.cid) || {}).s || null }));
+    const info = { name: c.name, room: c.room, tz: c.tz, slot: c.slot };
+    for (const { ws, a } of socks) this.send(ws, { t: "crew", now, you: a.pid, crew: info, members, week: { n: sum(start), last: sum(last), mine: (weeks[start] || {})[a.pid] || 0 } });
+  }
+
+  async count(pid, now, tz) {
+    const store = this.ctx.storage, weeks = (await store.get("weeks")) || {}, start = weekStart(now, tz);
+    weeks[start] = { ...weeks[start], [pid]: ((weeks[start] || {})[pid] || 0) + 1 };
+    const keep = Object.keys(weeks).map(Number).sort((a, b) => b - a).slice(0, 2);
+    await store.put("weeks", Object.fromEntries(keep.map((k) => [k, weeks[k]])));
+  }
+
+  async webSocketMessage(ws, raw) {
+    if (typeof raw !== "string" || raw.length > 600) return;
+    let m;
+    try { m = JSON.parse(raw); } catch { return; }
+    if (!m || typeof m !== "object") return;
+    const store = this.ctx.storage, now = Date.now(), me = ws.deserializeAttachment(), c = await store.get("crew");
+    if (!c) return ws.close(4004, "No such crew");
+
+    if (m.t === "hello") {
+      if (me) return;
+      const cid = clean(m.cid, 40), name = clean(m.name, 20);
+      if (!cid || !name) return ws.close(4000, "Bad hello");
+      let mem = c.members.find((x) => x.cid === cid);
+      if (!mem) {
+        if (c.members.length >= CREW_MAX) return ws.close(4003, "Crew is full");
+        mem = { cid, pid: pick(8), name, at: now, lr: 0 };
+        c.members.push(mem);
+      }
+      mem.name = name;
+      c.used = now;
+      await store.put("crew", c);
+      ws.serializeAttachment({ cid, pid: mem.pid, s: null, at: now });
+      await this.arm(now);
+      return this.broadcast();
+    }
+    const mem = me && c.members.find((x) => x.cid === me.cid);
+    if (!mem) return;
+
+    if (m.t === "state") {
+      const s = m.s || {};
+      if (!MODES.includes(s.mode) || !STATUSES.includes(s.status)) return;
+      const rem = ms(s.remaining), was = me.s;
+      me.s = { mode: s.mode, status: s.status, total: ms(s.total), rem, end: s.status === "running" ? now + rem : 0 };
+      me.at = now;
+      ws.serializeAttachment(me);
+      if (roundDone(was, me.s, now) && now - (mem.lr || 0) >= ROUND_GAP_MS) {
+        mem.lr = now;
+        await store.put("crew", c);
+        await this.count(mem.pid, now, c.tz);
+      }
+      return this.broadcast();
+    }
+
+    if (m.t === "name" || m.t === "slot") {
+      const n = tokens(me.cb, now, SIG_BURST, SIG_EVERY_MS);
+      if (n < 1) return;
+      me.cb = { n: n - 1, at: now };
+      ws.serializeAttachment(me);
+      if (m.t === "name") {
+        const name = clean(m.name, CREW_NAME);
+        if (!name) return;
+        c.name = name;
+      } else {
+        const slot = m.slot === null ? null : readTimes(m.slot || {});
+        if (m.slot !== null && !slot) return;
+        c.slot = slot; c.pushed = 0;
+      }
+      await store.put("crew", c);
+      await this.arm(now);
+      return this.broadcast();
+    }
+
+    if (m.t === "leave") {
+      c.members = c.members.filter((x) => x.cid !== me.cid);
+      await store.delete("p:" + me.cid);
+      for (const x of this.sockets()) if (x.a.cid === me.cid) { x.ws.serializeAttachment(null); x.ws.close(4007, "Left the crew"); }
+      if (!c.members.length) return store.deleteAll();
+      await store.put("crew", c);
+      await this.arm(now);
+      return this.broadcast();
+    }
+  }
+
+  async webSocketClose(ws) {
+    try { ws.close(1000); } catch {}
+    if (ws.deserializeAttachment()) await this.broadcast(ws);
+  }
+
+  async webSocketError(ws) {
+    await this.broadcast(ws);
+  }
+
+  // Only members can ask for the crew time's reminder.
+  async push(request, c, now) {
+    const store = this.ctx.storage, body = (await request.json().catch(() => null)) || {}, cid = clean(body.cid, 40);
+    if (!cid || !c.members.some((x) => x.cid === cid)) return json({ error: "forbidden" }, 403);
+    if (request.method === "DELETE") await store.delete("p:" + cid);
+    else {
+      const sub = readSub(body.sub);
+      if (!pushReady(this.env)) return json({ error: "push off" }, 503);
+      if (!sub) return json({ error: "bad subscription" }, 400);
+      await store.put("p:" + cid, sub);
+    }
+    await this.arm(now);
+    return new Response(null, { status: 204 });
+  }
+
+  // Wakes for the next crew-time reminder, or to forget a crew nobody has opened in a long while.
+  async arm(now) {
+    const store = this.ctx.storage, c = await store.get("crew");
+    if (!c) return;
+    let next = (c.members.length ? c.used + CREW_IDLE_MS : c.made + CREW_FRESH_MS);
+    if (c.slot && pushReady(this.env) && (await store.list({ prefix: "p:", limit: 1 })).size) {
+      const t = pushAt({ ...c.slot, pushed: c.pushed }, now);
+      if (t && t < next) next = t;
+    }
+    await store.setAlarm(Math.max(now, next));
+  }
+
+  async alarm() {
+    const store = this.ctx.storage, now = Date.now(), c = await store.get("crew");
+    if (!c) return;
+    if (!this.sockets().length && (c.members.length ? now - c.used >= CREW_IDLE_MS : now - c.made >= CREW_FRESH_MS)) return store.deleteAll();
+    if (c.slot && pushReady(this.env) && pushAt({ ...c.slot, pushed: c.pushed }, now) === now) {
+      const o = nextSession(c.slot, now), text = pushBody(c.name, o.start, c.room), dead = [];
+      c.pushed = o.start;
+      await store.put("crew", c);
+      const ttl = Math.max(60, Math.min(PUSH_TTL_S, Math.round((o.end - now) / 1000)));
+      await Promise.all([...(await store.list({ prefix: "p:" }))].map(async ([k, sub]) => {
+        try {
+          const status = await sendPush(sub, text, this.env, { ttl, now });
+          if (status === 404 || status === 410) dead.push(k);
+        } catch {}
+      }));
+      if (dead.length) await store.delete(dead);
     }
     await this.arm(now);
   }

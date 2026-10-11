@@ -1,4 +1,5 @@
 import { toast } from "../chrome/notice.svelte";
+import { isCrewRoom } from "../lib/crew";
 import { keyBytes, sameKey } from "../lib/push";
 import { localZone, nextSession, readTimes, scheduleOf, sessionCode, type Schedule, type Times, type Upcoming } from "../lib/schedule";
 import { playSound } from "../sound";
@@ -19,6 +20,8 @@ const own = ls.get<Record<string, string>>("pl.schedOwn", {});
 const cid = ls.get("pl.cid", "") || Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
 ls.set("pl.cid", cid);
 
+export const clientId = () => cid;
+
 const save = () => { ls.set("pl.remind", list); ls.set("pl.schedOwn", own); };
 
 async function call(path: string, body: object, method = "POST") {
@@ -36,7 +39,7 @@ const pushKey = () => (serverKey ||= fetch("/api/push").then((r) => r.json()).th
 const granted = () => "Notification" in window && Notification.permission === "granted";
 
 /** This browser's push subscription for the lobby's key, or null when push isn't set up here or on the server. */
-async function subscription() {
+export async function pushSubscription() {
   if (DEMO || !granted() || !("serviceWorker" in navigator) || !("PushManager" in window)) return null;
   const key = await pushKey();
   if (!key) return null;
@@ -50,7 +53,7 @@ async function subscription() {
 }
 
 async function pushOn(r: Reminder, sub?: PushSubscription | null) {
-  sub ||= await subscription();
+  sub ||= await pushSubscription();
   if (!sub) return false;
   try { await call("/" + r.id + "/push", { cid, sub: sub.toJSON() }); } catch { return false; }
   if (!list.some((x) => x.id === r.id)) { pushOff(r.id); return false; }
@@ -71,7 +74,7 @@ async function allow(r: Reminder, ask: boolean) {
 /** Brings the lobby up to date when this browser's subscription changed or push was turned on after the reminder. */
 async function resync() {
   if (!list.length || !granted()) return;
-  const sub = await subscription();
+  const sub = await pushSubscription();
   if (sub) for (const r of list) if (r.push !== sub.endpoint) await pushOn(r, sub);
 }
 
@@ -151,7 +154,7 @@ function join(code: string, open: () => void) {
 export function watchReminders(open: () => void) {
   navigator.serviceWorker?.addEventListener("message", (e) => {
     const d = e.data;
-    if (d && d.t === "join" && typeof d.code === "string" && scheduleOf(d.code)) join(d.code, open);
+    if (d && d.t === "join" && typeof d.code === "string" && (scheduleOf(d.code) || isCrewRoom(d.code))) join(d.code, open);
   });
   setTimeout(resync, RESYNC_MS);
   let last = Date.now();

@@ -7,7 +7,8 @@ const { webcrypto } = require('node:crypto');
 const { transformSync } = require('esbuild');
 const { receiver, decrypt, vapidEnv, verifyJwt } = require('./receiver.cjs');
 
-const schedule = transformSync(fs.readFileSync('web/src/lib/schedule.ts', 'utf8'), { loader: 'ts' }).code.replace(/^export /gm, '');
+const schedule = transformSync(fs.readFileSync('web/src/lib/schedule.ts', 'utf8'), { loader: 'ts' }).code.replace(/^export /gm, '')
+  + transformSync(fs.readFileSync('web/src/lib/crew.ts', 'utf8'), { loader: 'ts' }).code.replace(/^export /gm, '');
 const push = fs.readFileSync('src/push.js', 'utf8').replace(/^export /gm, '');
 const source = fs.readFileSync('src/worker.js', 'utf8')
   .replace(/^(import|export \{).*$/gm, '')

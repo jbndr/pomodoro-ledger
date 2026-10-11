@@ -1,6 +1,7 @@
 <script>
   import { onMount } from "svelte";
   import { pillOf } from "../lib/chrome";
+  import { crewLine, focusing } from "../lib/crew";
   import { pill, room } from "../lib/redraw.svelte";
   import { roomList } from "../room/net";
   import { toast } from "./notice.svelte";
@@ -12,13 +13,17 @@
   const mod = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl ";
   const sync = $derived.by(() => { pill.version; return pillOf({ demo: api.DEMO, preview: api.preview(), storeMode: api.S.storeMode, cloud: api.Cloud.state }); });
   const alert = $derived(sync.state === "offline" || sync.state === "preview");
-  const roomName = $derived.by(() => { room.version; return api.RM.code ? api.RM.pub?.title || "your room" : ""; });
+  const roomName = $derived.by(() => { room.version; return api.RM.code ? api.RM.pub?.title || (api.CR.crew && api.CR.crew.room === api.RM.code ? api.CR.crew.name : "your room") : ""; });
   const hueOf = (s) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
   const initials = (n) => n.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
   // In a room the pill shows the others there, never you; outside one, whoever is in a room right now.
   const others = $derived.by(() => { room.version; return api.RM.code ? api.RM.members.filter((m) => m.id !== api.RM.you).map((m) => m.name) : []; });
-  const faces = $derived((roomName ? others : people).slice(0, 3).map((n) => ({ ini: initials(n), hue: hueOf(n) })));
-  const label = $derived(roomName ? "In " + roomName : people.length ? people.length + " in rooms now" : "Work together");
+  // Outside a room, your crew focusing right now comes before strangers in public rooms.
+  const crewBusy = $derived.by(() => { room.version; return api.CR.members.filter((m) => m.id !== api.CR.you && focusing(m)); });
+  const crewText = $derived.by(() => { room.version; return crewLine(api.CR.members, api.CR.you); });
+  const shownNames = $derived(roomName ? others : crewBusy.length ? crewBusy.map((m) => m.name) : people);
+  const faces = $derived(shownNames.slice(0, 3).map((n) => ({ ini: initials(n), hue: hueOf(n) })));
+  const label = $derived(roomName ? "In " + roomName : crewText || (people.length ? people.length + " in rooms now" : "Work together"));
 
   // Only names come back from the lobby; what anyone works on stays on their own device.
   async function load() {
