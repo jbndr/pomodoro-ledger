@@ -24,6 +24,7 @@
     ["Day column dot", ".dcol-t", ".label-dot", "span"],
     ["Insights legend key", ".est-legend span", "i", ":scope"],
     ["Menu label dot", ".pick-menu li", ".label-dot", "span"],
+    ["Menu emoji", ".pick-menu li", ".pick-emoji", "span"],
     ["Stages lane swatch", ".sg-lane", ".sg-sw", ":scope > span"],
     ["Stages readout dot", ".sg-k", "i", ":scope"],
   ];

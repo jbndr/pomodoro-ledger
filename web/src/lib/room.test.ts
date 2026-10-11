@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  addBubble, askOf, bubbleNames, clock, liveBubbles, mateClock, mateProgress, normCode, othersOf, REACT_BURST, REACT_EVERY_MS, REACT_LIFE_MS, REACT_MAX, REACTIONS, takeToken, tokenIn,
+  addBubble, askOf, bubbleNames, clock, liveBubbles, mateClock, mateProgress, normCode, othersOf, REACT_BURST, REACT_EVERY_MS, REACT_LIFE_MS, REACT_MAX, REACTIONS, signalOf, SIGNALS, staleSignal, takeToken, tokenIn,
   type Bubble, type Bucket, type Member, type MateTimer,
 } from "./room";
 
@@ -149,5 +149,39 @@ describe("bubbleNames", () => {
     expect(bubbleNames(["Ana", "Ben"])).toBe("Ana and Ben");
     expect(bubbleNames(["Ana", "Ben", "Cy"])).toBe("Ana, Ben and 1 other");
     expect(bubbleNames(["Ana", "Ben", "Cy", "Di"])).toBe("Ana, Ben and 2 others");
+  });
+});
+
+describe("signalOf", () => {
+  it("shows a status until it has been up for its time", () => {
+    expect(signalOf({ k: "back", at: now }, now + 60000)?.name).toBe("Back in 2");
+    expect(signalOf({ k: "back", at: now }, now + 5 * 60000)).toBeNull();
+    expect(signalOf({ k: "deep", at: now }, now + 59 * 60000)?.e).toBe("🎧");
+  });
+  it("ignores missing and unknown statuses", () => {
+    expect(signalOf(null, now)).toBeNull();
+    expect(signalOf(undefined, now)).toBeNull();
+    expect(signalOf({ k: "busy" as never, at: now }, now)).toBeNull();
+  });
+  it("keeps four statuses, one per key", () => {
+    expect(SIGNALS.map((s) => s.id)).toEqual(["deep", "stuck", "back", "wrap"]);
+  });
+});
+
+describe("staleSignal", () => {
+  it("clears Back in 2 once you focus again", () => {
+    expect(staleSignal("back", "focus", "running")).toBe(true);
+    expect(staleSignal("back", "focus", "paused")).toBe(false);
+    expect(staleSignal("back", "short", "running")).toBe(false);
+  });
+  it("clears Deep in it on a break", () => {
+    expect(staleSignal("deep", "short", "running")).toBe(true);
+    expect(staleSignal("deep", "long", "idle")).toBe(true);
+    expect(staleSignal("deep", "focus", "paused")).toBe(false);
+  });
+  it("leaves the others alone", () => {
+    expect(staleSignal("stuck", "short", "running")).toBe(false);
+    expect(staleSignal("wrap", "long", "running")).toBe(false);
+    expect(staleSignal(undefined, "focus", "running")).toBe(false);
   });
 });

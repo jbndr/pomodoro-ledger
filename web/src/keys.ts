@@ -1,7 +1,9 @@
 import { toast } from "./chrome/notice.svelte";
 import { composer } from "./composer/state.svelte";
 import { $, taskRow, taskRows } from "./dom";
+import { SIGNALS } from "./lib/room";
 import { phone, showPage } from "./pages";
+import { mySignal, RM, roomSignal } from "./room/net";
 import { S } from "./state";
 import { focusRow, moveTasksToTop, scheduleTask } from "./tasks/actions";
 import { groupName, guardPreview, quickDays } from "./tasks/derived";
@@ -45,6 +47,13 @@ function scheduleShortcut(key: string) {
   scheduleTask(t.id, ({ t: q.today, m: q.tomorrow, w: q.week, l: q.later } as Record<string, string>)[key]);
 }
 
+// 1–4 set a status in a room, the same digit again or 0 clears it.
+function signalKey(n: number) {
+  const g = n ? SIGNALS[n - 1] : null, off = !g || mySignal()?.id === g.id;
+  if (!roomSignal(off ? null : g.id)) return;
+  toast(off ? "Status cleared." : "Your status: " + g.e + " " + g.name + ".");
+}
+
 export const mac = /Mac|iPhone|iPad/.test(navigator.platform);
 export const MOD = mac ? "⌘" : "Ctrl";
 
@@ -81,6 +90,7 @@ export function onKey(e: KeyboardEvent) {
   else if ((e.key === "p" || e.key === "P") && !e.metaKey && !e.ctrlKey && !e.altKey && !zen()) { e.preventDefault(); openPlan(); }
   else if ((e.key === "+" || e.key === "=") && !e.metaKey && !e.ctrlKey) adjust(1);
   else if (e.key === "-" && !e.metaKey && !e.ctrlKey) adjust(-1);
+  else if (/^[0-4]$/.test(e.key) && RM.live && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); signalKey(+e.key); }
   else if (e.key === "Escape" && zen()) toggleZen(false);
   else if (e.key === "ArrowUp" && e.altKey && (mac ? e.metaKey : e.ctrlKey) && !zen()) { e.preventDefault(); const t = shortcutTask(); if (t) moveTasksToTop([t.id]); else toast("Point at a task or pick one to work on first."); }
   else if ((e.key === "ArrowUp" || e.key === "ArrowDown") && e.altKey && !e.metaKey && !e.ctrlKey && !zen()) { e.preventDefault(); moveTaskKey(e.key === "ArrowUp", e.shiftKey); }

@@ -3,7 +3,7 @@ import { toast } from "../chrome/notice.svelte";
 import { setOverlay } from "../layout";
 import { room, roomClock } from "../lib/redraw.svelte";
 import { endedInStep, hhmm, inStep, phaseAt, type Listed, type Rhythm } from "../lib/rhythm";
-import { addBubble, liveBubbles, othersOf, REACT_LIFE_MS, REACTIONS, takeToken, tokenIn, type Bubble, type Bucket, type Member, type Mode, type Proposal } from "../lib/room";
+import { addBubble, liveBubbles, othersOf, REACT_LIFE_MS, REACTIONS, signalOf, SIGNALS, staleSignal, takeToken, tokenIn, type Bubble, type Bucket, type Member, type Mode, type Proposal, type Signal } from "../lib/room";
 import type { Upcoming } from "../lib/schedule";
 import type { Status } from "../lib/timer";
 import { renderTimer } from "../render";
@@ -42,6 +42,21 @@ export function roomPush(force?: boolean) {
   if (key === RM.sent && !force) return;
   RM.sent = key;
   roomSend({ t: "state", s: { mode: T.mode, status: T.status, remaining: Math.round(remNow()), total } });
+  const sig = mySignal();
+  if (sig && staleSignal(sig.id, T.mode, T.status)) queueMicrotask(() => roomSignal(null));
+}
+
+const me = () => RM.members.find((m) => m.id === RM.you);
+export const mySignal = () => signalOf(me()?.sig, Date.now());
+
+/** Sets or clears your status in the room; returns whether it went out. */
+export function roomSignal(k: Signal | null) {
+  const m = me();
+  if (!RM.live || !m || (k && !SIGNALS.some((s) => s.id === k))) return false;
+  m.sig = k && { k, at: Date.now() };
+  roomSend({ t: "sig", k });
+  renderRoom();
+  return true;
 }
 
 export function roomReset() {
@@ -85,7 +100,7 @@ function roomMsg(m: RoomMsg) {
     const skew = Date.now() - m.now, had = RM.prop;
     RM.skew = skew;
     RM.you = m.you; RM.owner = !!m.owner;
-    RM.members = m.members.map((x) => ({ id: x.id, name: x.name, owner: !!x.owner, s: x.s && { ...x.s, end: x.s.end ? x.s.end + skew : 0 } }));
+    RM.members = m.members.map((x) => ({ id: x.id, name: x.name, owner: !!x.owner, s: x.s && { ...x.s, end: x.s.end ? x.s.end + skew : 0 }, sig: x.sig && { k: x.sig.k, at: x.sig.at + skew } }));
     RM.prop = m.prop;
     RM.pub = m.pub || null;
     ss.set("pl.roomPub", RM.pub && JSON.stringify(RM.pub));

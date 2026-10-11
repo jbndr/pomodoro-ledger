@@ -78,6 +78,7 @@ export const AREAS: Area[] = [
       { title: "Scheduled sessions", blurb: "Recurring public sessions, like deep work 9 to 12 on weekdays, that anyone can plan to join." },
       { title: "Session reminders", blurb: "A notification when a session you planned is starting, even with the app closed." },
       { title: "Reactions", blurb: "A quick 👋 or 🎉 to the room, without breaking anyone's focus." },
+      { title: "Status signals", blurb: "Deep in it, stuck, back in 2 or wrapping up, shown on your face in the room. Presence without a chat." },
     ],
   },
   {
