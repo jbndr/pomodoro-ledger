@@ -1,0 +1,13 @@
+---
+import { OWNER } from "../data/legal";
+const lines = [OWNER.name, ...(OWNER.address.length ? OWNER.address : ["Postal address missing"]), OWNER.country];
+---
+<address class="owner">
+  {lines.map((l) => <span class:list={{ missing: !OWNER.address.length && l === "Postal address missing" }}>{l}</span>)}
+  <a href={`mailto:${OWNER.email}`}>{OWNER.email}</a>
+</address>
+<style>
+  .owner { font-style: normal; display: grid; gap: 2px; margin: 0 0 1.2em; font-size: 16.5px; line-height: 1.6; }
+  .owner a { margin-top: 10px; width: max-content; }
+  .missing { color: var(--tomato); font-weight: 600; }
+</style>

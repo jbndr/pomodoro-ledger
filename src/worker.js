@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import { hit, stats } from "./hits.js";
+import { hit, stats, waitlist } from "./hits.js";
 import { pushBody, pushReady, readSub, sendPush } from "./push.js";
 import { handleSync } from "./sync.js";
 import { handleHere } from "./here.js";
@@ -106,6 +106,7 @@ export default {
       return room(env, m[1]).fetch(request);
     }
     if (url.pathname === "/api/hit") return hit(request, env, url, ctx);
+    if (url.pathname === "/api/waitlist") return waitlist(request, env, url);
     if (url.pathname === "/api/sync/stats") return stats(request, env, url);
     if (url.pathname === "/api/sync" || url.pathname.startsWith("/api/sync/")) return handleSync(request, env, url);
     if (url.pathname.startsWith("/api/")) return json({ error: "not found" }, 404);
