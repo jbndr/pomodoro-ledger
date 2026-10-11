@@ -12,7 +12,7 @@
     ul.children[i]?.scrollIntoView({ block: "nearest" });
   }
 
-  /** A menu of `items` ({ id, title, key? }) under `anchor`; `pick` gets the chosen id. */
+  /** A menu of `items` ({ id, title, key?, hue?, none?, meta? }) under `anchor`; `pick` gets the chosen id. */
   export function open(a, list, current, pick) {
     items = list; cur = current; cb = pick; anchor = a;
     pop.hidden = false;
@@ -71,6 +71,6 @@
   onkeydown={keydown}
 >
   {#each items as o, i (i)}
-    <li role="option" data-i={i} aria-selected={String(o.id === cur)} aria-keyshortcuts={o.key || null} class:act={i === idx}><span>{o.title}</span>{#if o.key}<kbd>{o.key}</kbd>{/if}{@html api.ICON.check}</li>
+    <li role="option" data-i={i} aria-selected={String(o.id === cur)} aria-keyshortcuts={o.key || null} class:act={i === idx}>{#if o.hue != null}<i class="label-dot" style:--h={o.hue}></i>{:else if o.none}<i class="label-dot none"></i>{/if}<span>{o.title}</span>{#if o.meta}<em>{o.meta}</em>{/if}{#if o.key}<kbd>{o.key}</kbd>{/if}{@html api.ICON.check}</li>
   {/each}
 </ul>

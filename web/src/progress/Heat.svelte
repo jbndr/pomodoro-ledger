@@ -4,8 +4,12 @@
   import { labelTip } from "./tips";
 
   let { api, days, today, split } = $props();
+  let width = $state(0);
 
-  const weeks = 20, cs = 13, gap = 3, ml = 30, mt = 18, W = ml + weeks * (cs + gap), H = mt + 7 * (cs + gap);
+  const cs = 13, gap = 3, ml = 30, mt = 18, H = mt + 7 * (cs + gap);
+  // As many weeks as fit at full size, up to a year.
+  const weeks = $derived(width ? Math.max(12, Math.min(53, Math.floor((width - ml) / (cs + gap)))) : 20);
+  const W = $derived(ml + weeks * (cs + gap));
   const DAYS = ["Mon", "", "Wed", "", "Fri", "", ""];
 
   const c = $derived.by(() => {
@@ -31,8 +35,11 @@
   });
 </script>
 
-<div class="chart heat" id="heat">
-  <svg viewBox="0 0 {W} {H}" role="img" aria-label="Focus calendar for the last 20 weeks">
+<figure class="chart-card calendar" id="calendar">
+  <h3>Focus calendar</h3>
+  <p class="sub" id="heatSub">Last {weeks} weeks</p>
+  <div class="chart heat" id="heat" bind:clientWidth={width}>
+  <svg viewBox="0 0 {W} {H}" role="img" aria-label="Focus calendar for the last {weeks} weeks">
     {#each c.months as mo (mo.x)}<text x={mo.x} y="11">{mo.name}</text>{/each}
     {#each c.cells as cell (cell.key)}
       {#if cell.future}<rect class="cell future" x={cell.x + .5} y={cell.y + .5} width={cs - 1} height={cs - 1} rx="3" />
@@ -40,4 +47,6 @@
     {/each}
     {#each DAYS as label, r (r)}{#if label}<text x="0" y={mt + r * (cs + gap) + 10}>{label}</text>{/if}{/each}
   </svg>
-</div>
+  </div>
+  <div class="legend" aria-hidden="true"><span>Less</span><i style="background:var(--heat0)"></i><i style="background:var(--heat1)"></i><i style="background:var(--heat2)"></i><i style="background:var(--heat3)"></i><i style="background:var(--heat4)"></i><span>More</span></div>
+</figure>

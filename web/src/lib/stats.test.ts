@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays, sod } from "./dates";
-import { dayLabels, dayTotals, estimateAccuracy, focusByLabel, heatLevel, minuteScale, spanDays, streaks, sumDays } from "./stats";
+import { dayLabels, dayTotals, estimateAccuracy, heatLevel, spanDays, streaks } from "./stats";
 import type { Session, Task, Tasks } from "./tasks";
 
 // Saturday, 3 October 2026.
@@ -11,7 +11,7 @@ const at = (daysAgo: number, hour = 10) => addDays(TODAY, -daysAgo) + hour * 360
 const cycle = (daysAgo: number, extra: Partial<Session> = {}): Session => ({ at: at(daysAgo), ms: 25 * MIN, full: true, ...extra });
 const tasks = (...list: Task[]): Tasks => new Map(list.map((t) => [t.id, t]));
 
-describe("dayTotals and sumDays", () => {
+describe("dayTotals", () => {
   const days = dayTotals(tasks(
     { id: "a", title: "A", sessions: [cycle(0), cycle(0), { at: at(1), ms: 10 * MIN }] },
     { id: "b", title: "B", sessions: [cycle(8)] },
@@ -19,10 +19,6 @@ describe("dayTotals and sumDays", () => {
   it("adds time and full cycles per day", () => {
     expect(days.get("2026-10-03")).toEqual({ ms: 50 * MIN, cycles: 2 });
     expect(days.get("2026-10-02")).toEqual({ ms: 10 * MIN, cycles: 0 });
-  });
-  it("sums a run of days ending on a given one", () => {
-    expect(sumDays(days, TODAY, 7)).toBe(60 * MIN);
-    expect(sumDays(days, addDays(TODAY, -7), 7)).toBe(25 * MIN);
   });
 });
 
@@ -62,25 +58,6 @@ describe("estimateAccuracy", () => {
   });
 });
 
-describe("focusByLabel", () => {
-  const list = tasks(
-    { id: "a", title: "A", project: "Docs", sessions: [cycle(0), cycle(40), cycle(0, { project: "" })] },
-    { id: "b", title: "B", project: "Admin", done: true, doneAt: at(2), sessions: [cycle(2)] },
-    { id: "c", title: "C", project: "Admin", sessions: [] },
-    { id: "u", title: "Unplanned focus", system: true, sessions: [cycle(1)] },
-  );
-  it("counts sessions under their own label within the period, most focus first", () => {
-    expect(focusByLabel(list, addDays(TODAY, -6))).toEqual([
-      { name: "", ms: 50 * MIN, cycles: 2, done: 0, open: 0 },
-      { name: "Admin", ms: 25 * MIN, cycles: 1, done: 1, open: 1 },
-      { name: "Docs", ms: 25 * MIN, cycles: 1, done: 0, open: 1 },
-    ]);
-  });
-  it("leaves out labels with no focus and nothing finished in the period", () => {
-    expect(focusByLabel(list, addDays(TODAY, 1)).map((r) => r.name)).toEqual([]);
-  });
-});
-
 describe("dayLabels", () => {
   it("splits each day's focus by label", () => {
     const m = dayLabels(tasks({ id: "a", title: "A", project: "Docs", sessions: [cycle(0), cycle(0, { project: "Admin" })] }));
@@ -89,11 +66,6 @@ describe("dayLabels", () => {
 });
 
 describe("chart helpers", () => {
-  it("picks a minutes scale with at most four steps", () => {
-    expect(minuteScale(60)).toEqual({ step: 15, top: 60 });
-    expect(minuteScale(200)).toEqual({ step: 60, top: 240 });
-    expect(minuteScale(2000)).toEqual({ step: 480, top: 2400 });
-  });
   it.each([[0, 0], [10, 1], [30, 2], [100, 3], [200, 4]])("shades %i minutes as level %i", (min, lv) => {
     expect(heatLevel(min)).toBe(lv);
   });

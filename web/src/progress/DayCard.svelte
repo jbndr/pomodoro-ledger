@@ -1,17 +1,25 @@
 <script>
-  import { addDays } from "../lib/dates";
+  import { addDays, MIN } from "../lib/dates";
   import { dayGaps, dayItems, daySummary, runStart } from "../lib/day";
   import { progress } from "../lib/redraw.svelte";
-  import { projectOf } from "../lib/tasks";
+  import { matchesLabel, projectOf } from "../lib/tasks";
   import { timerView } from "../timer/state.svelte";
+  import DayColumn from "./DayColumn.svelte";
   import Stages from "./Stages.svelte";
 
   let { api, tasks, day, dir, first, today, filter, onpick } = $props();
   let now = $state(Date.now());
+  const phone = matchMedia("(max-width: 640px)");
+  let narrow = $state(phone.matches);
 
   $effect(() => {
     const t = setInterval(() => { now = Date.now(); }, 30_000);
     return () => clearInterval(t);
+  });
+  $effect(() => {
+    const f = () => { narrow = phone.matches; };
+    phone.addEventListener("change", f);
+    return () => phone.removeEventListener("change", f);
   });
 
   /** What's running right now, so today's chart reaches the present. */
@@ -32,6 +40,17 @@
     return { items, gaps: dayGaps(items), sum: daySummary(items), isToday };
   });
   const name = $derived(day === addDays(today, -1) ? "Yesterday" : api.fmtDate(day, { weekday: "short", day: "numeric", month: "short" }));
+  const line = $derived.by(() => {
+    const { sum, items, isToday } = v;
+    if (!items.length) return "";
+    const picked = filter ? items.reduce((n, it) => n + (it.kind === "focus" && !it.live && matchesLabel(it.label, filter) ? it.ms : 0), 0) : 0;
+    return [
+      api.fmtDur(sum.focus) + " focus" + (filter ? " (" + api.fmtDur(picked) + " " + (filter === "none" ? "no label" : filter.slice(8)) + ")" : ""),
+      ...(sum.due ? [sum.taken + " of " + sum.due + " breaks taken"] : []),
+      ...(sum.idle >= MIN ? [api.fmtDur(sum.idle) + " idle"] : []),
+      api.fmtClock(sum.start) + " – " + (isToday ? "now" : api.fmtClock(sum.end)),
+    ].join(" · ");
+  });
 
   function keys(e) {
     if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.target.closest("input, textarea, [role=listbox]") || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -42,6 +61,11 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <section class="chart-card day-card" id="dayCard" aria-label="Your day" onkeydown={keys}>
-  <Stages {api} {day} {name} {dir} {now} {filter} items={v.items} gaps={v.gaps} sum={v.sum} isToday={v.isToday}
-    canPrev={day > first} canNext={day < today} onstep={(d) => onpick(addDays(day, d))} />
+  {#if narrow}
+    <DayColumn {api} {day} {name} {dir} {now} {filter} {line} items={v.items} gaps={v.gaps} isToday={v.isToday}
+      canPrev={day > first} canNext={day < today} onstep={(d) => onpick(addDays(day, d))} />
+  {:else}
+    <Stages {api} {day} {name} {dir} {now} {filter} {line} items={v.items} gaps={v.gaps} sum={v.sum} isToday={v.isToday}
+      canPrev={day > first} canNext={day < today} onstep={(d) => onpick(addDays(day, d))} />
+  {/if}
 </section>

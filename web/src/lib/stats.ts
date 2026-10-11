@@ -1,5 +1,5 @@
 import { addDays, dayKey, keyTime, sod, type DayKey } from "./dates";
-import { cyclesOf, projectOf, sessionProject, type Task, type Tasks } from "./tasks";
+import { cyclesOf, sessionProject, type Task, type Tasks } from "./tasks";
 
 export interface DayTotal {
   ms: number;
@@ -15,13 +15,6 @@ export function dayTotals(tasks: Tasks): Map<DayKey, DayTotal> {
     m.set(k, o);
   }
   return m;
-}
-
-/** Focus time over `n` days ending with the day of `last`. */
-export function sumDays(days: Map<DayKey, DayTotal>, last: number, n: number): number {
-  let ms = 0;
-  for (let i = 0; i < n; i++) ms += days.get(dayKey(addDays(last, -i)))?.ms || 0;
-  return ms;
 }
 
 const hasCycles = (days: Map<DayKey, DayTotal>, t: number) => !!days.get(dayKey(t))?.cycles;
@@ -48,37 +41,6 @@ export function estimateAccuracy(tasks: Iterable<Task>): { ratio: number | null;
   return { ratio, diff: ratio == null ? 0 : Math.round((ratio - 1) * 100), count: fin.length };
 }
 
-export interface LabelRow {
-  /** "" for no label. */
-  name: string;
-  ms: number;
-  cycles: number;
-  done: number;
-  open: number;
-}
-
-/** Focus per label since a time, most first. Sessions count under their own label; tasks count as open or finished. */
-export function focusByLabel(tasks: Tasks, since: number): LabelRow[] {
-  const by = new Map<string, LabelRow>();
-  const row = (name: string) => {
-    let r = by.get(name);
-    if (!r) by.set(name, (r = { name, ms: 0, cycles: 0, done: 0, open: 0 }));
-    return r;
-  };
-  for (const t of tasks.values()) {
-    const r = row(projectOf(t));
-    for (const s of t.sessions || []) if (s.at >= since) {
-      const l = row(sessionProject(t, s));
-      l.ms += s.ms || 0;
-      if (s.full) l.cycles++;
-    }
-    if (t.system) continue;
-    if (!t.done) r.open++;
-    else if ((t.doneAt || 0) >= since) r.done++;
-  }
-  return [...by.values()].filter((r) => r.ms || r.done).sort((a, b) => b.ms - a.ms || a.name.localeCompare(b.name));
-}
-
 /** Focus per label for each day, for chart tooltips. */
 export function dayLabels(tasks: Tasks): Map<DayKey, Map<string, number>> {
   const m = new Map<DayKey, Map<string, number>>();
@@ -88,14 +50,6 @@ export function dayLabels(tasks: Tasks): Map<DayKey, Map<string, number>> {
     m.set(k, o);
   }
   return m;
-}
-
-const STEPS = [15, 30, 60, 90, 120, 180, 240, 360];
-
-/** Gridline step and top of a minutes axis, with at most four steps. */
-export function minuteScale(max: number): { step: number; top: number } {
-  const step = STEPS.find((s) => max / s <= 4) || 480;
-  return { step, top: Math.ceil(max / step) * step };
 }
 
 /** Calendar shade for a day's focus minutes, 0 to 4. */
