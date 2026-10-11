@@ -794,12 +794,12 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
 .dcol-t > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dcol-m { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .dcol-c.one .dcol-m { flex: none; }
-.cyc { display: inline-flex; align-items: center; gap: 3px; }
-.cyc i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink); }
-.cyc i.p { background: transparent; box-shadow: inset 0 0 0 1.5px var(--faint); }
-.cyc i.f { width: 16px; border-radius: 3px; }
-.cyc i.o { width: 4px; height: 4px; background: var(--faint); }
-.cyc i.l { background: var(--tomato); }
+.dcol-c .cyc { display: inline-flex; align-items: center; gap: 3px; }
+.dcol-c .cyc i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink); }
+.dcol-c .cyc i.p { background: transparent; box-shadow: inset 0 0 0 1.5px var(--faint); }
+.dcol-c .cyc i.f { width: 16px; border-radius: 3px; }
+.dcol-c .cyc i.o { width: 4px; height: 4px; background: var(--faint); }
+.dcol-c .cyc i.l { background: var(--tomato); }
 .dcol-now { position: absolute; left: 40px; right: 0; z-index: 1; height: 0; border-top: 1.5px solid var(--fg); }
 .dcol-now span { position: absolute; left: -40px; top: -8px; padding-right: 4px; background: var(--surface); font-size: 11px; font-weight: 600; }
 
