@@ -297,8 +297,8 @@ body[data-fill-ready="1"][data-fill-jump="1"] :is(.timer-card, main) > .glow::be
 .wx-drift { inset: -12% -900px 0 0; animation: wx-drift 320s linear infinite var(--wx-dir, normal); }
 .wx-drift.wx-near { top: -9%; animation-duration: 210s; }
 .wx-cloud { inset: 0; background: var(--wx-cloud); opacity: calc(var(--wx-cover, 0) * .75);
-  -webkit-mask: var(--wx-tex-far) 0 0 / 900px 320px repeat-x, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); -webkit-mask-composite: source-in;
-  mask: var(--wx-tex-far) 0 0 / 900px 320px repeat-x, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); mask-composite: intersect; }
+  -webkit-mask: var(--wx-tex-far) 0 0 / 900px 320px, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); -webkit-mask-composite: source-in;
+  mask: var(--wx-tex-far) 0 0 / 900px 320px, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); mask-composite: intersect; }
 .wx-near .wx-cloud { opacity: var(--wx-cover, 0); -webkit-mask-image: var(--wx-tex-near), linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); -webkit-mask-size: 900px 420px, auto; mask-image: var(--wx-tex-near), linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); mask-size: 900px 420px, auto; }
 .wx-cloud.wx-shade { background: var(--wx-shade); translate: 0 7px; opacity: calc(var(--wx-cover, 0) * .6); }
 .wx-near .wx-cloud.wx-shade { opacity: calc(var(--wx-cover, 0) * .85); }
@@ -318,8 +318,8 @@ body[data-fill-ready="1"][data-fill-jump="1"] :is(.timer-card, main) > .glow::be
 @keyframes wx-sway { from { translate: -8px 0; } to { translate: 8px 0; } }
 /* Previews and the floating timer have no room for depth: one cloud layer and one of rain or snow, standing still. */
 :is(.st-swatch[data-backdrop="weather"], body[data-backdrop="weather"] main) > .glow::before { content: ""; position: absolute; inset: -12% 0 0; background: var(--wx-cloud); opacity: var(--wx-cover, 0);
-  -webkit-mask: var(--wx-tex-near) 0 0 / 560px 260px repeat-x, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); -webkit-mask-composite: source-in;
-  mask: var(--wx-tex-near) 0 0 / 560px 260px repeat-x, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); mask-composite: intersect; }
+  -webkit-mask: var(--wx-tex-near) 0 0 / 560px 260px, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); -webkit-mask-composite: source-in;
+  mask: var(--wx-tex-near) 0 0 / 560px 260px, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); mask-composite: intersect; }
 :is(.st-swatch[data-backdrop="weather"], body[data-backdrop="weather"] main) > .glow::after { inset: -20%; rotate: var(--wx-slant, 0deg); mix-blend-mode: normal; background: var(--wx-rain); opacity: calc(var(--wx-amount, 0) * .8);
   -webkit-mask: var(--wx-rain-far) 0 0 / 110px 110px; mask: var(--wx-rain-far) 0 0 / 110px 110px; }
 :root[data-wx="snow"] :is(.st-swatch[data-backdrop="weather"], body[data-backdrop="weather"] main) > .glow::after { background: var(--wx-snow); -webkit-mask: var(--wx-snow-near) 0 0 / 150px 150px; mask: var(--wx-snow-near) 0 0 / 150px 150px; }

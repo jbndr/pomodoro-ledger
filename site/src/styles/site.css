@@ -104,10 +104,13 @@ kbd { font: 500 .82em/1 var(--f-body); padding: .2em .45em; border-radius: 6px; 
 :root[data-theme="dark"] .on-light { display: none !important; }
 :root[data-theme="dark"] .on-dark { display: block !important; }
 
-.wp { position: relative; isolation: isolate; overflow: hidden; border-radius: 22px; box-shadow: 0 0 0 1px rgb(0 0 0 / .04), var(--shadow-2); }
+.wp { --wp-r: 22px; position: relative; isolation: isolate; overflow: hidden; border-radius: var(--wp-r); box-shadow: 0 0 0 1px rgb(0 0 0 / .04), var(--shadow-2); }
 .wp::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .5; mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E"); }
 .wp > * { position: relative; z-index: 1; }
+/* On a dark page even the faint leak at the corners shows, and the shadow is near-invisible there, so the whole panel is clipped. */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .wp { clip-path: inset(0 round var(--wp-r)); } }
+:root[data-theme="dark"] .wp { clip-path: inset(0 round var(--wp-r)); }
 
 .theme { appearance: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); cursor: pointer; transition: background-color .18s, color .18s; -webkit-tap-highlight-color: transparent; }
 .theme:hover { background: var(--surface-2); color: var(--fg); }
