@@ -2,7 +2,7 @@
   import { picked } from "./selection.svelte";
   import TaskCard from "./TaskCard.svelte";
 
-  let { api, row, plan, zone = null, lifted = false, drag = null } = $props();
+  let { api, row, plan, lifted = false, drag = null } = $props();
   const start = $derived(plan && plan.get(row.id));
   const selected = $derived(picked.ids.includes(row.id));
 </script>
@@ -16,9 +16,6 @@
   class:dragging={!!drag}
   class:sec-lifted={lifted}
   class:selected
-  class:zone={!!zone}
-  class:zone-first={zone?.first}
-  class:zone-last={zone?.last}
   style:top={drag ? drag.top + "px" : null}
   style:left={drag ? drag.left + "px" : null}
   style:width={drag ? drag.width + "px" : null}

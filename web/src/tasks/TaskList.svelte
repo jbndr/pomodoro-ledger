@@ -29,13 +29,6 @@
     return out;
   });
   const lifted = $derived(new Set(sec ? sec.blocks[sec.from].keys : []));
-  // Tasks in today's best time share one warm ground; each row paints its own slice of it.
-  const zones = $derived.by(() => {
-    const out = new Map(), on = (it) => it?.kind === "task" && it.id !== drag?.id && !!plan?.get(it.id)?.best;
-    if (!plan?.best || api.S.taskView !== "today") return out;
-    shown.forEach((it, i) => { if (on(it)) out.set(it.id, { first: !on(shown[i - 1]), last: !on(shown[i + 1]) }); });
-    return out;
-  });
 
   const fallback = () => (api.S.taskView === "today" ? "today" : "later");
   const entries = () => items.map((it) => (it.kind === "task" ? { kind: "task", id: it.id } : { kind: "group", g: it.g, end: it.end }));
@@ -356,7 +349,7 @@
 >
   {#each shown as it (it.key)}
     {#if it.kind === "task"}
-      <TaskRow {api} row={it} {plan} zone={zones.get(it.id)} lifted={lifted.has(it.key)} drag={drag && drag.id === it.id ? drag : null} />
+      <TaskRow {api} row={it} {plan} lifted={lifted.has(it.key)} drag={drag && drag.id === it.id ? drag : null} />
     {:else if it.kind === "slot"}
       <li class="task-drop" aria-hidden="true" style:height={drag.height + "px"}></li>
     {:else if it.kind === "today"}

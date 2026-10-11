@@ -41,12 +41,8 @@ test("Today offers to line up the biggest task for your best time", async ({ pag
   await expect(page.locator("#bestDay .bd-cap")).toHaveText(/Best time 9–11\s*in 50m/);
   await expect(page.locator("#bestDay .bd-hours .edge")).toHaveText(["9", "11"]);
   await expect(offer).toContainText("You focus best 9–11. Line up “Write the quarterly report” for then?");
-  await expect(page.locator(".task.zone .tt")).toHaveText(["Review pull requests", "Standup notes"]);
-  await expect(page.locator(".task.zone-first .tt")).toHaveText(["Review pull requests"]);
-  await expect(page.locator(".task.zone-last .tt")).toHaveText(["Standup notes"]);
   await page.locator("#bestMove").click();
   await expect(page.locator(".task .tt")).toHaveText(["Reply to emails", "Write the quarterly report", "Review pull requests", "Standup notes"]);
-  await expect(page.locator(".task.zone .tt")).toHaveText(["Write the quarterly report"]);
   await expect(page.locator("#toast")).toContainText("Lined up “Write the quarterly report” for your best time");
   await expect(offer).toBeHidden();
 });
