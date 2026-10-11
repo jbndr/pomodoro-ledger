@@ -330,6 +330,7 @@
     const times = plan ? it.ids.map((id) => plan.get(id)).filter((x) => x && x.start) : [];
     return times.length ? api.fmtClock(Math.min(...times.map((x) => x.start))) + " – " + api.fmtClock(Math.max(...times.map((x) => x.end))) : "";
   }
+  const secName = (it) => (it.title ? "section " + it.title : "untitled section");
   function dayTitle(it) {
     if (!plan) return "";
     const late = plan.end > plan.endAt && !plan.over;
@@ -369,7 +370,7 @@
     {:else if it.kind === "today"}
       <li class="group today-head" data-g="today"><span class="vh">Today</span>{#if it.cycles}<div class="day-plan" data-cycles={it.cycles} data-tasks={it.tasks} title={dayTitle(it)}><b {@attach roll}>{api.plural(it.tasks, "task")}</b> · about <strong class="net" {@attach roll}>{plan ? api.fmtDur(plan.focus) : ""}</strong> of focus · done around <strong class="eta" class:late={plan && plan.end > plan.endAt && !plan.over}>{plan ? api.fmtClock(plan.end) : ""}</strong></div>{:else}<span class="day-plan">{it.tasks ? api.plural(it.tasks, "task") + " · all planned cycles done" : "Nothing planned yet"}</span>{/if}<button class="add-sec" type="button" data-addsec title="Add a section, like Morning or Admin" onclick={() => api.addSection()}>+ Section</button></li>
     {:else if it.kind === "section"}
-      <li class="group section" class:sec-lifted={lifted.has(it.key)} data-g={it.g}><button class="grip sec-grip" type="button" aria-label={"Move section " + it.title + ": drag, or press the up and down arrow keys"} title="Drag to reorder">{@html api.ICON.grip}</button><input class="sec-title" type="text" maxlength="60" value={it.title} aria-label="Section name" data-sec={it.id} onchange={(e) => api.renameSection(e.currentTarget)} /><span class="sec-time">{secTime(it)}</span><span class="sec-sum">{it.ids.length ? "" : "Drag tasks here"}</span><button class="icon-btn sec-del" type="button" data-secdel={it.id} aria-label={"Remove section " + it.title} title="Remove section (its tasks join the one above)" onclick={() => api.removeSection(it.id)}>{@html api.ICON.x}</button></li>
+      <li class="group section" class:sec-lifted={lifted.has(it.key)} data-g={it.g}><button class="grip sec-grip" type="button" aria-label={"Move " + secName(it) + ": drag, or press the up and down arrow keys"} title="Drag to reorder">{@html api.ICON.grip}</button><input class="sec-title" type="text" maxlength="60" value={it.title} placeholder="Add a name (optional)" aria-label="Section name, optional" data-sec={it.id} onchange={(e) => api.renameSection(e.currentTarget)} /><span class="sec-time">{secTime(it)}</span><span class="sec-sum">{it.ids.length ? "" : "Drag tasks here"}</span><button class="icon-btn sec-del" type="button" data-secdel={it.id} aria-label={"Remove " + secName(it)} title="Remove section (its tasks join the one above)" onclick={() => api.removeSection(it.id)}>{@html api.ICON.x}</button></li>
     {:else if it.kind === "day"}
       <li class="group day" class:empty={it.empty} data-g={it.g}><b>{it.num}</b>{it.name}<span>{it.summary}</span></li>
     {:else if it.kind === "month"}

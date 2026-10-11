@@ -143,7 +143,7 @@ export function moveSection(id: string, to: number) {
 export function renameSection(input: HTMLInputElement) {
   const all = sections(), sec = all.find((x) => x.id === input.dataset.sec), title = input.value.trim();
   if (!sec) return;
-  if (!title) { input.value = sec.title; return; }
+  input.value = title;
   if (title !== sec.title) saveSections(all.map((x) => (x === sec ? { ...x, title } : x)));
 }
 
@@ -151,7 +151,7 @@ export function renameSection(input: HTMLInputElement) {
 export function addSection(at = sections().length, moves: Placement[] = []) {
   if (guardPreview()) return;
   const id = "s" + Date.now().toString(36), all = sections();
-  saveSections([...all.slice(0, at), { id, title: "New section" }, ...all.slice(at)]);
+  saveSections([...all.slice(0, at), { id, title: "" }, ...all.slice(at)]);
   if (moves.length) { commitPlacements(moves.map((p) => (p.g === "sec:new" ? { ...p, g: "sec:" + id } : p))); return; }
   const input = $<HTMLInputElement>('#taskList [data-sec="' + id + '"]');
   if (input) { input.focus(); input.select(); }
@@ -174,7 +174,8 @@ export function removeSection(id: string) {
   });
   saveSections(all.filter((x) => x.id !== id));
   if (moved.length) Store.saveTasks(moved);
-  toast("Removed “" + all[i].title + "”. Its tasks joined " + (above ? "“" + all[i - 1].title + "”" : "Today") + ".");
+  const was = all[i].title, into = above ? all[i - 1].title : "Today";
+  toast((was ? "Removed “" + was + "”." : "Removed the section.") + " Its tasks joined " + (into ? (above ? "“" + into + "”" : into) : "the section above") + ".");
 }
 
 export const completing = new Map<string, ReturnType<typeof setTimeout>>();
