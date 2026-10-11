@@ -15,6 +15,7 @@
     ["Best time icon", ".bd-name", "svg", ":scope"],
     ["Filter chip dot", ".label-filter button", ".label-dot", "span"],
     ["Row label dot", ".task-meta .meta-chip", ".label-dot", "span"],
+    ["Best time tag icon", ".task-meta .best-tag", "svg", ":scope"],
     ["Session label dot", "#sesTable .meta-chip", ".label-dot", "span"],
     ["Stages lane swatch", ".sg-lane", ".sg-sw", ":scope > span"],
     ["Stages readout dot", ".sg-k", "i", ":scope"],
