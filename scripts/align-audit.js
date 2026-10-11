@@ -22,7 +22,7 @@
     ["Insights task dot", ".est-t", ".label-dot", "span"],
     ["Label menu dot", ".label-menu .btn", ".label-dot", "span"],
     ["Day column dot", ".dcol-t", ".label-dot", "span"],
-    ["Insights legend key", ".est-legend span, .wt-legend span", "i", ":scope"],
+    ["Insights legend key", ".est-legend span", "i", ":scope"],
     ["Menu label dot", ".pick-menu li", ".label-dot", "span"],
     ["Stages lane swatch", ".sg-lane", ".sg-sw", ":scope > span"],
     ["Stages readout dot", ".sg-k", "i", ":scope"],

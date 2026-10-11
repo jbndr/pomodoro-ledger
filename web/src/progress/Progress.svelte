@@ -5,6 +5,7 @@
   import { focusTasks, matchLabel, progressLabelNames } from "../lib/tasks";
   import Bars from "./Bars.svelte";
   import BestTime from "./BestTime.svelte";
+  import ByLabel from "./ByLabel.svelte";
   import DayCard from "./DayCard.svelte";
   import Finished from "./Finished.svelte";
   import Habits from "./Habits.svelte";
@@ -13,7 +14,6 @@
   import LabelMenu from "./LabelMenu.svelte";
   import TodayLine from "./TodayLine.svelte";
   import WeekGoals from "./WeekGoals.svelte";
-  import WhereTime from "./WhereTime.svelte";
 
   let { api } = $props();
   let filter = $state(""), picked = $state(0), dir = $state(1);
@@ -63,7 +63,7 @@
   </div>
   <BestTime {api} tasks={m.vt} today={m.today} />
   <Finished {api} tasks={m.ledger} />
-  <WhereTime {api} tasks={m.all} today={m.today} filter={m.f} />
+  <ByLabel {api} tasks={m.all} today={m.today} filter={m.f} />
   <Habits {api} tasks={m.all} today={m.today} />
   <!-- A new filter starts the journal from its first days again. -->
   {#key m.f}<Journal {api} tasks={m.all} filter={m.f} />{/key}

@@ -75,15 +75,15 @@ describe("breaksTaken", () => {
   const b = (h: number, m: number, len: number): DayItem => ({ kind: "break", from: at(h, m), to: at(h, m + len), long: false });
 
   it("counts a break after each finished cycle, and a skipped one when focus follows", () => {
-    expect(breaksTaken([f(9, 0, 25), b(9, 25, 5), f(9, 30, 25), f(9, 55, 25), b(10, 20, 5)])).toEqual({ due: 3, taken: 2 });
+    expect(breaksTaken([f(9, 0, 25), b(9, 25, 5), f(9, 30, 25), f(9, 55, 25), b(10, 20, 5)])).toEqual({ due: 3, taken: 2, seq: [true, false, true] });
   });
   it("lets time past the bell carry the cycle's break", () => {
-    expect(breaksTaken([f(9, 0, 25), f(9, 25, 10, { full: false, over: true }), b(9, 35, 7)])).toEqual({ due: 1, taken: 1 });
+    expect(breaksTaken([f(9, 0, 25), f(9, 25, 10, { full: false, over: true }), b(9, 35, 7)])).toEqual({ due: 1, taken: 1, seq: [true] });
   });
   it("ignores the day's last cycle, stopped sessions and a break that came after idle time", () => {
-    expect(breaksTaken([f(9, 0, 10, { full: false }), b(9, 10, 5), f(9, 30, 25), b(10, 20, 5), f(10, 25, 25)])).toEqual({ due: 1, taken: 0 });
+    expect(breaksTaken([f(9, 0, 10, { full: false }), b(9, 10, 5), f(9, 30, 25), b(10, 20, 5), f(10, 25, 25)])).toEqual({ due: 1, taken: 0, seq: [false] });
   });
   it("counts flow like a cycle", () => {
-    expect(breaksTaken([f(9, 0, 50, { full: false, flow: true }), b(9, 50, 10)])).toEqual({ due: 1, taken: 1 });
+    expect(breaksTaken([f(9, 0, 50, { full: false, flow: true }), b(9, 50, 10)])).toEqual({ due: 1, taken: 1, seq: [true] });
   });
 });
