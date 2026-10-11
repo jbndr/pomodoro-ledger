@@ -55,6 +55,24 @@ export function tickSamples(face: TimerFace, rate: number): Float32Array {
     burst(0, 0.64, 0.007, new Biquad(rate, "bp", 2400, 0.9));
     strike(0.004, 0.085, [[1650, 1, 120], [2700, 0.45, 160]], 230);
     burst(0.05, 0.17, 0.005, new Biquad(rate, "bp", 1800, 1.1));
+  } else if (face === "weight") {
+    // A watch's tap, rounder and lower, as heavy numbers would make it.
+    at(0, 0.12, (t) => 0.19 * Math.min(1, t / 0.003) * Math.exp(-t * 48) * (Math.sin(TAU * 200 * t) + 0.45 * Math.sin(TAU * 600 * t)));
+    burst(0, 0.2, 0.004, new Biquad(rate, "lp", 2200, 0.7));
+  } else if (face === "numerals") {
+    // A crisp tap with a small click on top.
+    at(0, 0.09, (t) => 0.15 * Math.min(1, t / 0.002) * Math.exp(-t * 62) * (Math.sin(TAU * 300 * t) + 0.4 * Math.sin(TAU * 900 * t)));
+    burst(0, 0.36, 0.003, new Biquad(rate, "bp", 3400, 1.2));
+  } else if (face === "thermo") {
+    // A dial's detent: a short click over a low thump.
+    burst(0, 0.45, 0.004, new Biquad(rate, "bp", 3500, 2));
+    at(0, 0.04, (t) => 0.09 * Math.sin(TAU * 180 * t) * Math.exp(-t * 90));
+  } else if (face === "sport") {
+    // A sports watch's beep, short and quiet.
+    at(0, 0.03, (t) => 0.07 * Math.min(1, t / 0.002) * Math.min(1, (0.03 - t) / 0.004) * (Math.sin(TAU * 2730 * t) + 0.3 * Math.sin(TAU * 8190 * t)));
+  } else if (face === "bedside") {
+    // Barely there: a soft, low pulse that won't keep anyone awake.
+    at(0, 0.2, (t) => 0.1 * Math.min(1, t / 0.02) * Math.exp(-t * 18) * Math.sin(TAU * 160 * t));
   } else {
     // Rounded attack and low sine harmonics avoid the sharp click of a clock.
     at(0, 0.18, (t) => 0.16 * Math.min(1, t / 0.008) * Math.exp(-t * 38) * (Math.sin(TAU * 480 * t) + 0.18 * Math.sin(TAU * 960 * t)));

@@ -77,7 +77,7 @@
       {#if kind === "looks"}
         <span class="st-stage" aria-hidden="true"><LookCard look={LOOKS.find((l) => l.id === id)} /></span>
       {:else if kind === "face"}
-        <span class="st-stage" aria-hidden="true"><span class="time"><FaceDigits face={id} chars={[...clock(secs[id])]} /></span></span>
+        <span class="st-stage" aria-hidden="true"><span class="time"><FaceDigits face={id} chars={[...clock(secs[id])]} frac={secs[id] / TOTAL} /></span></span>
       {:else if kind === "ring"}
         {@const frac = secs[id] / TOTAL}
         <span class="st-stage" data-ring={id} aria-hidden="true"><DialRing ring={id} {frac} lit={litTicks(frac)} knob={knobAt(frac)} /></span>

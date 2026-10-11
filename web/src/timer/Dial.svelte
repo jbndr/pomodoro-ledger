@@ -1,5 +1,6 @@
 <script>
   import { clock, clockLabel, fraction, knobAt, litTicks } from "../lib/timer";
+  import { sessionProgress } from "../lib/faces";
   import { rollDigits } from "../lib/roll";
   import { timerView } from "./state.svelte";
   import DialRing from "./DialRing.svelte";
@@ -20,6 +21,8 @@
     return { cx: +(150 + Math.sin(a) * 112).toFixed(2), cy: +(150 - Math.cos(a) * 112).toFixed(2) };
   });
   const lead = $derived(timerView.up === "flow" ? Math.floor(timerView.rem / 1000) % 60 : timerView.up ? -1 : lit - 1);
+  const prog = $derived(sessionProgress(timerView.up, frac, timerView.rem, timerView.span));
+  const spin = $derived(timerView.up === "flow" ? ((timerView.rem / 1000) % 60) / 60 : -1);
 
   // ±min rolls the digits that changed. A new phase changes them in place, under the phase-change motion; seconds keep still.
   let timeEl, before = [], beforeSecs = 0, seen = -1, beforeKey = "";
@@ -34,9 +37,9 @@
 {#snippet zone(k, label)}<button class="cz-zone cz-zone-{k}" class:hot={cz.hover === k} type="button" aria-pressed={String(cz.zone === k)} aria-label={"Change the " + label.toLowerCase()} onclick={() => (cz.zone = k)}><span>{label}</span></button>{/snippet}
 
 <div class="dial-wrap" class:flow data-face={face} data-ring={ring}>
-  <DialRing {ring} {frac} {lit} {lead} {knob} />
+  <DialRing {ring} {frac} {lit} {lead} {knob} {prog} {spin} />
   <div class="dial-center" aria-live="off">
-    <div class="time" class:counting={timerView.up === "over"} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + (timerView.up === "flow" ? " seconds of flow" : " seconds past the bell") : clockLabel(secs)}><FaceDigits {face} {chars} {mode} up={timerView.up} /></div>
+    <div class="time" class:counting={timerView.up === "over"} id="time" role="timer" bind:this={timeEl} aria-label={timerView.up ? Math.floor(secs / 60) + " minutes " + (secs % 60) + (timerView.up === "flow" ? " seconds of flow" : " seconds past the bell") : clockLabel(secs)}><FaceDigits {face} {chars} {mode} {frac} up={timerView.up} /></div>
     <div class="dial-sub" id="dialSub">{sub}</div>
   </div>
   {#if cz.open}{@render zone("ring", "Ring")}{@render zone("face", "Face")}{/if}
