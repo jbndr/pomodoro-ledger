@@ -17,6 +17,18 @@ export const AREAS: Area[] = [
     ],
   },
   {
+    key: "looks", label: "Looks", title: "A clock you'll like looking at", color: "var(--violet)",
+    lede: "Faces, rings and backgrounds, chosen on the timer itself.",
+    items: [
+      { title: "Ten faces", blurb: "Classic, Stacked, Split-flap, Dot matrix, Nixie, VFD, LCD, Odometer, Editorial and In words. Each ticks in its own sound." },
+      { title: "Rings", blurb: "An arc, tiles that turn over, LED dots or a glowing filament, or no ring at all, with any face." },
+      { title: "Backgrounds", blurb: "Twelve of them, from plain and warm paper to Aurora, Starfield, and Water that fills up as you focus." },
+      { title: "Sky and Weather", blurb: "The sky where you are, from dawn to night, or the clouds, rain and snow outside." },
+      { title: "Ready-made looks", blurb: "Start from a combination like Notebook or Midnight instead of mixing all three." },
+      { title: "Customize on the timer", blurb: "Right-click the dial or tap the palette. The real timer stays in view, and Cancel puts the old look back." },
+    ],
+  },
+  {
     key: "session", label: "During a session", title: "Small things that keep a round honest", color: "var(--amber)",
     lede: "Sound, nudges and a gentle tick, all optional.",
     items: [
@@ -34,6 +46,9 @@ export const AREAS: Area[] = [
       { title: "Quick add", blurb: "Press N anywhere and type the title, day, rounds, #label and a // note in one line." },
       { title: "Today, Upcoming and Later", blurb: "Plan tasks for today, a day ahead, or someday, and see when today will be done." },
       { title: "Recurring tasks", blurb: "Daily, weekdays, chosen days, every few weeks or monthly. A fresh copy shows up in Today." },
+      { title: "Plan around your best time", blurb: "When your biggest task would miss your best hours, Today offers to line it up for then." },
+      { title: "Best time in Today", blurb: "Turn it on to see your best hours on a strip of the day, with a tag on the tasks that land in them." },
+      { title: "Best time reminder", blurb: "A notification when your best time starts, if you'd like one." },
       { title: "Roll over unfinished tasks", blurb: "On a new day, move yesterday's leftovers into today: always, never, or ask first." },
       { title: "Weekly plan and review", blurb: "Look back, deal with the leftovers, and set a few objectives for the week ahead." },
       { title: "Bulk edit", blurb: "Select several tasks and change their label or day, move them to the top, or finish them together." },
@@ -45,6 +60,7 @@ export const AREAS: Area[] = [
     key: "ledger", label: "The ledger", title: "See where the hours went", color: "var(--sky)",
     lede: "Every minute of focus is written down, per task and per label.",
     items: [
+      { title: "Your day", blurb: "One day on four lanes: focus, short breaks, long breaks and idle time. Drag across it to zoom in." },
       { title: "Finished tasks", blurb: "Every finished task, with the rounds you planned against the rounds it took." },
       { title: "Focus by label", blurb: "Hours, share of focus and rounds for each label, over a week, a month or all time." },
       { title: "Weekly recap", blurb: "Total focus, best day, top labels, tasks finished and your streak, against the week before." },

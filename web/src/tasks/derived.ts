@@ -4,13 +4,13 @@ import { addDays, dayKey, keyTime, nextMonday, sod } from "../lib/dates";
 import { labelHue, matchLabel, projectNames, projectOf, timeOf } from "../lib/tasks";
 import { renderAll } from "../render";
 import { clone, DEMO, ls, S, type Task, type View } from "../state";
-import { makeSamples, samplePlans } from "./samples";
+import { makeSamples, sampleBreaks, samplePlans } from "./samples";
 
 let SAMPLES: Map<string, Task> | null = null;
 export const preview = () => DEMO || (!S.started && S.tasks.size === 0);
 export const viewTasks = () => (preview() ? (SAMPLES || (SAMPLES = makeSamples())) : S.tasks);
 
-export function enterDemo() { SAMPLES = makeSamples(true); S.tasks = SAMPLES; S.activeId = "x6"; S.started = true; S.settings.plans = samplePlans(); }
+export function enterDemo() { SAMPLES = makeSamples(true); S.tasks = SAMPLES; S.activeId = "x6"; S.started = true; S.settings.plans = samplePlans(); S.settings.breakLog = sampleBreaks(SAMPLES); }
 
 export function markStarted(silent?: boolean) {
   if (S.started) return;

@@ -150,7 +150,7 @@ mount(TimerCard, { target: $(".timer-card"), props: { api: {
 ui.pop = mount(Pop, { target: document.body, anchor: $("#toast"), props: { api: { ICON } } }) as PopUI;
 ui.when = mount(WhenPop, { target: document.body, anchor: $("#toast"), props: { api: { S, todayKey, openOf, isToday, scheduleTask, setRepeat, pauseRepeat, resumeRepeat, fmtDate, plural } } }) as WhenUI;
 ui.label = mount(LabelPop, { target: document.body, anchor: $("#toast"), props: { api: { S, ICON, renderTasks, saveSettings: () => Store.saveSettings(), setLabelHue: (name: string, hue: number) => { Labels.setHue(name, hue); renderAll(); } } } }) as LabelUI;
-const panel = $(".top > .panel"), headApi = { S, ss, listHead, plural, fmtDur, fmtClock, preview, guardPreview, filterLabel, renderTasks, moveToTomorrow, leftoverPrompt, moveAsked, leaveAsked, lineUp, notToday, bestTrack, toggleBestShow, ICON };
+const panel = $(".top > .panel"), headApi = { S, ss, DEMO, listHead, plural, fmtDur, fmtClock, preview, guardPreview, filterLabel, renderTasks, moveToTomorrow, leftoverPrompt, moveAsked, leaveAsked, lineUp, notToday, bestTrack, toggleBestShow, ICON };
 mount(TaskViews, { target: $(".tasks-head"), props: { api: headApi } });
 mount(ListHead, { target: panel, props: { api: headApi } });
 mount(ListFoot, { target: panel, props: { api: headApi } });
