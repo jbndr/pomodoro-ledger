@@ -12,10 +12,10 @@ const FakeDate = class extends Date {
   static now() { return clock.now ?? Date.now(); }
 };
 const mod = vm.runInNewContext(
-  `const { accessEmail, syncConfigured } = (() => { ${strip('src/sync.js')}; return { accessEmail, syncConfigured }; })();\n${strip('src/hits.js')}\n({ Counts, hit, stats })`,
+  `const { accessEmail, syncConfigured } = (() => { ${strip('src/sync.js')}; return { accessEmail, syncConfigured }; })();\n${strip('src/hits.js')}\nconst { listings } = (() => { ${strip('src/listings.js')}; return { listings }; })();\n({ Counts, hit, stats, listings })`,
   {
     DurableObject: class { constructor(ctx, env) { this.ctx = ctx; this.env = env; } },
-    WebSocketRequestResponsePair: class {}, crypto: webcrypto, Date: FakeDate, Response, URL, TextEncoder, TextDecoder, atob, JSON,
+    WebSocketRequestResponsePair: class {}, crypto: webcrypto, Date: FakeDate, Response, URL, URLSearchParams, TextEncoder, TextDecoder, atob, JSON,
     fetch: async () => { throw new Error('no network in tests'); },
   },
 );
@@ -126,4 +126,25 @@ test('json has 30 zero-filled days, newest first, and full-day weekly totals', a
   assert.equal(home.last7['open-app:hero'], 1);
   assert.equal(home.prev7.view, 1);
   assert.deepEqual(Object.keys(data.pages['/features'].last7), ['view', 'open-app:header', 'open-app:end', 'open-app:footer', 'try-demo:end', 'try-demo:footer']);
+});
+
+test('the listings page answers only to the owner, escapes titles and takes only its own forms', async () => {
+  const sent = [];
+  const env = { DEV_USER_EMAIL: 'me@example.test', STATS_EMAILS: 'me@example.test', LOBBY: { idFromName: () => 'lobby', get: () => ({ fetch: async (u, init) => {
+    if (init && init.method === 'POST') { sent.push(JSON.parse(init.body)); return new Response(null, { status: 204 }); }
+    return new Response(JSON.stringify({ now: 0, schedules: [{ id: 'ABC', title: '<script>x</script> & co', rhythm: '25/5', max: 12, tz: 'Europe/Berlin', days: [1, 2, 3, 4, 5], from: 540, to: 720, at: 0, used: 0, reports: 3, hidden: true, mod: null }], rooms: [] }));
+  } }) } };
+  const page = (init = {}, vars = {}) => { const url = new URL(ORIGIN + '/api/sync/listings'); return mod.listings(new Request(url, init), { ...env, ...vars }, url); };
+  assert.equal((await page({}, { STATS_EMAILS: 'someone@example.test' })).status, 403);
+  const html = await (await page()).text();
+  assert.match(html, /&lt;script&gt;x&lt;\/script&gt; &amp; co/);
+  assert.equal(html.includes('<script>x'), false);
+  assert.match(html, /Mon–Fri 09:00–12:00/);
+  assert.match(html, /Hidden by reports/);
+  const form = (origin) => page({ method: 'POST', headers: { Origin: origin, 'content-type': 'application/x-www-form-urlencoded' }, body: 'action=remove&kind=s&id=ABC' });
+  assert.equal((await form('https://evil.example')).status, 403);
+  assert.equal(sent.length, 0);
+  const done = await form(ORIGIN);
+  assert.equal(done.status, 303);
+  assert.deepEqual(sent, [{ action: 'remove', kind: 's', id: 'ABC' }]);
 });

@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { hit, stats } from "./hits.js";
+import { listings } from "./listings.js";
 import { pushBody, pushReady, readSub, sendPush } from "./push.js";
 import { handleSync } from "./sync.js";
 import { handleHere } from "./here.js";
@@ -45,6 +46,10 @@ const PUSH_BURST = 10;
 const PUSH_EVERY_MS = 60000;
 const PUSH_LATE_MS = 5 * 60000;
 const PUSH_TTL_S = 3600;
+const REPORTS_TO_HIDE = 3;
+const REPORT_BURST = 5;
+const REPORT_EVERY_MS = 10 * 60000;
+const REPORT_KEEP_MS = 7 * 24 * 3600000;
 const HOUSE = [{ key: "P", rhythm: "25/5", title: "Pomodoro" }, { key: "D", rhythm: "50/10", title: "Deep work" }];
 
 const json = (body, status = 200) =>
@@ -57,6 +62,10 @@ const clean = (v, n) => String(v || "").replace(/[\x00-\x1f\x7f]/g, "").replace(
 const tokens = (b, now, burst = REACT_BURST, every = REACT_EVERY_MS) => (b ? Math.min(burst, b.n + (now - b.at) / every) : burst);
 const size = (v) => { const n = Math.round(Number(v ?? MAX_MEMBERS)); return Number.isFinite(n) ? Math.max(MIN_MEMBERS, Math.min(MAX_MEMBERS, n)) : MAX_MEMBERS; };
 const lobby = (env) => env.LOBBY.get(env.LOBBY.idFromName("lobby"));
+// Enough reports from different people hide a listing until you look at it; your call ("hide" or "show") overrides them.
+const hiddenBy = (rep) => !!rep && (rep.mod === "hide" || (rep.mod !== "show" && rep.by.length >= REPORTS_TO_HIDE));
+// Who reported is kept only as a hash of their address and the listing, so the same person counts once.
+const reporter = async (ip, key) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip + "|" + key)))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
 const goalOf = (v) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n >= 1 ? Math.min(GOAL_MAX, n) : null; };
 // A focus round that ran to its end (not skipped or paused) and was long enough to be one.
 const roundDone = (was, s, now) => !!was && was.mode === "focus" && was.status === "running" && was.total >= MIN_ROUND_MS && was.end - now <= ROUND_SLACK_MS && s.mode !== "focus";
@@ -141,6 +150,9 @@ export default {
       }
       return json({ error: "busy" }, 503);
     }
+    if (url.pathname === "/api/report" && request.method === "POST") {
+      return lobby(env).fetch("https://lobby/report", { method: "POST", headers: { "x-ip": request.headers.get("CF-Connecting-IP") || "local" }, body: await request.text() });
+    }
     if (url.pathname === "/api/schedule" || url.pathname.startsWith("/api/schedule/")) {
       const headers = { "x-ip": request.headers.get("CF-Connecting-IP") || "local" };
       return lobby(env).fetch("https://lobby" + url.pathname.slice(4), { method: request.method, headers, body: request.method === "GET" ? undefined : await request.text() });
@@ -154,6 +166,7 @@ export default {
     }
     if (url.pathname === "/api/hit") return hit(request, env, url, ctx);
     if (url.pathname === "/api/sync/stats") return stats(request, env, url);
+    if (url.pathname === "/api/sync/listings") return listings(request, env, url);
     if (url.pathname === "/api/sync" || url.pathname.startsWith("/api/sync/")) return handleSync(request, env, url);
     if (url.pathname.startsWith("/api/")) return json({ error: "not found" }, 404);
     return env.ASSETS.fetch(request);
@@ -419,6 +432,8 @@ export class Lobby extends DurableObject {
   async fetch(request) {
     const store = this.ctx.storage, now = Date.now(), path = new URL(request.url).pathname;
     if (path.startsWith("/session/")) return this.session(path.slice(9), now);
+    if (path === "/report") return this.report(request, now);
+    if (path === "/admin") return this.admin(request, now);
     if (path === "/schedule" || path.startsWith("/schedule/")) return this.schedule(request, path, now);
     if (request.method === "POST") {
       const r = await request.json();
@@ -428,15 +443,21 @@ export class Lobby extends DurableObject {
       if (s) await store.put("s:" + id, { ...s, used: now });
       return new Response(null, { status: 204 });
     }
-    const rooms = [], upcoming = [], stale = [], reported = await store.list({ prefix: "r:" });
+    const rooms = [], upcoming = [], stale = [], reported = await store.list({ prefix: "r:" }), schedules = await store.list({ prefix: "s:" }), reps = await store.list({ prefix: "rep:" });
+    const hidden = (kind, id) => hiddenBy(reps.get("rep:" + kind + ":" + id));
     for (const [k, r] of reported) {
       if (now - r.at > LISTED_MS) stale.push(k);
-      else if (!scheduleOf(r.code)) rooms.push({ code: r.code, title: r.title, rhythm: r.rhythm, house: r.house, max: r.max || MAX_MEMBERS, names: r.names });
+      else if (!scheduleOf(r.code) && !hidden("r", r.code)) rooms.push({ code: r.code, title: r.title, rhythm: r.rhythm, house: r.house, max: r.max || MAX_MEMBERS, names: r.names });
+    }
+    for (const [k, rep] of reps) {
+      const [, kind, id] = k.split(":");
+      if (now - rep.at > REPORT_KEEP_MS && !(kind === "s" ? schedules : reported).has(kind + ":" + id)) stale.push(k);
     }
     const gone = [];
-    for (const [k, s] of await store.list({ prefix: "s:" })) {
+    for (const [k, s] of schedules) {
       const o = nextSession(s, now);
       if (now - s.used > SCHED_IDLE_MS || !o) { stale.push(k); gone.push(s.id); continue; }
+      if (hidden("s", s.id)) continue;
       const going = s.going && s.going.at === o.start ? s.going.ids.length : 0;
       if (o.start > now) { upcoming.push({ id: s.id, title: s.title, rhythm: s.rhythm, max: s.max, tz: s.tz, days: s.days, from: s.from, to: s.to, start: o.start, end: o.end, going }); continue; }
       const code = sessionCode(s.id, o.start), r = reported.get("r:" + code);
@@ -462,6 +483,41 @@ export class Lobby extends DurableObject {
     const id = scheduleOf(code), s = id && (await this.ctx.storage.get("s:" + id)), o = s && nextSession(s, now);
     if (!o || o.start > now + EARLY_MS || sessionCode(id, o.start) !== code) return json({ error: "not on" }, 404);
     return json({ pub: true, house: false, code, title: s.title, rhythm: s.rhythm, max: s.max, sched: id });
+  }
+
+  // Anyone can report a listing once; `on: false` takes their report back.
+  async report(request, now) {
+    const store = this.ctx.storage, ip = request.headers.get("x-ip") || "local", body = (await request.json().catch(() => null)) || {};
+    const kind = body.kind, id = String(body.id || "");
+    if (!(kind === "s" ? /^[A-Z2-9]{3}$/ : kind === "r" ? /^[A-Z2-9]{6}$/ : /^$/).test(id)) return json({ error: "bad request" }, 400);
+    const subject = await store.get(kind + ":" + id);
+    if (!subject || subject.house) return json({ error: "not found" }, 404);
+    if (!(await this.spend("ip:x:" + ip, REPORT_BURST, REPORT_EVERY_MS, now))) return json({ error: "slow down" }, 429);
+    const key = "rep:" + kind + ":" + id, rep = (await store.get(key)) || { by: [] }, who = await reporter(ip, key);
+    const by = rep.by.filter((x) => x !== who);
+    if (body.on !== false) by.push(who);
+    await store.put(key, { ...rep, by, at: now });
+    return new Response(null, { status: 204 });
+  }
+
+  // For the owner's listings page: every schedule and public room with its reports, and removing, hiding or showing one.
+  async admin(request, now) {
+    const store = this.ctx.storage, reps = await store.list({ prefix: "rep:" });
+    const flags = (kind, id) => { const rep = reps.get("rep:" + kind + ":" + id); return { reports: rep ? rep.by.length : 0, hidden: hiddenBy(rep), mod: (rep && rep.mod) || null }; };
+    if (request.method === "GET") {
+      const schedules = [...(await store.list({ prefix: "s:" })).values()].map((s) => ({ id: s.id, title: s.title, rhythm: s.rhythm, max: s.max, tz: s.tz, days: s.days, from: s.from, to: s.to, at: s.at, used: s.used, ...flags("s", s.id) }));
+      const rooms = [...(await store.list({ prefix: "r:" })).values()].filter((r) => !r.house && !scheduleOf(r.code) && now - r.at <= LISTED_MS).map((r) => ({ code: r.code, title: r.title, rhythm: r.rhythm, people: r.names.length, ...flags("r", r.code) }));
+      return json({ now, schedules: schedules.sort((a, b) => b.reports - a.reports || b.at - a.at), rooms: rooms.sort((a, b) => b.reports - a.reports) });
+    }
+    const { action, kind, id } = (await request.json().catch(() => null)) || {};
+    if (!["remove", "hide", "show"].includes(action) || !["s", "r"].includes(kind) || typeof id !== "string") return json({ error: "bad request" }, 400);
+    const key = "rep:" + kind + ":" + id;
+    if (action === "remove") {
+      if (kind !== "s" || !(await store.get("s:" + id))) return json({ error: "not found" }, 404);
+      await store.delete(["s:" + id, key]);
+      await this.unsubscribe([id], now);
+    } else await store.put(key, { by: [], ...reps.get(key), mod: action, at: now });
+    return new Response(null, { status: 204 });
   }
 
   // A token bucket per client address, kept until it has refilled.

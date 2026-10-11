@@ -25,11 +25,18 @@ export function hit(request, env, url, ctx) {
   return new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
 }
 
-export async function stats(request, env, url) {
+/** The owner's pages answer only to the emails in STATS_EMAILS, behind Access; anyone else gets an error response. */
+export async function ownerOnly(request, env) {
   if (!syncConfigured(env)) return json({ error: "not found" }, 404);
   const email = await accessEmail(request, env);
   if (!email) return json({ error: "signed out" }, 401);
   if (!String(env.STATS_EMAILS || "").toLowerCase().split(",").map((s) => s.trim()).includes(email)) return json({ error: "forbidden" }, 403);
+  return null;
+}
+
+export async function stats(request, env, url) {
+  const denied = await ownerOnly(request, env);
+  if (denied) return denied;
   const now = Date.now(), days = [...Array(DAYS)].map((_, i) => utcDay(now - i * 864e5));
   const data = summarize(await counts(env).since(days.at(-1)), days);
   if (url.searchParams.get("format") === "json") return json(data);
@@ -129,7 +136,7 @@ function render(data) {
 </html>`;
 }
 
-const CSS = `
+export const CSS = `
 :root {
   --bg: #F6F7F5; --surface: #FFFFFF; --line: #E2E5E1; --line-2: #CDD2CC;
   --fg: #141816; --muted: #5E6862; --faint: #8C958F;

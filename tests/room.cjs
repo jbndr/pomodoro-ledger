@@ -405,6 +405,62 @@ test('a schedule tells anyone only its title and rhythm', at(MON_10_BERLIN, asyn
   assert.equal((await call('GET', '/schedule/ZZZ')).status, 404);
 }));
 
+test('three reports from different people hide a schedule, and taking one back shows it again', at(MON_10_BERLIN - 2 * 60 * MIN, async () => {
+  const { call, list, data } = lobby();
+  const made = await call('POST', '/schedule', deepWork);
+  const id = made.body.id, report = (ip, on) => call('POST', '/report', { kind: 's', id, on }, ip);
+  assert.equal((await report('1.1.1.1')).status, 204);
+  assert.equal((await report('1.1.1.1')).status, 204);
+  assert.equal((await report('2.2.2.2')).status, 204);
+  assert.equal((await list()).upcoming.length, 1, 'the same person counts once');
+  await report('3.3.3.3');
+  assert.equal((await list()).upcoming.length, 0);
+  await report('3.3.3.3', false);
+  assert.equal((await list()).upcoming.length, 1);
+  assert.equal(JSON.stringify([...data.values()]).includes('1.1.1.1'), false, 'no addresses are kept');
+}));
+
+test('reports need a real listing and slow down after a few', at(MON_10_BERLIN, async () => {
+  const { call, put } = lobby();
+  await put({ ...pub, names: ['ana'] });
+  await put({ code: 'OPENPA', title: 'Pomodoro', rhythm: '25/5', house: true, max: 12, names: ['ben'] });
+  assert.equal((await call('POST', '/report', { kind: 'r', id: 'OPENPA' })).status, 404, 'house rooms are ours');
+  assert.equal((await call('POST', '/report', { kind: 's', id: 'ZZZ' })).status, 404);
+  assert.equal((await call('POST', '/report', { kind: 'x', id: 'KXR4TZ' })).status, 400);
+  assert.equal((await call('POST', '/report', { kind: 'r', id: '<b>' })).status, 400);
+  for (let i = 0; i < 5; i++) assert.equal((await call('POST', '/report', { kind: 'r', id: 'KXR4TZ' })).status, 204);
+  assert.equal((await call('POST', '/report', { kind: 'r', id: 'KXR4TZ' })).status, 429);
+}));
+
+test('a reported public room drops off the list until the owner keeps it', async () => {
+  const { call, put, list } = lobby();
+  await put({ ...pub, names: ['ana'] });
+  for (const ip of ['a', 'b', 'c']) await call('POST', '/report', { kind: 'r', id: 'KXR4TZ' }, ip);
+  assert.equal((await list()).rooms.some((r) => r.code === 'KXR4TZ'), false);
+  const seen = (await call('GET', '/admin')).body.rooms[0];
+  assert.deepEqual([seen.code, seen.people, seen.reports, seen.hidden], ['KXR4TZ', 1, 3, true]);
+  assert.equal(JSON.stringify(seen).includes('ana'), false);
+  await call('POST', '/admin', { action: 'show', kind: 'r', id: 'KXR4TZ' });
+  assert.equal((await list()).rooms.some((r) => r.code === 'KXR4TZ'), true);
+  await call('POST', '/report', { kind: 'r', id: 'KXR4TZ' }, 'd');
+  assert.equal((await list()).rooms.some((r) => r.code === 'KXR4TZ'), true, 'kept stays kept');
+  await call('POST', '/admin', { action: 'hide', kind: 'r', id: 'KXR4TZ' });
+  assert.equal((await list()).rooms.some((r) => r.code === 'KXR4TZ'), false);
+});
+
+test('the owner can remove a schedule for everyone', at(MON_10_BERLIN - 2 * 60 * MIN, async () => {
+  const { call, list } = lobby();
+  const made = await call('POST', '/schedule', deepWork);
+  const { body } = await call('GET', '/admin');
+  assert.deepEqual(body.schedules.map((s) => [s.id, s.title, s.reports, s.hidden]), [[made.body.id, 'Deep work', 0, false]]);
+  assert.equal(JSON.stringify(body).includes(made.body.token), false);
+  assert.equal((await call('POST', '/admin', { action: 'remove', kind: 'r', id: 'KXR4TZ' })).status, 404);
+  assert.equal((await call('POST', '/admin', { action: 'drop', kind: 's', id: made.body.id })).status, 400);
+  assert.equal((await call('POST', '/admin', { action: 'remove', kind: 's', id: made.body.id })).status, 204);
+  assert.deepEqual((await list()).upcoming, []);
+  assert.equal((await call('GET', '/schedule/' + made.body.id)).status, 404);
+}));
+
 test('creating a schedule checks the title, rhythm, size and times', at(MON_10_BERLIN, async () => {
   const { call, data } = lobby();
   const made = await call('POST', '/schedule', { ...deepWork, title: '  Thesis\u0000 writing\n\n with a much longer name than fits ', max: 40 }, 'a');

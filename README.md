@@ -225,6 +225,17 @@ up to 50, three new ones per address and then one every 20 minutes, and removes 
 schedule after three weeks without anyone in its sessions. Only the creator's
 browser can remove one sooner.
 
+**Keeping the list clean.** Anyone can report a public room or a scheduled
+session with the flag on its row; it's hidden for them right away, with Undo for
+a few seconds. Three reports from different people hide it for everyone. The
+Lobby keeps only a short hash of each reporter's address and the listing, so the
+same person counts once, allows five reports per address and then one every ten
+minutes, and forgets reports a week after the listing is gone. House rooms can't
+be reported. `/api/sync/listings` (behind Access, for the `STATS_EMAILS`
+addresses, like the counts) lists every schedule and public room with its
+reports: **Hide** takes one off the list whatever the reports say, **Show** keeps
+it listed, and **Remove** deletes a schedule and its reminders.
+
 **Reminders when the app is closed.** Once push is set up (below), **Remind me**
 also subscribes the browser to Web Push when notifications are allowed, so the
 reminder arrives with the app closed, including the installed app on phones
