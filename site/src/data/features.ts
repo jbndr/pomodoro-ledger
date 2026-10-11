@@ -24,7 +24,7 @@ export const AREAS: Area[] = [
       { title: "Rings", blurb: "An arc, tiles that turn over, LED dots or a glowing filament, or no ring at all, with any face." },
       { title: "Backgrounds", blurb: "Twelve of them, from plain and warm paper to Aurora, Starfield, and Water that fills up as you focus." },
       { title: "Sky and Weather", blurb: "The sky where you are, from dawn to night, or the clouds, rain and snow outside." },
-      { title: "Ready-made looks", blurb: "Start from a combination like Notebook or Midnight instead of mixing all three." },
+      { title: "Ready-made looks", blurb: "Start from a combination like Notebook or Midnight, or save a mix of your own to switch back to in one tap." },
       { title: "Customize on the timer", blurb: "Right-click the dial or tap the palette. The real timer stays in view, and Cancel puts the old look back." },
     ],
   },

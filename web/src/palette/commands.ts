@@ -5,11 +5,13 @@ import { plural } from "../format";
 import { ICON } from "../icons";
 import { quickAdd } from "../keys";
 import { nextTheme, normTheme, themeName } from "../lib/chrome";
+import { LOOKS, timerBackdrop, timerFace, timerRing } from "../lib/faces";
+import { describeLook, findLook, savedLooks, type Parts } from "../lib/looks";
 import { choose, describeMix, mixCode, parseMix, phaseMix, PRESETS, savedMixes, type SavedMix } from "../lib/mix";
 import { labelHue, projectOf } from "../lib/tasks";
 import { MODE_NAME, MODES } from "../lib/timer";
 import { phone, showPage } from "../pages";
-import { renderTasks } from "../render";
+import { renderTasks, renderTimer } from "../render";
 import { exportLedger } from "../settings/backup";
 import { cancelEnd, cancelTickPreview, previewSoundscape, scheduleEnd, syncTicking } from "../sound";
 import { cancelScapePreview, scapePlaying } from "../soundscape";
@@ -85,6 +87,12 @@ function setScape(m: SavedMix | null) {
   saveSound(m.name + (scapePlaying() ? " is playing." : " plays while you focus. Here's a taste."));
 }
 
+function wearLook(l: Parts & { name: string }) {
+  Object.assign(S.settings, { face: l.face, ring: l.ring, backdrop: l.backdrop });
+  renderTimer(true); Store.saveSettings(); fillSettings();
+  toast("Switched the timer to " + l.name + ".");
+}
+
 addCommands(() => {
   const running = T.status === "running", idle = T.status === "idle";
   const active = S.activeId ? viewTasks().get(S.activeId) : null;
@@ -110,6 +118,10 @@ addCommands(() => {
     { id: "timer.full", group: "Timer", keys: ["⇧", "F"], title: fsEl() ? "Exit full screen" : "Full screen", words: "zen", icon: fsEl() ? ICON.shrink : ICON.expand, run: () => toggleZen(true) },
     { id: "timer.look", group: "Timer", title: "Customize the timer", words: "face ring background look appearance theme clock watch style water sky", icon: G.look, run: () => openCustomize() },
   ];
+  const mine = savedLooks(S.settings.looks), on = findLook({ face: timerFace(S.settings.face), ring: timerRing(S.settings.ring), backdrop: timerBackdrop(S.settings.backdrop) }, mine);
+  for (const l of [...LOOKS, ...mine]) {
+    out.push({ id: "timer.look." + l.id, group: "Timer", searchOnly: true, title: "Look: " + l.name, words: "timer face ring background appearance style watch " + describeLook(l), on: on === l, icon: G.look, run: () => wearLook(l) });
+  }
   if (!floatBtn.hidden) {
     const open = floatBtn.getAttribute("aria-pressed") === "true";
     out.push({ id: "timer.float", group: "Timer", title: open ? "Close the floating timer" : "Open the floating timer", words: "picture in picture pip mini window", icon: G.float, run: () => floatBtn.click() });

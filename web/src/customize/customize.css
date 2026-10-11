@@ -22,7 +22,7 @@
 .cz-crumb button { padding: 0; border: 0; background: none; font: inherit; font-weight: 550; color: var(--muted); cursor: pointer; }
 @media (hover: hover) { .cz-crumb button:hover { color: var(--fg); } }
 .cz-crumb i { font-style: normal; color: var(--faint); }
-.cz-hint { margin: 0; padding: 0 16px 2px; min-height: 1lh; font-size: 12.5px; color: var(--faint); text-align: center; text-wrap: balance; }
+.cz-hint { margin: 0; padding: 0 16px 2px; min-height: 1lh; font-size: 12.5px; line-height: 1.5; color: var(--faint); text-align: center; text-wrap: balance; }
 
 .cz-panel { min-width: 0; }
 .cz .st-faces { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 2px; }
@@ -77,7 +77,7 @@ body.customizing :is(.bar, .room, .banner, .progress, .tabbar) { opacity: .22; }
     -webkit-mask: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); mask: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 12px), transparent); }
   .cz .st-faces::-webkit-scrollbar { display: none; }
   .cz .st-face { flex: 0 0 82px; scroll-snap-align: start; }
-  .cz .st-face.group { margin-left: 14px; }
+  .cz .st-face:is(.group, .yours) { margin-left: 14px; }
 }
 /* Phones: the full-screen timer becomes a framed preview above the tray, so the whole background stays in view. */
 @media (max-width: 640px) {
@@ -91,6 +91,26 @@ body.customizing :is(.bar, .room, .banner, .progress, .tabbar) { opacity: .22; }
   html body.customizing[data-page="timer"][data-backdrop]:not(.zen) .timer-card > .glow { display: block; position: absolute; }
   .cz-btn { padding: 0 12px; }
 }
+
+/* Your looks: Save look holds the mix on the timer until it's kept, and an empty slot when there's nothing new to keep. */
+.cz-save .st-stage { background: none; }
+.cz-save .st-stage::before { box-shadow: none; border: 1.5px dashed color-mix(in oklab, var(--fg) 24%, transparent); }
+.cz-plus { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; color: var(--faint); }
+.cz-plus svg { width: 26%; }
+.cz-save[aria-disabled="false"] .cz-plus { inset: auto 7% 7% auto; width: 30%; aspect-ratio: 1; border-radius: 50%; background: var(--fg); color: var(--bg); box-shadow: 0 0 0 2px var(--st-card), 0 2px 6px -1px rgba(0,0,0,.3); }
+.cz-save[aria-disabled="false"] .cz-plus svg { width: 62%; }
+.cz-save[aria-disabled="true"] { cursor: default; }
+.cz-save[aria-disabled="true"] b { color: var(--faint); }
+@media (hover: hover) { .cz-save[aria-disabled="true"]:hover { background: none; } .cz-save[aria-disabled="false"]:hover .st-stage::before { border-color: color-mix(in oklab, var(--fg) 45%, transparent); } }
+.cz-save:focus-visible { outline: 2px solid var(--fg); outline-offset: -2px; }
+.cz-naming .st-stage { outline-color: var(--fg); outline-offset: 2px; }
+.cz-name { box-sizing: border-box; width: 100%; height: calc(12.5px * 1.2); margin: 0; padding: 0 2px; border: 0; border-radius: 3px; background: var(--st-sunk); color: var(--fg); font: inherit; font-size: 12.5px; font-weight: 550; line-height: 1.2; text-align: center; outline: none;
+  box-shadow: 0 0 0 3px var(--st-sunk), 0 0 0 4.5px color-mix(in oklab, var(--fg) 50%, transparent); }
+.cz-own { display: inline-flex; align-items: baseline; gap: 12px; max-width: 100%; }
+.cz-own > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cz-own button { flex: none; padding: 0; border: 0; border-radius: 4px; background: none; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; transition: color .15s; }
+@media (hover: hover) { .cz-own button:hover { color: var(--fg); } }
+.cz-own button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 
 /* A look in miniature: its background, ring and face, drawn as they are on the timer. */
 .lk { position: relative; display: grid; place-items: center; overflow: hidden; isolation: isolate; aspect-ratio: 1; background: var(--surface); color: var(--fg); }
