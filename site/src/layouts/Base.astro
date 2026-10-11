@@ -4,10 +4,10 @@ import { SITE } from "../lib";
 interface Props { title?: string; description?: string; noindex?: boolean; returning?: boolean }
 const { title, description = SITE.tagline, noindex = false, returning = false } = Astro.props;
 const full = title ? `${title} · ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
-const canonical = new URL(Astro.url.pathname, Astro.site);
+const path = Astro.url.pathname.replace(/(\/index)?\.html$|\/$/, "") || "/";
+const canonical = new URL(path, Astro.site);
 const card = new URL("/og-light.png", Astro.site);
 const cardAlt = "Find out how long things really take: Pomodoro Ledger's focus timer next to today's tasks";
-const path = Astro.url.pathname.replace(/(\/index)?\.html$|\/$/, "") || "/";
 const nav = [["/features", "Features"], ["/#faq", "FAQ"]];
 const on = (h: string) => (path === h || path.startsWith(h + "/") ? "page" : undefined);
 const counted = path === "/" || path === "/features" ? path : null;
@@ -83,7 +83,13 @@ const counted = path === "/" || path === "/features" ? path : null;
     addEventListener("auxclick", tap, true);
   }
 </script>}
-<script is:inline>{`const t=document.querySelector(".top");const f=()=>t.classList.toggle("scrolled",scrollY>4);addEventListener("scroll",f,{passive:true});f();`}</script>
+<script is:inline>
+  {
+    const bar = document.querySelector(".top"), edge = () => bar.classList.toggle("scrolled", scrollY > 4);
+    addEventListener("scroll", edge, { passive: true });
+    edge();
+  }
+</script>
 <script>
   const KEY = "pl.theme", ORDER = ["system", "light", "dark"] as const;
   const NAMES = { system: "match the system", light: "light", dark: "dark" };
