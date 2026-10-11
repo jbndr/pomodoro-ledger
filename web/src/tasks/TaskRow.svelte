@@ -2,7 +2,7 @@
   import { picked } from "./selection.svelte";
   import TaskCard from "./TaskCard.svelte";
 
-  let { api, row, plan, lifted = false, drag = null } = $props();
+  let { api, row, plan, best = false, lifted = false, drag = null } = $props();
   const start = $derived(plan && plan.get(row.id));
   const selected = $derived(picked.ids.includes(row.id));
 </script>
@@ -29,12 +29,11 @@
   <button class="check" type="button" data-act="done" aria-label={"Mark “" + row.title + "” as finished"} title="Mark finished" onclick={() => api.complete(row.id)}>{@html api.ICON.check}</button>
   <div class="task-main" data-act="open" onclick={() => api.open(row.id)} role="presentation">
     <div class="task-title"><span class="tt">{row.title}</span></div>
-    <div class="task-meta">{#if row.when}<span class="when-chip">{row.when}</span>{/if}{#if row.project}<span class="meta-chip" title={"Label: " + row.project}><i class="label-dot" style:--h={row.hue}></i><span>{row.project}</span></span>{/if}{#if row.goal}<span class="goal-mark" class:reached={row.goal.hit} title={"Weekly objective" + (row.goal.name ? ": " + row.goal.name : "") + " · " + row.goal.cycles + " of " + api.plural(row.goal.target, "cycle")}>{@html api.ICON.target}<span class="vh">Weekly objective</span>{row.goal.cycles}/{row.goal.target}</span>{/if}{#if row.subs}<span class={row.subs.done === row.subs.n ? "done-all" : ""}>{@html api.ICON.list}{row.subs.done}/{row.subs.n}</span>{/if}{#if row.notes}<span title="Has notes">{@html api.ICON.note}</span>{/if}{#if row.link}<a class="link-chip" href={row.link.href} target="_blank" rel="noopener noreferrer" title={row.link.href} onclick={(e) => e.stopPropagation()}>{@html api.ICON.link}<span>{row.link.host}</span>{#if row.link.more}<small>+{row.link.more}</small>{/if}</a>{/if}{#if row.repeat}<span class="repeat" class:paused={row.repeat.paused} title={row.repeat.title}>{@html api.ICON.repeat}{row.repeat.short}{#if row.repeat.paused}<em>· paused</em>{/if}</span>{/if}{#if row.carry}<span class="carry">{row.carry}</span>{/if}</div>
+    <div class="task-meta">{#if row.when}<span class="when-chip">{row.when}</span>{/if}{#if row.project}<span class="meta-chip" title={"Label: " + row.project}><i class="label-dot" style:--h={row.hue}></i><span>{row.project}</span></span>{/if}{#if best}<span class="best-tag">{@html api.ICON.peak}Best time</span>{/if}{#if row.goal}<span class="goal-mark" class:reached={row.goal.hit} title={"Weekly objective" + (row.goal.name ? ": " + row.goal.name : "") + " · " + row.goal.cycles + " of " + api.plural(row.goal.target, "cycle")}>{@html api.ICON.target}<span class="vh">Weekly objective</span>{row.goal.cycles}/{row.goal.target}</span>{/if}{#if row.subs}<span class={row.subs.done === row.subs.n ? "done-all" : ""}>{@html api.ICON.list}{row.subs.done}/{row.subs.n}</span>{/if}{#if row.notes}<span title="Has notes">{@html api.ICON.note}</span>{/if}{#if row.link}<a class="link-chip" href={row.link.href} target="_blank" rel="noopener noreferrer" title={row.link.href} onclick={(e) => e.stopPropagation()}>{@html api.ICON.link}<span>{row.link.host}</span>{#if row.link.more}<small>+{row.link.more}</small>{/if}</a>{/if}{#if row.repeat}<span class="repeat" class:paused={row.repeat.paused} title={row.repeat.title}>{@html api.ICON.repeat}{row.repeat.short}{#if row.repeat.paused}<em>· paused</em>{/if}</span>{/if}{#if row.carry}<span class="carry">{row.carry}</span>{/if}</div>
   </div>
   <div class="task-side">
     <div class="side-info">
       {#if row.today}<span class="late-flag" hidden={!start?.late} title={start?.late ? "Won't finish before " + api.fmtClock(plan.endAt) + " · " + start.text : ""}>{@html api.ICON.clock}</span>{/if}
-      {#if start?.best}<span class="best-flag" title={start.text + ". In your best time, " + plan.best.hours + "."}>{@html api.ICON.peak}</span>{/if}
       <span class="cyc" title={row.cycTitle}>{#if row.pips.mini != null}<span class="mini" aria-hidden="true"><b style:width={row.pips.mini + "%"}></b></span>{:else}<span class="pips" aria-hidden="true">{#each row.pips.dots as dot, i (i)}<i class={dot}></i>{/each}</span>{/if}</span>
     </div>
     <div class="side-acts">

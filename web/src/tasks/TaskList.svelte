@@ -29,6 +29,12 @@
     return out;
   });
   const lifted = $derived(new Set(sec ? sec.blocks[sec.from].keys : []));
+  // Tasks that land in today's best time get a tag. While dragging, it shows where they'd land with the task dropped at the slot.
+  const inBest = $derived.by(() => {
+    if (!plan?.best || api.S.taskView !== "today") return new Set();
+    if (!drag) return new Set(items.filter((it) => it.kind === "task" && plan.get(it.id)?.best).map((it) => it.id));
+    return api.bestIn(shown.flatMap((it) => (it.kind === "slot" ? [drag.id] : it.kind === "task" && it.id !== drag.id ? [it.id] : [])));
+  });
 
   const fallback = () => (api.S.taskView === "today" ? "today" : "later");
   const entries = () => items.map((it) => (it.kind === "task" ? { kind: "task", id: it.id } : { kind: "group", g: it.g, end: it.end }));
@@ -349,7 +355,7 @@
 >
   {#each shown as it (it.key)}
     {#if it.kind === "task"}
-      <TaskRow {api} row={it} {plan} lifted={lifted.has(it.key)} drag={drag && drag.id === it.id ? drag : null} />
+      <TaskRow {api} row={it} {plan} best={inBest.has(it.id)} lifted={lifted.has(it.key)} drag={drag && drag.id === it.id ? drag : null} />
     {:else if it.kind === "slot"}
       <li class="task-drop" aria-hidden="true" style:height={drag.height + "px"}></li>
     {:else if it.kind === "today"}

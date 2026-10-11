@@ -27,6 +27,8 @@ async function open(page: Page) {
     localStorage.setItem("pl.tasks", JSON.stringify(tasks));
     localStorage.setItem("pl.settings", JSON.stringify({ weeklyPlan: false, weeklyRecap: false }));
     localStorage.setItem("pl.day", JSON.stringify(today));
+    // The backup banner arrives a few seconds in and would shift the list mid-drag.
+    localStorage.setItem("pl.backup", JSON.stringify({ off: true }));
   }, [ledger(), key(NOW)] as const);
   await page.goto("/app/");
   await page.locator(".task").first().waitFor({ state: "attached" });
@@ -38,11 +40,13 @@ async function open(page: Page) {
 test("Today offers to line up the biggest task for your best time", async ({ page }) => {
   await open(page);
   const offer = page.locator("#bestFit");
-  await expect(offer).toContainText("You focus best 9–11. Line up “Write the quarterly report” for then?");
-  await expect(page.locator(".task:has(.best-flag) .tt")).toHaveText(["Review pull requests", "Standup notes"]);
+  await expect(page.locator("#bestDay .bd-cap")).toHaveText(/Best time 9–11\s*in 50m/);
+  await expect(page.locator("#bestDay .bd-hours .edge")).toHaveText(["9", "11"]);
+  await expect(offer).toHaveText(/^Line up “Write the quarterly report” for then\?/);
+  await expect(page.locator(".task:has(.best-tag) .tt")).toHaveText(["Review pull requests", "Standup notes"]);
   await page.locator("#bestMove").click();
   await expect(page.locator(".task .tt")).toHaveText(["Reply to emails", "Write the quarterly report", "Review pull requests", "Standup notes"]);
-  await expect(page.locator(".task:has(.best-flag) .tt")).toHaveText(["Write the quarterly report"]);
+  await expect(page.locator(".task:has(.best-tag) .tt")).toHaveText(["Write the quarterly report"]);
   await expect(page.locator("#toast")).toContainText("Lined up “Write the quarterly report” for your best time");
   await expect(offer).toBeHidden();
 });
@@ -55,4 +59,20 @@ test("Not today hides the offer until tomorrow", async ({ page }) => {
   await page.locator(".task").first().waitFor({ state: "attached" });
   await expect(page.locator("#bestFit")).toBeHidden();
   await expect(page.locator(".task .tt").nth(3)).toHaveText("Write the quarterly report");
+});
+
+test("While you drag a task, the tags show which tasks would land in your best time", async ({ page, isMobile }) => {
+  test.skip(isMobile, "Dragging by mouse");
+  await open(page);
+  await page.locator('.task[data-id="d"]').hover();
+  const g = (await page.locator('.task[data-id="d"] .grip').boundingBox())!;
+  await page.mouse.move(g.x + g.width / 2, g.y + g.height / 2);
+  await page.mouse.down();
+  // Lifting the task changes the layout, so move up until the slot sits right above "Review pull requests".
+  for (let y = g.y + g.height / 2 - 4; y > g.y - 400 && !(await page.locator('.task-drop + .task[data-id="b"]').count()); y -= 8) await page.mouse.move(g.x + g.width / 2, y);
+  await expect(page.locator(".task.dragging .best-tag")).toHaveCount(1);
+  await expect(page.locator(".task:not(.dragging) .best-tag")).toHaveCount(0);
+  await page.mouse.up();
+  await expect(page.locator(".task .tt")).toHaveText(["Reply to emails", "Write the quarterly report", "Review pull requests", "Standup notes"]);
+  await expect(page.locator(".task:has(.best-tag) .tt")).toHaveText(["Write the quarterly report"]);
 });
