@@ -10,7 +10,7 @@
   const TRAY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13.5l2.2-7.1A2 2 0 0 1 8.1 5h7.8a2 2 0 0 1 1.9 1.4l2.2 7.1V18a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M4 13.5h4.5l1.2 2h4.6l1.2-2H20"/></svg>';
   const ICONS = { today: ICON.star, upcoming: ICON.cal, later: TRAY };
   const h = $derived.by(() => { list.version; return api.listHead(); });
-  const best = $derived(!!list.plan?.best && h.view === "today" && !api.preview());
+  const best = $derived(!!list.plan?.best && h.view === "today" && !(api.preview() && !api.DEMO));
   const bestOn = $derived.by(() => { list.version; return !!api.S.settings.bestShow; });
   const count = $derived(h.open ? api.plural(h.open, "open task") + (h.done ? " · " + h.done + " finished" : "") : h.done ? h.done + " finished" : "");
 

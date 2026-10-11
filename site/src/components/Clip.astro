@@ -1,11 +1,13 @@
 ---
 import type { ImageMetadata } from "astro";
 type Frame = "card" | "window" | "none";
-interface Props { light: string; dark: string; posterLight: ImageMetadata; posterDark: ImageMetadata; label: string; w: number; radius?: string; frame?: Frame; fade?: boolean }
-const { light, dark, posterLight, posterDark, label, w, radius = "14px", frame = "card", fade = false } = Astro.props;
+type Phone = { light: string; dark: string; posterLight: ImageMetadata; posterDark: ImageMetadata; w: number; radius?: string };
+interface Props { light: string; dark: string; posterLight: ImageMetadata; posterDark: ImageMetadata; label: string; w: number; radius?: string; frame?: Frame; fade?: boolean; phone?: Phone; narrow?: boolean }
+const { light, dark, posterLight, posterDark, label, w, radius = "14px", frame = "card", fade = false, phone, narrow = false } = Astro.props;
 const ratio = `${posterLight.width} / ${posterLight.height}`;
 ---
-<div class:list={["clip", frame, { fade }]} style={`--w:${w}px;--ar:${ratio};--r:${radius}`} data-clip>
+{phone && <Astro.self {...phone} label={label} narrow />}
+<div class:list={["clip", frame, { fade, wide: !!phone, narrow }]} style={`--w:${w}px;--ar:${ratio};--r:${radius}`} data-clip>
   {frame === "window" && <div class="bar" aria-hidden="true"><i></i><i></i><i></i></div>}
   <div class="screen">
     <video class="on-light" muted loop playsinline preload="none" poster={posterLight.src} aria-label={label}><source src={light} type="video/mp4" /></video>
@@ -24,6 +26,11 @@ const ratio = `${posterLight.width} / ${posterLight.height}`;
   .window .screen video { border-radius: 0; }
   .fade { -webkit-mask-image: linear-gradient(transparent, #000 28%); mask-image: linear-gradient(transparent, #000 28%); }
   .fade .screen { filter: none; }
+  .narrow { display: none; }
+  @media (max-width: 640px) {
+    .wide { display: none; }
+    .narrow { display: block; }
+  }
 </style>
 <script>
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");

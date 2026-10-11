@@ -24,12 +24,12 @@
   // Waits its turn behind the other prompts.
   const offer = $derived.by(() => {
     const o = list.plan?.best?.offer;
-    return o && !fit.shown && !left && api.S.taskView === "today" && !api.preview() ? o : null;
+    return o && !fit.shown && !left && api.S.taskView === "today" && !(api.preview() && !api.DEMO) ? o : null;
   });
 
   const strip = $derived.by(() => {
     const plan = list.plan;
-    return plan?.best && api.S.taskView === "today" && !api.preview() ? api.bestTrack(plan) : null;
+    return plan?.best && api.S.taskView === "today" && !(api.preview() && !api.DEMO) ? api.bestTrack(plan) : null;
   });
   const stripOpen = $derived.by(() => { list.version; return !!strip && !!api.S.settings.bestShow; });
 

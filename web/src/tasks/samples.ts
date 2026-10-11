@@ -1,4 +1,5 @@
 import { addDays, dayKey, MIN, sod } from "../lib/dates";
+import type { BreakEntry } from "../lib/day";
 import { weekStart } from "../lib/insights";
 import { firstDue, type Repeat } from "../lib/repeat";
 import type { Session, Task } from "../lib/tasks";
@@ -47,6 +48,24 @@ export function samplePlans(): WeekPlan[] {
     { week: dayKey(addDays(week, -7)), at: 1, objectives: [{ label: "Website", target: 8, name: "Polish the pricing page" }, { label: "Learning", target: 4 }] },
     { week: dayKey(week), at: 1, objectives: [{ label: "Writing", target: 6, name: "Ship the onboarding guide" }, { label: "Learning", target: 5, name: "Cert: networking module" }, { label: "Website", target: 4 }] },
   ];
+}
+
+/** Breaks after the demo's last two weeks of focus, wherever the next round leaves room, so Your day shows more than focus and idle. */
+export function sampleBreaks(tasks: Map<string, Task>): BreakEntry[] {
+  const now = Date.now(), from = addDays(sod(now), -14), spans: [number, number][] = [], out: BreakEntry[] = [];
+  for (const t of tasks.values()) for (const s of t.sessions || []) if (s.at >= from && s.full) spans.push([s.at - (s.ms || 0), s.at]);
+  spans.sort((a, b) => a[0] - b[0]);
+  let n = 0, reach = 0;
+  spans.forEach(([start, end], i) => {
+    if (i && sod(spans[i - 1][0]) !== sod(start)) n = 0;
+    if (end < reach) return;
+    reach = end;
+    const next = spans[i + 1] && sod(spans[i + 1][0]) === sod(start) ? spans[i + 1][0] : Infinity;
+    const long = ++n % 4 === 0, to = Math.min(end + (long ? 15 : 5) * MIN, next - MIN, now);
+    if (to - end < 2 * MIN) return;
+    out.push({ from: end, to, ...(long ? { long, nudge: "Stand up and stretch" } : n % 2 ? { nudge: "Rest your eyes: look 20 feet away" } : {}) });
+  });
+  return out;
 }
 
 /** Finished work from New Year (or 150 days back) until two weeks ago, with a break in May-ish for a comeback. */

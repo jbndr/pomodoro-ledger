@@ -30,6 +30,14 @@ import estL from "../assets/shots/estimates-light.webp";
 import estD from "../assets/shots/estimates-dark.webp";
 import bestL from "../assets/shots/besttime-light.webp";
 import bestD from "../assets/shots/besttime-dark.webp";
+import dayL from "../assets/shots/day-light.webp";
+import dayD from "../assets/shots/day-dark.webp";
+import dayPL from "../assets/shots/day-phone-light.webp";
+import dayPD from "../assets/shots/day-phone-dark.webp";
+import bestPL from "../assets/shots/besttime-phone-light.webp";
+import bestPD from "../assets/shots/besttime-phone-dark.webp";
+import stripL from "../assets/shots/today-best-light.webp";
+import stripD from "../assets/shots/today-best-dark.webp";
 import roundL from "../assets/clips/round-light.mp4";
 import roundD from "../assets/clips/round-dark.mp4";
 import roundPL from "../assets/clips/round-light.webp";
@@ -58,6 +66,26 @@ import pipL from "../assets/clips/pip-light.mp4";
 import pipD from "../assets/clips/pip-dark.mp4";
 import pipPL from "../assets/clips/pip-light.webp";
 import pipPD from "../assets/clips/pip-dark.webp";
+import zoomL from "../assets/clips/zoom-light.mp4";
+import zoomD from "../assets/clips/zoom-dark.mp4";
+import zoomPL from "../assets/clips/zoom-light.webp";
+import zoomPD from "../assets/clips/zoom-dark.webp";
+import lineL from "../assets/clips/best-light.mp4";
+import lineD from "../assets/clips/best-dark.mp4";
+import linePL from "../assets/clips/best-light.webp";
+import linePD from "../assets/clips/best-dark.webp";
+import looksL from "../assets/clips/looks-light.mp4";
+import looksD from "../assets/clips/looks-dark.mp4";
+import looksPL from "../assets/clips/looks-light.webp";
+import looksPD from "../assets/clips/looks-dark.webp";
+import looksPhL from "../assets/clips/looks-phone-light.mp4";
+import looksPhD from "../assets/clips/looks-phone-dark.mp4";
+import looksPhPL from "../assets/clips/looks-phone-light.webp";
+import looksPhPD from "../assets/clips/looks-phone-dark.webp";
+import facesL from "../assets/clips/faces-light.mp4";
+import facesD from "../assets/clips/faces-dark.mp4";
+import facesPL from "../assets/clips/faces-light.webp";
+import facesPD from "../assets/clips/faces-dark.webp";
 
 const icon = {
   timer: '<circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.3 1.6M9.5 3h5"/>',
@@ -101,7 +129,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     <span class="label">What's different</span>
     <h2>One loop instead of five apps</h2>
     <p>None of the pieces here are new on their own. Pomodoro timers have estimates, time trackers have reports, co-working apps have rooms and break apps have reminders. To get all of it you'd need four or five apps, and none of them would know what the others saw.</p>
-    <p>Pomodoro Ledger is one loop. What you plan is what you focus on, what you focus on is written down, and what's written down makes the next plan better. All of it made with the kind of care you'd want from something you open every day.</p>
+    <p>Pomodoro Ledger is one loop. What you plan is what you focus on, what you focus on is written down, and what's written down makes the next plan better, down to the hours your biggest task should get. All of it made with the kind of care you'd want from something you open every day.</p>
     <Loop />
   </section>
 
@@ -114,17 +142,34 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     <Showcase kind="sky" h={540} hm={440} tabs={[
       { label: "Estimates", cap: "Across all finished tasks, planned against what they took. This is the demo's sample data. Yours will be kinder. Probably." },
       { label: "Finished", cap: "Task by task. Migrate billing to Stripe was planned at 30 rounds and took 176. It happens." },
-      { label: "Best time", cap: "When your focus really happens, by hour and weekday." },
     ]}>
       <Fragment slot="p0"><Piece light={estL} dark={estD} w={400} alt="Estimates: 3.97 times. Tasks take 297% more cycles than planned, across 12 tasks" /></Fragment>
       <Fragment slot="p1"><Piece light={ledgerL} dark={ledgerD} phoneLight={ledgerPL} phoneDark={ledgerPD} w={680} crop={430} alt="Finished tasks with planned and actual rounds: Migrate billing to Stripe was planned at 30 rounds and took 176" /></Fragment>
-      <Fragment slot="p2"><Piece light={bestL} dark={bestD} w={680} alt="Best time of day: a heatmap showing focus is strongest 9 to 11 on weekday mornings" /></Fragment>
     </Showcase>
     <ul class="checks">
       <li>Time tracking without the tracking: focus on a task and the minutes are written down</li>
       <li>Overtime and Flow sessions count too</li>
       <li>Focus by label for a week, a month or all time</li>
       <li>Export everything to a file whenever you like</li>
+    </ul>
+  </section>
+
+  <section class="col chapter" id="day" style="--c: var(--leaf)">
+    <span class="label">Your day</span>
+    <h2>Where the day actually went</h2>
+    <p>Some days feel full and come to an hour and a half of focus. Your day lays one day out on four lanes: focus, short breaks, long breaks, and the idle time in between. There's nothing to fill in. The rounds and breaks you take are the record.</p>
+    <p>Drag across any stretch to zoom in, and point at a moment to see what you were on. The arrow keys step through the last two weeks.</p>
+    <Showcase kind="lagoon" h={380} hm={400} tabs={[
+      { label: "A whole morning", cap: "From the demo: a morning that felt full. 1h 40m of focus, all four breaks taken, and 56 minutes in between." },
+      { label: "Zoom in", cap: "Drag across a stretch and the chart glides into it. Whole day, a double-click or Escape takes you back." },
+    ]}>
+      <Fragment slot="p0"><Piece light={dayL} dark={dayD} phoneLight={dayPL} phoneDark={dayPD} whole w={680} alt="Your day for a Wednesday: four focus rounds between 9:37 and 12:43, three short breaks, one long break and 56 minutes idle" /></Fragment>
+      <Fragment slot="p1"><Clip light={zoomL} dark={zoomD} posterLight={zoomPL} posterDark={zoomPD} w={680} radius="2% / 6.36%" frame="none" label="Dragging across Your day zooms into 9:51 to 11:08, pointing at a round shows its task, and Whole day zooms back out" /></Fragment>
+    </Showcase>
+    <ul class="checks">
+      <li>Breaks are written down too, so a skipped one shows up as “3 of 4 breaks taken”</li>
+      <li>Point at a break to see the nudge you did in it</li>
+      <li>Filter by label and the rest of the day steps back</li>
     </ul>
   </section>
 
@@ -136,6 +181,27 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     <Showcase kind="dawn" h={480} hm={640} cap="The first card and one badge. Everything else stays a surprise until December.">
       <Fragment slot="p0"><YearTease /></Fragment>
     </Showcase>
+  </section>
+
+  <section class="col chapter" id="best" style="--c: var(--tomato)">
+    <span class="label">Best time</span>
+    <h2>Plan around your best hours</h2>
+    <p>Most people have a couple of hours a day when hard things get easier. The ledger already knows yours. It looks at the last 90 days and finds the window where most of your focus lands.</p>
+    <p>Today uses it. When your biggest task would miss that window, one line offers to put it there. It only speaks up when the move gains at least half a round, and “Not today” means not today.</p>
+    <Showcase kind="sky" h={520} hm={460} tabs={[
+      { label: "Your hours", cap: "Ninety days of rounds by hour and weekday. In the demo, 9 to 11 on weekday mornings wins by a mile." },
+      { label: "Lined up", cap: "It's 9:40 and the best hours are under way. One tap puts the biggest task next." },
+      { label: "The day ahead", cap: "Turn on Best time and Today shows the hours on a strip of the day, with a tag on the tasks that land in them." },
+    ]}>
+      <Fragment slot="p0"><Piece light={bestL} dark={bestD} phoneLight={bestPL} phoneDark={bestPD} whole w={680} alt="Best time of day: a heatmap showing focus is strongest 9 to 11 on weekday mornings" /></Fragment>
+      <Fragment slot="p1"><Clip light={lineL} dark={lineD} posterLight={linePL} posterDark={linePD} w={440} radius="4.42% / 4.47%" frame="none" label="Today at 9:40 suggests doing Prepare the monthly investor update next; Move it up puts it at the top of the list" /></Fragment>
+      <Fragment slot="p2"><Piece light={stripL} dark={stripD} w={560} alt="Today with Best time on: a strip of the day with 9 to 11 lit, starting in 40 minutes, and two tasks tagged Best time" /></Fragment>
+    </Showcase>
+    <ul class="checks">
+      <li>A reminder when your best time starts, if you want one</li>
+      <li>Windows for weekdays or weekends only, when that's how you work</li>
+      <li>No guessing: it waits until one window holds at least 30% of your focus</li>
+    </ul>
   </section>
 
   <section class="col chapter" id="planning" style="--c: var(--leaf)">
@@ -177,6 +243,25 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
       <li>A floating Picture-in-Picture timer that stays on top of other windows</li>
       <li>Full screen, for when everything else on the screen is the problem</li>
       <li>The rounds start over on a new day, or after a long pause</li>
+    </ul>
+  </section>
+
+  <section class="col chapter" id="looks" style="--c: var(--violet)">
+    <span class="label">Looks</span>
+    <h2>A clock you'll like looking at</h2>
+    <p>You'll look at this clock a lot, so it might as well be one you like. Pick a face, a ring and a background on the timer itself, the way you'd change a watch face: right-click the dial, or tap the palette.</p>
+    <p>Ten faces, from split-flap and Nixie tubes to the time written out in words, each with its own tick. Four rings and twelve backgrounds, from warm paper to the weather outside your window. Or start from a ready-made look.</p>
+    <Showcase kind="violet" h={540} hm={540} tabs={[
+      { label: "Looks", cap: "Default, Bold, Notebook, Forecast and Midnight. The timer keeps running while you choose, and Cancel puts the old one back." },
+      { label: "Faces", cap: "Split-flap, Nixie, VFD, LCD, Odometer, Editorial and In words. The same 25 minutes." },
+    ]}>
+      <Fragment slot="p0"><Clip light={looksL} dark={looksD} posterLight={looksPL} posterDark={looksPD} w={660} frame="window" phone={{ light: looksPhL, dark: looksPhD, posterLight: looksPhPL, posterDark: looksPhPD, w: 250, radius: "10.26% / 5.41%" }} label="Customize timer: picking the looks Bold, Notebook, Forecast, Midnight and Default changes the running timer beside the list" /></Fragment>
+      <Fragment slot="p1"><Clip light={facesL} dark={facesD} posterLight={facesPL} posterDark={facesPD} w={290} radius="6.82% / 4.64%" frame="none" label="A running focus timer switching faces: split-flap, Nixie tubes, VFD, LCD, odometer, editorial and in words" /></Fragment>
+    </Showcase>
+    <ul class="checks">
+      <li>Water fills up as you focus and drains on a break</li>
+      <li>Sky follows the sun where you are, and Weather brings in the clouds and rain</li>
+      <li>Your look comes along to full screen and the floating timer</li>
     </ul>
   </section>
 
