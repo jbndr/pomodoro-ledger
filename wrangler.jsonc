@@ -26,13 +26,15 @@
       { "name": "ROOM", "class_name": "Room" },
       { "name": "LEDGER", "class_name": "Ledger" },
       { "name": "LOBBY", "class_name": "Lobby" },
-      { "name": "COUNTS", "class_name": "Counts" }
+      { "name": "COUNTS", "class_name": "Counts" },
+      { "name": "CREW", "class_name": "Crew" }
     ]
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["Room"] },
     { "tag": "v2", "new_sqlite_classes": ["Ledger"] },
     { "tag": "v3", "new_sqlite_classes": ["Lobby"] },
-    { "tag": "v4", "new_sqlite_classes": ["Counts"] }
+    { "tag": "v4", "new_sqlite_classes": ["Counts"] },
+    { "tag": "v5", "new_sqlite_classes": ["Crew"] }
   ]
 }

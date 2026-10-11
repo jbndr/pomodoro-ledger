@@ -13,6 +13,7 @@ import { SIGNALS } from "../lib/room";
 import { MODE_NAME, MODES } from "../lib/timer";
 import { phone, showPage } from "../pages";
 import { renderTasks, renderTimer } from "../render";
+import { CR, crewRoom } from "../room/crew";
 import { mySignal, RM, roomSignal } from "../room/net";
 import { exportLedger } from "../settings/backup";
 import { cancelEnd, cancelTickPreview, previewSoundscape, scheduleEnd, syncTicking } from "../sound";
@@ -179,6 +180,9 @@ addCommands(() => {
   out.push({ id: "sound.bell", group: "Sound", title: S.settings.sound ? "Mute the end sounds" : "Turn the end sounds on", words: "bell chime alert sound mute", icon: S.settings.sound ? G.mute : G.bell,
     run: () => { S.settings.sound = !S.settings.sound; if (S.settings.sound) scheduleEnd(); else cancelEnd(); saveSound(S.settings.sound ? "Sounds on." : "Sounds muted."); } });
 
+  if (CR.crew && !RM.code) {
+    out.push({ id: "room.crew", group: "Room", title: "Join " + CR.crew.name + "'s room", words: "crew group team friends study room together", icon: G.room, run: crewRoom });
+  }
   if (RM.live) {
     const cur = mySignal();
     SIGNALS.forEach((g, i) => out.push({ id: "room.sig." + g.id, group: "Room", title: "Status: " + g.name, words: "status signal room busy away presence", keys: [String(i + 1)], on: cur === g,

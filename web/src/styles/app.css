@@ -1557,6 +1557,43 @@ body:not(.zen) .timer-card.timer-card #adjust.off { visibility: hidden; }
 .tg-faces i + i { margin-left: -4px; }
 .tg-faces i.more { background: var(--surface-2); color: var(--muted); }
 .tg-quick .tg-faces i { width: 24px; height: 24px; font-size: 9.5px; box-shadow: 0 0 0 2px color-mix(in oklab, var(--leaf) 11%, var(--surface)); }
+/* A crew sits above everything else: its faces, who's around, and the way into its room. */
+.tg-crew { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-bottom: 6px; padding: 6px 8px 6px 4px; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); }
+.tg-crew-head { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) 14px; align-items: center; gap: 10px; padding: 6px; border: 0; border-radius: 10px; background: none; color: var(--fg); text-align: left; }
+@media (hover: hover) { .tg-crew-head:hover { background: var(--surface-2); } }
+.tg-crew-head b { display: block; overflow: hidden; font-size: 14px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.tg-crew-head small { display: block; overflow: hidden; font-size: 12.5px; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tg-crew-head > svg { width: 14px; height: 14px; color: var(--faint); }
+.tg-crew-faces i { width: 24px; height: 24px; font-size: 9px; }
+.tg-faces i.off { opacity: .4; filter: grayscale(.6); }
+/* Focusing now: a ring in the focus colour, like the faces in a room. */
+.tg-faces i.busy { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--tomato); position: relative; z-index: 1; }
+.tg-crew-start { width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) 16px; align-items: center; gap: 12px; padding: 10px 12px; margin-bottom: 6px; border: 0; border-radius: 14px; background: none; box-shadow: inset 0 0 0 1px var(--line); color: var(--fg); text-align: left; transition: background .15s; }
+@media (hover: hover) { .tg-crew-start:hover { background: var(--surface-2); } }
+.tg-crew-start b { display: block; font-size: 14px; font-weight: 650; }
+.tg-crew-start small { display: block; font-size: 12.5px; color: var(--muted); }
+.tg-crew-start > svg { width: 15px; height: 15px; color: var(--muted); }
+.tg-crew-start .tg-quick-ic { background: var(--surface-2); color: var(--sky); }
+.tg-crew-top { display: grid; gap: 2px; padding: 4px 8px 10px; }
+.tg-crew-top > span { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tg-crew-titled { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.tg-crew-titled b { overflow: hidden; font: 650 18px var(--f-display); text-overflow: ellipsis; white-space: nowrap; }
+.tg-crew-titled .tg-inline { flex: none; font-size: 12.5px; color: var(--muted); }
+.tg-crew-name { width: 100%; height: 30px; padding: 0 8px; margin-left: -8px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); color: var(--fg); font: 650 18px var(--f-display); }
+.tg-crew-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 2px; }
+.tg-crew-list li { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; }
+.tg-crew-list li.off .tg-crew-who { opacity: .55; }
+.tg-crew-list li .tg-faces i { width: 28px; height: 28px; font-size: 10px; }
+.tg-crew-who { min-width: 0; display: grid; }
+.tg-crew-who b { overflow: hidden; font-size: 13.5px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.tg-crew-who b small { font-size: inherit; font-weight: 450; color: var(--faint); }
+.tg-crew-who > span { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tg-crew-seat { justify-content: space-between; font-size: 12.5px; color: var(--faint); }
+.tg-crew-time { padding: 0 8px 4px; }
+.tg-crew-time .tg-fold > div > :first-child { margin-top: 12px; }
+.tg-crew-next { margin-top: 10px; }
+.tg-crew-next > span { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tg-btn.danger { color: var(--tomato); border-color: color-mix(in oklab, var(--tomato) 45%, transparent); }
 .tg-sec { display: grid; gap: 2px; }
 .tg-sec + .tg-sec { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 .tg-sec h4 { display: flex; align-items: baseline; gap: 8px; margin: 6px 8px 4px; font-size: 12.5px; font-weight: 600; color: var(--muted); }

@@ -8,6 +8,7 @@ import { list, pill, progress } from "./lib/redraw.svelte";
 import { projectNames } from "./lib/tasks";
 import { clock, MODE_NAME } from "./lib/timer";
 import { LP, labelPop } from "./popovers/state.svelte";
+import { crewPush } from "./room/crew";
 import { roomPush } from "./room/net";
 import { syncTicking } from "./sound";
 import { S, T } from "./state";
@@ -56,6 +57,7 @@ export function renderTimer(force?: boolean) {
   if ($("#tabTime").textContent !== tabTime) $("#tabTime").textContent = tabTime;
   if (!force) return;
   roomPush();
+  crewPush();
   timerView.refresh();
 }
 

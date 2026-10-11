@@ -19,6 +19,7 @@
       alone: api.RM.members.filter((m) => m.id !== api.RM.you).length === 0,
       reacts: api.reactionsOn(), bubbles: api.RM.bubbles, floats: api.RM.floats, cheer: api.RM.cheerUntil > Date.now(),
       goal: api.RM.goal && api.RM.goal.n ? api.RM.goal : null, metAt: api.RM.metAt,
+      crew: api.crew.CR.crew && api.crew.CR.crew.room === api.RM.code ? api.crew.CR.crew.name : "",
     };
   });
   const now = $derived.by(() => { roomClock.version; room.version; return Date.now(); });
@@ -63,7 +64,11 @@
   {#if v.pub}
     <button class="room-name" type="button" title="Room details" onclick={() => api.openRoom()}><b>{v.pub.title}</b><span>{v.pub.rhythm} · {step ? "timer shared with the room" : "your timer runs on its own"}</span></button>
   {:else}
-    <button class="room-name" type="button" title="Copy invite link" onclick={() => copyInvite(api.RM.code)}><b>Your room</b><span>Code {v.code} · copy invite</span></button>
+    {#if v.crew}
+      <button class="room-name" type="button" title="Copy the crew's invite link" onclick={() => api.crew.copyCrewInvite()}><b>{v.crew}</b><span>Crew room · copy invite</span></button>
+    {:else}
+      <button class="room-name" type="button" title="Copy invite link" onclick={() => copyInvite(api.RM.code)}><b>Your room</b><span>Code {v.code} · copy invite</span></button>
+    {/if}
   {/if}
 
   <ul class="mates" aria-label="People in the room">

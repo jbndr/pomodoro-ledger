@@ -37,11 +37,11 @@ self.addEventListener("fetch", (e) => {
   }));
 });
 
-// A scheduled session is starting. The tag matches the open tab's own reminder, so only one shows.
+// A scheduled session or crew time is starting. The tag matches the open tab's own reminder, so only one shows.
 self.addEventListener("push", (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch {}
-  const code = typeof d.code === "string" && /^L[A-Z2-9]{5}$/.test(d.code) ? d.code : "";
+  const code = typeof d.code === "string" && /^[LI][A-Z2-9]{5}$/.test(d.code) ? d.code : "";
   const title = typeof d.title === "string" && d.title ? d.title.slice(0, 40) : "A session";
   e.waitUntil(self.registration.showNotification("Pomodoro Ledger", {
     body: title + " is starting.", tag: "pl-session-" + code.slice(1, 4), icon: "/icons/icon-192.png", data: { code },

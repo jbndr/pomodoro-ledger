@@ -236,6 +236,22 @@ addresses, like the counts) lists every schedule and public room with its
 reports: **Hide** takes one off the list whatever the reports say, **Show** keeps
 it listed, and **Remove** deletes a schedule and its reminders.
 
+**Focus crews (beta).** A crew is a standing group of up to eight people with a
+permanent room. Crews are off unless a browser opens a crew invite (`/app/?crew=CODE`)
+or `/app/?crews=1`, which shows **Start a crew** in Work together. Everyone in a crew
+sees who else is around and who is focusing right now, in the crew card and on the
+Work together pill, even outside a room. The rounds members finish add up per week,
+counted by the crew the same way a room counts toward its goal and starting on
+Monday in the creator's time zone. Any member can rename the crew, set a regular
+crew time (days and a window, like a schedule) and turn on **Remind me**, which
+sends a push when crew time starts. **Join crew room** opens the crew's own private
+room, whose code starts with an `I` and never changes. A `Crew` Durable Object per
+crew keeps the name, the members (a client id, a public id and a name each),
+two weeks of counts and members' push subscriptions. It deletes itself when the
+last member leaves, a day after it was made if nobody joined, or after 90 days
+without anyone opening it. Starting crews is limited to three per address, then
+one every 20 minutes.
+
 **Reminders when the app is closed.** Once push is set up (below), **Remind me**
 also subscribes the browser to Web Push when notifications are allowed, so the
 reminder arrives with the app closed, including the installed app on phones
