@@ -149,26 +149,27 @@ body.morphing .dial .fl-ring rect { transition: none; }
   radial-gradient(46% 46% at 80% 30%, oklch(calc(var(--mesh-l) + 2%) calc(var(--acc-c) * var(--mesh-c) * .85) calc(var(--acc-h) + 28) / .85), transparent 72%),
   radial-gradient(50% 50% at 30% 80%, oklch(calc(var(--mesh-l) - 1%) calc(var(--acc-c) * var(--mesh-c)) calc(var(--acc-h) - 48) / .85), transparent 72%),
   radial-gradient(42% 42% at 84% 84%, oklch(var(--mesh-l) calc(var(--acc-c) * var(--mesh-c) * .5) calc(var(--acc-h) + 190) / .8), transparent 72%); }
+/* Layers on the glow's pseudo-elements follow only the nearest background: the page's on the card and floating timer, or a preview's own. */
 [data-backdrop="film"] { --scene-grain: .13; --scene: radial-gradient(120% 90% at 50% 40%, #1B1D1D, #08090A 78%); }
-[data-backdrop="film"] .glow::after { inset: -50%; mix-blend-mode: normal; animation: film-grain .4s steps(4) infinite; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+body[data-backdrop="film"] :is(.timer-card, main) > .glow::after, .st-swatch[data-backdrop="film"] > .glow::after { inset: -50%; mix-blend-mode: normal; animation: film-grain .4s steps(4) infinite; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 @keyframes film-grain { 25% { transform: translate(-3%, 2%); } 50% { transform: translate(2%, -3%); } 75% { transform: translate(-2%, -1%); } }
 [data-backdrop="stars"] { --scene-grain: .95; --scene:
   radial-gradient(1.2px 1.2px at 81% 34%, rgb(255 255 255 / .38), transparent), radial-gradient(1.2px 1.2px at 90% 96%, rgb(255 255 255 / .57), transparent), radial-gradient(1px 1px at 5% 61%, rgb(255 255 255 / .48), transparent), radial-gradient(1px 1px at 22% 16%, rgb(255 255 255 / .41), transparent), radial-gradient(1.2px 1.2px at 33% 50%, rgb(255 255 255 / .29), transparent),
   radial-gradient(1.2px 1.2px at 33% 3%, rgb(255 255 255 / .33), transparent), radial-gradient(1px 1px at 37% 25%, rgb(255 255 255 / .31), transparent), radial-gradient(1.2px 1.2px at 11% 19%, rgb(255 255 255 / .47), transparent), radial-gradient(1px 1px at 58% 72%, rgb(255 255 255 / .59), transparent), radial-gradient(1px 1px at 66% 12%, rgb(255 255 255 / .5), transparent),
   radial-gradient(120% 90% at 50% 30%, #0E1424, #05070D 75%); }
-[data-backdrop="stars"] .glow::before, [data-backdrop="stars"] .glow::after { content: ""; position: absolute; inset: 0 -240px 0 0; mix-blend-mode: normal; background-repeat: repeat; }
-[data-backdrop="stars"] .glow::before { opacity: .75; background-size: 150px 150px; animation: stars-far 40s linear infinite; background-image:
+body[data-backdrop="stars"] :is(.timer-card, main) > .glow::before, .st-swatch[data-backdrop="stars"] > .glow::before, body[data-backdrop="stars"] :is(.timer-card, main) > .glow::after, .st-swatch[data-backdrop="stars"] > .glow::after { content: ""; position: absolute; inset: 0 -240px 0 0; mix-blend-mode: normal; background-repeat: repeat; }
+body[data-backdrop="stars"] :is(.timer-card, main) > .glow::before, .st-swatch[data-backdrop="stars"] > .glow::before { opacity: .75; background-size: 150px 150px; animation: stars-far 40s linear infinite; background-image:
   radial-gradient(1px 1px at 115px 143px, rgb(255 255 255 / .92), transparent), radial-gradient(1px 1px at 119px 115px, rgb(255 255 255 / .73), transparent), radial-gradient(1px 1px at 48px 47px, rgb(255 255 255 / .89), transparent), radial-gradient(1px 1px at 121px 47px, rgb(255 255 255 / .5), transparent),
   radial-gradient(1px 1px at 77px 36px, rgb(255 255 255 / .5), transparent), radial-gradient(1px 1px at 10px 101px, rgb(255 255 255 / .98), transparent), radial-gradient(1px 1px at 40px 3px, rgb(255 255 255 / .91), transparent), radial-gradient(1px 1px at 16px 15px, rgb(255 255 255 / .47), transparent),
   radial-gradient(1px 1px at 61px 7px, rgb(255 255 255 / .88), transparent), radial-gradient(1px 1px at 83px 112px, rgb(255 255 255 / .78), transparent), radial-gradient(1px 1px at 50px 132px, rgb(255 255 255 / .58), transparent), radial-gradient(1px 1px at 75px 127px, rgb(255 255 255 / .45), transparent); }
-[data-backdrop="stars"] .glow::after { background-size: 230px 230px; animation: stars-near 24s linear infinite; background-image:
+body[data-backdrop="stars"] :is(.timer-card, main) > .glow::after, .st-swatch[data-backdrop="stars"] > .glow::after { background-size: 230px 230px; animation: stars-near 24s linear infinite; background-image:
   radial-gradient(1.6px 1.6px at 21px 117px, rgb(255 255 255 / .86), transparent), radial-gradient(1.6px 1.6px at 104px 141px, #fff, transparent), radial-gradient(1.6px 1.6px at 215px 21px, rgb(255 255 255 / .88), transparent), radial-gradient(1.6px 1.6px at 80px 194px, rgb(255 255 255 / .69), transparent),
   radial-gradient(1.6px 1.6px at 73px 7px, rgb(255 255 255 / .63), transparent), radial-gradient(1.6px 1.6px at 196px 27px, rgb(255 255 255 / .76), transparent), radial-gradient(1.6px 1.6px at 216px 74px, rgb(255 255 255 / .75), transparent); }
 @keyframes stars-far { to { transform: translateX(-150px); } }
 @keyframes stars-near { to { transform: translateX(-230px); } }
 [data-backdrop="wash"] { --scene-grain: calc(var(--grain-o) * 1.2); --scene: radial-gradient(120% 80% at 50% 0%, oklch(calc(var(--wash-l) + 6%) var(--page-acc-c) var(--acc-h)), oklch(var(--wash-l) var(--page-acc-c) var(--acc-h)) 60%, oklch(calc(var(--wash-l) - 6%) var(--page-acc-c) var(--acc-h))); }
 [data-backdrop="halftone"] { --scene: none; --scene-grain: 0; }
-[data-backdrop="halftone"] .glow::before { content: ""; position: absolute; inset: 0; background: color-mix(in oklab, var(--accent) var(--ht-ink), var(--surface)); -webkit-mask: var(--ht-mask) left bottom / 440px 440px no-repeat; mask: var(--ht-mask) left bottom / 440px 440px no-repeat; }
+body[data-backdrop="halftone"] :is(.timer-card, main) > .glow::before, .st-swatch[data-backdrop="halftone"] > .glow::before { content: ""; position: absolute; inset: 0; background: color-mix(in oklab, var(--accent) var(--ht-ink), var(--surface)); -webkit-mask: var(--ht-mask) left bottom / 440px 440px no-repeat; mask: var(--ht-mask) left bottom / 440px 440px no-repeat; }
 .st-swatch[data-backdrop="halftone"] .glow::before { -webkit-mask-size: 200px 200px; mask-size: 200px 200px; }
 [data-backdrop]:not([data-backdrop="glow"]) .glow { inset: var(--scene-inset); background: var(--scene); animation: var(--scene-anim); }
 [data-backdrop]:not([data-backdrop="glow"]) .glow::after { opacity: var(--scene-grain); }
@@ -183,8 +184,8 @@ body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .keep-g
 /* Scenes move only while a session runs, and a preview plays while it's pointed at. */
 body:not([data-status="running"]) :is(.timer-card, main:not(.bell), .st-stage) > .glow,
 body:not([data-status="running"]) :is(.timer-card, main:not(.bell), .st-stage) > .glow::before,
-body:not([data-status="running"]) :is(.timer-card, main:not(.bell), .st-stage) > .glow::after { animation-play-state: paused; }
-body .st-face:hover > .st-stage > .glow, body .st-face:hover > .st-stage > .glow::before, body .st-face:hover > .st-stage > .glow::after { animation-play-state: running; }
+body:not([data-status="running"]) :is(.timer-card, main:not(.bell), .st-stage) > .glow::after { animation-play-state: paused !important; }
+body .st-face:hover > .st-stage > .glow, body .st-face:hover > .st-stage > .glow::before, body .st-face:hover > .st-stage > .glow::after { animation-play-state: running !important; }
 /* Aurora and Mesh drift in steps: this slowly, a dozen moves a second look the same as sixty and cost far less. */
 @keyframes aurora { 50% { transform: translate(7%, -5%) rotate(12deg) scale(1.1); } 100% { transform: translate(-6%, 6%) rotate(-9deg) scale(1.04); } }
 
@@ -228,4 +229,4 @@ html body[data-backdrop="wash"] .timer-card {
 
 /* Nothing behind an open sheet needs to move, and each frame of it makes the browser redraw or re-blur the whole screen. Previews in the sheet still play when pointed at. */
 body.modal-open .app *, body.modal-open .app *::before, body.modal-open .app *::after, body.modal-open::before,
-body.modal-open .st-stage > .glow, body.modal-open .st-stage > .glow::before, body.modal-open .st-stage > .glow::after { animation-play-state: paused; }
+body.modal-open .st-stage > .glow, body.modal-open .st-stage > .glow::before, body.modal-open .st-stage > .glow::after { animation-play-state: paused !important; }
