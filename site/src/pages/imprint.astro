@@ -1,0 +1,23 @@
+---
+import Base from "../layouts/Base.astro";
+import Owner from "../components/Owner.astro";
+import { OWNER } from "../data/legal";
+---
+<Base title="Imprint" description="Who makes Pomodoro Ledger and how to reach them.">
+  <article class="col">
+    <header class="page-head prose">
+      <h1>Imprint</h1>
+      <p>Pomodoro Ledger is made and run by one person in Germany.</p>
+    </header>
+    <div class="md prose">
+      <h2>Provider</h2>
+      <p>Information under § 5 DDG (Impressum):</p>
+      <Owner />
+      <h2>Responsible for the content</h2>
+      <p>Under § 18 (2) MStV: {OWNER.name}, address as above.</p>
+      <h2>Consumer disputes</h2>
+      <p>I'm not obliged and not willing to take part in dispute resolution proceedings before a consumer arbitration board. If something isn't right, write to me and I'll sort it out.</p>
+      <p>How your data is handled is in the <a href="/privacy">privacy policy</a>.</p>
+    </div>
+  </article>
+</Base>

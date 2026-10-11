@@ -111,3 +111,5 @@
 {:else if status}<p class="st-cap" class:st-error={failed} role="status">{status}</p>
 {:else}<p class="st-cap">Exported files work in any browser{synced ? " and include everything synced to your account" : ""}.</p>{/if}
 </section>
+
+<p class="st-cap st-legal"><a href="/privacy" target="_blank" rel="noopener">Privacy</a> · <a href="/imprint" target="_blank" rel="noopener">Imprint</a></p>

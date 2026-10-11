@@ -44,7 +44,7 @@ const plan = PLANS[START];
         <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button class="btn primary" type="submit">Tell me when Pro opens</button>
       </div>
-      <p class="fine" data-msg aria-live="polite">One email when Pro opens, then we delete your address. Prices include VAT.</p>
+      <p class="fine"><span data-msg aria-live="polite">One email when Pro opens, then we delete your address.</span> Prices include VAT · <a href="/privacy">Privacy</a></p>
     </form>
     <div class="joined" data-joined hidden>
       <p><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 10.5l3 3 6-7"/></svg><span>You're on the list. We'll write once, when Pro opens.</span></p>
@@ -91,7 +91,9 @@ const plan = PLANS[START];
   .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
   .join .btn[disabled] { opacity: .6; cursor: progress; }
   .fine { margin: 10px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--faint); }
-  .fine.err { color: var(--tomato); }
+  .fine [data-msg] { display: block; }
+  .fine .err { color: var(--tomato); }
+  .fine a { color: inherit; text-underline-offset: 2px; }
 
   .joined { margin: 18px 0 0; padding-top: 18px; border-top: 1px solid var(--line); }
   .joined p { display: flex; align-items: flex-start; gap: 10px; margin: 0; font-size: 14.5px; line-height: 1.5; }

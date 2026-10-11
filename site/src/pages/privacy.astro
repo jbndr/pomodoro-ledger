@@ -1,0 +1,63 @@
+---
+import Base from "../layouts/Base.astro";
+import Owner from "../components/Owner.astro";
+import { OWNER, UPDATED } from "../data/legal";
+import { day } from "../lib";
+const mail = `mailto:${OWNER.email}`;
+---
+<Base title="Privacy" description="What Pomodoro Ledger stores, where, and for how long.">
+  <article class="col">
+    <header class="page-head prose">
+      <h1>Privacy</h1>
+      <p>Your tasks and history stay in your browser. There are no ads, no tracking cookies and no third-party analytics, and every font, script and image comes from this site. Here is everything that does leave your device, and why.</p>
+    </header>
+    <div class="md prose">
+      <h2>Who is responsible</h2>
+      <p>I build and run Pomodoro Ledger on my own, so questions about your data come straight to me:</p>
+      <Owner />
+
+      <h2>Hosting</h2>
+      <p>The site and the app run on Cloudflare (Cloudflare, Inc., 101 Townsend St., San Francisco, CA 94107, USA). Every request passes through Cloudflare's network, which needs your IP address, the page you asked for, the time and your browser's details to deliver the page and to keep out attacks. Cloudflare processes this on my behalf under its data processing agreement, and is certified under the EU-U.S. Data Privacy Framework, which covers the transfer to the US. I don't keep access logs of my own.</p>
+      <p>Legal basis: Art. 6 (1) (f) GDPR, my legitimate interest in a site that is fast and safe to use.</p>
+
+      <h2>What stays in your browser</h2>
+      <p>Your tasks, sessions, labels, settings and sound mixes are saved in your browser's storage on your device. They never reach me unless you turn on sync. The site also remembers your theme there, and whether you joined the Pro waitlist. A service worker keeps a copy of the app so it opens offline. None of this is used to track you, and you can remove all of it by clearing this site's data in your browser.</p>
+      <p>Storing this is needed for the features you use (§ 25 (2) no. 2 TDDDG).</p>
+
+      <h2>Page counts</h2>
+      <p>The home and features pages count views and clicks on a few buttons, like “Open the app”, as daily totals. A count carries only the page and the button: no cookie, no ID, no IP address, nothing that could tell visitors apart or link one visit to the next. If your browser sends Do Not Track or Global Privacy Control, nothing is counted.</p>
+      <p>Legal basis: Art. 6 (1) (f) GDPR, knowing whether the pages help people find the app.</p>
+
+      <h2>Sky and weather</h2>
+      <p>To paint the sky and the weather for where you are, the app asks this site for your rough location. It comes from Cloudflare's lookup of your IP address, rounded to about 10 km, with the name of the nearest city. For the weather, the site asks MET Norway (the Norwegian Meteorological Institute) for the forecast at that rounded point, so MET Norway never sees your IP address. The site doesn't store your location; your browser keeps it so it doesn't have to ask again.</p>
+      <p>Legal basis: Art. 6 (1) (f) GDPR, showing the sky and weather you picked.</p>
+
+      <h2>Rooms</h2>
+      <p>When you join a room, the others in it see the name you choose and your timer: whether it's running and how long is left. Never your tasks. Open rooms are listed with the names of the people in them. A room's data is deleted 10 minutes after the last person leaves. Sessions you schedule (title, days, times and time zone) are kept until you delete them, or until 21 days after they were last used.</p>
+      <p>To stop anyone from flooding rooms and reminders, the site keeps your IP address in a counter for up to an hour, then deletes it.</p>
+      <p>Legal basis: Art. 6 (1) (b) GDPR for the room you asked to join, Art. 6 (1) (f) GDPR for the counter.</p>
+
+      <h2>Session reminders</h2>
+      <p>If you ask to be reminded when a scheduled session starts, your browser creates a push address at its maker's push service (Google, Mozilla, Apple or Microsoft, some of them outside the EU) and hands it to this site. I keep it with the session and send the reminder through that service, encrypted so the push service can't read it. It's deleted when you turn the reminder off or the session is deleted.</p>
+      <p>Legal basis: Art. 6 (1) (a) GDPR, your consent when you allow notifications. You can withdraw it any time.</p>
+
+      <h2>Sync</h2>
+      <p>Sync is optional. Cloudflare Access handles signing in and sets a cookie that keeps you signed in. While you're signed in, your tasks, history, settings and timer are stored with Cloudflare under your email address, so your devices all see the same ledger. You can download all of it under Settings › Data &amp; sync at any time. To have your synced data deleted, <a href={mail}>write to me</a>.</p>
+      <p>Legal basis: Art. 6 (1) (b) GDPR, providing the sync you signed in for.</p>
+
+      <h2>Pro waitlist</h2>
+      <p>If you join the waitlist, I store your email address, the plan you were looking at and when you joined. It's used for one thing: one email when Pro opens. Then the list is deleted. You can take your address off any time with “Remove my address” on the same device, or by <a href={mail}>writing to me</a>. While you sign up, your IP address is held in memory for up to 10 minutes to stop scripts from flooding the list. It's never written down.</p>
+      <p>Legal basis: Art. 6 (1) (a) GDPR, your consent.</p>
+
+      <h2>Site blocker extension</h2>
+      <p>The optional browser extension blocks distracting sites during a focus round. It works inside your browser: the app tells it when a round starts and ends, and nothing is sent to me. Your block list is kept in the browser's extension storage, which your browser syncs between your devices only if you've turned on its own sync.</p>
+
+      <h2>Your rights</h2>
+      <p>You can ask what I store about you (Art. 15 GDPR), have it corrected (Art. 16) or deleted (Art. 17), limit how it's used (Art. 18), get it in a portable format (Art. 20), and object to processing based on legitimate interest (Art. 21). Consent you gave can be withdrawn any time, with effect for the future (Art. 7 (3)). Just <a href={mail}>write to me</a>.</p>
+      <p>You can also complain to a data protection authority, for example the one where you live, or the one responsible for me: the State Commissioner for Data Protection and Freedom of Information Baden-Württemberg (Landesbeauftragter für den Datenschutz und die Informationsfreiheit Baden-Württemberg).</p>
+
+      <p class="updated">Last updated {day(UPDATED)}.</p>
+    </div>
+  </article>
+</Base>
+<style>.updated { margin-top: 3em; font-size: 14px; color: var(--muted); }</style>
