@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BACKDROPS, FACES, inWords, matrix, MATRIX_ROWS, RINGS, SEGMENTS, timerBackdrop, timerFace, timerRing, waterLevel } from "./faces";
+import { BACKDROPS, FACES, inWords, lookOf, LOOKS, matrix, MATRIX_ROWS, RINGS, SEGMENTS, timerBackdrop, timerFace, timerRing, waterLevel } from "./faces";
 
 describe("timerFace", () => {
   it("defaults to the classic dial", () => {
@@ -28,6 +28,23 @@ describe("timerBackdrop", () => {
     expect(timerBackdrop(undefined)).toBe("glow");
     expect(timerBackdrop("lava")).toBe("glow");
     for (const [id] of BACKDROPS) expect(timerBackdrop(id)).toBe(id);
+  });
+});
+
+describe("LOOKS", () => {
+  it("only uses faces, rings and backgrounds that exist, and no two looks are the same", () => {
+    for (const l of LOOKS) {
+      expect(timerFace(l.face)).toBe(l.face);
+      expect(timerRing(l.ring)).toBe(l.ring);
+      expect(timerBackdrop(l.backdrop)).toBe(l.backdrop);
+    }
+    expect(new Set(LOOKS.map((l) => l.face + l.ring + l.backdrop)).size).toBe(LOOKS.length);
+    expect(new Set(LOOKS.map((l) => l.id)).size).toBe(LOOKS.length);
+  });
+
+  it("finds the look a combination makes, and none for a mix of your own", () => {
+    expect(lookOf("serif", "none", "paper")?.id).toBe("notebook");
+    expect(lookOf("serif", "arc", "paper")).toBeUndefined();
   });
 });
 

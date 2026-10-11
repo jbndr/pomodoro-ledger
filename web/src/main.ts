@@ -138,7 +138,7 @@ ui.settings = mount(Settings, { target: document.body, props: { api: {
   ensureAudio, playSound, scheduleEnd, cancelEnd, cancelTickPreview, syncTicking, previewTicking,
   previewSoundscape, cancelScapePreview, scapePlaying,
   autoFloatHandler, renderTimer, renderStats, renderEstPick,
-  reactionsChanged, bestLine, DEMO, backup: { exportLedger, planImport, importLedger }, customize: (tab?: string) => openCustomize(tab),
+  reactionsChanged, bestLine, DEMO, backup: { exportLedger, planImport, importLedger }, customize: (tab?: string, look?: string) => openCustomize(tab, look),
 } } }) as SettingsUI;
 ui.customize = mount(Customize, { target: $("main.top"), props: { api: {
   S, renderTimer, sizeTimer, phone, showPage, setZen, zen: () => document.body.classList.contains("zen"), save: () => Store.saveSettings(),

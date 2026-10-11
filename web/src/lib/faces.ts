@@ -33,7 +33,7 @@ export function timerRing(v: unknown): TimerRing {
   return RINGS.some(([id]) => id === v) ? (v as TimerRing) : "arc";
 }
 
-export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "sky" | "water" | "mesh" | "halftone" | "wash" | "film" | "stars";
+export type TimerBackdrop = "glow" | "plain" | "paper" | "aurora" | "sky" | "weather" | "water" | "mesh" | "halftone" | "wash" | "film" | "stars";
 
 /** Grouped by kind: flat and printed, then soft colour, then scenes. */
 export const BACKDROPS: [TimerBackdrop, string, string][] = [
@@ -46,6 +46,7 @@ export const BACKDROPS: [TimerBackdrop, string, string][] = [
   ["aurora", "Aurora", "Colour that drifts slowly while a session runs"],
   ["mesh", "Mesh", "Soft colour around the phase, slowly turning"],
   ["sky", "Sky", "The sky where you are, from dawn to night"],
+  ["weather", "Weather", "The weather where you are: soft clouds, rain, snow or fog"],
   ["stars", "Starfield", "Stars drifting past at three depths"],
   ["water", "Water", "Fills up as you focus and drains on a break"],
 ];
@@ -57,6 +58,20 @@ export const BACKDROP_GROUPS = new Set<TimerBackdrop>(["glow", "sky"]);
 export function timerBackdrop(v: unknown): TimerBackdrop {
   return BACKDROPS.some(([id]) => id === v) ? (v as TimerBackdrop) : "glow";
 }
+
+export type Look = { id: string; name: string; note: string; face: TimerFace; ring: TimerRing; backdrop: TimerBackdrop };
+
+/** Ready-made combinations of face, ring and background, to start from instead of mixing all three. */
+export const LOOKS: Look[] = [
+  { id: "default", name: "Default", note: "The dial as it came: clean numbers in the phase colour", face: "classic", ring: "arc", backdrop: "glow" },
+  { id: "bold", name: "Bold", note: "The whole card in the phase colour, with tiles that turn over", face: "classic", ring: "tiles", backdrop: "wash" },
+  { id: "notebook", name: "Notebook", note: "Italic minutes on warm paper, nothing else", face: "serif", ring: "none", backdrop: "paper" },
+  { id: "forecast", name: "Forecast", note: "The time in words, over the weather outside", face: "words", ring: "none", backdrop: "weather" },
+  { id: "midnight", name: "Midnight", note: "LED dots among drifting stars, and nothing else", face: "matrix", ring: "none", backdrop: "stars" },
+];
+
+/** The look that matches a face, ring and background exactly, if one does. */
+export const lookOf = (face: string, ring: string, backdrop: string) => LOOKS.find((l) => l.face === face && l.ring === ring && l.backdrop === backdrop);
 
 /** How full the Water background is, 0 to 1: it rises through a focus and drains through a break, so it never jumps between them. Flow fills it once an hour. */
 export function waterLevel(mode: string, kind: string, frac: number, upMs: number) {

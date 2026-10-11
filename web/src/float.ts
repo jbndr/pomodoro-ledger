@@ -31,7 +31,8 @@ let lastState = "", lastNudge = "";
 
 const TOKENS = ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--accent", "--acc-l", "--acc-c", "--acc-h", "--glow-o", "--ember", "--paper", "--grain-o", "--go-l-max", "--f-display", "--f-body",
   "--fl-top-a", "--fl-top-b", "--fl-bot-a", "--fl-bot-b", "--fl-ink", "--fl-slit", "--fl-colon", "--fl-lift", "--fl-off", "--fl-edge", "--fl-gap", "--mx-off", "--face-glow", "--nx-dot", "--pp-a", "--pp-b", "--pp-edge",
-  "--lcd-a", "--lcd-b", "--mesh-l", "--mesh-c", "--wash-l", "--ht-ink", "--ht-mask", "--page-acc-l", "--page-acc-c", "--f-serif", "--f-mono", "--f-round", "--wt-a", "--wt-b", "--wt-back", "--fill"];
+  "--lcd-a", "--lcd-b", "--mesh-l", "--mesh-c", "--wash-l", "--ht-ink", "--ht-mask", "--page-acc-l", "--page-acc-c", "--f-serif", "--f-mono", "--f-round", "--wt-a", "--wt-b", "--wt-back", "--fill",
+  "--wx-tex-near", "--wx-rain-far", "--wx-snow-near", "--wx-cover", "--wx-amount", "--wx-slant", "--sun-x", "--sun-y"];
 
 export function renderFloating(txt: string, frac: number) {
   if (!floatWindow || floatWindow.closed) return;
@@ -41,7 +42,7 @@ export function renderFloating(txt: string, frac: number) {
   for (const name of TOKENS) { const v = theme.getPropertyValue(name); if (root.style.getPropertyValue(name) !== v) root.style.setProperty(name, v); }
   root.style.colorScheme = theme.colorScheme;
   for (const k of ["backdrop", "status", "fillJump", "fillReady"]) { const v = document.body.dataset[k] || ""; if (doc.body.dataset[k] !== v) doc.body.dataset[k] = v; }
-  if (root.dataset.sky !== document.documentElement.dataset.sky) root.dataset.sky = document.documentElement.dataset.sky || "";
+  for (const k of ["sky", "wx"]) { const v = document.documentElement.dataset[k] || ""; if (root.dataset[k] !== v) root.dataset[k] = v; }
   const flow = T.upKind === "flow" || !!T.flowReady, over = !!T.up && !flow;
   doc.title = txt + " · " + (flow ? "Flow" : MODE_NAME[T.mode]);
 

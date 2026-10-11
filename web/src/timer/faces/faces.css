@@ -1,5 +1,5 @@
 /* Timer faces: the same dial in another material. Sizes are in container units of .dial-wrap, so they scale with the dial. */
-:root, :root[data-sky-ink="light"] body[data-backdrop="sky"] .timer-card {
+:root, :root[data-sky-ink="light"] body:is([data-backdrop="sky"], [data-backdrop="weather"]) .timer-card, .lk[data-ink="light"] {
   --fl-top-a: #FFFFFF; --fl-top-b: #F6F7F5; --fl-bot-a: #F1F2F0; --fl-bot-b: #E8EAE7; --fl-ink: #161918; --fl-slit: #C3C8C2; --fl-colon: color-mix(in oklab, var(--fg) 62%, transparent);
   --fl-lift: 0 .012em 0 rgba(20,24,22,.06), 0 .05em .1em -.03em rgba(20,24,22,.22);
   --fl-off: #E7EAE6; --fl-edge: rgba(20,24,22,.07); --fl-gap: rgba(20,24,22,.2);
@@ -19,7 +19,7 @@
     --wt-a: oklch(34% .065 226); --wt-b: oklch(26% .06 238); --wt-back: oklch(29% .05 220);
   }
 }
-:root[data-theme="dark"], body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card, :root[data-sky-ink="dark"] body[data-backdrop="sky"] .timer-card {
+:root[data-theme="dark"], body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card, :root[data-sky-ink="dark"] body:is([data-backdrop="sky"], [data-backdrop="weather"]) .timer-card, .lk[data-ink="dark"] {
   --fl-top-a: #2B302D; --fl-top-b: #232825; --fl-bot-a: #1E2220; --fl-bot-b: #191C1B; --fl-ink: #EDF0EE; --fl-slit: #070808;
   --fl-lift: 0 .012em 0 rgba(255,255,255,.04), 0 .06em .14em -.02em rgba(0,0,0,.6);
   --fl-off: #262B28; --fl-edge: rgba(255,255,255,.04); --fl-gap: rgba(0,0,0,.6);
@@ -204,10 +204,59 @@ body[data-fill-ready="1"] :is(.timer-card, main) > .glow::before, body[data-fill
 /* A skip, a new phase or a reset moves the level a long way, so it eases there instead of sliding at the steady pace. */
 body[data-fill-ready="1"][data-fill-jump="1"] :is(.timer-card, main) > .glow::before, body[data-fill-ready="1"][data-fill-jump="1"] :is(.timer-card, main) > .glow::after { transition: translate 1.6s cubic-bezier(.45, 0, .2, 1); }
 @keyframes water-drift { to { transform: translateX(calc(var(--wt-tile) * -1)); } }
+/* Weather: the Sky's colours for the hour, greyed as cloud thickens, under soft clouds that drift with the wind and, when it falls, rain or snow at two depths. */
+[data-sky="dawn"] { --wx-grey: oklch(88.5% .014 40); --wx-sun: oklch(96% .07 70 / .8); --wx-cloud: oklch(97% .02 55); --wx-shade: oklch(86% .03 20); --wx-fog: oklch(95% .015 50 / .8); --wx-rain: oklch(38% .04 245 / .42); --wx-snow: #fff; }
+[data-sky="day"] { --wx-grey: oklch(88.5% .01 245); --wx-sun: oklch(99% .04 90 / .55); --wx-cloud: oklch(99% .004 250); --wx-shade: oklch(88% .012 250); --wx-fog: oklch(96% .006 250 / .8); --wx-rain: oklch(38% .04 245 / .42); --wx-snow: #fff; }
+[data-sky="dusk"] { --wx-grey: oklch(30% .02 300); --wx-sun: oklch(70% .14 50 / .35); --wx-cloud: oklch(55% .06 25); --wx-shade: oklch(30% .04 300); --wx-fog: oklch(45% .03 330 / .5); --wx-rain: oklch(88% .02 245 / .36); --wx-snow: oklch(97% 0 0 / .85); }
+[data-sky="night"] { --wx-grey: oklch(22% .015 260); --wx-sun: transparent; --wx-cloud: oklch(34% .02 260); --wx-shade: oklch(20% .02 265); --wx-fog: oklch(40% .015 260 / .45); --wx-rain: oklch(88% .02 245 / .36); --wx-snow: oklch(97% 0 0 / .85); }
+[data-wx="clear"] { --wx-overcast: 0; --wx-reach: 45%; }
+[data-wx="partly"] { --wx-overcast: .08; --wx-reach: 55%; }
+[data-wx="cloudy"] { --wx-overcast: .6; --wx-reach: 90%; --wx-sun: transparent; }
+[data-wx="fog"] { --wx-overcast: .55; --wx-reach: 50%; --wx-sun: transparent; }
+[data-wx="rain"] { --wx-overcast: .7; --wx-reach: 70%; --wx-sun: transparent; }
+[data-wx="snow"] { --wx-overcast: .55; --wx-reach: 60%; --wx-sun: transparent; }
+[data-wx="storm"] { --wx-overcast: .85; --wx-reach: 80%; --wx-sun: transparent; }
+/* By day the storm keeps its darkest cloud high on the card, so the text lower down still sits on a light sky. */
+[data-sky="day"][data-wx="storm"] { --wx-grey: oklch(88% .012 250); --wx-cloud: oklch(90% .008 250); --wx-shade: oklch(80% .014 255); --wx-rain: oklch(36% .04 245 / .36); --wx-reach: 58%; }
+[data-sky="day"][data-wx="snow"] { --wx-grey: oklch(88% .008 250); }
+[data-sky="night"]:is([data-wx="clear"], [data-wx="partly"]) { --wx-stars: var(--stars); }
+[data-backdrop="weather"] { --scene-grain: calc(var(--grain-o) * .6); --scene:
+  radial-gradient(62% 45% at var(--sun-x, 78%) var(--sun-y, 14%), var(--wx-sun, transparent), transparent 70%), var(--wx-stars, linear-gradient(transparent, transparent)),
+  linear-gradient(180deg, color-mix(in oklab, var(--sky-a), var(--wx-grey) calc(var(--wx-overcast, 0) * 100%)), color-mix(in oklab, var(--sky-b), var(--wx-grey) calc(var(--wx-overcast, 0) * 100%)) 62%, color-mix(in oklab, var(--sky-c), var(--wx-grey) calc(var(--wx-overcast, 0) * 90%))); }
+.wx-drift, .wx-cloud, .wx-fall, .wx-fog { position: absolute; pointer-events: none; }
+.wx-drift { inset: -12% -900px 0 0; animation: wx-drift 320s linear infinite var(--wx-dir, normal); }
+.wx-drift.wx-near { top: -9%; animation-duration: 210s; }
+.wx-cloud { inset: 0; background: var(--wx-cloud); opacity: calc(var(--wx-cover, 0) * .75);
+  -webkit-mask: var(--wx-tex-far) 0 0 / 900px 320px repeat-x, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); -webkit-mask-composite: source-in;
+  mask: var(--wx-tex-far) 0 0 / 900px 320px repeat-x, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); mask-composite: intersect; }
+.wx-near .wx-cloud { opacity: var(--wx-cover, 0); -webkit-mask-image: var(--wx-tex-near), linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); -webkit-mask-size: 900px 420px, auto; mask-image: var(--wx-tex-near), linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); mask-size: 900px 420px, auto; }
+.wx-cloud.wx-shade { background: var(--wx-shade); translate: 0 7px; opacity: calc(var(--wx-cover, 0) * .6); }
+.wx-near .wx-cloud.wx-shade { opacity: calc(var(--wx-cover, 0) * .85); }
+.wx-fall { inset: -30%; display: none; rotate: var(--wx-slant, 0deg); background: var(--wx-rain); opacity: var(--wx-amount, 0); -webkit-mask: var(--wx-rain-near) 0 0 / 220px 220px; mask: var(--wx-rain-near) 0 0 / 220px 220px; animation: wx-rain-near 1.1s linear infinite; }
+.wx-fall.wx-far { opacity: calc(var(--wx-amount, 0) * .55); -webkit-mask: var(--wx-rain-far) 0 0 / 140px 140px; mask: var(--wx-rain-far) 0 0 / 140px 140px; animation: wx-rain-far 1.6s linear infinite; }
+:root:is([data-wx="rain"], [data-wx="storm"], [data-wx="snow"]) .wx-fall { display: block; }
+:root[data-wx="snow"] .wx-fall { background: var(--wx-snow); -webkit-mask: var(--wx-snow-near) 0 0 / 260px 260px; mask: var(--wx-snow-near) 0 0 / 260px 260px; animation: wx-snow-near 14s linear infinite, wx-sway 7s ease-in-out infinite alternate; }
+:root[data-wx="snow"] .wx-fall.wx-far { -webkit-mask: var(--wx-snow-far) 0 0 / 160px 160px; mask: var(--wx-snow-far) 0 0 / 160px 160px; animation: wx-snow-far 22s linear infinite, wx-sway 9s ease-in-out infinite alternate; }
+.wx-fog { inset: auto -900px 0 0; height: 70%; display: none; background: var(--wx-fog); animation: wx-drift 260s linear infinite var(--wx-dir, normal);
+  -webkit-mask: var(--wx-tex-fog) 0 100% / 900px 100% repeat-x, linear-gradient(transparent, #000 45%); -webkit-mask-composite: source-in; mask: var(--wx-tex-fog) 0 100% / 900px 100% repeat-x, linear-gradient(transparent, #000 45%); mask-composite: intersect; }
+:root[data-wx="fog"] .wx-fog { display: block; }
+@keyframes wx-drift { to { transform: translateX(-900px); } }
+@keyframes wx-rain-near { to { transform: translateY(220px); } }
+@keyframes wx-rain-far { to { transform: translateY(140px); } }
+@keyframes wx-snow-near { to { transform: translateY(260px); } }
+@keyframes wx-snow-far { to { transform: translateY(160px); } }
+@keyframes wx-sway { from { translate: -8px 0; } to { translate: 8px 0; } }
+/* Previews and the floating timer have no room for depth: one cloud layer and one of rain or snow, standing still. */
+:is(.st-swatch[data-backdrop="weather"], body[data-backdrop="weather"] main) > .glow::before { content: ""; position: absolute; inset: -12% 0 0; background: var(--wx-cloud); opacity: var(--wx-cover, 0);
+  -webkit-mask: var(--wx-tex-near) 0 0 / 560px 260px repeat-x, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); -webkit-mask-composite: source-in;
+  mask: var(--wx-tex-near) 0 0 / 560px 260px repeat-x, linear-gradient(#000, #000 12%, transparent var(--wx-reach, 50%)); mask-composite: intersect; }
+:is(.st-swatch[data-backdrop="weather"], body[data-backdrop="weather"] main) > .glow::after { inset: -20%; rotate: var(--wx-slant, 0deg); mix-blend-mode: normal; background: var(--wx-rain); opacity: calc(var(--wx-amount, 0) * .8);
+  -webkit-mask: var(--wx-rain-far) 0 0 / 110px 110px; mask: var(--wx-rain-far) 0 0 / 110px 110px; }
+:root[data-wx="snow"] :is(.st-swatch[data-backdrop="weather"], body[data-backdrop="weather"] main) > .glow::after { background: var(--wx-snow); -webkit-mask: var(--wx-snow-near) 0 0 / 150px 150px; mask: var(--wx-snow-near) 0 0 / 150px 150px; }
 /* On a background, the small buttons get a body of their own, and a nudge or Keep going stands out as the one thing to do. */
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card { --pop-fill: calc(4% + var(--face-glow) * 20%); --pop-shade: rgb(0 0 0 / calc(.2 + var(--face-glow) * .4)); }
 /* Dark water is close to the card's own surface, so the nudge takes more of the phase colour to stand clear of it. */
-:root body[data-backdrop="water"] .timer-card { --pop-fill: calc(4% + var(--face-glow) * 34%); }
+:root body:is([data-backdrop="water"], [data-backdrop="weather"]) .timer-card { --pop-fill: calc(4% + var(--face-glow) * 34%); }
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card .adjust button { background: color-mix(in oklab, var(--surface) 80%, transparent); }
 body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card .modes button[aria-selected="false"] { color: var(--muted); }
 @media (hover: hover) { body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .timer-card .modes button[aria-selected="false"]:hover { color: var(--fg); } }
@@ -219,27 +268,27 @@ body[data-backdrop]:not([data-backdrop="glow"], [data-backdrop="plain"]) .keep-g
 /* Scenes move only while a session runs or while you customize, and a preview plays while it's pointed at. */
 body:not([data-status="running"]) :is(main:not(.bell), .st-stage) > .glow, body:not([data-status="running"], .customizing) .timer-card > .glow,
 body:not([data-status="running"]) :is(main:not(.bell), .st-stage) > .glow::before, body:not([data-status="running"], .customizing) .timer-card > .glow::before,
-body:not([data-status="running"]) :is(main:not(.bell), .st-stage) > .glow::after, body:not([data-status="running"], .customizing) .timer-card > .glow::after { animation-play-state: paused !important; }
+body:not([data-status="running"]) :is(main:not(.bell), .st-stage) > .glow::after, body:not([data-status="running"], .customizing) .timer-card > .glow::after, body:not([data-status="running"], .customizing) .timer-card > .glow * { animation-play-state: paused !important; }
 body .st-face:hover > .st-stage > .glow, body .st-face:hover > .st-stage > .glow::before, body .st-face:hover > .st-stage > .glow::after { animation-play-state: running !important; }
 /* Aurora and Mesh drift in steps: this slowly, a dozen moves a second look the same as sixty and cost far less. */
 @keyframes aurora { 50% { transform: translate(7%, -5%) rotate(12deg) scale(1.1); } 100% { transform: translate(-6%, 6%) rotate(-9deg) scale(1.04); } }
 
 /* Film, Starfield and Wash are dark in either theme, and the Sky is light by day and dark by night, so the card on them takes that theme's ink. */
 body { --page-acc-l: var(--acc-l); --page-acc-c: var(--acc-c); }
-body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card, body[data-backdrop="sky"] .timer-card {
+body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card, body:is([data-backdrop="sky"], [data-backdrop="weather"]) .timer-card, .lk[data-ink] {
   --tomato: oklch(var(--t-l) var(--t-c) var(--t-h)); --leaf: oklch(var(--lf-l) var(--lf-c) var(--lf-h)); --sky: oklch(var(--sk-l) var(--sk-c) var(--sk-h)); --good: var(--leaf);
   --accent: oklch(var(--acc-l) var(--acc-c) var(--acc-h)); --accent-soft: color-mix(in oklab, var(--accent) 13%, transparent);
   color: var(--fg);
 }
-body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card, :root[data-sky-ink="dark"] body[data-backdrop="sky"] .timer-card { color-scheme: dark; }
-:root[data-sky-ink="light"] body[data-backdrop="sky"] .timer-card { color-scheme: light; }
+body:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) .timer-card, :root[data-sky-ink="dark"] body:is([data-backdrop="sky"], [data-backdrop="weather"]) .timer-card { color-scheme: dark; }
+:root[data-sky-ink="light"] body:is([data-backdrop="sky"], [data-backdrop="weather"]) .timer-card { color-scheme: light; }
 /* Each theme's phase colours are made for its own card, so a card in the other theme's ink shifts them, following the page's colour as it sweeps between phases. */
-:root[data-theme="light"] body:is([data-backdrop="film"], [data-backdrop="stars"]) .timer-card, :root[data-theme="light"][data-sky-ink="dark"] body[data-backdrop="sky"] .timer-card { --acc-l: calc(var(--page-acc-l) * .3 + 55%); }
-@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) body:is([data-backdrop="film"], [data-backdrop="stars"]) .timer-card, :root:not([data-theme="dark"])[data-sky-ink="dark"] body[data-backdrop="sky"] .timer-card { --acc-l: calc(var(--page-acc-l) * .3 + 55%); } }
-:root[data-theme="dark"][data-sky-ink="light"] body[data-backdrop="sky"] .timer-card { --acc-l: calc(var(--page-acc-l) - 15%); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-sky-ink="light"] body[data-backdrop="sky"] .timer-card { --acc-l: calc(var(--page-acc-l) - 15%); } }
+:root[data-theme="light"] body:is([data-backdrop="film"], [data-backdrop="stars"]) .timer-card, :root[data-theme="light"][data-sky-ink="dark"] body:is([data-backdrop="sky"], [data-backdrop="weather"]) .timer-card, :root[data-theme="light"] .lk[data-ink="dark"]:not([data-backdrop="wash"]) { --acc-l: calc(var(--page-acc-l) * .3 + 55%); }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) body:is([data-backdrop="film"], [data-backdrop="stars"]) .timer-card, :root:not([data-theme="dark"])[data-sky-ink="dark"] body:is([data-backdrop="sky"], [data-backdrop="weather"]) .timer-card, :root:not([data-theme="dark"]) .lk[data-ink="dark"]:not([data-backdrop="wash"]) { --acc-l: calc(var(--page-acc-l) * .3 + 55%); } }
+:root[data-theme="dark"][data-sky-ink="light"] body:is([data-backdrop="sky"], [data-backdrop="weather"]) .timer-card, :root[data-theme="dark"] .lk[data-ink="light"] { --acc-l: calc(var(--page-acc-l) - 15%); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"])[data-sky-ink="light"] body:is([data-backdrop="sky"], [data-backdrop="weather"]) .timer-card, :root:not([data-theme="light"]) .lk[data-ink="light"] { --acc-l: calc(var(--page-acc-l) - 15%); } }
 /* On Wash the card is the phase colour, so whatever is usually in that colour turns to a pale tint of it. */
-html body[data-backdrop="wash"] .timer-card {
+html body[data-backdrop="wash"] .timer-card, html .lk[data-backdrop="wash"] {
   --acc-l: 93%; --acc-c: calc(var(--page-acc-c) * .28);
   --tomato: oklch(91% .07 var(--t-h)); --leaf: oklch(91% .07 var(--lf-h)); --sky: oklch(91% .07 var(--sk-h));
   --bg: oklch(calc(var(--wash-l) - 8%) calc(var(--page-acc-c) * .8) var(--acc-h)); --surface: oklch(calc(var(--wash-l) - 4%) calc(var(--page-acc-c) * .85) var(--acc-h));
@@ -260,8 +309,8 @@ html body[data-backdrop="wash"] .timer-card {
   /* The water starts above the tab bar, which would otherwise hide its first stretch. */
   body[data-page="timer"][data-backdrop="water"]:not(.zen, .customizing) { --wt-level: calc(.17 + var(--fill, 0) * .75); }
   /* There the header and tab bar sit on the background too, so they take the card's ink. */
-  html body[data-page="timer"]:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) :is(.bar, .tabbar), html[data-sky-ink="dark"] body[data-page="timer"][data-backdrop="sky"] :is(.bar, .tabbar) { --bg: #0E1110; --surface: #161A18; --surface-2: #1D2220; --line: #262C29; --line-2: #353D39; --fg: #E8ECE9; --muted: #A0A9A3; --faint: #6D7671; color: var(--fg); color-scheme: dark; }
-  html[data-sky-ink="light"] body[data-page="timer"][data-backdrop="sky"] :is(.bar, .tabbar) { --bg: #EDEFEC; --surface: #FBFCFA; --surface-2: #F2F4F1; --line: #DADED9; --line-2: #C6CCC5; --fg: #141816; --muted: #56605A; --faint: #858F88; color: var(--fg); color-scheme: light; }
+  html body[data-page="timer"]:is([data-backdrop="film"], [data-backdrop="stars"], [data-backdrop="wash"]) :is(.bar, .tabbar), html[data-sky-ink="dark"] body[data-page="timer"]:is([data-backdrop="sky"], [data-backdrop="weather"]) :is(.bar, .tabbar) { --bg: #0E1110; --surface: #161A18; --surface-2: #1D2220; --line: #262C29; --line-2: #353D39; --fg: #E8ECE9; --muted: #A0A9A3; --faint: #6D7671; color: var(--fg); color-scheme: dark; }
+  html[data-sky-ink="light"] body[data-page="timer"]:is([data-backdrop="sky"], [data-backdrop="weather"]) :is(.bar, .tabbar) { --bg: #EDEFEC; --surface: #FBFCFA; --surface-2: #F2F4F1; --line: #DADED9; --line-2: #C6CCC5; --fg: #141816; --muted: #56605A; --faint: #858F88; color: var(--fg); color-scheme: light; }
   html body[data-page="timer"][data-backdrop="wash"] :is(.bar, .tabbar) {
     --bg: oklch(calc(var(--wash-l) - 8%) calc(var(--page-acc-c) * .8) var(--acc-h)); --surface: oklch(calc(var(--wash-l) - 4%) calc(var(--page-acc-c) * .85) var(--acc-h)); --surface-2: oklch(calc(var(--wash-l) + 5%) calc(var(--page-acc-c) * .8) var(--acc-h));
     --line: oklch(calc(var(--wash-l) + 13%) calc(var(--page-acc-c) * .7) var(--acc-h)); --line-2: oklch(calc(var(--wash-l) + 22%) calc(var(--page-acc-c) * .6) var(--acc-h));

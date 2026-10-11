@@ -1,30 +1,37 @@
 <script>
   import { onDestroy, onMount } from "svelte";
-  import { BACKDROP_GROUPS, BACKDROPS, FACES, RINGS } from "../lib/faces";
+  import { BACKDROP_GROUPS, BACKDROPS, FACES, LOOKS, RINGS } from "../lib/faces";
+  import LookCard from "./LookCard.svelte";
   import { clock, knobAt, litTicks } from "../lib/timer";
   import DialRing from "../timer/DialRing.svelte";
   import FaceDigits from "../timer/FaceDigits.svelte";
   import { fmtClock } from "../format";
   import { sky, wantPlace } from "../sky.svelte";
   import { wantHalftone } from "../halftone";
+  import { applyWeather, weatherHint } from "../weather.svelte";
+  import { wantWeatherArt } from "../weatherArt";
 
   let { kind, value, onpick, onhint } = $props();
 
   wantHalftone();
+  $effect(() => { if (kind === "backdrop") { wantWeatherArt(); applyWeather(document.documentElement); } });
 
-  const LIST = { face: FACES, ring: RINGS, backdrop: BACKDROPS }, NAME = { face: "Face", ring: "Ring", backdrop: "Background" };
+  const LIST = { looks: LOOKS.map((l) => [l.id, l.name, l.note]), face: FACES, ring: RINGS, backdrop: BACKDROPS }, NAME = { looks: "Looks", face: "Face", ring: "Ring", backdrop: "Background" };
   const START = 17 * 60 + 30, TOTAL = 25 * 60;
   const items = $derived(LIST[kind]);
+  // With nothing chosen (a mix that isn't one of the looks), the first tile takes the group's turn in the tab order.
+  const tabStop = $derived(items.some(([id]) => id === value) ? value : items[0][0]);
   let secs = $state(Object.fromEntries([...FACES, ...RINGS].map(([id]) => [id, START]))), playing = $state(""), timer = 0, grid;
   const skyHint = $derived(sky.turn ? [sky.here?.place, (sky.turn.rise ? "Sunrise at " : "Sunset at ") + fmtClock(sky.turn.at)].filter(Boolean).join(" · ") : "");
-  const hint = $derived(((playing || value) === "sky" && skyHint) || items.find(([id]) => id === (playing || value))?.[2] || "");
+  const shown = $derived(playing || value);
+  const hint = $derived((shown === "sky" && skyHint) || (shown === "weather" && weatherHint()) || items.find(([id]) => id === shown)?.[2] || "");
 
   // Pointing at a face ticks its preview in real seconds; a ring runs down 25 seconds a step, so a tile turns or a dot goes out each time.
   function play(id, step = 1) {
     if (playing === id) return;
     clearInterval(timer);
     playing = id;
-    if (id === "sky") wantPlace();
+    if (id === "sky" || id === "weather") wantPlace();
     const tick = () => {
       if (!grid?.offsetParent) { stop(id); return; }
       if (id in secs) secs[id] = secs[id] > step ? secs[id] - step : START;
@@ -66,8 +73,10 @@
 <div class="st-faces" role="radiogroup" tabindex="-1" aria-label={NAME[kind]} bind:this={grid} onkeydown={key}>
   {#each items as [id, label] (id)}
     {@const on = value === id}
-    <button class="st-face" class:group={kind === "backdrop" && BACKDROP_GROUPS.has(id)} type="button" role="radio" data-id={id} aria-checked={String(on)} tabindex={on ? 0 : -1} onclick={() => { onpick(id); play(id, step); }} {...hover(id)}>
-      {#if kind === "face"}
+    <button class="st-face" class:group={kind === "backdrop" && BACKDROP_GROUPS.has(id)} type="button" role="radio" data-id={id} aria-checked={String(on)} tabindex={id === tabStop ? 0 : -1} onclick={() => { onpick(id); play(id, step); }} {...hover(id)}>
+      {#if kind === "looks"}
+        <span class="st-stage" aria-hidden="true"><LookCard look={LOOKS.find((l) => l.id === id)} /></span>
+      {:else if kind === "face"}
         <span class="st-stage" aria-hidden="true"><span class="time"><FaceDigits face={id} chars={[...clock(secs[id])]} /></span></span>
       {:else if kind === "ring"}
         {@const frac = secs[id] / TOTAL}
