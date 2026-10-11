@@ -35,6 +35,10 @@ function readPub(): PublicRoom | null { try { return JSON.parse(ss.get("pl.roomP
 
 if (!RM.id) { RM.id = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); ss.set("pl.rid", RM.id); }
 
+/** What a crew adds to the hello, so its room can tell members from strangers. */
+let helloExtra = (): object => ({});
+export const setHelloExtra = (fn: () => object) => { helloExtra = fn; };
+
 export const roomSend = (o: object) => { try { if (RM.ws && RM.ws.readyState === 1) RM.ws.send(JSON.stringify(o)); } catch {} };
 
 export function roomPush(force?: boolean) {
@@ -77,7 +81,7 @@ export function roomConnect() {
   let ws: WebSocket;
   try { ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/room/" + RM.code + "/ws"); } catch { return; }
   RM.ws = ws;
-  ws.onopen = () => ws.send(JSON.stringify({ t: "hello", id: RM.id, name: RM.name, ownerToken: ss.get("pl.owner." + RM.code) }));
+  ws.onopen = () => ws.send(JSON.stringify({ t: "hello", id: RM.id, name: RM.name, ownerToken: ss.get("pl.owner." + RM.code), ...helloExtra() }));
   ws.onmessage = (e) => {
     if (ws !== RM.ws || e.data === "pong") return;
     let m; try { m = JSON.parse(e.data); } catch { return; }
@@ -87,7 +91,7 @@ export function roomConnect() {
     if (ws !== RM.ws) return;
     const was = RM.live;
     RM.ws = null; RM.live = false; clearInterval(RM.ping);
-    const gone = ({ 4005: "The room creator removed you from the room.", 4000: "Couldn't join that room.", 4001: "This room was opened in another tab.", 4003: "That room is full.", 4004: "That room doesn't exist, or it has already closed." } as Record<number, string>)[e.code];
+    const gone = ({ 4005: "The room creator removed you from the room.", 4000: "Couldn't join that room.", 4001: "This room was opened in another tab.", 4003: "That room is full.", 4004: "That room doesn't exist, or it has already closed.", 4008: "Only people in this crew can join its room." } as Record<number, string>)[e.code];
     if (gone || (!was && ++RM.tries > 3)) { roomReset(); toast(gone || "Couldn't reach the room. Check your connection and try again."); return; }
     RM.timer = setTimeout(roomConnect, Math.min(15000, 1000 * 2 ** RM.tries));
     renderRoom();

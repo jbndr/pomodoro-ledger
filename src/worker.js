@@ -55,6 +55,8 @@ const CREW_NAME = 32;
 const CREW_IDLE_MS = 90 * 24 * 3600000;
 const CREW_FRESH_MS = 24 * 3600000;
 const CREW_BURST = 3;
+const CREW_EDIT_BURST = 10;
+const CREW_EDIT_EVERY_MS = 1000;
 const CREW_EVERY_MS = 20 * 60000;
 const HOUSE = [{ key: "P", rhythm: "25/5", title: "Pomodoro" }, { key: "D", rhythm: "50/10", title: "Deep work" }];
 
@@ -249,6 +251,7 @@ export class Room extends DurableObject {
       if (cfg || isCrewRoom(code)) {
         await store.put("open", Date.now());
         if (cfg) await store.put("cfg", cfg);
+        else await store.put("crewRoom", code);
         await store.setAlarm(Date.now() + EMPTY_MS);
       }
     }
@@ -267,6 +270,12 @@ export class Room extends DurableObject {
       const res = await lobby(this.env).fetch("https://lobby/session/" + code);
       return res.ok ? await res.json() : null;
     } catch { return null; }
+  }
+
+  // A crew's room lets in only the crew's members, asked of the crew itself.
+  async inCrew(code, cid, room) {
+    if (!/^[A-HJKMNP-Z2-9]{8}$/.test(code) || !cid) return false;
+    try { return (await crew(this.env, code).fetch("https://crew/member", { method: "POST", body: JSON.stringify({ cid, room }) })).status === 204; } catch { return false; }
   }
 
   members(except) {
@@ -326,6 +335,8 @@ export class Room extends DurableObject {
       if (me) return;
       const id = String(m.id || "").slice(0, 40), name = clean(m.name, 20);
       if (!id || !name) return ws.close(4000, "Bad hello");
+      const crewRoom = await store.get("crewRoom");
+      if (crewRoom && !(await this.inCrew(String(m.crew || ""), clean(m.cid, 40), crewRoom))) return ws.close(4008, "Not in this crew");
       const others = [];
       let rb = null, sig = null, lr = 0;
       for (const x of this.members(ws)) {
@@ -698,6 +709,10 @@ export class Crew extends DurableObject {
     }
     if (path === "/info") return c ? json({ name: c.name, size: c.members.length, max: CREW_MAX, slot: c.slot }) : json({ error: "not found" }, 404);
     if (path === "/push") return c ? this.push(request, c, now) : json({ error: "not found" }, 404);
+    if (path === "/member") {
+      const b = (await request.json().catch(() => null)) || {};
+      return new Response(null, { status: c && c.room === b.room && c.members.some((x) => x.cid === b.cid) ? 204 : 403 });
+    }
     const [client, server] = Object.values(new WebSocketPair());
     if (c) this.ctx.acceptWebSocket(server);
     else {
@@ -748,7 +763,9 @@ export class Crew extends DurableObject {
       const cid = clean(m.cid, 40), name = clean(m.name, 20);
       if (!cid || !name) return ws.close(4000, "Bad hello");
       let mem = c.members.find((x) => x.cid === cid);
+      // Only an invite joins; a tab reconnecting after you left on another one doesn't put you back.
       if (!mem) {
+        if (m.join !== true) return ws.close(4007, "Not in the crew");
         if (c.members.length >= CREW_MAX) return ws.close(4003, "Crew is full");
         mem = { cid, pid: pick(8), name, at: now, lr: 0 };
         c.members.push(mem);
@@ -779,8 +796,8 @@ export class Crew extends DurableObject {
     }
 
     if (m.t === "name" || m.t === "slot") {
-      const n = tokens(me.cb, now, SIG_BURST, SIG_EVERY_MS);
-      if (n < 1) return;
+      const n = tokens(me.cb, now, CREW_EDIT_BURST, CREW_EDIT_EVERY_MS);
+      if (n < 1) return this.broadcast();
       me.cb = { n: n - 1, at: now };
       ws.serializeAttachment(me);
       if (m.t === "name") {
@@ -848,6 +865,7 @@ export class Crew extends DurableObject {
     const store = this.ctx.storage, now = Date.now(), c = await store.get("crew");
     if (!c) return;
     if (!this.sockets().length && (c.members.length ? now - c.used >= CREW_IDLE_MS : now - c.made >= CREW_FRESH_MS)) return store.deleteAll();
+    if (this.sockets().length && now - c.used >= CREW_IDLE_MS) { c.used = now; await store.put("crew", c); }
     if (c.slot && pushReady(this.env) && pushAt({ ...c.slot, pushed: c.pushed }, now) === now) {
       const o = nextSession(c.slot, now), text = pushBody(c.name, o.start, c.room), dead = [];
       c.pushed = o.start;

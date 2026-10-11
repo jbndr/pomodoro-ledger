@@ -1,11 +1,11 @@
 import { toast } from "../chrome/notice.svelte";
-import { isCrewCode, type CrewMate, type CrewWeek } from "../lib/crew";
+import { isCrewCode, isCrewRoom, type CrewMate, type CrewWeek } from "../lib/crew";
 import { room } from "../lib/redraw.svelte";
 import { localZone, nextSession, type Times } from "../lib/schedule";
 import { playSound } from "../sound";
 import { DEMO, ls, T } from "../state";
 import { remNow, totalNow } from "../timer/engine";
-import { RM, roomEnter } from "./net";
+import { RM, roomEnter, setHelloExtra } from "./net";
 import { clientId, pushSubscription } from "./sched";
 
 export type CrewInfo = { name: string; room: string; tz: string; slot: Times | null };
@@ -16,13 +16,15 @@ const LATE_MS = 5 * 60000;
 export const CR = {
   code: ls.get<string>("pl.crew", ""), ws: null as WebSocket | null, live: false, tries: 0,
   you: null as string | null, crew: null as CrewInfo | null, members: [] as CrewMate[], week: null as CrewWeek | null,
-  remind: ls.get<boolean>("pl.crewRemind", false), sent: "",
+  remind: ls.get<boolean>("pl.crewRemind", false), sent: "", joining: false,
   timer: undefined as ReturnType<typeof setTimeout> | undefined, ping: undefined as ReturnType<typeof setInterval> | undefined,
 };
 
 // A link with ?crews=1 or a crew invite turns crews on for this browser while they're new.
 const asked = new URLSearchParams(location.search);
 if (asked.get("crews") === "1" || isCrewCode((asked.get("crew") || "").toUpperCase())) ls.set("pl.crews", true);
+setHelloExtra(() => (CR.code && isCrewRoom(RM.code || "") ? { cid: clientId(), crew: CR.code } : {}));
+
 export const crewsOn = () => !DEMO && (ls.get<boolean>("pl.crews", false) || !!CR.code);
 
 const send = (o: object) => { try { if (CR.ws && CR.ws.readyState === 1) CR.ws.send(JSON.stringify(o)); } catch {} };
@@ -39,8 +41,8 @@ export function crewPush(force?: boolean) {
 function forget(note?: string) {
   clearTimeout(CR.timer); clearInterval(CR.ping);
   const ws = CR.ws;
-  Object.assign(CR, { code: "", ws: null, live: false, tries: 0, you: null, crew: null, members: [], week: null, sent: "" });
-  ls.set("pl.crew", "");
+  Object.assign(CR, { code: "", ws: null, live: false, tries: 0, you: null, crew: null, members: [], week: null, sent: "", joining: false, remind: false });
+  ls.set("pl.crew", ""); ls.set("pl.crewRemind", false);
   if (ws) try { ws.close(1000); } catch {}
   if (note) toast(note);
   redraw();
@@ -50,11 +52,14 @@ const socketTo = (code: string) => new WebSocket((location.protocol === "https:"
 
 export function crewConnect() {
   clearTimeout(CR.timer);
+  // Another tab may have left this crew or joined another since this one loaded.
+  const stored = ls.get<string>("pl.crew", "");
+  if (CR.code && stored !== CR.code && !CR.joining) { if (stored) CR.code = stored; else { forget(); return; } }
   if (!CR.code || !RM.name || CR.ws) return;
   let ws: WebSocket;
   try { ws = socketTo(CR.code); } catch { return; }
   CR.ws = ws;
-  ws.onopen = () => ws.send(JSON.stringify({ t: "hello", cid: clientId(), name: RM.name }));
+  ws.onopen = () => ws.send(JSON.stringify({ t: "hello", cid: clientId(), name: RM.name, join: CR.joining }));
   ws.onmessage = (e) => {
     if (ws !== CR.ws || e.data === "pong") return;
     let m; try { m = JSON.parse(e.data); } catch { return; }
@@ -63,9 +68,10 @@ export function crewConnect() {
     CR.you = m.you; CR.crew = m.crew; CR.week = m.week;
     CR.members = m.members.map((x: CrewMate) => ({ ...x, s: x.s && { ...x.s, end: x.s.end ? x.s.end + skew : 0 } }));
     if (!CR.live) {
-      CR.live = true; CR.tries = 0;
+      CR.live = true; CR.tries = 0; CR.joining = false;
       clearInterval(CR.ping); CR.ping = setInterval(() => { try { CR.ws && CR.ws.send("ping"); } catch {} }, 25000);
       crewPush(true);
+      if (CR.remind) subscribe();
     }
     redraw();
   };
@@ -99,7 +105,7 @@ export async function crewCreate(name: string) {
 
 export function crewJoin(code: string) {
   if (CR.code && CR.code !== code) crewLeave(true);
-  CR.code = code; CR.tries = 0;
+  CR.code = code; CR.tries = 0; CR.joining = true;
   ls.set("pl.crew", code); ls.set("pl.crews", true);
   crewConnect();
   redraw();
@@ -137,17 +143,21 @@ export function crewRoom() {
   roomEnter(CR.crew.room);
 }
 
+const pushBodyOf = (sub?: PushSubscription | null) => JSON.stringify({ cid: clientId(), sub: sub && sub.toJSON() });
+
+/** Hands the crew this browser's push subscription; returns whether it took it. */
+async function subscribe() {
+  const sub = "Notification" in window && Notification.permission === "granted" ? await pushSubscription() : null;
+  return !!sub && fetch("/api/crew/" + CR.code + "/push", { method: "POST", body: pushBodyOf(sub) }).then((r) => r.ok, () => false);
+}
+
 /** Turns the crew-time reminder on or off; with notifications allowed it also arrives with the app closed. */
 export async function crewRemind(on: boolean) {
   CR.remind = on; ls.set("pl.crewRemind", on);
   redraw();
-  const body = (sub?: PushSubscription | null) => JSON.stringify({ cid: clientId(), sub: sub && sub.toJSON() });
-  if (!on) { fetch("/api/crew/" + CR.code + "/push", { method: "DELETE", body: body() }).catch(() => {}); return; }
-  let p = "Notification" in window ? Notification.permission : "denied";
-  if (p === "default") { try { p = await Notification.requestPermission(); } catch {} }
-  const sub = p === "granted" ? await pushSubscription() : null;
-  const pushed = !!sub && (await fetch("/api/crew/" + CR.code + "/push", { method: "POST", body: body(sub) }).then((r) => r.ok, () => false));
-  toast(pushed ? "You'll get a notification when crew time starts." : "You'll get a reminder here while the app is open.");
+  if (!on) { fetch("/api/crew/" + CR.code + "/push", { method: "DELETE", body: pushBodyOf() }).catch(() => {}); return; }
+  if ("Notification" in window && Notification.permission === "default") { try { await Notification.requestPermission(); } catch {} }
+  toast((await subscribe()) ? "You'll get a notification when crew time starts." : "You'll get a reminder here while the app is open.");
 }
 
 /** A nudge when crew time starts and this tab is open. */

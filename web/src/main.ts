@@ -44,7 +44,7 @@ import RoomStrip from "./room/RoomStrip.svelte";
 import { followRoom, reactionsChanged, reactionsOn, reactWait, renderRoom, RM, roomConnect, roomCreate, roomEnter, roomInStep, roomList, roomReact, roomReport, roomReset, roomSend, roomSignal, roomGoal } from "./room/net";
 import { Sched, watchReminders } from "./room/sched";
 import { copyCrewInvite, CR, crewConnect, crewCreate, crewInfo, crewJoin, crewLeave, crewRehello, crewRemind, crewRename, crewRoom, crewSlot, crewsOn, watchCrew } from "./room/crew";
-import { isCrewCode } from "./lib/crew";
+import { isCrewCode, isCrewRoom } from "./lib/crew";
 import { exportLedger, importLedger, planImport } from "./settings/backup";
 import Settings from "./settings/Settings.svelte";
 import { bellPending, cancelEnd, cancelTickPreview, ensureAudio, playSound, previewSoundscape, previewTicking, scheduleEnd, syncTicking } from "./sound";
@@ -147,7 +147,7 @@ if (invite) {
   try { history.replaceState(null, "", location.pathname); } catch {}
   if (invite.length === 6 && invite !== RM.code) {
     roomReset();
-    if (scheduleOf(invite) && RM.name) roomEnter(invite);
+    if ((scheduleOf(invite) || isCrewRoom(invite)) && RM.name) roomEnter(invite);
     else openRoom();
   } else if (RM.code) roomConnect();
 } else if (RM.code) roomConnect();

@@ -84,7 +84,7 @@
     return busy === 1 ? one.name + " is focusing" : busy ? busy + " focusing now" : here ? here + " around" : others.length ? "Nobody else around" : "Just you so far";
   });
   const nextCrew = $derived(cv.crew && cv.crew.slot ? nextSession(cv.crew.slot, now) : null);
-  const mateState = (m) => !m.on ? "Away" : focusing(m) ? "Focusing · " + mateClock(m.s, now) + " left" : m.s && m.s.status === "running" ? "On a break" : m.s && m.s.status === "paused" ? "Paused" : "Around";
+  const mateState = (m) => !m.on ? "Away" : focusing(m) ? "Focusing · " + mateClock(m.s, now + skew) + " left" : m.s && m.s.status === "running" ? "On a break" : m.s && m.s.status === "paused" ? "Paused" : "Around";
 
   export const isOpen = () => shown;
 
@@ -291,7 +291,7 @@
     clearTimeout(slotT);
     slotPending = true;
     const tz = (cv.crew && cv.crew.slot && cv.crew.slot.tz) || localZone();
-    slotT = setTimeout(() => { slotPending = false; C.crewSlot(on && cdays.length ? { tz, days: [...cdays].sort(), from: cfrom, to: cfrom + clen } : null); }, on ? 500 : 0);
+    slotT = setTimeout(() => { slotPending = false; C.crewSlot(on && cdays.length ? { tz, days: [...cdays].sort(), from: cfrom, to: cfrom + clen } : null); }, on ? 800 : 0);
   }
   $effect(() => {
     const sl = cv.crew && cv.crew.slot;

@@ -52,7 +52,7 @@ async function setup() {
     return ws;
   };
   const send = (ws, m) => c.webSocketMessage(ws, JSON.stringify(m));
-  const hello = async (cid, name = cid) => { const ws = socket(); await send(ws, { t: 'hello', cid, name }); return ws; };
+  const hello = async (cid, name = cid, join = true) => { const ws = socket(); await send(ws, { t: 'hello', cid, name, join }); return ws; };
   const last = (ws) => ws.messages.filter((m) => m.t === 'crew').at(-1);
   const info = async () => (await c.fetch(new Request('https://crew/info'))).json();
   return { c, data, ctx, send, hello, last, info, sockets };
@@ -140,6 +140,9 @@ test('leaving takes you off the crew everywhere, and the last one out deletes it
   assert.equal(ana.closed, 4007);
   assert.equal(tab.closed, 4007);
   assert.deepEqual(last(ben).members.map((m) => m.name), ['Ben']);
+  const stale = await hello('a', 'Ana', false);
+  assert.equal(stale.closed, 4007, 'a tab reconnecting after you left does not put you back');
+  assert.deepEqual(last(ben).members.map((m) => m.name), ['Ben']);
   await send(ben, { t: 'leave' });
   assert.equal(data.size, 0);
 });
@@ -173,13 +176,46 @@ test('a crew nobody joins is gone after a day, and an idle one after 90 days', a
   } finally { clock.now = null; }
 });
 
-test('a crew room opens for anyone with its code, without an owner', async () => {
-  const data = new Map(), sockets = [];
-  const r = new Room({ setWebSocketAutoResponse() {}, getWebSockets: () => sockets, storage: storage(data), acceptWebSocket: (ws) => sockets.push(ws) }, {});
+test('a crew room opens without an owner and lets in only the crew', async () => {
+  const data = new Map(), sockets = [], asked = [];
+  const env = { CREW: { idFromName: (c) => c, get: (c) => ({ fetch: async (_, init) => { const b = JSON.parse(init.body); asked.push([c, b.cid, b.room]); return new Response(null, { status: c === 'VCFMP6QK' && b.cid === 'a' ? 204 : 403 }); } }) } };
+  const r = new Room({ setWebSocketAutoResponse() {}, getWebSockets: () => sockets, storage: storage(data), acceptWebSocket: (ws) => sockets.push(ws) }, env);
   await r.fetch(new Request('https://x/api/room/IABCDE/ws', { headers: { Upgrade: 'websocket' } }));
   assert.equal(typeof data.get('open'), 'number');
   assert.equal(data.has('cfg'), false);
   assert.equal(data.has('ownerToken'), false);
+  sockets.length = 0;
+  const knock = async (m) => {
+    const ws = { attachment: null, messages: [], closed: null, deserializeAttachment() { return this.attachment; }, serializeAttachment(a) { this.attachment = a; }, send(x) { this.messages.push(JSON.parse(x)); }, close(code) { this.closed = code; } };
+    sockets.push(ws);
+    await r.webSocketMessage(ws, JSON.stringify({ t: 'hello', id: 'tab-' + Math.random(), name: 'X', ...m }));
+    return ws;
+  };
+  assert.equal((await knock({})).closed, 4008);
+  assert.equal((await knock({ crew: 'VCFMP6QK', cid: 'stranger' })).closed, 4008);
+  const ana = await knock({ crew: 'VCFMP6QK', cid: 'a' });
+  assert.equal(ana.closed, null);
+  assert.equal(ana.attachment.owner, false);
+  assert.deepEqual(asked.at(-1), ['VCFMP6QK', 'a', 'IABCDE']);
+});
+
+test('a crew answers whether someone is a member of its room', async () => {
+  const { c, hello } = await setup();
+  await hello('a', 'Ana');
+  const ask = (cid, room) => c.fetch(new Request('https://crew/member', { method: 'POST', body: JSON.stringify({ cid, room }) }));
+  assert.equal((await ask('a', 'IABCDE')).status, 204);
+  assert.equal((await ask('a', 'IZZZZZ')).status, 403);
+  assert.equal((await ask('b', 'IABCDE')).status, 403);
+});
+
+test('quick edits to crew time all land', async () => {
+  clock.now = Date.parse('2026-10-14T08:00:00Z');
+  try {
+    const { hello, send, last } = await setup();
+    const ana = await hello('a', 'Ana');
+    for (let i = 0; i < 6; i++) { await send(ana, { t: 'slot', slot: { tz: 'Europe/Berlin', days: [2], from: 600 + i * 30, to: 720 + i * 30 } }); clock.now += 600; }
+    assert.equal(last(ana).crew.slot.from, 750);
+  } finally { clock.now = null; }
 });
 
 test('making a crew needs a name and a real time zone', async () => {
