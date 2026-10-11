@@ -27,13 +27,14 @@ export function timerFace(v: unknown): TimerFace {
   return FACES.some(([id]) => id === v) ? (v as TimerFace) : "classic";
 }
 
-export type TimerRing = "none" | "arc" | "close" | "ticks" | "gauge" | "hair" | "tiles" | "dots" | "glow";
+export type TimerRing = "none" | "arc" | "close" | "ticks" | "sixty" | "gauge" | "hair" | "tiles" | "dots" | "glow";
 
 export const RINGS: [TimerRing, string, string][] = [
   ["none", "None", "Just the numbers"],
   ["arc", "Arc", "A solid arc with a knob at the time left"],
   ["close", "Closing", "A thick ring that fills up and closes on the bell"],
   ["ticks", "Ticks", "Fine ticks, lit from now to the bell"],
+  ["sixty", "Sixty", "Sixty ticks all the way round; the next one to go glows"],
   ["gauge", "Gauge", "A three-quarter gauge with a pointer for how far in you are"],
   ["hair", "Hairline", "A hairline with one glowing point at the time left"],
   ["tiles", "Tiles", "Small flaps that turn over as the time runs down"],

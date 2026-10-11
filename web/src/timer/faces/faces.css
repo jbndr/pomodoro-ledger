@@ -176,6 +176,14 @@ body.morphing .dial .fl-ring rect { transition: none; }
 .dial .th-ticks line.lit { stroke: color-mix(in oklab, var(--fg) 90%, transparent); }
 .dial .th-now { stroke: var(--fg); stroke-width: 2.8; stroke-linecap: round; }
 .dial .th-end { stroke: color-mix(in oklab, var(--fg) 55%, transparent); stroke-width: 2.2; stroke-linecap: round; }
+/* Sixty: ticks all the way round, lit from now to the bell; the next one to go glows */
+.dial .sx-ring line { stroke: color-mix(in oklab, var(--fg) 14%, transparent); stroke-width: 2.2; stroke-linecap: round; transition: stroke .4s; }
+.dial .sx-ring line.major { stroke-width: 3; }
+.dial .sx-ring line.lit { stroke: var(--accent); }
+.dial .sx-ring line.lead { stroke: var(--gl-core); stroke-width: 3.6; filter: drop-shadow(0 0 4px var(--accent)); }
+body.morphing .dial .sx-ring line, .dial-wrap.flow .dial .sx-ring line { transition: none; }
+.st-stage .dial .sx-ring line { stroke-width: 4; }
+.st-stage .dial .sx-ring line:is(.major, .lead) { stroke-width: 5.4; }
 /* Gauge: five zones in shades of the phase colour, dimmed behind the pointer */
 .dial .ga-z { fill: none; stroke: var(--accent); stroke-width: 13; }
 .dial .ga-past { opacity: calc(var(--zo) * .24); }

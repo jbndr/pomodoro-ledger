@@ -166,13 +166,17 @@ async function openFloating(quiet?: boolean) {
       #miniTime .face-words b { font-size: 25rem; line-height: 1; }
       #miniTime .face-words span { font-size: 11.5rem; line-height: 1.15; }
       #miniTime .face-stack { font-size: 26rem; justify-items: start; }
-      .bar[data-ring="tiles"], .bar[data-ring="dots"] { height: 9rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; overflow: visible; background: none; border-radius: 0; }
+      .bar:is([data-ring="tiles"], [data-ring="dots"], [data-ring="sixty"]) { height: 9rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; overflow: visible; background: none; border-radius: 0; }
       .bar .t { position: relative; flex: 1; height: 9rem; border-radius: 1.5rem; background: var(--fl-off); box-shadow: inset 0 0 0 .5px var(--fl-edge); transition: background-color .3s; }
       .bar .t::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - .5px); height: 1px; background: var(--fl-gap); }
       .bar .t.lit { background: var(--accent); box-shadow: none; }
       .bar .o { width: 5rem; height: 5rem; border-radius: 50%; background: var(--mx-off); transition: background-color .3s, scale .3s; }
       .bar .o.lit { background: var(--accent); }
       .bar .o.lead { scale: 1.35; box-shadow: 0 0 4rem var(--accent); }
+      .bar .k { width: 2.2rem; height: 7rem; border-radius: 1rem; background: color-mix(in oklab, var(--fg) 14%, transparent); transition: background-color .4s; }
+      .bar .k:nth-child(5n + 1) { width: 3rem; height: 9rem; }
+      .bar .k.lit { background: var(--accent); }
+      .bar .k.lead { background: color-mix(in oklab, var(--accent), #fff calc(var(--face-glow) * 50%)); box-shadow: 0 0 4rem var(--accent); }
       .bar[data-ring="glow"] { height: 5rem; overflow: visible; padding: 1.5rem; background: color-mix(in oklab, var(--fg) 6%, transparent); }
       .bar[data-ring="glow"] #miniBar { background: color-mix(in oklab, var(--accent), #fff calc(var(--face-glow) * 50%)); box-shadow: 0 0 3rem var(--accent), 0 0 8rem color-mix(in oklab, var(--accent) 60%, transparent); }
       main.bell #miniTime { animation: pop .6s cubic-bezier(.34, 1.56, .64, 1); }

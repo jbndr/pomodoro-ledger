@@ -21,7 +21,7 @@ export const AREAS: Area[] = [
     lede: "Faces, rings and backgrounds, chosen on the timer itself.",
     items: [
       { title: "Fifteen faces", blurb: "Classic, Stacked, Weight, Numerals, Thermostat, Sport, Bedside, Editorial, Split-flap, Odometer, Nixie, VFD, LCD, Dot matrix and In words. Each ticks in its own sound." },
-      { title: "Rings", blurb: "Eight of them, from an arc, a ring that closes on the bell and a gauge to tiles that turn over, or no ring at all, with any face." },
+      { title: "Rings", blurb: "Nine of them, from an arc, a ring that closes on the bell and a gauge to tiles that turn over, or no ring at all, with any face." },
       { title: "Backgrounds", blurb: "Eighteen of them, from warm paper and true black to Night red, Starfield, and Water that fills up as you focus." },
       { title: "Sky and Weather", blurb: "The sky where you are, from dawn to night, or the clouds, rain and snow outside." },
       { title: "Ready-made looks", blurb: "Start from a combination like Notebook, Midnight or Nightstand, or save a mix of your own to switch back to in one tap." },
