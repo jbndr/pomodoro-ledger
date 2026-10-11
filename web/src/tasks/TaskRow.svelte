@@ -41,7 +41,6 @@
       {#if row.today}<span class="task-start" class:late={!!start?.late} title={start ? start.hint : ""}>{start ? start.text : ""}</span>{/if}
       <button class="icon-btn" type="button" data-act="top" aria-label={"Move “" + row.title + "” to the top"} title="Move to top" onclick={() => api.toTop([row.id])}>{@html api.ICON.top}</button>
       <button class="icon-btn" type="button" data-act="sched" data-sched aria-haspopup="dialog" aria-label={"When: “" + row.title + "”"} title="When? (D)" onclick={(e) => api.sched(e.currentTarget, row.id)}>{@html api.ICON.cal}</button>
-      <button class="icon-btn play" type="button" data-act="focus" aria-label={"Start focusing on “" + row.title + "”"} title="Focus on this" onclick={() => api.focus(row.id)}>{@html api.ICON.play}</button>
     </div>
   </div>
   {#if row.card}<TaskCard {api} {row} card={row.card} {start} />{/if}
