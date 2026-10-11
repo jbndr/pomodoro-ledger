@@ -1,11 +1,17 @@
+import { mount, unmount } from "svelte";
 import { toast } from "./chrome/notice.svelte";
 import { $ } from "./dom";
 import { fmtClock } from "./format";
 import { ICON } from "./icons";
 import { MIN } from "./lib/dates";
+import { timerFace, timerRing } from "./lib/faces";
 import { MODE_NAME } from "./lib/timer";
 import { S, T } from "./state";
 import { adjust, MAX_RUN, remNow, skip, tick, toggle, totalNow, upNow } from "./timer/engine";
+import FaceDigits from "./timer/FaceDigits.svelte";
+import FloatBar from "./timer/FloatBar.svelte";
+import facesCss from "./timer/faces/faces.css?inline";
+import { floatView } from "./timer/state.svelte";
 
 // A second view of the same timer: no separate state, logs, or room connection.
 let floatWindow: Window | null = null, floatOpening = false;
@@ -23,14 +29,19 @@ export function initFloat() {
 
 let lastState = "", lastNudge = "";
 
-const TOKENS = ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--accent", "--acc-l", "--acc-c", "--acc-h", "--glow-o", "--ember", "--paper", "--grain-o", "--go-l-max", "--f-display", "--f-body"];
+const TOKENS = ["--bg", "--surface", "--surface-2", "--fg", "--muted", "--faint", "--line", "--line-2", "--accent", "--acc-l", "--acc-c", "--acc-h", "--glow-o", "--ember", "--paper", "--grain-o", "--go-l-max", "--f-display", "--f-body",
+  "--fl-top-a", "--fl-top-b", "--fl-bot-a", "--fl-bot-b", "--fl-ink", "--fl-slit", "--fl-colon", "--fl-lift", "--fl-off", "--fl-edge", "--fl-gap", "--mx-off", "--face-glow", "--nx-dot", "--pp-a", "--pp-b", "--pp-edge",
+  "--lcd-a", "--lcd-b", "--mesh-l", "--mesh-c", "--wash-l", "--ht-ink", "--ht-mask", "--page-acc-l", "--page-acc-c", "--f-serif", "--f-mono", "--f-round", "--wt-a", "--wt-b", "--wt-back", "--fill"];
 
 export function renderFloating(txt: string, frac: number) {
   if (!floatWindow || floatWindow.closed) return;
   const doc = floatWindow.document, root = doc.documentElement, main = $("main", doc);
-  const theme = getComputedStyle(document.body);
-  for (const name of TOKENS) root.style.setProperty(name, theme.getPropertyValue(name));
-  root.style.colorScheme = getComputedStyle(document.documentElement).colorScheme;
+  // Read from the card: a dark background gives it dark tokens even in light mode.
+  const theme = getComputedStyle(document.querySelector(".timer-card") || document.body);
+  for (const name of TOKENS) { const v = theme.getPropertyValue(name); if (root.style.getPropertyValue(name) !== v) root.style.setProperty(name, v); }
+  root.style.colorScheme = theme.colorScheme;
+  for (const k of ["backdrop", "status", "fillJump", "fillReady"]) { const v = document.body.dataset[k] || ""; if (doc.body.dataset[k] !== v) doc.body.dataset[k] = v; }
+  if (root.dataset.sky !== document.documentElement.dataset.sky) root.dataset.sky = document.documentElement.dataset.sky || "";
   const flow = T.upKind === "flow" || !!T.flowReady, over = !!T.up && !flow;
   doc.title = txt + " · " + (flow ? "Flow" : MODE_NAME[T.mode]);
 
@@ -45,8 +56,9 @@ export function renderFloating(txt: string, frac: number) {
   main.classList.toggle("paused", T.status === "paused");
   main.classList.toggle("over", over);
 
-  const time = $("#miniTime", doc);
-  time.innerHTML = [...txt].map((c) => (c === ":" ? '<span class="c">:</span>' : c === "+" ? '<span class="p">+</span>' : '<span class="d">' + c + "</span>")).join("");
+  const time = $("#miniTime", doc), face = timerFace(S.settings.face);
+  floatView.face = face; floatView.ring = timerRing(S.settings.ring); floatView.chars = [...txt]; floatView.frac = flow ? 1 : frac;
+  floatView.mode = T.mode; floatView.up = flow ? "flow" : over ? "over" : "";
   const secs = T.up ? Math.floor(upNow() / 1000) : Math.ceil(remNow() / 1000);
   time.setAttribute("aria-label", Math.floor(secs / 60) + " minutes " + (secs % 60) + (T.up ? (flow ? " seconds of flow" : " seconds past the bell") : " seconds remaining"));
 
@@ -59,7 +71,6 @@ export function renderFloating(txt: string, frac: number) {
   taskEl.classList.toggle("none", !task && !nudge);
   taskEl.classList.toggle("nudge", !!nudge);
   taskEl.title = nudge || (task ? task.title : "");
-  $("#miniBar", doc).style.scale = (flow ? 1 : frac) + " 1";
 
   const [less, more] = doc.querySelectorAll<HTMLButtonElement>("[data-adj]");
   less.disabled = !!T.up || remNow() < 2 * MIN;
@@ -95,10 +106,9 @@ async function openFloating(quiet?: boolean) {
   try {
     opened = await window.documentPictureInPicture!.requestWindow({ width: 320, height: 110 });
     const doc = opened.document;
-    const fontLink = document.querySelector('link[rel="stylesheet"][href*="fonts.googleapis.com"]');
-    if (fontLink) doc.head.appendChild(fontLink.cloneNode());
+    for (const link of document.querySelectorAll('link[rel="stylesheet"][href*="fonts.googleapis.com"]')) doc.head.appendChild(link.cloneNode());
     const style = doc.createElement("style");
-    style.textContent = `
+    style.textContent = facesCss + `
       * { box-sizing: border-box; }
       html { font-size: min(.9091vh, .3125vw); }
       html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--surface); color: var(--fg); }
@@ -141,8 +151,31 @@ async function openFloating(quiet?: boolean) {
       #miniToggle svg { width: 19rem; height: 19rem; }
       .bar { grid-column: 1 / -1; margin-top: 12rem; height: 3rem; overflow: hidden; border-radius: 999px; background: color-mix(in oklab, var(--accent) 14%, var(--surface-2)); }
       #miniBar { display: block; height: 100%; border-radius: inherit; background: var(--accent); transform-origin: left; transition: scale .25s linear; }
+      #miniTime .face-flap, #miniTime .face-nixie { font-size: 38rem; vertical-align: middle; }
+      #miniTime .face-matrix { display: inline-block; width: auto; height: 32rem; vertical-align: middle; }
+      /* The page's own phase colour is copied onto the root; re-deriving it here would pick up the card's tint. */
+      body { --page-acc-l: inherit; --page-acc-c: inherit; }
+      /* Mirrored, the dots gather behind the button rather than under the task. */
+      [data-backdrop="halftone"] main > .glow::before { transform: scaleX(-1); -webkit-mask-size: 300rem 300rem; mask-size: 300rem 300rem; }
+      #miniTime :is(.face-seg, .face-odo) { font-size: 30rem; }
+      #miniTime .face-lcd { padding-top: .2em; }
+      #miniTime .face-lcd small { display: none; }
+      #miniTime .face-serif { font-size: 50rem; vertical-align: middle; }
+      #miniTime .face-words { display: grid; justify-items: start; text-align: left; gap: 1rem; }
+      #miniTime .face-words b { font-size: 25rem; line-height: 1; }
+      #miniTime .face-words span { font-size: 11.5rem; line-height: 1.15; }
+      #miniTime .face-stack { font-size: 26rem; justify-items: start; }
+      .bar[data-ring="tiles"], .bar[data-ring="dots"] { height: 9rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; overflow: visible; background: none; border-radius: 0; }
+      .bar .t { position: relative; flex: 1; height: 9rem; border-radius: 1.5rem; background: var(--fl-off); box-shadow: inset 0 0 0 .5px var(--fl-edge); transition: background-color .3s; }
+      .bar .t::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - .5px); height: 1px; background: var(--fl-gap); }
+      .bar .t.lit { background: var(--accent); box-shadow: none; }
+      .bar .o { width: 5rem; height: 5rem; border-radius: 50%; background: var(--mx-off); transition: background-color .3s, scale .3s; }
+      .bar .o.lit { background: var(--accent); }
+      .bar .o.lead { scale: 1.35; box-shadow: 0 0 4rem var(--accent); }
+      .bar[data-ring="glow"] { height: 5rem; overflow: visible; padding: 1.5rem; background: color-mix(in oklab, var(--fg) 6%, transparent); }
+      .bar[data-ring="glow"] #miniBar { background: color-mix(in oklab, var(--accent), #fff calc(var(--face-glow) * 50%)); box-shadow: 0 0 3rem var(--accent), 0 0 8rem color-mix(in oklab, var(--accent) 60%, transparent); }
       main.bell #miniTime { animation: pop .6s cubic-bezier(.34, 1.56, .64, 1); }
-      main.bell .glow { animation: glow 2.2s ease; }
+      main.bell .glow, [data-backdrop] main.bell .glow { animation: glow 2.2s ease; }
       @keyframes pop { 40% { scale: 1.05; } }
       @keyframes glow { 15% { opacity: 1; filter: saturate(1.6) brightness(1.04); } }
       @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
@@ -152,7 +185,8 @@ async function openFloating(quiet?: boolean) {
       + '<div class="body"><div id="miniTime" role="timer" aria-label="Time remaining"></div><div class="line"><div id="miniTask"></div>'
       + '<div class="step" role="group" aria-label="Adjust this session"><button type="button" data-adj="-1" aria-label="1 minute less" title="1 minute less (−)">−1</button><button type="button" data-adj="1" aria-label="1 minute more" title="1 minute more (+)">+1</button><button type="button" id="miniSkip" aria-label="Skip to next phase" title="Skip to next phase">' + $("#skipBtn").innerHTML + "</button></div></div></div>"
       + '<button id="miniToggle" type="button"></button>'
-      + '<div class="bar" aria-hidden="true"><i id="miniBar"></i></div></main>';
+      + "</main>";
+    const faceParts = [mount(FaceDigits, { target: $("#miniTime", doc), props: floatView }), mount(FloatBar, { target: $("main", doc), props: floatView })];
     lastState = "";
     $("#miniToggle", doc).addEventListener("click", toggle);
     $("#miniSkip", doc).addEventListener("click", skip);
@@ -169,6 +203,7 @@ async function openFloating(quiet?: boolean) {
     const win = opened;
     win.addEventListener("pagehide", () => {
       win.clearInterval(interval);
+      for (const part of faceParts) unmount(part);
       if (floatWindow !== win) return;
       floatWindow = null;
       floatBtn.setAttribute("aria-pressed", "false");

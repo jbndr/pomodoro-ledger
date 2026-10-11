@@ -12,3 +12,6 @@ export const timerView = {
   get zen() { return zen; },
   set zen(on: boolean) { zen = on; },
 };
+
+/** What the floating timer shows: the dial's face and ring, in its own small layout. */
+export const floatView = $state({ face: "classic", ring: "arc", chars: [] as string[], frac: 1, mode: "focus", up: "" });

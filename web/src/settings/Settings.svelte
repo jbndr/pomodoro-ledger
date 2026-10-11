@@ -4,6 +4,10 @@
   import { applyTheme, theme } from "../chrome/theme.svelte";
   import { extensionVersion } from "../extension";
   import { mixLabel } from "../lib/mix";
+  import { BACKDROPS, FACES, RINGS, timerBackdrop, timerFace, timerRing } from "../lib/faces";
+  import { knobAt, litTicks } from "../lib/timer";
+  import DialRing from "../timer/DialRing.svelte";
+  import FaceDigits from "../timer/FaceDigits.svelte";
   import { phaseMorph } from "../lib/phaseMorph";
   import { rolloverMode } from "../lib/rollover";
   import { tickPace, tickVolume, workdayEnd } from "../lib/settings";
@@ -40,7 +44,7 @@
       autoBreak: !!s.autoBreak, autoFocus: !!s.autoFocus, sound: !!s.sound, notify: !!s.notify, ticking: !!s.ticking, autoFloat: !!s.autoFloat,
       weeklyRecap: !!s.weeklyRecap, weeklyPlan: !!s.weeklyPlan, reactions: s.reactions !== false, bestTime: s.bestTime !== false, bestRemind: !!s.bestRemind,
       tickVolume: s.tickVolume, tickPace: String(s.tickPace), workdayEnd: s.workdayEnd || "",
-      rollover: rolloverMode(s.rollover), phaseMorph: phaseMorph(s.phaseMorph),
+      rollover: rolloverMode(s.rollover), phaseMorph: phaseMorph(s.phaseMorph), face: timerFace(s.face), ring: timerRing(s.ring), backdrop: timerBackdrop(s.backdrop),
     };
   };
   const known = (k) => SECTIONS.some(([name]) => name === k);
@@ -135,6 +139,17 @@
       if (k === "ticking" || k === "tickVolume" || k === "tickPace") { api.cancelTickPreview(); api.syncTicking(); }
     });
   }
+
+  const name = (list, id) => list.find(([k]) => k === id)?.[1];
+  const looks = $derived([["face", name(FACES, f.face)], ["ring", f.ring === "none" ? "No ring" : name(RINGS, f.ring) + " ring"], ["backdrop", name(BACKDROPS, f.backdrop)]]);
+  // Three looks that read well in either theme, fanned out like cards to show how far the timer can go.
+  const SHOWCASE = [
+    { face: "nixie", ring: "glow", backdrop: "stars", time: "17:30", frac: 0.7 },
+    { face: "stack", ring: "arc", backdrop: "water", time: "24:12", frac: 0.97 },
+    { face: "serif", ring: "none", backdrop: "paper", time: "18:45", frac: 0.35 },
+  ];
+  const touch = matchMedia("(hover: none)").matches;
+  function customize(tab) { close(); api.customize(tab); }
 
   const LIMIT = Object.fromEntries([...LENGTHS.map(([k, , , min, max]) => [k, [min, max]]), ["longEvery", [2, 12]], ["goal", [1, 30]]]);
   function num(k, v) {
@@ -259,7 +274,7 @@
             </div></section>
             <section class="st-grp"><h4>While you focus</h4><div class="st-card">
               {#snippet ticking()}{@render tog("ticking", "Ticking")}{/snippet}
-              {@render row("Ticking", "A soft tap, only while focus runs", ticking)}
+              {@render row("Ticking", "A soft tap in your timer face's sound, only while focus runs", ticking)}
               <div class="st-fold" class:open={f.ticking} id="tickingOptions"><div><div class="st-nest">
                 <div class="st-opt"><span>Volume</span>{@render vol(f.tickVolume, "Ticking volume", (e) => set("tickVolume", tickVolume(e.currentTarget.value)))}</div>
                 <div class="st-opt"><span>Pace</span><div class="st-opt-end">
@@ -306,6 +321,17 @@
               {@render row("Theme", "", themeCtl)}
               {#if api.floatable}{@render row("Floating timer", "Opens when a session starts or you switch tabs", float)}{/if}
             </div></section>
+            <section class="st-grp"><h4>Timer</h4><div class="st-card">
+              <button class="st-look" type="button" aria-label="Customize the timer's face, ring and background" onclick={() => customize()}>
+                <span class="st-look-stage" aria-hidden="true">
+                  {#each SHOWCASE as l, i (i)}
+                    <span class="lk st-swatch" data-backdrop={l.backdrop}><span class="glow"></span><span class="dial-wrap" data-face={l.face} data-ring={l.ring}><DialRing ring={l.ring} frac={l.frac} lit={litTicks(l.frac)} knob={knobAt(l.frac)} /><span class="dial-center"><span class="time"><FaceDigits face={l.face} chars={[...l.time]} /></span></span></span></span>
+                  {/each}
+                </span>
+                <span class="st-look-copy"><b>Make the timer yours</b><span>{FACES.length} faces, {RINGS.length - 1} rings and {BACKDROPS.length} backgrounds, tried on the timer itself as you pick.</span></span>
+                <span class="st-look-foot"><small>Current: {looks.map(([, name]) => name).join(" · ")}</small><span class="st-btn ink">Customize</span></span>
+              </button>
+            </div><p class="st-cap">You can also {touch ? "long-press" : "right-click"} the dial to get there from the timer.</p></section>
             <section class="st-grp"><h4>Phase change</h4><div class="st-card">
               <PhasePreview value={f.phaseMorph} onpick={(v) => set("phaseMorph", phaseMorph(v))} />
             </div><p class="st-cap">Point at a style to see it play. With reduced motion turned on, changes are instant.</p></section>

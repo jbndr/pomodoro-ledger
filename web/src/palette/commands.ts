@@ -18,7 +18,7 @@ import { Store } from "../store";
 import { focusOnTask, focusRow, toggleCard } from "../tasks/actions";
 import { bucketOf, dayName, inProject, listHead, viewTasks } from "../tasks/derived";
 import { adjust, canKeepGoing, flushPartial, keepGoing, readyFlow, resetRounds, setMode, skip, start, toggle } from "../timer/engine";
-import { fillSettings, openKeys, openRecap, openRoom, openSettings } from "../ui";
+import { fillSettings, openCustomize, openKeys, openRecap, openRoom, openSettings } from "../ui";
 import { labelFilter } from "../tasks/filter.svelte";
 import { fsEl, toggleZen } from "../zen";
 import { addCommands, type Command } from "./registry";
@@ -33,6 +33,7 @@ const G = {
   cup: svg('<path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"/><path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M9 3.5v2.5M12 3.5v2.5"/>'),
   float: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><rect x="11" y="11" width="8" height="7" rx="1" fill="currentColor" stroke="none"/>'),
   timer: svg('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5"/>'),
+  look: svg('<path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.1 0 1.9-.8 1.9-1.8 0-.5-.2-.9-.5-1.3-.3-.3-.5-.7-.5-1.2 0-1 .8-1.7 1.8-1.7h2.1a3.7 3.7 0 0 0 3.7-3.7C20.5 6.8 16.7 3.5 12 3.5z"/><circle cx="7.6" cy="11.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.4" cy="7.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.9" cy="7.7" r="1.1" fill="currentColor" stroke="none"/>'),
   progress: svg('<path d="M4 20h16"/><path d="M7 16v-5M12 16V7M17 16v-8"/>'),
   recap: svg('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8 16v-2M12 16v-3M16 16v-1"/>'),
   later: svg('<rect x="4" y="5" width="16" height="5" rx="1.5"/><path d="M5.5 10v7.5A1.5 1.5 0 0 0 7 19h10a1.5 1.5 0 0 0 1.5-1.5V10M10 14h4"/>'),
@@ -107,6 +108,7 @@ addCommands(() => {
     })),
     { id: "timer.zen", group: "Timer", keys: ["F"], title: zen ? "Leave the full page" : "Fill the page with the timer", words: "zen", icon: zen ? ICON.shrink : ICON.expand, run: () => toggleZen() },
     { id: "timer.full", group: "Timer", keys: ["⇧", "F"], title: fsEl() ? "Exit full screen" : "Full screen", words: "zen", icon: fsEl() ? ICON.shrink : ICON.expand, run: () => toggleZen(true) },
+    { id: "timer.look", group: "Timer", title: "Customize the timer", words: "face ring background look appearance theme clock watch style water sky", icon: G.look, run: () => openCustomize() },
   ];
   if (!floatBtn.hidden) {
     const open = floatBtn.getAttribute("aria-pressed") === "true";

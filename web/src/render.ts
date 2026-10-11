@@ -3,6 +3,7 @@ import { composer } from "./composer/state.svelte";
 import { $ } from "./dom";
 import { renderFloating } from "./float";
 import { MIN } from "./lib/dates";
+import { timerBackdrop, waterLevel } from "./lib/faces";
 import { list, pill, progress } from "./lib/redraw.svelte";
 import { projectNames } from "./lib/tasks";
 import { clock, MODE_NAME } from "./lib/timer";
@@ -19,14 +20,20 @@ import { timerView } from "./timer/state.svelte";
 import { closeLabelPop, ui } from "./ui";
 import { syncActive } from "./tasks/actions";
 import { showMode } from "./timer/morph";
+import { applySky } from "./sky.svelte";
+import { wantHalftone } from "./halftone";
 
-let lastPhase = "", lastTxt = "", lastFrac = 1, startEstimateMinute = -1, renderedDay = "";
+let lastPhase = "", lastTxt = "", lastFrac = 1, lastFill = -1, fillJump = 0, startEstimateMinute = -1, renderedDay = "";
 
 export function renderTimer(force?: boolean) {
   if (force) syncTicking();
   if (T.mode + T.status !== lastPhase) { lastPhase = T.mode + T.status; syncActive(); }
   showMode(T.mode);
   if (document.body.dataset.status !== T.status) document.body.dataset.status = T.status;
+  const backdrop = timerBackdrop(S.settings.backdrop);
+  if (document.body.dataset.backdrop !== backdrop) document.body.dataset.backdrop = backdrop;
+  applySky(document.documentElement, backdrop === "sky");
+  if (backdrop === "halftone") wantHalftone();
   // Past the bell shows "+12:40" on a full ring; flow counts from zero and fills the ring once an hour.
   const kind = T.up ? T.upKind || "over" : T.flowReady ? "flow" : "", total = kind ? 1 : totalNow(), rem = kind ? upNow() : remNow();
   const frac = kind ? 1 : Math.max(0, Math.min(1, rem / total));
@@ -36,6 +43,8 @@ export function renderTimer(force?: boolean) {
     document.title = T.status === "idle" ? "Pomodoro Ledger" : txt + " · " + (kind === "flow" ? "Flow" : MODE_NAME[T.mode]) + (T.status === "paused" ? " (paused)" : "");
   }
   timerView.set(rem, total, kind);
+  if (backdrop === "water") fillWater(waterLevel(T.mode, kind, frac, rem));
+  else if (lastFill >= 0) { lastFill = -1; delete document.body.dataset.fillReady; }
   lastFrac = frac;
   renderFloating(txt, frac);
   renderTaskStarts(force);
@@ -44,6 +53,16 @@ export function renderTimer(force?: boolean) {
   if (!force) return;
   roomPush();
   timerView.refresh();
+}
+
+function fillWater(level: number) {
+  const v = Math.round(level * 1000) / 1000, body = document.body;
+  if (v === lastFill) return;
+  // The level glides from one tick to the next, but not from wherever the layer sat before Water was picked.
+  if (lastFill < 0) requestAnimationFrame(() => requestAnimationFrame(() => { if (lastFill >= 0) body.dataset.fillReady = "1"; }));
+  else if (Math.abs(v - lastFill) > .02) { body.dataset.fillJump = "1"; clearTimeout(fillJump); fillJump = window.setTimeout(() => delete body.dataset.fillJump, 1700); }
+  lastFill = v;
+  body.style.setProperty("--fill", String(v));
 }
 
 /** Repaints the floating timer after a theme change. */

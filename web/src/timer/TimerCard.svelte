@@ -1,9 +1,11 @@
 <script>
+  import { timerFace, timerRing } from "../lib/faces";
   import { clock, MODE_NAME, MODES, roundDots, startLabel } from "../lib/timer";
   import Dial from "./Dial.svelte";
   import { onMount } from "svelte";
   import { calm } from "../dom";
   import { timerView } from "./state.svelte";
+  import { cz } from "../customize/state.svelte";
 
   let { api } = $props();
 
@@ -19,14 +21,30 @@
     };
     card.addEventListener("pointerdown", show);
     card.addEventListener("pointermove", show);
-    return () => { clearTimeout(t); card.removeEventListener("pointerdown", show); card.removeEventListener("pointermove", show); };
+    // Right-click or a long press on the dial opens Customize, the way a watch face is edited.
+    const dial = card.querySelector(".dial-wrap");
+    let press = 0, from = null;
+    const menu = (e) => { e.preventDefault(); clearTimeout(press); from = null; api.customize(); };
+    const down = (e) => { if (e.pointerType !== "touch") return; from = [e.clientX, e.clientY]; clearTimeout(press); press = setTimeout(() => { from = null; api.buzz(10); api.customize(); }, 550); };
+    const move = (e) => { if (from && Math.hypot(e.clientX - from[0], e.clientY - from[1]) > 10) { clearTimeout(press); from = null; } };
+    const up = () => { clearTimeout(press); from = null; };
+    dial.addEventListener("contextmenu", menu);
+    dial.addEventListener("pointerdown", down);
+    dial.addEventListener("pointermove", move);
+    for (const ev of ["pointerup", "pointercancel", "pointerleave"]) dial.addEventListener(ev, up);
+    return () => {
+      clearTimeout(t); clearTimeout(press);
+      card.removeEventListener("pointerdown", show); card.removeEventListener("pointermove", show);
+      dial.removeEventListener("contextmenu", menu); dial.removeEventListener("pointerdown", down); dial.removeEventListener("pointermove", move);
+      for (const ev of ["pointerup", "pointercancel", "pointerleave"]) dial.removeEventListener(ev, up);
+    };
   });
 
   const c = $derived.by(() => {
     timerView.version;
     const T = api.T, every = api.S.settings.longEvery;
     return {
-      mode: T.mode, status: T.status,
+      mode: T.mode, status: T.status, face: timerFace(api.S.settings.face), ring: timerRing(api.S.settings.ring),
       dots: roundDots(T.mode, T.setIndex, every), round: Math.min(Math.min(T.setIndex || 0, every) + 1, every), every,
       canReset: T.setIndex > 0 && T.status !== "running", up: T.up ? T.upKind || "over" : "", keep: api.canKeepGoing(), bellAt: T.bellAt || 0, flowSince: T.upKind === "flow" ? T.up : 0, flow: T.upKind === "flow" || !!T.flowReady, nudge: T.mode !== "focus" && T.nudge ? { ...T.nudge } : null,
       sub: T.up ? (T.upKind === "flow" ? "started " + api.fmtClock(T.up) : "past the bell") : T.flowReady ? "" : T.status === "running" ? "ends " + api.fmtClock(T.endsAt) : T.status === "paused" ? "paused" : "",
@@ -41,6 +59,7 @@
     const w = goBtn.offsetWidth;
     if (goWidth && w !== goWidth && !calm()) goBtn.animate([{ width: goWidth + "px" }, { width: w + "px" }], { duration: 380, easing: "cubic-bezier(.32, .72, 0, 1)" });
   });
+  const LOOK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.1 0 1.9-.8 1.9-1.8 0-.5-.2-.9-.5-1.3-.3-.3-.5-.7-.5-1.2 0-1 .8-1.7 1.8-1.7h2.1a3.7 3.7 0 0 0 3.7-3.7C20.5 6.8 16.7 3.5 12 3.5z"/><circle cx="7.6" cy="11.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.4" cy="7.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.9" cy="7.7" r="1.1" fill="currentColor" stroke="none"/></svg>';
   const STOP = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>';
   // One thing at a time: Keep going owns a break's first minute, then the nudge takes the same spot.
   // Both read the ticking clock so the hand-over happens without a refresh; O and the palette keep going for ten minutes.
@@ -54,15 +73,17 @@
 </script>
 
 <div class="glow" aria-hidden="true"></div>
+{#if cz.open}<button class="cz-zone cz-zone-backdrop" class:hot={cz.hover === "backdrop"} type="button" aria-pressed={String(cz.zone === "backdrop")} aria-label="Change the background" onclick={() => (cz.zone = "backdrop")}><span>Background</span></button>{/if}
 <div class="card-head">
   <div class="modes" role="tablist" aria-label="Timer mode">
     {#each MODES as m}<button type="button" role="tab" data-mode={m} aria-label={MODE_NAME[m]} aria-selected={String(m === c.mode && !c.flow)} data-held={c.held[m] ? "" : null} title={c.held[m]} onclick={() => { if (api.T.up) api.toggle(); if (m !== api.T.mode || api.T.flowReady) api.setMode(m, true); }}>{m === "focus" ? "Focus" : m === "short" ? "Short" : "Long"}</button>{/each}<button type="button" role="tab" data-mode="flow" aria-label="Flow: count up until you stop" aria-selected={String(c.flow)} title="Count up from zero until you stop" onclick={() => api.readyFlow()}>Flow</button>
   </div>
   <div class="head-icons" {@attach adoptFloatBtn}>
+    <button class="icon-btn look-btn" type="button" aria-label="Customize the timer" title="Customize the face, ring and background · or right-click the dial" onclick={() => api.customize()}>{@html LOOK}</button>
     <button class="icon-btn full-btn" type="button" id="fullBtn" aria-label={zenLabel} title={timerView.zen ? zenLabel : "Fill the page (F) · Shift-click for browser full screen (Shift+F)"} onclick={(e) => api.toggleZen(e.shiftKey)}>{@html timerView.zen ? api.ICON.shrink : api.ICON.expand}</button>
   </div>
 </div>
-<Dial sub={flowSub || c.sub} flow={c.flow} mode={c.mode} />
+<Dial sub={flowSub || c.sub} flow={c.flow} mode={c.mode} face={c.face} ring={c.ring} />
 {#if showKeep}
   <div class="cycle"><button class="keep-going" type="button" title="Go back to focus, counting from the bell (O)" onclick={() => api.keepGoing()}>{@html api.ICON.play}Keep going</button></div>
 {:else if showNudge}

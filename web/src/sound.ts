@@ -1,4 +1,6 @@
+import { timerFace } from "./lib/faces";
 import type { Layer } from "./lib/mix";
+import { tickSamples } from "./lib/tickSound";
 import { previewScape, syncScape } from "./soundscape";
 import { S, T } from "./state";
 
@@ -83,24 +85,20 @@ function stopTickingNode(node: Ticker | null) {
 
 export function cancelTickPreview() { stopTickingNode(tickPreview); tickPreview = null; }
 
-function tickingNode(seconds: number): Ticker | null {
+/** A looping tick in the timer face's own sound; `lead` is how long until the digits next change. */
+function tickingNode(seconds: number, lead = .03): Ticker | null {
   if (!AC) return null;
   const pace = [1, 2, 4].includes(+S.settings.tickPace) ? +S.settings.tickPace : 2;
   const volume = Math.max(0, Math.min(100, +S.settings.tickVolume || 0)) / 100;
   if (!volume || seconds <= 0) return null;
   const buffer = AC.createBuffer(1, Math.ceil(AC.sampleRate * pace), AC.sampleRate);
-  const samples = buffer.getChannelData(0);
-  // Rounded attack and low sine harmonics avoid the sharp click of a clock.
-  for (let i = 0; i < Math.min(samples.length, AC.sampleRate * .18); i++) {
-    const t = i / AC.sampleRate, envelope = Math.min(1, t / .008) * Math.exp(-t * 38);
-    samples[i] = .16 * envelope * (Math.sin(2 * Math.PI * 480 * t) + .18 * Math.sin(2 * Math.PI * 960 * t));
-  }
+  buffer.getChannelData(0).set(tickSamples(timerFace(S.settings.face), AC.sampleRate));
   const source = AC.createBufferSource(), gain = AC.createGain();
   source.buffer = buffer; source.loop = true;
   gain.gain.value = volume;
   source.connect(gain).connect(AC.destination);
   source.onended = () => { source.disconnect(); gain.disconnect(); };
-  source.start(AC.currentTime + .03);
+  source.start(AC.currentTime + lead);
   source.stop(AC.currentTime + seconds);
   return { source, gain };
 }
@@ -113,11 +111,12 @@ export function previewSoundscape(layers: Layer[]) { ensureAudio(); try { if (AC
 export function syncTicking() {
   try { syncScape(AC); } catch {}
   const on = AC && S.settings.ticking && T.mode === "focus" && T.status === "running" && T.endsAt > Date.now();
-  const key = on ? [T.endsAt, S.settings.tickVolume, S.settings.tickPace].join(":") : "";
+  const key = on ? [T.endsAt, S.settings.tickVolume, S.settings.tickPace, S.settings.face].join(":") : "";
   if (key === tickingKey) return;
   stopTickingNode(ticking); ticking = null; tickingKey = "";
   if (on) {
     cancelTickPreview();
-    try { ticking = tickingNode((T.endsAt - Date.now()) / 1000); if (ticking) tickingKey = key; } catch {}
+    const left = (T.endsAt - Date.now()) / 1000;
+    try { ticking = tickingNode(left, left % 1); if (ticking) tickingKey = key; } catch {}
   }
 }
