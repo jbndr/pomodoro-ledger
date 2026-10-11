@@ -69,6 +69,41 @@ function pushAt(s, now) {
   const n = nextSession(s, o.end);
   return n && n.start;
 }
+const CARD_ALT = "A room bar with four people's timers, a shared goal of 12 rounds and quick reactions";
+// What a room invite shows when it's pasted into a chat: the room's name and rhythm when it's public, never who's in it or anyone's tasks.
+function inviteMeta(cfg) {
+  if (!cfg) return { title: "Join my focus room", description: "Focus together on Pomodoro Ledger. You see each other's timers, never each other's tasks.", image: "/og-room.png" };
+  const deep = cfg.rhythm === "50/10";
+  return {
+    title: cfg.title + " · a focus room",
+    description: (deep ? "50 minutes of deep work, 10 of break" : "25 minutes of focus, 5 of break") + ", on the room's clock. Drop in with just a name; your tasks stay private.",
+    image: deep ? "/og-room-50.png" : "/og-room-25.png",
+  };
+}
+
+async function invitePage(request, env, url, code) {
+  let cfg = houseRoom(code);
+  try {
+    if (!cfg) cfg = await (await room(env, code).fetch("https://room/info")).json();
+    const id = !cfg && scheduleOf(code);
+    if (id) { const res = await lobby(env).fetch("https://lobby/schedule/" + id); cfg = res.ok ? await res.json() : null; }
+  } catch {}
+  // The rewriter escapes quotes but leaves ampersands as they are.
+  const meta = inviteMeta(cfg), set = (v) => ({ element: (e) => e.setAttribute("content", v.replace(/&/g, "&amp;")) });
+  const page = await env.ASSETS.fetch(request);
+  const res = new HTMLRewriter()
+    .on('meta[property="og:title"]', set(meta.title))
+    .on('meta[property="og:description"]', set(meta.description))
+    .on('meta[property="og:url"]', set(url.origin + "/app/?room=" + code))
+    .on('meta[property="og:image"], meta[name="twitter:image"]', set(url.origin + meta.image))
+    .on('meta[property="og:image:alt"], meta[name="twitter:image:alt"]', set(CARD_ALT))
+    .transform(page);
+  const headers = new Headers(res.headers);
+  headers.set("cache-control", "no-cache");
+  headers.delete("etag");
+  return new Response(res.body, { status: res.status, headers });
+}
+
 // House rooms are always listed. Their codes contain an O, which random codes never do.
 const houseCode = (h, i) => "OPEN" + h.key + ALPHABET[i];
 function houseRoom(code) {
@@ -85,6 +120,8 @@ export default {
     const url = new URL(request.url);
     // Links shared before the app moved to /app/ (invites, sync return, demo) keep working.
     if (url.pathname === "/" && /[?&](room|synced|demo)(=|&|$)/.test(url.search)) return Response.redirect(url.origin + "/app/" + url.search, 302);
+    const invite = url.pathname === "/app/" && request.method === "GET" && String(url.searchParams.get("room") || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (invite && invite.length === 6) return invitePage(request, env, url, invite);
     if (url.pathname === "/api/rooms" && request.method === "GET") return lobby(env).fetch("https://lobby/rooms");
     if (url.pathname === "/api/here" && request.method === "GET") return handleHere(request);
     if (url.pathname === "/api/weather" && request.method === "GET") return handleWeather(request);
@@ -131,6 +168,10 @@ export class Room extends DurableObject {
 
   async fetch(request) {
     const store = this.ctx.storage, path = new URL(request.url).pathname;
+    if (path === "/info") {
+      const cfg = await store.get("cfg");
+      return json(cfg ? { title: cfg.title, rhythm: cfg.rhythm } : null);
+    }
     if (path === "/open") {
       if (await store.get("open")) return new Response(null, { status: 409 });
       const { ownerToken, cfg, goal } = await request.json();
@@ -455,6 +496,7 @@ export class Lobby extends DurableObject {
       await this.unsubscribe([id], now);
       return new Response(null, { status: 204 });
     }
+    if (!going && request.method === "GET") return json({ title: s.title, rhythm: s.rhythm });
     if (going === "push" && (request.method === "POST" || request.method === "DELETE")) return this.subscribe(request.method, s, body, ip, now);
     if (going === "going" && request.method === "POST") {
       const cid = clean(body.cid, 40), o = nextSession(s, now);
