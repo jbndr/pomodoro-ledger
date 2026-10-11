@@ -141,10 +141,10 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     <p>Then it tells you what you'd rather not know: which tasks you underestimate, by how much, and when in the day your focus actually happens.</p>
     <Showcase kind="sky" h={540} hm={440} tabs={[
       { label: "Estimates", cap: "Across all finished tasks, planned against what they took. This is the demo's sample data. Yours will be kinder. Probably." },
-      { label: "Finished", cap: "Task by task. Migrate billing to Stripe was planned at 30 rounds and took 176. It happens." },
+      { label: "Finished", cap: "Task by task. Migrate billing to Stripe was planned at 30 rounds and took 170. It happens." },
     ]}>
-      <Fragment slot="p0"><Piece light={estL} dark={estD} w={400} alt="Estimates: 3.97 times. Tasks take 297% more cycles than planned, across 12 tasks" /></Fragment>
-      <Fragment slot="p1"><Piece light={ledgerL} dark={ledgerD} phoneLight={ledgerPL} phoneDark={ledgerPD} w={680} crop={430} alt="Finished tasks with planned and actual rounds: Migrate billing to Stripe was planned at 30 rounds and took 176" /></Fragment>
+      <Fragment slot="p0"><Piece light={estL} dark={estD} w={400} alt="Estimates: 4.07 times. 307% more cycles than planned, across 12 tasks" /></Fragment>
+      <Fragment slot="p1"><Piece light={ledgerL} dark={ledgerD} phoneLight={ledgerPL} phoneDark={ledgerPD} w={680} crop={430} alt="Finished tasks with planned and actual rounds: Migrate billing to Stripe was planned at 30 rounds and took 170" /></Fragment>
     </Showcase>
     <ul class="checks">
       <li>Time tracking without the tracking: focus on a task and the minutes are written down</li>
@@ -236,7 +236,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
       { label: "Flow", cap: "Flow counts up. Stop when you're done, and the break is sized to match: about a minute per five." },
     ]}>
       <Fragment slot="p0"><Clip light={roundL} dark={roundD} posterLight={roundPL} posterDark={roundPD} w={660} frame="window" label="A focus round ends: the timer reaches zero, the task gets a round, and a five-minute break starts" /></Fragment>
-      <Fragment slot="p1"><Piece light={flowL} dark={flowD} w={290} alt="The Flow timer counting up from zero" /></Fragment>
+      <Fragment slot="p1"><Piece light={flowL} dark={flowD} w={290} alt="The Flow timer counting up, four minutes in" /></Fragment>
     </Showcase>
     <ul class="checks">
       <li>Keep going past the bell, and the overtime still counts for the task</li>
@@ -250,13 +250,13 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
     <span class="label">Looks</span>
     <h2>A clock you'll like looking at</h2>
     <p>You'll look at this clock a lot, so it might as well be one you like. Pick a face, a ring and a background on the timer itself, the way you'd change a watch face: right-click the dial, or tap the palette.</p>
-    <p>Fifteen faces, from split-flap and Nixie tubes to the time written out in words, each with its own tick. Eight rings and eighteen backgrounds, from warm paper and night red to the weather outside your window. Or start from a ready-made look.</p>
+    <p>Fifteen faces, from split-flap and Nixie tubes to the time written out in words, each with its own tick. Eight rings and eighteen backgrounds, from warm paper and night red to the weather outside your window. Start from a ready-made look, or save a mix of your own and switch back to it in one tap.</p>
     <Showcase kind="violet" h={540} hm={540} tabs={[
-      { label: "Looks", cap: "Default, Bold, Notebook, Forecast and Midnight. The timer keeps running while you choose, and Cancel puts the old one back." },
-      { label: "Faces", cap: "Split-flap, Nixie, VFD, LCD, Odometer, Editorial and In words. The same 25 minutes." },
+      { label: "Looks", cap: "Bold, Notebook, Forecast, Wrist, Sports and Nightstand. The timer keeps running while you choose, and Cancel puts the old one back." },
+      { label: "Faces", cap: "Weight, Sport, Split-flap, Odometer, Nixie, VFD and In words. The same 25 minutes." },
     ]}>
-      <Fragment slot="p0"><Clip light={looksL} dark={looksD} posterLight={looksPL} posterDark={looksPD} w={660} frame="window" phone={{ light: looksPhL, dark: looksPhD, posterLight: looksPhPL, posterDark: looksPhPD, w: 250, radius: "10.26% / 5.41%" }} label="Customize timer: picking the looks Bold, Notebook, Forecast, Midnight and Default changes the running timer beside the list" /></Fragment>
-      <Fragment slot="p1"><Clip light={facesL} dark={facesD} posterLight={facesPL} posterDark={facesPD} w={290} radius="6.82% / 4.64%" frame="none" label="A running focus timer switching faces: split-flap, Nixie tubes, VFD, LCD, odometer, editorial and in words" /></Fragment>
+      <Fragment slot="p0"><Clip light={looksL} dark={looksD} posterLight={looksPL} posterDark={looksPD} w={660} frame="window" phone={{ light: looksPhL, dark: looksPhD, posterLight: looksPhPL, posterDark: looksPhPD, w: 250, radius: "10.26% / 5.41%" }} label="Customize timer: picking the looks Bold, Notebook, Forecast, Wrist, Sports, Nightstand and Default changes the running timer beside the list" /></Fragment>
+      <Fragment slot="p1"><Clip light={facesL} dark={facesD} posterLight={facesPL} posterDark={facesPD} w={290} radius="6.82% / 4.64%" frame="none" label="A running focus timer switching faces: weight, sport, split-flap, odometer, Nixie tubes, VFD and in words" /></Fragment>
     </Showcase>
     <ul class="checks">
       <li>Water fills up as you focus and drains on a break</li>
@@ -323,9 +323,9 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
       <Detail kind="dawn" title="A timer that floats." wide>
         <div class="pip-scene">
           <div class="doc" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="pip"><Clip light={pipL} dark={pipD} posterLight={pipPL} posterDark={pipPD} w={300} radius="6.67% / 10.87%" frame="none" label="The floating Picture-in-Picture timer counting down, with pause and plus or minus one minute" /></div>
+          <div class="pip"><Clip light={pipL} dark={pipD} posterLight={pipPL} posterDark={pipPD} w={320} radius="6.25% / 18.18%" frame="none" label="The floating timer counting down with its task and pause; pointing at it swaps the task for minus one, plus one and skip" /></div>
         </div>
-        <Fragment slot="text">Pop the clock out and it stays on top of whatever you're working on, with pause and a minute more or less right there.</Fragment>
+        <Fragment slot="text">Pop the clock out and it stays on top of whatever you're working on: the time, the task and pause. Point at it for a minute more or less.</Fragment>
       </Detail>
       <Detail kind="dusk" title="Digits that roll." h={340}>
         <Clip light={digitsL} dark={digitsD} posterLight={digitsPL} posterDark={digitsPD} w={218} radius="6.82% / 5.02%" frame="none" label="Adding five minutes twice and removing one: only the digits that change roll" />
@@ -408,7 +408,7 @@ const arrow = '<path d="M3 8h9.5M9 4.5 12.5 8 9 11.5" fill="none" stroke="curren
   .doc i { display: block; height: 9px; border-radius: 5px; background: var(--surface-2); }
   .doc i:nth-child(1) { width: 46%; height: 13px; background: color-mix(in oklab, var(--fg) 12%, var(--surface-2)); margin-bottom: 6px; }
   .doc i:nth-child(2) { width: 92%; } .doc i:nth-child(3) { width: 84%; } .doc i:nth-child(4) { width: 88%; } .doc i:nth-child(5) { width: 60%; } .doc i:nth-child(6) { width: 74%; margin-top: 10px; }
-  .pip { position: absolute; right: 0; top: 4px; width: 300px; max-width: 62%; animation: hover 6s ease-in-out infinite alternate; }
+  .pip { position: absolute; right: 0; top: 4px; width: 320px; max-width: 62%; animation: hover 6s ease-in-out infinite alternate; }
   .pip :global(.clip) { width: 100%; }
   @keyframes hover { to { translate: 0 -5px; } }
   .keys { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px 26px; }

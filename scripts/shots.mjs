@@ -1,4 +1,4 @@
-// Captures real app components from the demo for the landing page: npm run shots (needs the Worker on :8799). ONLY=day,best captures just those steps.
+// Captures real app components from the demo for the landing page: npm run shots (needs the Worker on :8799). ONLY=day,best captures just those steps, SCHEMES=dark just one scheme.
 import { readdir, rm } from "node:fs/promises";
 import { chromium } from "@playwright/test";
 import sharp from "sharp";
@@ -6,15 +6,15 @@ import sharp from "sharp";
 const base = process.argv[2] ?? "http://localhost:8799";
 const out = "site/src/assets/shots";
 const only = process.env.ONLY?.split(",");
-// A Tuesday: two weeks back from it, the demo's fullest day has all four lanes, and at 8:20 its best time is still ahead.
+// Every shot happens on a Tuesday, so the demo's numbers and captions don't drift: two weeks back from it the fullest day has all four lanes, and at 8:20 its best time is still ahead.
 const TUE = "2026-10-13T";
 const clear = "html,body,.app{background:transparent!important} body::before,body::after,.app::before,.app::after{display:none!important} .overlay{background:transparent!important;backdrop-filter:none!important} #ledger .chip{display:none!important}";
 
 const browser = await chromium.launch();
-for (const scheme of ["light", "dark"]) {
+for (const scheme of process.env.SCHEMES?.split(",") ?? ["light", "dark"]) {
   const open = async (w = 1280, h = 860, o = {}) => {
     const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: o.dpr ?? 2, colorScheme: scheme, reducedMotion: "reduce", isMobile: !!o.mobile, hasTouch: !!o.mobile });
-    if (o.time) await page.clock.setFixedTime(new Date(o.time));
+    await page.clock.setFixedTime(new Date(o.time ?? TUE + "08:20"));
     await page.goto(base + "/app/?demo=1&embed=1");
     if (o.clear !== false) await page.addStyleTag({ content: clear });
     await page.waitForTimeout(800);
@@ -54,7 +54,8 @@ for (const scheme of ["light", "dark"]) {
       page = await open();
       await page.getByRole("tab", { name: "Flow" }).or(page.getByRole("button", { name: "Flow" })).first().click();
       await page.getByRole("button", { name: /^Start/ }).first().click();
-      await page.waitForTimeout(4200);
+      await page.clock.setFixedTime(new Date(TUE + "08:24:12"));
+      await page.waitForTimeout(2200);
       await shot(page, ".timer-card", "timer-flow");
       await page.close();
     },
@@ -121,9 +122,11 @@ for (const scheme of ["light", "dark"]) {
     },
     async estimates() {
       page = await open(940, 1100, { dpr: 4 });
+      // The numbers are one card now; keep only its Estimates cell so the card's own frame stays whole.
+      await page.addStyleTag({ content: "#tiles{grid-template-columns:auto!important;width:max-content} #tiles .tile:not(:nth-child(4)){display:none} #tiles .tile:nth-child(4){border-left:0;padding:18px 24px 20px}" });
       await page.locator("#tiles").scrollIntoViewIfNeeded();
       await page.waitForTimeout(500);
-      await shot(page, "#tiles .tile:nth-child(4)", "estimates");
+      await shot(page, "#tiles", "estimates");
       await page.close();
     },
     async insights() {
@@ -166,7 +169,7 @@ for (const scheme of ["light", "dark"]) {
       await page.close();
     },
     async strip() {
-      page = await open(1280, 860, { time: TUE + "08:20" });
+      page = await open(1280, 860);
       await page.locator("#bestBtn").click();
       await page.waitForTimeout(600);
       await shot(page, "section.panel", "today-best");

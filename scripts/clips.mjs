@@ -1,4 +1,4 @@
-// Records short looping clips of the demo app for the landing page: npm run clips (needs the Worker on :8799). ONLY=looks,faces records just those.
+// Records short looping clips of the demo app for the landing page: npm run clips (needs the Worker on :8799). ONLY=looks,faces records just those, SCHEMES=dark just one scheme.
 import { execFileSync } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -88,14 +88,15 @@ async function encode({ frames, t0, t1 }, box, name, width, vw) {
 }
 
 const browser = await chromium.launch({ args: ["--force-device-scale-factor=2"] });
-for (const scheme of ["light", "dark"]) {
+for (const scheme of process.env.SCHEMES?.split(",") ?? ["light", "dark"]) {
   const open = async (w, h, o = {}) => {
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, colorScheme: scheme });
-    const at = o.time ? new Date(o.time).getTime() : Date.now();
+    // Rooms run on the server's clock, so the room clip passes time: null and keeps the real one.
+    const time = o.time === undefined ? TUE + "08:20" : o.time, at = time ? new Date(time).getTime() : Date.now();
     await ctx.route("**/api/weather", (r) => r.fulfill({ json: { ...WEATHER, at } }));
     await ctx.route("**/api/here", (r) => r.fulfill({ json: { lat: WEATHER.lat, lon: WEATHER.lon, place: WEATHER.place } }));
     const page = await ctx.newPage();
-    await page.clock.install(o.time ? { time: new Date(o.time) } : undefined);
+    await page.clock.install(time ? { time: new Date(time) } : undefined);
     await page.goto(base + "/app/?demo=1&embed=1");
     await page.waitForTimeout(1200);
     return page;
@@ -131,7 +132,7 @@ for (const scheme of ["light", "dark"]) {
       await page.context().close();
     },
     async room() {
-      page = await open(640, 900);
+      page = await open(640, 900, { time: null });
       const name = (p) => p.locator("#room input[placeholder='Shown to people in the room']");
       await page.getByRole("button", { name: /Work together/ }).click();
       await page.getByRole("button", { name: "Start a room" }).click();
@@ -214,9 +215,18 @@ for (const scheme of ["light", "dark"]) {
       await main.waitForTimeout(1000);
       await main.getByRole("button", { name: /^Start/ }).first().click();
       const [pip] = await Promise.all([ctx.waitForEvent("page"), main.locator("#floatBtn").click()]);
-      await pip.setViewportSize({ width: 300, height: 184 });
+      await pip.setViewportSize({ width: 320, height: 110 });
       await pip.waitForTimeout(1500);
-      await encode(await record(pip, () => pip.waitForTimeout(5200)), { x: 0, y: 0, width: 300, height: 184 }, `pip-${scheme}`, 600, 300);
+      const p = await pointer(pip);
+      await p.place(400, 70);
+      // Pointing at the window swaps the task line for −1, +1 and skip.
+      await encode(await record(pip, async () => {
+        await pip.waitForTimeout(1600);
+        await p.glide(170, 62, 600);
+        await pip.waitForTimeout(2200);
+        await p.glide(400, 70, 600);
+        await pip.waitForTimeout(1600);
+      }), { x: 0, y: 0, width: 320, height: 110 }, `pip-${scheme}`, 640, 320);
       await ctx.close();
     },
     async phases() {
@@ -226,6 +236,8 @@ for (const scheme of ["light", "dark"]) {
       await page.locator('.st-nav button[data-sec="look"]').click();
       await page.waitForTimeout(900);
       const morph = page.locator(".st-morph").locator("xpath=..");
+      await morph.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(500);
       const mb = await morph.boundingBox();
       console.log("morph card", Math.round(mb.width), Math.round(mb.height));
       const style = (v) => page.locator(`.st-style[data-morph="${v}"]`);
@@ -298,9 +310,9 @@ for (const scheme of ["light", "dark"]) {
       await p.place(...center(await tile("default").boundingBox()).map((v, i) => v + (i ? 70 : 0)));
       await encode(await record(page, async () => {
         await page.waitForTimeout(700);
-        for (const id of ["bold", "notebook", "forecast", "midnight", "default"]) {
+        for (const id of ["bold", "notebook", "forecast", "wrist", "sports", "nightstand", "default"]) {
           await p.click(...center(await tile(id).boundingBox()), 650);
-          await page.waitForTimeout(id === "forecast" ? 2200 : 1500);
+          await page.waitForTimeout(id === "forecast" ? 1800 : 1200);
         }
       }), box, `looks-${scheme}`, 1320, 1280);
       await page.context().close();
@@ -322,9 +334,9 @@ for (const scheme of ["light", "dark"]) {
       const tile = (id) => page.locator(`.cz [data-id="${id}"]`);
       await encode(await record(page, async () => {
         await page.waitForTimeout(900);
-        for (const id of ["bold", "notebook", "forecast", "midnight", "default"]) {
+        for (const id of ["bold", "notebook", "forecast", "wrist", "sports", "nightstand", "default"]) {
           await tile(id).tap();
-          await page.waitForTimeout(id === "forecast" ? 2200 : 1700);
+          await page.waitForTimeout(id === "forecast" ? 1800 : 1300);
         }
       }), { x: 0, y: 0, width: 390, height: 740 }, `looks-phone-${scheme}`, 520, 390);
       await ctx.close();
@@ -345,7 +357,7 @@ for (const scheme of ["light", "dark"]) {
       await page.waitForTimeout(600);
       await encode(await record(page, async () => {
         await page.waitForTimeout(1500);
-        for (const id of ["flap", "nixie", "vfd", "lcd", "odo", "serif", "words", "classic"]) { await face(id); await page.waitForTimeout(1700); }
+        for (const id of ["weight", "sport", "flap", "odo", "nixie", "vfd", "words", "classic"]) { await face(id); await page.waitForTimeout(1700); }
       }), { x: Math.round(tb.x), y: Math.round(tb.y), width: Math.round(tb.width), height: Math.round(tb.height) }, `faces-${scheme}`, 760, 1000);
       await page.context().close();
     },
