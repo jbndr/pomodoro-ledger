@@ -8,7 +8,7 @@ import { remNow, totalNow } from "../timer/engine";
 import { RM, roomEnter, setHelloExtra } from "./net";
 import { clientId, pushSubscription } from "./sched";
 
-export type CrewInfo = { name: string; room: string; tz: string; slot: Times | null };
+export type CrewInfo = { name: string; room: string; tz: string; slot: Times | null; lead: string | null };
 
 const CHECK_MS = 15000;
 const LATE_MS = 5 * 60000;
@@ -79,7 +79,8 @@ export function crewConnect() {
     if (ws !== CR.ws) return;
     const was = CR.live;
     CR.ws = null; CR.live = false; clearInterval(CR.ping);
-    const gone = ({ 4004: "That crew doesn't exist anymore.", 4003: "That crew is full. A crew has room for eight.", 4007: "", 4000: "Couldn't join that crew." } as Record<number, string>)[e.code];
+    const gone = ({ 4004: "That crew doesn't exist anymore.", 4003: "That crew is full. A crew has room for eight.", 4007: "", 4000: "Couldn't join that crew.",
+      4009: "You were removed from " + (CR.crew ? CR.crew.name : "that crew") + "." } as Record<number, string>)[e.code];
     if (gone !== undefined) { forget(gone || undefined); return; }
     if (!was && ++CR.tries > 5) { redraw(); return; }
     CR.timer = setTimeout(crewConnect, Math.min(30000, 1000 * 2 ** CR.tries));
@@ -130,6 +131,14 @@ export async function crewInfo(code: string): Promise<{ name: string; size: numb
 
 export const crewRename = (name: string) => send({ t: "name", name });
 export const crewSlot = (slot: Times | null) => send({ t: "slot", slot });
+
+/** Only whoever started the crew can; the invite link won't bring that browser back. */
+export function crewKick(id: string) {
+  const m = CR.members.find((x) => x.id === id);
+  if (!m || !CR.live) return;
+  send({ t: "kick", id });
+  toast(m.name + " is out of the crew. The invite link won't bring them back.");
+}
 
 /** Hidden, the crew sees you as away; you still see them, and your rounds still count. */
 export function crewHide(on: boolean) {

@@ -37,7 +37,7 @@
   let coding = $state(false), code = $state(""), codeEl = $state();
   let title = $state(""), rhythm = $state("25/5"), who = $state("public"), when = $state("now"), titleEl = $state();
   let goal = $state(0);
-  let crewName = $state(""), renaming = $state(false), crewInv = $state(null), leaving = $state(false), leaveT = 0, slotT = 0, crewNameEl = $state();
+  let crewName = $state(""), renaming = $state(false), crewInv = $state(null), leaving = $state(false), leaveT = 0, slotT = 0, crewNameEl = $state(), kicking = $state(""), kickT = 0;
   let cdays = $state([1, 2, 3, 4, 5]), cfrom = $state(19 * 60), clen = $state(120);
   let days = $state([1, 2, 3, 4, 5]), from = $state(Math.min(23, new Date().getHours() + 1) * 60), want = $state(120), typed = "", typedAt = 0, err = $state("");
   let place = $state({ top: 0, left: 0 });
@@ -257,7 +257,7 @@
   function openCrew() {
     const sl = cv.crew && cv.crew.slot;
     if (sl) { cdays = [...sl.days]; cfrom = sl.from; clen = sl.to - sl.from; }
-    renaming = false; leaving = false;
+    renaming = false; leaving = false; kicking = "";
     go("crew");
   }
 
@@ -309,6 +309,12 @@
     clearTimeout(leaveT); leaving = false;
     C.crewLeave();
     go("main", true);
+  }
+
+  function kick(m) {
+    if (kicking !== m.id) { kicking = m.id; clearTimeout(kickT); kickT = setTimeout(() => (kicking = ""), 4000); return; }
+    clearTimeout(kickT); kicking = "";
+    C.crewKick(m.id);
   }
 
   function report(k, on, e) {
@@ -398,7 +404,7 @@
         <ul class="tg-crew-list" aria-label="In the crew">
           {#each cv.members as m (m.id)}
             {@const me = m.id === cv.you}
-            <li class:off={!m.on || (me && cv.hide)}><span class="tg-faces" aria-hidden="true"><i style:--h={hueOf(m.name)} class:busy={focusing(m)}>{initials(m.name)}</i></span><span class="tg-crew-who"><b>{m.name}{#if me}<small>{" · you"}</small>{/if}</b><span>{me && cv.hide ? "Your crew sees you as away" : mateState(m)}</span></span>{#if me && cv.live}<button class="tg-remind tg-hide" type="button" aria-pressed={String(cv.hide)} aria-label={cv.hide ? "Hidden from your crew. Show me again" : "Hide me from my crew"} onclick={() => C.crewHide(!cv.hide)}>{@html EYE_OFF}<span>{cv.hide ? "Hidden" : "Hide me"}</span></button>{/if}</li>
+            <li class:off={!m.on || (me && cv.hide)}><span class="tg-faces" aria-hidden="true"><i style:--h={hueOf(m.name)} class:busy={focusing(m)}>{initials(m.name)}</i></span><span class="tg-crew-who"><b>{m.name}{#if me}<small>{" · you"}</small>{/if}</b><span>{me && cv.hide ? "Your crew sees you as away" : mateState(m)}</span></span>{#if !me && cv.live && cv.crew?.lead === cv.you}<button class="tg-remind tg-kick" class:danger={kicking === m.id} type="button" aria-label={kicking === m.id ? "Remove " + m.name + " for good" : "Remove " + m.name + " from the crew"} onclick={() => kick(m)}>{kicking === m.id ? "Remove for good?" : "Remove"}</button>{/if}{#if me && cv.live}<button class="tg-remind tg-hide" type="button" aria-pressed={String(cv.hide)} aria-label={cv.hide ? "Hidden from your crew. Show me again" : "Hide me from my crew"} onclick={() => C.crewHide(!cv.hide)}>{@html EYE_OFF}<span>{cv.hide ? "Hidden" : "Hide me"}</span></button>{/if}</li>
           {/each}
           {#if cv.members.length < 8}<li class="tg-crew-seat"><button class="tg-inline" type="button" onclick={() => C.copyCrewInvite()}>Copy invite link</button><span>Room for {8 - cv.members.length} more</span></li>{/if}
         </ul>

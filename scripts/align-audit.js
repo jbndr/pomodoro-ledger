@@ -28,6 +28,7 @@
     ["Pill icon", ".tg-remind", "svg", "span"],
     ["Crew face", ".tg-crew-list li:not(.tg-crew-seat)", ".tg-faces", ".tg-crew-who", "block"],
     ["Crew hide pill", ".tg-crew-list li:not(.tg-crew-seat)", ".tg-hide", ".tg-crew-who", "block"],
+    ["Crew remove pill", ".tg-crew-list li:not(.tg-crew-seat)", ".tg-kick", ".tg-crew-who", "block"],
     ["Stages lane swatch", ".sg-lane", ".sg-sw", ":scope > span"],
     ["Stages readout dot", ".sg-k", "i", ":scope"],
     ["Timesheet group dot", ".ts-gh .ts-name", ".label-dot", "span"],

@@ -174,6 +174,53 @@ test('leaving takes you off the crew everywhere, and the last one out deletes it
   assert.equal(data.size, 0);
 });
 
+test('whoever started the crew can remove someone, who then cannot come back with the link', async () => {
+  const { hello, send, last, data, c } = await setup();
+  const ejected = [];
+  c.env = { ROOM: { idFromName: (x) => x, get: (x) => ({ fetch: async (_, init) => { ejected.push([x, JSON.parse(init.body).cid]); return new Response(null, { status: 204 }); } }) } };
+  const ana = await hello('a', 'Ana');
+  const ben = await hello('b', 'Ben');
+  const tab = await hello('b', 'Ben');
+  const cy = await hello('c', 'Cy');
+  assert.equal(last(cy).crew.lead, last(ana).you);
+  const benId = last(ben).you, anaId = last(ana).you;
+  await send(cy, { t: 'kick', id: benId });
+  assert.deepEqual(last(ana).members.map((m) => m.name), ['Ana', 'Ben', 'Cy'], 'only whoever started it can remove anyone');
+  await send(ana, { t: 'kick', id: anaId });
+  assert.equal(ana.closed, null, 'not yourself');
+  data.set('p:b', { endpoint: 'https://push.example/b' });
+  await send(ana, { t: 'kick', id: benId });
+  assert.equal(ben.closed, 4009);
+  assert.equal(tab.closed, 4009);
+  assert.equal(data.has('p:b'), false);
+  assert.deepEqual(ejected, [['IABCDE', 'b']], 'and out of the crew room');
+  assert.deepEqual(last(cy).members.map((m) => m.name), ['Ana', 'Cy']);
+  assert.equal((await hello('b', 'Ben')).closed, 4009, 'the invite link does not bring them back');
+  assert.equal((await c.fetch(new Request('https://crew/member', { method: 'POST', body: JSON.stringify({ cid: 'b', room: 'IABCDE' }) }))).status, 403);
+  await send(ana, { t: 'leave' });
+  assert.equal(last(cy).crew.lead, last(cy).you, 'when the one who started it leaves, the longest in it takes over');
+});
+
+test('a crew room puts out someone the crew removed, from every tab', async () => {
+  const data = new Map(), sockets = [];
+  const env = { CREW: { idFromName: (c) => c, get: () => ({ fetch: async () => new Response(null, { status: 204 }) }) } };
+  const r = new Room({ setWebSocketAutoResponse() {}, getWebSockets: () => sockets, storage: storage(data), acceptWebSocket: (ws) => sockets.push(ws) }, env);
+  await r.fetch(new Request('https://x/api/room/IABCDE/ws', { headers: { Upgrade: 'websocket' } }));
+  sockets.length = 0;
+  const knock = async (cid) => {
+    const ws = { attachment: null, messages: [], closed: null, deserializeAttachment() { return this.attachment; }, serializeAttachment(a) { this.attachment = a; }, send(x) { this.messages.push(JSON.parse(x)); }, close(code) { this.closed = code; const i = sockets.indexOf(this); if (i >= 0) sockets.splice(i, 1); } };
+    sockets.push(ws);
+    await r.webSocketMessage(ws, JSON.stringify({ t: 'hello', id: 'tab-' + Math.random(), name: cid.toUpperCase(), crew: 'VCFMP6QK', cid }));
+    return ws;
+  };
+  const ana = await knock('a'), ben = await knock('b'), tab = await knock('b');
+  assert.equal(ana.messages.filter((m) => m.t === 'room').at(-1).members.length, 3);
+  await r.fetch(new Request('https://room/eject', { method: 'POST', body: JSON.stringify({ cid: 'b' }) }));
+  assert.equal(ben.closed, 4008);
+  assert.equal(tab.closed, 4008);
+  assert.deepEqual(ana.messages.filter((m) => m.t === 'room').at(-1).members.map((m) => m.name), ['A']);
+});
+
 test('only members can ask for crew-time reminders', async () => {
   const { c, hello } = await setup();
   await hello('a', 'Ana');
