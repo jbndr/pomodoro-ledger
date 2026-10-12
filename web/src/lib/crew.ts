@@ -9,11 +9,19 @@ export const isCrewRoom = (c: string) => /^I[A-HJKMNP-Z2-9]{5}$/.test(c);
 
 export const focusing = (m: CrewMate) => !!m.on && !!m.s && m.s.mode === "focus" && m.s.status === "running";
 
-/** What the Work together pill says about your crew while you're not in a room: who is focusing right now. */
-export function crewLine(mates: CrewMate[], you: string | null) {
+/** What the Work together pill says about your crew while you're not in a room; `shared` is the crew's name while it can see you focusing. */
+export function crewLine(mates: CrewMate[], you: string | null, shared = "") {
   const on = mates.filter((m) => m.id !== you && focusing(m));
+  const who = on.length > 1 ? on[0].name + " and " + (on.length - 1) + " more" : on.length ? on[0].name : "";
+  if (shared) return "Focusing with " + (who || shared);
   if (!on.length) return "";
-  return on.length === 1 ? on[0].name + " is focusing" : on[0].name + " and " + (on.length - 1) + " more focusing";
+  return on.length === 1 ? who + " is focusing" : who + " focusing";
+}
+
+/** The shared line, short enough for the pill on a phone. */
+export function crewShort(mates: CrewMate[], you: string | null) {
+  const on = mates.filter((m) => m.id !== you && focusing(m));
+  return "With " + (on.length ? on[0].name + (on.length > 1 ? " +" + (on.length - 1) : "") : "crew");
 }
 
 /** The week so far against the one before, in a few words. */
