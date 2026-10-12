@@ -544,7 +544,7 @@ td.barcell { width: 38%; min-width: 120px; }
   .add-sec { opacity: 0; transition: opacity .15s, background .15s, color .15s; }
   .panel:hover .add-sec, .add-sec:focus-visible { opacity: 1; }
 }
-.tasks .group.section { min-height: 57px; padding: 22px 10px 7px 8px; gap: 10px; align-items: center; flex-wrap: nowrap; border-bottom: 1px solid var(--line); text-transform: none; letter-spacing: 0; }
+.tasks .group.section { min-height: 47px; padding: 12px 10px 7px 8px; gap: 10px; align-items: center; flex-wrap: nowrap; border-bottom: 1px solid var(--line); text-transform: none; letter-spacing: 0; }
 .sec-title { flex: 1; min-width: 0; border: 0; border-radius: 6px; background: transparent; padding: 2px 4px; margin-left: -4px; font: 650 15px var(--f-body); color: var(--fg); text-overflow: ellipsis; }
 @media (hover: hover) { .sec-title:hover { background: var(--surface-2); } }
 .sec-title:focus { outline: none; background: var(--surface-2); }
@@ -1334,6 +1334,7 @@ button.meta-chip[aria-expanded="true"] { border-color: var(--line-2); color: var
   .card-btn { height: 36px; }
   .tasks-head .task-views button { font-size: 17px; padding-inline: 7px; }
   .tasks .group.section { padding-left: 12px; }
+  .sec-del { margin-block: -9px; }
   .subtask input[type="text"], .subtask-add input { height: 44px; }
   .subtask input[type="checkbox"] { width: 24px; height: 24px; margin: 10px 6px; }
   .subtask-add::before { width: 36px; }
