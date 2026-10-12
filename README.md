@@ -240,7 +240,10 @@ it listed, and **Remove** deletes a schedule and its reminders.
 permanent room. Crews are off unless a browser opens a crew invite (`/app/?crew=CODE`)
 or `/app/?crews=1`, which shows **Start a crew** in Work together. Everyone in a crew
 sees who else is around and who is focusing right now, in the crew card and on the
-Work together pill, even outside a room. **Hide me** on your own row (or the command
+Work together pill, even outside a room. While your own timer runs and the crew can
+see you, the pill puts you in that line (**Focusing with Ben**, or **Focusing with**
+the crew's name when nobody else is), going by what the crew last heard rather than
+the local timer. **Hide me** on your own row (or the command
 palette) makes you look away to everyone else while you still see them; the crew stops
 hearing your timer and tabs, your rounds still count, and it stays on until you switch it off. The rounds members finish add up per week,
 counted by the crew the same way a room counts toward its goal and starting on

@@ -1,7 +1,7 @@
 <script>
   import { onMount } from "svelte";
   import { pillOf } from "../lib/chrome";
-  import { crewLine, focusing } from "../lib/crew";
+  import { crewLine, crewShort, focusing } from "../lib/crew";
   import { pill, room } from "../lib/redraw.svelte";
   import { roomList } from "../room/net";
   import { toast } from "./notice.svelte";
@@ -20,10 +20,13 @@
   const others = $derived.by(() => { room.version; return api.RM.code ? api.RM.members.filter((m) => m.id !== api.RM.you).map((m) => m.name) : []; });
   // Outside a room, your crew focusing right now comes before strangers in public rooms.
   const crewBusy = $derived.by(() => { room.version; return api.CR.members.filter((m) => m.id !== api.CR.you && focusing(m)); });
-  const crewText = $derived.by(() => { room.version; return crewLine(api.CR.members, api.CR.you); });
-  const shownNames = $derived(roomName ? others : crewBusy.length ? crewBusy.map((m) => m.name) : people);
+  // Going by what the crew last heard, not the local timer, so the pill never claims more than they see.
+  const crewMe = $derived.by(() => { room.version; const me = api.CR.members.find((m) => m.id === api.CR.you); return api.CR.live && !api.CR.hide && me && focusing(me) ? me : null; });
+  const crewText = $derived.by(() => { room.version; return crewLine(api.CR.members, api.CR.you, crewMe ? api.CR.crew?.name || "your crew" : ""); });
+  const shownNames = $derived(roomName ? others : crewMe ? [crewMe, ...crewBusy].map((m) => m.name) : crewBusy.length ? crewBusy.map((m) => m.name) : people);
   const faces = $derived(shownNames.slice(0, 3).map((n) => ({ ini: initials(n), hue: hueOf(n) })));
   const label = $derived(roomName ? "In " + roomName : crewText || (people.length ? people.length + " in rooms now" : "Work together"));
+  const short = $derived.by(() => { room.version; return !roomName && crewMe ? crewShort(api.CR.members, api.CR.you) : label; });
 
   // Only names come back from the lobby; what anyone works on stays on their own device.
   async function load() {
@@ -63,7 +66,7 @@
 
 <button class="together" class:in={!!roomName} id="openRoom" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label={label + ". Work together"} onclick={() => api.openRoom()}>
   {#if roomName && !faces.length}<i class="live" aria-hidden="true"></i>{:else if faces.length}<span class="faces" aria-hidden="true">{#each faces as f, i (i)}<span class="face" style:--h={f.hue}>{f.ini}</span>{/each}</span>{:else}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.2.2 3.6 1.6 4 3.8"/></svg>{/if}
-  <span class="together-label">{label}</span>
+  <span class="together-label"><span class="tl-full">{label}</span><span class="tl-short">{short}</span></span>
 </button>
 <div class="bar-menu-wrap" bind:this={menuEl} onfocusout={(e) => { if (e.relatedTarget && !menuEl.contains(e.relatedTarget)) close(); }}>
   <button class="icon-btn" class:alert id="openSettings" type="button" aria-label={alert ? "Menu. " + sync.text : "Menu"} aria-haspopup="menu" aria-expanded={String(menuOpen)} aria-controls="barMenu" onclick={() => (menuOpen = !menuOpen)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
