@@ -508,6 +508,8 @@ td.barcell { width: 38%; min-width: 120px; }
 #newNotes { width: 100%; min-height: 1.5em; resize: none; border: 0; background: transparent; padding: 0; font: 14px/1.5 var(--f-body); color: var(--muted); field-sizing: content; }
 .new-task-options { display: grid; gap: 6px; }
 .new-task-options .card-bar { margin-top: 2px; }
+/* Add stays at the right edge, also when it wraps onto a line of its own. */
+.new-task-options .card-bar .btn { margin-left: auto; }
 .new-task-options .btn kbd { margin-left: 4px; border-color: color-mix(in oklab, var(--bg) 40%, transparent); color: inherit; opacity: .7; }
 .new-parsed { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
 .new-parsed mark { padding: 0 5px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
@@ -1444,7 +1446,6 @@ body.zen .card-head { max-width: min(100%, 520px); }
   .tasks-head { padding-top: 2px; }
   .task.open { margin-inline: -6px; }
   .add { margin-top: 10px; }
-  .new-task-options .card-bar .btn { margin-left: auto; }
   /* A fixed-height grid squeezes rows whose content scrolls sideways (chips, tables) down to nothing. */
   body[data-page] .progress { grid-auto-rows: max-content; align-content: start; gap: 14px; }
   /* Chip rows scroll sideways; the fade shows there is more. */
