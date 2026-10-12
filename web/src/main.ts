@@ -43,7 +43,7 @@ import Together from "./room/Together.svelte";
 import RoomStrip from "./room/RoomStrip.svelte";
 import { followRoom, reactionsChanged, reactionsOn, reactWait, renderRoom, RM, roomConnect, roomCreate, roomEnter, roomInStep, roomList, roomReact, roomReport, roomReset, roomSend, roomSignal, roomGoal } from "./room/net";
 import { Sched, watchReminders } from "./room/sched";
-import { copyCrewInvite, CR, crewConnect, crewCreate, crewHide, crewInfo, crewJoin, crewLeave, crewRehello, crewRemind, crewRename, crewRoom, crewSlot, crewsOn, watchCrew } from "./room/crew";
+import { copyCrewInvite, CR, crewConnect, crewCreate, crewHide, crewInfo, crewKick, crewJoin, crewLeave, crewRehello, crewRemind, crewRename, crewRoom, crewSlot, crewsOn, watchCrew } from "./room/crew";
 import { isCrewCode, isCrewRoom } from "./lib/crew";
 import { exportLedger, importLedger, planImport } from "./settings/backup";
 import Settings from "./settings/Settings.svelte";
@@ -103,7 +103,7 @@ mount(Progress, { target: $(".app"), props: { api: {
   ...sessionApi, S, T, remNow, dur, ICON, esc, viewTasks, labelHidden, guardPreview, fmtDur, fmtDate, fmtClock, plural,
   deleteSession, labelSession, moveSession, openLabelPop, reopen: reopenTask, openRecap, openPlan, openTimesheet, weekGoals, openYear,
 } } });
-const crew = { CR, crewsOn, crewCreate, crewJoin, crewLeave, crewInfo, crewRename, crewSlot, crewRoom, crewRemind, crewHide, crewRehello, copyCrewInvite };
+const crew = { CR, crewsOn, crewCreate, crewJoin, crewLeave, crewInfo, crewRename, crewSlot, crewRoom, crewRemind, crewHide, crewKick, crewRehello, copyCrewInvite };
 const roomApi = { RM, S, ls, esc, invite, crewInvite: isCrewCode(crewInvite) ? crewInvite : "", crew, setOverlay, sizeTimer, roomSend, roomReset, roomEnter, roomCreate, roomList, followRoom, inStep: roomInStep, openRoom, sched: Sched,
   roomReact, reactWait, reactionsOn, roomSignal, roomGoal, report: roomReport, openPop, closePop, popHidden: () => pop.hidden };
 mount(BarTools, { target: $(".bar-right"), props: { api: {

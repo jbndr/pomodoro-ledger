@@ -234,6 +234,12 @@ export class Room extends DurableObject {
       const cfg = await store.get("cfg");
       return json(cfg ? { title: cfg.title, rhythm: cfg.rhythm } : null);
     }
+    if (path === "/eject") {
+      const { cid } = await request.json(), out = cid ? this.members().filter((x) => x.a.cid === cid) : [];
+      for (const x of out) { x.ws.serializeAttachment(null); try { x.ws.close(4008, "Not in this crew"); } catch {} }
+      if (out.length) await this.settleGone(out.map((x) => x.a.pub));
+      return new Response(null, { status: 204 });
+    }
     if (path === "/open") {
       if (await store.get("open")) return new Response(null, { status: 409 });
       const { ownerToken, cfg, goal } = await request.json();
@@ -348,7 +354,7 @@ export class Room extends DurableObject {
       const ownerToken = await store.get("ownerToken"), cfg = await store.get("cfg");
       if (others.length >= ((cfg && cfg.max) || MAX_MEMBERS)) return ws.close(4003, "Room is full");
       const owner = !cfg && !!ownerToken && m.ownerToken === ownerToken;
-      ws.serializeAttachment({ id, pub: pick(8), name, s: null, asked: 0, owner, rb, sig, lr });
+      ws.serializeAttachment({ id, pub: pick(8), name, s: null, asked: 0, owner, rb, sig, lr, ...(crewRoom ? { cid: clean(m.cid, 40) } : {}) });
       await this.broadcast();
       if (!cfg) return;
       await store.setAlarm(now + HEARTBEAT_MS);
@@ -458,17 +464,22 @@ export class Room extends DurableObject {
   }
 
   async left(ws) {
-    const store = this.ctx.storage, gone = ws.deserializeAttachment();
+    const gone = ws.deserializeAttachment();
     if (!gone || !gone.id) return;
     await this.report(ws);
-    if (!this.members(ws).length) {
+    await this.settleGone([gone.pub], ws);
+  }
+
+  async settleGone(pubs, except) {
+    const store = this.ctx.storage;
+    if (!this.members(except).length) {
       await store.delete("prop");
       return store.setAlarm(Date.now() + EMPTY_MS);
     }
     const prop = await store.get("prop");
-    if (prop && prop.by === gone.pub) await store.delete("prop");
-    else if (prop) await this.settle(prop, ws);
-    await this.broadcast(ws);
+    if (prop && pubs.includes(prop.by)) await store.delete("prop");
+    else if (prop) await this.settle(prop, except);
+    await this.broadcast(except);
   }
 
   async alarm() {
@@ -741,7 +752,7 @@ export class Crew extends DurableObject {
     const sum = (w) => Object.values(weeks[w] || {}).reduce((n, x) => n + x, 0);
     const seen = (m, cid) => (!m.hide || m.cid === cid) && live.has(m.cid);
     const members = (cid) => c.members.map((m) => ({ id: m.pid, name: m.name, on: seen(m, cid), s: seen(m, cid) ? live.get(m.cid).s || null : null }));
-    const info = { name: c.name, room: c.room, tz: c.tz, slot: c.slot };
+    const info = { name: c.name, room: c.room, tz: c.tz, slot: c.slot, lead: (c.members[0] || {}).pid || null };
     for (const { ws, a } of socks) {
       if (only && a.cid !== only) continue;
       const mem = c.members.find((m) => m.cid === a.cid);
@@ -771,6 +782,7 @@ export class Crew extends DurableObject {
       let mem = c.members.find((x) => x.cid === cid);
       // Only an invite joins; a tab reconnecting after you left on another one doesn't put you back.
       if (!mem) {
+        if ((c.out || []).includes(cid)) return ws.close(4009, "Removed from the crew");
         if (m.join !== true) return ws.close(4007, "Not in the crew");
         if (c.members.length >= CREW_MAX) return ws.close(4003, "Crew is full");
         mem = { cid, pid: pick(8), name, at: now, lr: 0 };
@@ -817,6 +829,20 @@ export class Crew extends DurableObject {
         c.slot = slot; c.pushed = 0;
       }
       await store.put("crew", c);
+      await this.arm(now);
+      return this.broadcast();
+    }
+
+    // Only whoever started the crew removes people; if they leave, whoever has been in it longest.
+    if (m.t === "kick") {
+      const out = c.members[0].cid === me.cid && c.members.find((x) => x.pid === m.id && x.cid !== me.cid);
+      if (!out) return;
+      c.members = c.members.filter((x) => x !== out);
+      c.out = [...(c.out || []), out.cid].slice(-50);
+      await store.put("crew", c);
+      await store.delete("p:" + out.cid);
+      try { await room(this.env, c.room).fetch("https://room/eject", { method: "POST", body: JSON.stringify({ cid: out.cid }) }); } catch {}
+      for (const x of this.sockets()) if (x.a.cid === out.cid) { x.ws.serializeAttachment(null); x.ws.close(4009, "Removed from the crew"); }
       await this.arm(now);
       return this.broadcast();
     }

@@ -247,7 +247,10 @@ the local timer. **Hide me** on your own row (or the command
 palette) makes you look away to everyone else while you still see them; the crew stops
 hearing your timer and tabs, your rounds still count, and it stays on until you switch it off. The rounds members finish add up per week,
 counted by the crew the same way a room counts toward its goal and starting on
-Monday in the creator's time zone. Any member can rename the crew, set a regular
+Monday in the creator's time zone. Whoever started the crew can **Remove** someone from their row (it asks once more
+first); that closes their crew connection, puts them out of the crew room, and keeps
+the invite link from bringing that browser back. If the one who started it leaves,
+whoever has been in the crew longest takes this over. Any member can rename the crew, set a regular
 crew time (days and a window, like a schedule) and turn on **Remind me**, which
 sends a push when crew time starts. **Join crew room** opens the crew's own private
 room, whose code starts with an `I` and never changes. A `Crew` Durable Object per
