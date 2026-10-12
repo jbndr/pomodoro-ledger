@@ -23,6 +23,7 @@
   const WEEK = [[1, "M", "Monday"], [2, "T", "Tuesday"], [3, "W", "Wednesday"], [4, "T", "Thursday"], [5, "F", "Friday"], [6, "S", "Saturday"], [0, "S", "Sunday"]];
   const CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
   const BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>';
+  const EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 5.8A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.3 7.3A16.5 16.5 0 0 0 2.5 12s3.5 6.5 9.5 6.5c1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a2.8 2.8 0 0 0 4 4"/><path d="M3 3l18 18"/></svg>';
   const BELL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg>';
   const MINUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg>';
   const FLAG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 20.5V4.5"/><path d="M6 4.5h11l-2.4 4 2.4 4H6"/></svg>';
@@ -73,7 +74,7 @@
   const cv = $derived.by(() => {
     room.version;
     const c = C.CR;
-    return { on: C.crewsOn(), code: c.code, live: c.live, crew: c.crew, members: c.members, you: c.you, week: c.week, remind: c.remind, here: !!c.crew && api.RM.code === c.crew.room };
+    return { on: C.crewsOn(), code: c.code, live: c.live, crew: c.crew, members: c.members, you: c.you, week: c.week, remind: c.remind, hide: c.hide, here: !!c.crew && api.RM.code === c.crew.room };
   });
   const crewInvited = () => !!api.crewInvite && api.crewInvite !== C.CR.code;
   const others = $derived(cv.members.filter((m) => m.id !== cv.you));
@@ -332,7 +333,7 @@
 {/snippet}
 
 {#snippet crewFaces(ms)}
-  <span class="tg-faces tg-crew-faces" aria-hidden="true">{#each ms as m (m.id)}<i style:--h={hueOf(m.name)} class:off={!m.on} class:busy={focusing(m)}>{initials(m.name)}</i>{/each}</span>
+  <span class="tg-faces tg-crew-faces" aria-hidden="true">{#each ms as m (m.id)}<i style:--h={hueOf(m.name)} class:off={!m.on || (m.id === cv.you && cv.hide)} class:busy={focusing(m)}>{initials(m.name)}</i>{/each}</span>
 {/snippet}
 
 {#snippet flag(k, title)}
@@ -396,7 +397,8 @@
         </div>
         <ul class="tg-crew-list" aria-label="In the crew">
           {#each cv.members as m (m.id)}
-            <li class:off={!m.on}><span class="tg-faces" aria-hidden="true"><i style:--h={hueOf(m.name)} class:busy={focusing(m)}>{initials(m.name)}</i></span><span class="tg-crew-who"><b>{m.name}{#if m.id === cv.you}<small>{" · you"}</small>{/if}</b><span>{mateState(m)}</span></span></li>
+            {@const me = m.id === cv.you}
+            <li class:off={!m.on || (me && cv.hide)}><span class="tg-faces" aria-hidden="true"><i style:--h={hueOf(m.name)} class:busy={focusing(m)}>{initials(m.name)}</i></span><span class="tg-crew-who"><b>{m.name}{#if me}<small>{" · you"}</small>{/if}</b><span>{me && cv.hide ? "Your crew sees you as away" : mateState(m)}</span></span>{#if me && cv.live}<button class="tg-remind tg-hide" type="button" aria-pressed={String(cv.hide)} aria-label={cv.hide ? "Hidden from your crew. Show me again" : "Hide me from my crew"} onclick={() => C.crewHide(!cv.hide)}>{@html EYE_OFF}<span>{cv.hide ? "Hidden" : "Hide me"}</span></button>{/if}</li>
           {/each}
           {#if cv.members.length < 8}<li class="tg-crew-seat"><button class="tg-inline" type="button" onclick={() => C.copyCrewInvite()}>Copy invite link</button><span>Room for {8 - cv.members.length} more</span></li>{/if}
         </ul>
@@ -432,7 +434,7 @@
             <div class="tg-title"><b>That crew is gone</b><span>Nobody opened it for a long while, or everyone left. Start your own, or ask for a new link.</span></div>
             <button class="tg-btn strong wide" type="button" onclick={() => { api.crewInvite = ""; go("crew-new"); }}>Start a crew</button>
           {:else}
-            <div class="tg-title"><b>Join {crewInv ? crewInv.name : "a crew"}</b><span>{crewInv ? (crewInv.size === 1 ? "1 person is" : crewInv.size + " people are") + " in it, with room for " + (crewInv.max - crewInv.size) + " more. " : ""}A standing room where you see who's around and focusing, and the rounds you finish add up each week. Others see your name and timer, never your tasks.</span></div>
+            <div class="tg-title"><b>Join {crewInv ? crewInv.name : "a crew"}</b><span>{crewInv ? (crewInv.size === 1 ? "1 person is" : crewInv.size + " people are") + " in it, with room for " + (crewInv.max - crewInv.size) + " more. " : ""}A standing room where you see who's around and focusing, and the rounds you finish add up each week. Others see your name and timer, never your tasks, and you can hide yourself any time.</span></div>
             {#if cv.code && cv.crew}<p class="tg-hint">You're in {cv.crew.name}. Joining this crew leaves it.</p>{/if}
             <label class="tg-field">Your name<input type="text" maxlength="20" autocomplete="off" data-1p-ignore="true" data-lpignore="true" data-bwignore="true" data-form-type="other" placeholder="Shown to your crew" bind:value={name} bind:this={nameEl}></label>
             {#if note}<p class="tg-err" role="status">{note}</p>{/if}
@@ -444,7 +446,7 @@
     {:else if view === "invite"}
       <div class="tg-view {pane()}">
         <form class="tg-form" autocomplete="off" onsubmit={joinCode}>
-          <div class="tg-title"><b>Join a room</b><span>You've been invited. Others see your name and timer, never your tasks.</span></div>
+          <div class="tg-title"><b>Join a room</b><span>You've been invited. Others see your name and timer, never your tasks, and you can hide yourself any time.</span></div>
           <label class="tg-field">Your name<input type="text" maxlength="20" autocomplete="off" data-1p-ignore="true" data-lpignore="true" data-bwignore="true" data-form-type="other" placeholder="Shown to people in the room" bind:value={name} bind:this={nameEl}></label>
           <label class="tg-field">Room code<input type="text" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" data-1p-ignore="true" data-lpignore="true" data-bwignore="true" data-form-type="other" placeholder="ABC234" bind:value={code} bind:this={codeEl}></label>
           {#if note}<p class="tg-err" role="status">{note}</p>{/if}

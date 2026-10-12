@@ -87,6 +87,33 @@ test('presence: who is here and what their timer is doing, from their newest tab
   assert.deepEqual(ms.map((m) => [m.name, m.on]), [['Ana', true], ['Ben', false]]);
 });
 
+test('a hidden member looks away to the crew, still sees everyone, and their rounds still count', async () => {
+  clock.now = Date.parse('2026-10-14T08:00:00Z');
+  try {
+    const { hello, send, last, c } = await setup();
+    const ana = await hello('a', 'Ana');
+    const ben = await hello('b', 'Ben');
+    await send(ana, { t: 'hide', on: true });
+    assert.equal(last(ana).hide, true);
+    assert.equal(last(ben).hide, false);
+    assert.deepEqual(last(ben).members.map((m) => [m.name, m.on]), [['Ana', false], ['Ben', true]]);
+    assert.deepEqual(last(ana).members.map((m) => [m.name, m.on]), [['Ana', true], ['Ben', true]], 'you still see yourself and the others');
+    const heard = ben.messages.length;
+    await send(ana, { t: 'state', s: { mode: 'focus', status: 'running', remaining: 25 * MIN, total: 25 * MIN } });
+    clock.now += 25 * MIN;
+    await send(ana, { t: 'state', s: { mode: 'short', status: 'running', remaining: 5 * MIN, total: 5 * MIN } });
+    const tab = await hello('a', 'Ana');
+    tab.close(1000);
+    await c.webSocketClose(tab);
+    assert.equal(ben.messages.length, heard, 'the crew hears nothing while a hidden member works or opens a tab');
+    assert.equal(last(ana).members[0].s.mode, 'short');
+    assert.equal(last(ana).week.mine, 1);
+    await send(ana, { t: 'hide', on: false });
+    assert.deepEqual(last(ben).members.map((m) => [m.name, m.on, m.s && m.s.mode]), [['Ana', true, 'short'], ['Ben', true, null]]);
+    assert.equal(last(ben).week.n, 1);
+  } finally { clock.now = null; }
+});
+
 test('finished focus rounds add up per crew week, counted once across tabs', async () => {
   clock.now = Date.parse('2026-10-14T08:00:00Z');
   try {

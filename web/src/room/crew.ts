@@ -15,7 +15,7 @@ const LATE_MS = 5 * 60000;
 
 export const CR = {
   code: ls.get<string>("pl.crew", ""), ws: null as WebSocket | null, live: false, tries: 0,
-  you: null as string | null, crew: null as CrewInfo | null, members: [] as CrewMate[], week: null as CrewWeek | null,
+  you: null as string | null, crew: null as CrewInfo | null, members: [] as CrewMate[], week: null as CrewWeek | null, hide: false,
   remind: ls.get<boolean>("pl.crewRemind", false), sent: "", joining: false,
   timer: undefined as ReturnType<typeof setTimeout> | undefined, ping: undefined as ReturnType<typeof setInterval> | undefined,
 };
@@ -41,7 +41,7 @@ export function crewPush(force?: boolean) {
 function forget(note?: string) {
   clearTimeout(CR.timer); clearInterval(CR.ping);
   const ws = CR.ws;
-  Object.assign(CR, { code: "", ws: null, live: false, tries: 0, you: null, crew: null, members: [], week: null, sent: "", joining: false, remind: false });
+  Object.assign(CR, { code: "", ws: null, live: false, tries: 0, you: null, crew: null, members: [], week: null, hide: false, sent: "", joining: false, remind: false });
   ls.set("pl.crew", ""); ls.set("pl.crewRemind", false);
   if (ws) try { ws.close(1000); } catch {}
   if (note) toast(note);
@@ -65,7 +65,7 @@ export function crewConnect() {
     let m; try { m = JSON.parse(e.data); } catch { return; }
     if (!m || m.t !== "crew") return;
     const skew = Date.now() - m.now;
-    CR.you = m.you; CR.crew = m.crew; CR.week = m.week;
+    CR.you = m.you; CR.crew = m.crew; CR.week = m.week; CR.hide = !!m.hide;
     CR.members = m.members.map((x: CrewMate) => ({ ...x, s: x.s && { ...x.s, end: x.s.end ? x.s.end + skew : 0 } }));
     if (!CR.live) {
       CR.live = true; CR.tries = 0; CR.joining = false;
@@ -130,6 +130,14 @@ export async function crewInfo(code: string): Promise<{ name: string; size: numb
 
 export const crewRename = (name: string) => send({ t: "name", name });
 export const crewSlot = (slot: Times | null) => send({ t: "slot", slot });
+
+/** Hidden, the crew sees you as away; you still see them, and your rounds still count. */
+export function crewHide(on: boolean) {
+  if (!CR.live) return;
+  CR.hide = on;
+  send({ t: "hide", on });
+  redraw();
+}
 export const crewLink = () => location.origin + "/app/?crew=" + CR.code;
 
 export function copyCrewInvite() {

@@ -731,16 +731,22 @@ export class Crew extends DurableObject {
   }
 
   // Each member may be here from several tabs or devices; the most recent timer state speaks for them.
-  async broadcast(except) {
+  // A hidden member looks away to everyone else, and only their own tabs hear about their timer.
+  async broadcast(except, only) {
     const store = this.ctx.storage, c = await store.get("crew"), socks = this.sockets(except), now = Date.now();
     if (!c) return;
     const live = new Map();
     for (const { a } of socks) { const cur = live.get(a.cid); if (!cur || (a.at || 0) > (cur.at || 0)) live.set(a.cid, a); }
     const weeks = (await store.get("weeks")) || {}, start = weekStart(now, c.tz), last = weekStart(start - 1, c.tz);
     const sum = (w) => Object.values(weeks[w] || {}).reduce((n, x) => n + x, 0);
-    const members = c.members.map((m) => ({ id: m.pid, name: m.name, on: live.has(m.cid), s: (live.get(m.cid) || {}).s || null }));
+    const seen = (m, cid) => (!m.hide || m.cid === cid) && live.has(m.cid);
+    const members = (cid) => c.members.map((m) => ({ id: m.pid, name: m.name, on: seen(m, cid), s: seen(m, cid) ? live.get(m.cid).s || null : null }));
     const info = { name: c.name, room: c.room, tz: c.tz, slot: c.slot };
-    for (const { ws, a } of socks) this.send(ws, { t: "crew", now, you: a.pid, crew: info, members, week: { n: sum(start), last: sum(last), mine: (weeks[start] || {})[a.pid] || 0 } });
+    for (const { ws, a } of socks) {
+      if (only && a.cid !== only) continue;
+      const mem = c.members.find((m) => m.cid === a.cid);
+      this.send(ws, { t: "crew", now, you: a.pid, hide: !!(mem && mem.hide), crew: info, members: members(a.cid), week: { n: sum(start), last: sum(last), mine: (weeks[start] || {})[a.pid] || 0 } });
+    }
   }
 
   async count(pid, now, tz) {
@@ -775,7 +781,7 @@ export class Crew extends DurableObject {
       await store.put("crew", c);
       ws.serializeAttachment({ cid, pid: mem.pid, s: null, at: now });
       await this.arm(now);
-      return this.broadcast();
+      return this.broadcast(undefined, mem.hide ? cid : undefined);
     }
     const mem = me && c.members.find((x) => x.cid === me.cid);
     if (!mem) return;
@@ -792,15 +798,16 @@ export class Crew extends DurableObject {
         await store.put("crew", c);
         await this.count(mem.pid, now, c.tz);
       }
-      return this.broadcast();
+      return this.broadcast(undefined, mem.hide ? mem.cid : undefined);
     }
 
-    if (m.t === "name" || m.t === "slot") {
+    if (m.t === "name" || m.t === "slot" || m.t === "hide") {
       const n = tokens(me.cb, now, CREW_EDIT_BURST, CREW_EDIT_EVERY_MS);
       if (n < 1) return this.broadcast();
       me.cb = { n: n - 1, at: now };
       ws.serializeAttachment(me);
-      if (m.t === "name") {
+      if (m.t === "hide") mem.hide = m.on === true;
+      else if (m.t === "name") {
         const name = clean(m.name, CREW_NAME);
         if (!name) return;
         c.name = name;
@@ -827,11 +834,18 @@ export class Crew extends DurableObject {
 
   async webSocketClose(ws) {
     try { ws.close(1000); } catch {}
-    if (ws.deserializeAttachment()) await this.broadcast(ws);
+    await this.gone(ws);
   }
 
   async webSocketError(ws) {
-    await this.broadcast(ws);
+    await this.gone(ws);
+  }
+
+  async gone(ws) {
+    const a = ws.deserializeAttachment(), c = a && (await this.ctx.storage.get("crew"));
+    if (!c) return;
+    const mem = c.members.find((m) => m.cid === a.cid);
+    await this.broadcast(ws, mem && mem.hide ? a.cid : undefined);
   }
 
   // Only members can ask for the crew time's reminder.

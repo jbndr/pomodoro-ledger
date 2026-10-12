@@ -13,7 +13,7 @@ import { SIGNALS } from "../lib/room";
 import { MODE_NAME, MODES } from "../lib/timer";
 import { phone, showPage } from "../pages";
 import { renderTasks, renderTimer } from "../render";
-import { CR, crewRoom } from "../room/crew";
+import { CR, crewHide, crewRoom } from "../room/crew";
 import { mySignal, RM, roomSignal } from "../room/net";
 import { exportLedger } from "../settings/backup";
 import { cancelEnd, cancelTickPreview, previewSoundscape, scheduleEnd, syncTicking } from "../sound";
@@ -48,6 +48,8 @@ const G = {
   bell: svg('<path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   settings: svg('<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>'),
   keys: svg('<rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M7.5 14h9"/>'),
+  eye: svg('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>'),
+  eyeOff: svg('<path d="M9.9 5.8A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.3 7.3A16.5 16.5 0 0 0 2.5 12s3.5 6.5 9.5 6.5c1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a2.8 2.8 0 0 0 4 4"/><path d="M3 3l18 18"/>'),
   room: svg('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.2.2 3.6 1.6 4 3.8"/>'),
   theme: svg('<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/>'),
   download: svg('<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/>'),
@@ -182,6 +184,11 @@ addCommands(() => {
 
   if (CR.crew && !RM.code) {
     out.push({ id: "room.crew", group: "Room", title: "Join " + CR.crew.name + "'s room", words: "crew group team friends study room together", icon: G.room, run: crewRoom });
+  }
+  if (CR.crew && CR.live) {
+    const name = CR.crew.name, hide = !CR.hide;
+    out.push({ id: "room.crew.hide", group: "Room", title: hide ? "Hide me from " + name : "Show me to " + name, words: "crew hide privacy invisible away visible presence status", icon: hide ? G.eyeOff : G.eye,
+      run: () => { crewHide(hide); toast(hide ? name + " sees you as away now. Your rounds still count." : name + " sees you again."); } });
   }
   if (RM.live) {
     const cur = mySignal();
